@@ -48,14 +48,9 @@ async function request<T>(path: string, options: RequestInit = {}, _retry = true
       });
       return request<T>(path, options, false);
     }
-    // Only force logout if refresh definitively failed (returned null from a 401/403)
-    // — not on network errors where null means "couldn't reach server"
-    const refreshRes = await fetch(`${BASE}/api/auth/refresh`, { method: 'POST', credentials: 'include' }).catch(() => null);
-    if (!refreshRes || refreshRes.status === 401 || refreshRes.status === 403) {
-      import('@/store/authStore').then(({ useAuthStore }) => {
-        useAuthStore.getState().logout();
-      });
-    }
+    import('@/store/authStore').then(({ useAuthStore }) => {
+      useAuthStore.getState().logout();
+    });
     throw new SessionExpiredError();
   }
 

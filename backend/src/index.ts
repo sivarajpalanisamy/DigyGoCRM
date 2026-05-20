@@ -86,14 +86,23 @@ app.use(rateLimit({
   skip: (req) => req.path === '/health',
 }));
 
-// Strict limiter for sensitive auth endpoints only (login, refresh, password setup)
-// NOT applied to /me or /me/permissions — those are polled frequently by the frontend
+// Strict limiter for login and password setup — brute-force protection
 const authLimiter = rateLimit({
   windowMs: 15 * 60_000,
   max: process.env.NODE_ENV === 'production' ? 30 : 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many login attempts. Try again in 15 minutes.' },
+});
+
+// Relaxed limiter for token refresh — not a brute-force vector (token itself is the secret)
+// Must handle: multiple tabs, 30s polling, multiple users behind same NAT IP
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: process.env.NODE_ENV === 'production' ? 300 : 5000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please slow down.' },
 });
 
 // ── Body parsing & cookies ────────────────────────────────────────────────────
@@ -121,9 +130,9 @@ app.post('/webhook-echo', (_req, res) => {
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.use('/api/auth/login',          authLimiter);   // brute-force protection on login
-app.use('/api/auth/refresh',        authLimiter);   // refresh token rate limit
-app.use('/api/auth/setup-password', authLimiter);   // password setup rate limit
+app.use('/api/auth/login',          authLimiter);    // brute-force protection on login
+app.use('/api/auth/refresh',        refreshLimiter); // higher limit — token itself is the secret
+app.use('/api/auth/setup-password', authLimiter);    // password setup rate limit
 app.use('/api/auth',          authRoutes);
 app.use('/api/dashboard',     dashboardRoutes);
 app.use('/api/leads',         leadsRoutes);
