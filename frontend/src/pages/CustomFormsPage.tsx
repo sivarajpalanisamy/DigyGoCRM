@@ -10,10 +10,21 @@ import { api } from '@/lib/api';
 import { usePermission } from '@/hooks/usePermission';
 import { copyToClipboard } from '@/lib/utils';
 
+interface FormField {
+  id: string;
+  label: string;
+  type: string;
+  placeholder: string;
+  required: boolean;
+  mapTo: string;
+  options?: string[];
+}
+
 interface CustomForm {
   id: string;
   name: string;
   slug: string;
+  fields: FormField[];
   pipeline_id: string | null;
   pipeline_name: string | null;
   stage_id: string | null;
@@ -21,6 +32,16 @@ interface CustomForm {
   is_active: boolean;
   submission_count: number;
   created_at: string;
+  btn_color: string;
+  btn_text_color: string;
+  form_bg_color: string | null;
+  form_text_color: string;
+  submit_label: string;
+  thank_you_message: string;
+  redirect_url: string | null;
+  declaration_enabled: boolean;
+  declaration_title: string | null;
+  declaration_link: string | null;
 }
 
 interface Submission {
@@ -91,6 +112,7 @@ export default function CustomFormsPage() {
 
   // Embed/Share modal state
   const [embedFormId, setEmbedFormId] = useState<string | null>(null);
+  const [embedTab, setEmbedTab] = useState<'iframe' | 'html'>('iframe');
   const [shareLinkFormId, setShareLinkFormId] = useState<string | null>(null);
   const [copiedFormId, setCopiedFormId] = useState<string | null>(null);
 
@@ -170,9 +192,117 @@ export default function CustomFormsPage() {
     }
   };
 
+  const embedApiBase = (import.meta.env.VITE_API_URL as string) || publicUrl;
+
   const getShareLink = (form: CustomForm) => `${publicUrl}/f/${form.slug}`;
-  const getEmbedCode = (form: CustomForm) =>
-    `<script src="${publicUrl}/embed.js" data-form="${form.slug}"></script>`;
+  const getIframeCode = (form: CustomForm) =>
+    `<iframe src="${publicUrl}/f/${form.slug}" width="100%" height="600" frameborder="0" style="border:none;border-radius:16px;display:block"></iframe>`;
+
+  const generateHTMLSnippet = (form: CustomForm): string => {
+    const bg      = form.form_bg_color  ?? '#ffffff';
+    const text    = form.form_text_color ?? '#1c1410';
+    const btn     = form.btn_color       ?? '#ea580c';
+    const btnTxt  = form.btn_text_color  ?? '#ffffff';
+    const uid     = `dgf_${form.slug.replace(/-/g, '_')}`;
+    const label   = form.submit_label    || 'Submit';
+    const api     = `${embedApiBase}/api/public/forms/${form.slug}/submit`;
+    const redir   = form.redirect_url   ? `'${form.redirect_url}'` : 'null';
+
+    const esc = (s: string) => s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    const fieldsHtml = (form.fields ?? []).map((f) => {
+      const lbl = esc(f.label);
+      const ph  = esc(f.placeholder ?? '');
+      const req = f.required ? ' required' : '';
+      const star = f.required ? `<span class="dgf-req">*</span>` : '';
+      let inp = '';
+      if (f.type === 'textarea') {
+        inp = `<textarea class="dgf-input" data-label="${lbl}" placeholder="${ph}"${req}></textarea>`;
+      } else if (f.type === 'dropdown') {
+        const opts = (f.options ?? []).map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+        inp = `<select class="dgf-input" data-label="${lbl}"${req}><option value="">— Select —</option>${opts}</select>`;
+      } else if (f.type === 'radio') {
+        inp = (f.options ?? []).map((o) =>
+          `<label class="dgf-radio"><input type="radio" name="${uid}_${f.id}" value="${esc(o)}" data-label="${lbl}"${req}> ${esc(o)}</label>`
+        ).join('');
+      } else if (f.type === 'multiselect') {
+        inp = (f.options ?? []).map((o) =>
+          `<label class="dgf-chk"><input type="checkbox" data-ms="${lbl}" value="${esc(o)}" onchange="${uid}_ms('${lbl}',this)"> ${esc(o)}</label>`
+        ).join('');
+      } else if (f.type === 'checkbox') {
+        inp = `<label class="dgf-chk"><input type="checkbox" data-label="${lbl}"> ${esc(f.placeholder || f.label)}</label>`;
+      } else {
+        const t = f.type === 'email' ? 'email' : f.type === 'phone' ? 'tel' : f.type === 'number' ? 'number' : 'text';
+        inp = `<input type="${t}" class="dgf-input" data-label="${lbl}" placeholder="${ph}"${req}>`;
+      }
+      return `<div class="dgf-field"><label class="dgf-label">${lbl}${star}</label>${inp}</div>`;
+    }).join('\n');
+
+    const declHtml = (form.declaration_enabled && form.declaration_title)
+      ? `<div class="dgf-field dgf-decl"><input type="checkbox" id="${uid}_d" data-declaration="1" required style="width:16px;height:16px;margin-top:2px;accent-color:${btn};flex-shrink:0"><label for="${uid}_d" style="font-size:12px;color:${text};cursor:pointer">${esc(form.declaration_title)}${form.declaration_link ? ` <a href="${esc(form.declaration_link)}" target="_blank" rel="noreferrer" style="text-decoration:underline;opacity:0.7">View Policy</a>` : ''}</label></div>`
+      : '';
+
+    const declCheck = form.declaration_enabled
+      ? `var d=document.getElementById('${uid}_d');if(!d.checked){alert('Please accept the declaration to continue.');return;}`
+      : '';
+
+    return `<!-- DigyGo Form: ${form.name} -->
+<div id="${uid}" style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;margin:0 auto">
+<style>
+#${uid} *{box-sizing:border-box}
+#${uid} .dgf-wrap{background:${bg};border-radius:16px;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+#${uid} .dgf-title{font-size:20px;font-weight:700;color:${text};margin:0 0 24px;font-family:inherit}
+#${uid} .dgf-field{margin-bottom:16px}
+#${uid} .dgf-label{display:block;font-size:12px;font-weight:600;color:${text};margin-bottom:6px}
+#${uid} .dgf-req{color:#ef4444;margin-left:2px}
+#${uid} .dgf-input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.7);font-size:13px;color:${text};outline:none;font-family:inherit;transition:border-color .15s}
+#${uid} .dgf-input:focus{border-color:${btn}}
+#${uid} textarea.dgf-input{resize:none;height:80px}
+#${uid} .dgf-radio,#${uid} .dgf-chk{display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;font-size:13px;color:${text}}
+#${uid} input[type=radio],#${uid} input[type=checkbox]{accent-color:${btn};width:16px;height:16px;flex-shrink:0}
+#${uid} .dgf-btn{width:100%;padding:12px;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;background:${btn};color:${btnTxt};margin-top:8px;font-family:inherit;transition:opacity .2s}
+#${uid} .dgf-btn:disabled{opacity:.6;cursor:not-allowed}
+#${uid} .dgf-decl{display:flex;align-items:flex-start;gap:8px}
+#${uid} .dgf-ok{text-align:center;padding:32px 16px}
+#${uid} .dgf-ok-icon{width:64px;height:64px;border-radius:50%;background:${btn};display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+#${uid} .dgf-ok-msg{font-size:18px;font-weight:700;color:${text}}
+</style>
+<div class="dgf-wrap">
+<p class="dgf-title">${esc(form.name)}</p>
+<form id="${uid}_f" novalidate>
+${fieldsHtml}
+${declHtml}
+<button type="submit" class="dgf-btn">${esc(label)}</button>
+</form>
+</div>
+<script>
+(function(){
+var _m={};
+window.${uid}_ms=function(k,el){_m[k]=_m[k]||[];var i=_m[k].indexOf(el.value);el.checked?i<0&&_m[k].push(el.value):i>=0&&_m[k].splice(i,1);};
+document.getElementById('${uid}_f').addEventListener('submit',function(e){
+e.preventDefault();${declCheck}
+var btn=e.target.querySelector('button[type=submit]');
+btn.disabled=true;btn.textContent='Submitting…';
+var data={};
+e.target.querySelectorAll('[data-label]').forEach(function(el){
+var k=el.getAttribute('data-label');
+if(el.type==='radio'){if(el.checked)data[k]=el.value;}
+else if(el.type==='checkbox'&&!el.dataset.declaration){data[k]=el.checked?'true':'';}
+else if(el.type!=='checkbox'){data[k]=el.value;}
+});
+Object.keys(_m).forEach(function(k){data[k]=_m[k].join(',');});
+fetch('${api}',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:data})})
+.then(function(r){return r.json();})
+.then(function(j){
+document.getElementById('${uid}').querySelector('.dgf-wrap').innerHTML='<div class="dgf-ok"><div class="dgf-ok-icon"><svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="${btnTxt}" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><p class="dgf-ok-msg">'+(j.message||'Thank you!')+'</p></div>';
+if(${redir})setTimeout(function(){location.href=${redir};},2000);
+})
+.catch(function(){btn.disabled=false;btn.textContent='${esc(label)}';alert('Submission failed. Please try again.');});
+});
+})();
+<\/script>
+</div>`;
+  };
 
   return (
     <div className="space-y-5">
@@ -510,34 +640,81 @@ export default function CustomFormsPage() {
       {/* Embed Code Modal */}
       {embedForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-2xl border border-black/5 w-full max-w-md shadow-2xl">
+          <div className="bg-white rounded-2xl border border-black/5 w-full max-w-xl shadow-2xl">
+            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
               <div>
                 <h3 className="font-headline font-bold text-[#1c1410]">Embed "{embedForm.name}"</h3>
                 <p className="text-[11px] text-[#7a6b5c] mt-0.5">Copy and paste into your website</p>
               </div>
-              <button onClick={() => setEmbedFormId(null)} className="p-1.5 rounded-lg hover:bg-[#f5ede3] text-[#7a6b5c] hover:text-primary transition-colors">
+              <button
+                onClick={() => { setEmbedFormId(null); setEmbedTab('iframe'); }}
+                className="p-1.5 rounded-lg hover:bg-[#f5ede3] text-[#7a6b5c] hover:text-primary transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="px-6 py-5 space-y-4">
-              <p className="text-[13px] text-[#7a6b5c]">
-                Paste this snippet just before the closing{' '}
-                <code className="font-mono text-xs bg-[#faf8f6] px-1.5 py-0.5 rounded-md text-[#1c1410]">&lt;/body&gt;</code>{' '}
-                tag on your page.
-              </p>
-              <div className="relative">
-                <pre className="bg-[#faf8f6] rounded-xl p-4 text-xs font-mono text-[#1c1410] overflow-x-auto border border-black/5">
-                  {getEmbedCode(embedForm)}
-                </pre>
+
+            {/* Tabs */}
+            <div className="flex gap-1 px-6 pt-4">
+              {(['iframe', 'html'] as const).map((tab) => (
                 <button
-                  onClick={() => { copyToClipboard(getEmbedCode(embedForm)); toast.success('Embed code copied'); }}
-                  className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white border border-black/5 hover:bg-[#f5ede3] text-[#7a6b5c] hover:text-primary transition-colors"
-                ><Copy className="w-3.5 h-3.5" /></button>
-              </div>
+                  key={tab}
+                  onClick={() => setEmbedTab(tab)}
+                  className={`px-4 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${
+                    embedTab === tab
+                      ? 'bg-primary text-white'
+                      : 'bg-[#faf8f6] text-[#7a6b5c] hover:bg-[#f5ede3]'
+                  }`}
+                >
+                  {tab === 'iframe' ? 'iFrame' : 'HTML Code'}
+                </button>
+              ))}
             </div>
+
+            {/* Body */}
+            <div className="px-6 py-4 space-y-3">
+              {embedTab === 'iframe' ? (
+                <>
+                  <p className="text-[12px] text-[#7a6b5c]">
+                    Paste this wherever you want the form to appear. Works in any CMS (WordPress, Webflow, Wix, etc.).
+                  </p>
+                  <div className="relative">
+                    <pre className="bg-[#faf8f6] rounded-xl p-4 text-xs font-mono text-[#1c1410] overflow-x-auto border border-black/5 whitespace-pre-wrap break-all">
+                      {getIframeCode(embedForm)}
+                    </pre>
+                    <button
+                      onClick={() => { copyToClipboard(getIframeCode(embedForm)); toast.success('iFrame code copied'); }}
+                      className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white border border-black/5 hover:bg-[#f5ede3] text-[#7a6b5c] hover:text-primary transition-colors"
+                    ><Copy className="w-3.5 h-3.5" /></button>
+                  </div>
+                  <p className="text-[11px] text-[#b09e8d]">
+                    Always shows the latest version of your form — no re-embedding needed after edits.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[12px] text-[#7a6b5c]">
+                    Paste anywhere on your page — no external JS required. Fields, colors and styles match your form exactly.
+                  </p>
+                  <div className="relative">
+                    <pre className="bg-[#faf8f6] rounded-xl p-4 text-xs font-mono text-[#1c1410] overflow-x-auto border border-black/5 max-h-64 whitespace-pre-wrap break-all">
+                      {generateHTMLSnippet(embedForm)}
+                    </pre>
+                    <button
+                      onClick={() => { copyToClipboard(generateHTMLSnippet(embedForm)); toast.success('HTML code copied'); }}
+                      className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white border border-black/5 hover:bg-[#f5ede3] text-[#7a6b5c] hover:text-primary transition-colors"
+                    ><Copy className="w-3.5 h-3.5" /></button>
+                  </div>
+                  <p className="text-[11px] text-[#b09e8d]">
+                    Fields are baked into the code. Re-copy after editing your form to get updated code.
+                  </p>
+                </>
+              )}
+            </div>
+
             <div className="flex justify-end px-6 py-4 border-t border-black/5">
-              <Button onClick={() => setEmbedFormId(null)}>Done</Button>
+              <Button onClick={() => { setEmbedFormId(null); setEmbedTab('iframe'); }}>Done</Button>
             </div>
           </div>
         </div>
