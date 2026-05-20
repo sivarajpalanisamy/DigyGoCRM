@@ -7,6 +7,7 @@ import { triggerWorkflows } from './workflows';
 import { upsertContact } from '../utils/contacts';
 import { emitToTenant } from '../socket';
 import { sendNewLeadNotification } from '../utils/notifications';
+import { backfillCustomFields } from '../utils/customFields';
 
 const router = Router();
 
@@ -300,6 +301,20 @@ router.post('/:id/submit', async (req: AuthRequest, res: Response) => {
         lead = insRes.rows[0];
         emitToTenant(form.tenant_id, 'lead:created', lead);
         sendNewLeadNotification(form.tenant_id, lead, null).catch(() => null);
+      }
+
+      // Extract custom fields from form field mapTo mappings and persist them
+      // so enrichLead() can include them in trigger conditions + variable interpolation
+      const STANDARD = new Set(['first_name', 'last_name', 'name', 'full_name', 'email', 'phone']);
+      const formFields: Array<{ mapTo: string; label: string }> = form.fields ?? [];
+      const customFieldsData: Record<string, string> = {};
+      for (const field of formFields) {
+        if (!field.mapTo || STANDARD.has(field.mapTo)) continue;
+        const value = String(data[field.label] ?? data[field.mapTo] ?? '').trim();
+        if (value) customFieldsData[field.mapTo] = value;
+      }
+      if (Object.keys(customFieldsData).length > 0) {
+        await backfillCustomFields(lead.id, form.tenant_id, customFieldsData);
       }
 
       const leadWithForm = { ...lead, form_id: form.id, form_name: form.name };

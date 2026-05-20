@@ -5,6 +5,7 @@ import { triggerWorkflows } from './workflows';
 import { upsertContact } from '../utils/contacts';
 import { emitToTenant } from '../socket';
 import { sendNewLeadNotification } from '../utils/notifications';
+import { backfillCustomFields } from '../utils/customFields';
 
 // FIX D: Rate limiter for all public booking-link endpoints (30 req / 15 min per IP)
 const bookingLimiter = rateLimit({
@@ -116,7 +117,7 @@ router.post('/forms/:slug/submit', async (req: Request, res: Response) => {
       const leadWithForm = { ...fullLead, form_id: form.id, form_name: form.name };
 
       if (Object.keys(customFieldsData).length > 0) {
-        await storeCustomFieldValues(leadId, form.tenant_id, customFieldsData);
+        await backfillCustomFields(leadId, form.tenant_id, customFieldsData);
       }
 
       emitToTenant(form.tenant_id, 'lead:updated', fullLead);
@@ -132,7 +133,7 @@ router.post('/forms/:slug/submit', async (req: Request, res: Response) => {
       leadId = lead.id;
 
       if (Object.keys(customFieldsData).length > 0) {
-        await storeCustomFieldValues(leadId, form.tenant_id, customFieldsData);
+        await backfillCustomFields(leadId, form.tenant_id, customFieldsData);
       }
 
       emitToTenant(form.tenant_id, 'lead:created', lead);
@@ -160,35 +161,6 @@ router.post('/forms/:slug/submit', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
-async function storeCustomFieldValues(leadId: string, tenantId: string, customFieldsData: Record<string, string>) {
-  for (const [slug, value] of Object.entries(customFieldsData)) {
-    if (!value) continue;
-    try {
-      let cfRes = await query('SELECT id FROM custom_fields WHERE tenant_id=$1 AND slug=$2 LIMIT 1', [tenantId, slug]);
-      if (!cfRes.rows[0]) {
-        const fieldName = slug.split(/[_\-]+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        try {
-          cfRes = await query(
-            `INSERT INTO custom_fields (tenant_id, name, type, slug, required) VALUES ($1,$2,'Single Line',$3,false) RETURNING id`,
-            [tenantId, fieldName, slug]
-          );
-        } catch {
-          cfRes = await query('SELECT id FROM custom_fields WHERE tenant_id=$1 AND slug=$2 LIMIT 1', [tenantId, slug]);
-        }
-      }
-      if (cfRes.rows[0]?.id) {
-        await query(
-          `INSERT INTO lead_field_values (lead_id, tenant_id, field_id, value)
-           VALUES ($1,$2,$3,$4) ON CONFLICT (lead_id, field_id) DO UPDATE SET value=$4, updated_at=NOW()`,
-          [leadId, tenantId, cfRes.rows[0].id, value]
-        );
-      }
-    } catch (err) {
-      console.error('[storeCustomFieldValues]', slug, err);
-    }
-  }
-}
 
 // ── Public Booking Helpers ──────────────────────────────────────────────────
 
