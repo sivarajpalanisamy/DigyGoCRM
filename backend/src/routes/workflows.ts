@@ -23,7 +23,7 @@ router.get('/', checkPermission('automation:view'), async (req: AuthRequest, res
       `SELECT w.*,
               COALESCE(s.total_contacts, 0) AS total_contacts,
               COALESCE(s.completed,      0) AS completed,
-              COALESCE(s.skipped,        0) AS skipped,
+              COALESCE(sk.skipped,       0) AS skipped,
               COALESCE(s.failed,         0) AS failed
        FROM workflows w
        LEFT JOIN LATERAL (
@@ -31,7 +31,6 @@ router.get('/', checkPermission('automation:view'), async (req: AuthRequest, res
            COUNT(*)                                                     AS total_contacts,
            COUNT(*) FILTER (WHERE status = 'completed')                 AS completed,
            COUNT(*) FILTER (WHERE status = 'completed_with_errors')     AS completed_with_errors,
-           COUNT(*) FILTER (WHERE status = 'skipped')                   AS skipped,
            COUNT(*) FILTER (WHERE status = 'failed')                    AS failed
          FROM (
            SELECT DISTINCT ON (COALESCE(lead_id::text, id::text)) status
@@ -40,6 +39,11 @@ router.get('/', checkPermission('automation:view'), async (req: AuthRequest, res
            ORDER BY COALESCE(lead_id::text, id::text), enrolled_at DESC
          ) latest
        ) s ON true
+       LEFT JOIN LATERAL (
+         SELECT COUNT(DISTINCT COALESCE(lead_id::text, id::text)) AS skipped
+         FROM workflow_executions
+         WHERE workflow_id = w.id AND status = 'skipped'
+       ) sk ON true
        WHERE w.tenant_id=$1
        ORDER BY w.created_at DESC`,
       [req.user!.tenantId]
@@ -2177,54 +2181,45 @@ export async function processScheduledTriggers(): Promise<void> {
 
 router.get('/:id/analytics', async (req: AuthRequest, res: Response) => {
   try {
-    // Use safe column access — skipped/failed added in migration_013
     const wfRes = await query(
-      `SELECT id, name, total_contacts, completed,
-              COALESCE((SELECT column_name FROM information_schema.columns
-                WHERE table_name='workflows' AND column_name='failed' LIMIT 1), NULL) AS _chk,
-              total_contacts, completed, status, created_at
-       FROM workflows WHERE id=$1 AND tenant_id=$2`,
+      `SELECT id, name, status, created_at FROM workflows WHERE id=$1 AND tenant_id=$2`,
       [req.params.id, req.user!.tenantId]
-    ).catch(() => query(
-      `SELECT id, name, total_contacts, completed, status, created_at
-       FROM workflows WHERE id=$1 AND tenant_id=$2`,
-      [req.params.id, req.user!.tenantId]
-    ));
+    );
     if (!wfRes.rows[0]) { res.status(404).json({ error: 'Not found' }); return; }
 
-    // Re-query with safe fallback for missing columns
-    const wfFull = await query(
-      `SELECT id, name, status, created_at,
-              total_contacts,
-              completed,
-              COALESCE(failed,  0) AS failed,
-              COALESCE(skipped, 0) AS skipped
-       FROM workflows WHERE id=$1 AND tenant_id=$2`,
-      [req.params.id, req.user!.tenantId]
-    ).catch(async () => {
-      // migration_013 not yet applied — return zeros
-      const r = await query(
-        `SELECT id, name, status, created_at, total_contacts, completed FROM workflows WHERE id=$1 AND tenant_id=$2`,
-        [req.params.id, req.user!.tenantId]
-      );
-      r.rows[0] = { ...r.rows[0], failed: 0, skipped: 0 };
-      return r;
-    });
-    const wf = wfFull.rows[0];
+    // Compute KPIs live from workflow_executions (not stale denormalized columns)
+    const kpiRes = await query(
+      `SELECT
+         COUNT(*) FILTER (WHERE status != 'superseded')                              AS total_contacts,
+         COUNT(*) FILTER (WHERE status = 'completed')                                AS completed,
+         COUNT(*) FILTER (WHERE status = 'failed')                                   AS failed,
+         COUNT(DISTINCT COALESCE(lead_id::text, id::text)) FILTER (WHERE status = 'skipped') AS skipped
+       FROM workflow_executions
+       WHERE workflow_id=$1`,
+      [req.params.id]
+    ).catch(() => ({ rows: [{ total_contacts: 0, completed: 0, failed: 0, skipped: 0 }] }));
 
-    // Execution breakdown by day (last 30 days)
+    const wf = {
+      ...wfRes.rows[0],
+      total_contacts: Number(kpiRes.rows[0]?.total_contacts ?? 0),
+      completed:      Number(kpiRes.rows[0]?.completed      ?? 0),
+      failed:         Number(kpiRes.rows[0]?.failed         ?? 0),
+      skipped:        Number(kpiRes.rows[0]?.skipped        ?? 0),
+    };
+
+    // Execution breakdown by day (last 30 days) — exclude superseded
     const dailyRes = await query(
       `SELECT DATE_TRUNC('day', enrolled_at) AS day,
               COUNT(*) FILTER (WHERE status='completed') AS completed,
               COUNT(*) FILTER (WHERE status='failed')    AS failed,
-              COUNT(*) AS total
+              COUNT(*) FILTER (WHERE status != 'superseded') AS total
        FROM workflow_executions
        WHERE workflow_id=$1 AND enrolled_at > NOW() - INTERVAL '30 days'
        GROUP BY 1 ORDER BY 1`,
       [req.params.id]
     ).catch(() => ({ rows: [] }));
 
-    // Top action step completion rates (join through workflow_executions for safety)
+    // Step breakdown — exclude logs from superseded executions
     const stepRes = await query(
       `SELECT l.action_type,
               COUNT(*) FILTER (WHERE l.status='completed') AS completed,
@@ -2233,7 +2228,7 @@ router.get('/:id/analytics', async (req: AuthRequest, res: Response) => {
               COUNT(*) AS total
        FROM workflow_execution_logs l
        JOIN workflow_executions e ON e.id = l.execution_id
-       WHERE e.workflow_id=$1
+       WHERE e.workflow_id=$1 AND e.status NOT IN ('superseded')
        GROUP BY l.action_type ORDER BY total DESC LIMIT 20`,
       [req.params.id]
     ).catch(() => ({ rows: [] }));
@@ -2248,10 +2243,10 @@ router.get('/:id/analytics', async (req: AuthRequest, res: Response) => {
     ).catch(() => ({ rows: [] }));
 
     res.json({
-      workflow:   wf,
-      daily:      dailyRes.rows,
-      steps:      stepRes.rows,
-      recent:     recentRes.rows,
+      workflow: wf,
+      daily:    dailyRes.rows,
+      steps:    stepRes.rows,
+      recent:   recentRes.rows,
     });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });

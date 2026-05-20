@@ -83,7 +83,7 @@ export default function WorkflowAnalyticsPage() {
           <StatCard label="Total Enrolled" value={workflow.total_contacts} icon={Users} color="bg-blue-100 text-blue-600" />
           <StatCard label="Completed" value={workflow.completed} icon={CheckCircle} color="bg-green-100 text-green-600" />
           <StatCard label="Failed" value={workflow.failed} icon={XCircle} color="bg-red-100 text-red-600" />
-          <StatCard label="Skipped Steps" value={workflow.skipped} icon={SkipForward} color="bg-amber-100 text-amber-600" />
+          <StatCard label="Skipped" value={workflow.skipped} icon={SkipForward} color="bg-amber-100 text-amber-600" />
         </div>
 
         {/* Success rate */}

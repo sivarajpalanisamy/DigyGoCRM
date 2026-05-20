@@ -55,19 +55,16 @@ function ContactSidebar({
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
 
-  // Done: all completed executions across all runs (no dedup — every run counts)
-  // Errors: all completed_with_errors executions across all runs (same rationale)
-  // Skipped: latest execution per lead is still skipped (once retried & done, it moves to Done)
-  // All others: use deduped list (latest per lead)
   const filtered = filterStatus === 'completed'
     ? allLogs.filter((l) => l.status === 'completed')
     : filterStatus === 'completed_with_errors'
     ? allLogs.filter((l) => l.status === 'completed_with_errors')
+    : filterStatus === 'skipped'
+    ? allLogs.filter((l) => l.status === 'skipped')
     : logs.filter((l) => {
         if (filterStatus === 'all')     return true;
         if (filterStatus === 'failed')  return l.status === 'failed';
         if (filterStatus === 'pending') return l.status === 'running';
-        if (filterStatus === 'skipped') return l.status === 'skipped';
         return false;
       });
 
