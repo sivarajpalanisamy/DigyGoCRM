@@ -66,14 +66,31 @@ app.use(helmet({
 const allowedOrigins = new Set(
   [config.frontendUrl, process.env.WEBHOOK_BASE_URL, process.env.EXTRA_ORIGIN].filter(Boolean) as string[]
 );
-app.use(cors({
-  origin: (origin, cb) => {
-    // Allow requests with no origin (mobile apps, curl, server-to-server)
-    if (!origin || allowedOrigins.has(origin)) { cb(null, true); return; }
-    cb(new Error(`CORS: origin ${origin} not allowed`));
-  },
-  credentials: true,
-}));
+
+// Public form submit + public booking endpoints need cross-origin access
+// so they work when the HTML snippet is embedded on any external website.
+// These routes carry no auth — open CORS is safe here.
+const isPublicCrossOriginPath = (path: string) =>
+  path.endsWith('/submit') || path.startsWith('/api/public');
+
+app.use((req, res, next) => {
+  if (isPublicCrossOriginPath(req.path)) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.sendStatus(204); return; }
+    return next();
+  }
+  // Strict CORS for all other routes (authenticated CRM APIs)
+  return cors({
+    origin: (origin, cb) => {
+      // Allow requests with no origin (mobile apps, curl, server-to-server)
+      if (!origin || allowedOrigins.has(origin)) { cb(null, true); return; }
+      cb(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    credentials: true,
+  })(req, res, next);
+});
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 // Global limiter: 1000 req / 60 s per IP (allows normal CRM usage with polling)
