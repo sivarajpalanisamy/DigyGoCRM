@@ -247,11 +247,11 @@ export default function CustomFormsPage() {
       : '';
 
     return `<!-- DigyGo Form: ${form.name} -->
-<div id="${uid}" style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;margin:0 auto">
+<div id="${uid}" style="font-family:system-ui,-apple-system,sans-serif;max-width:448px;margin:0 auto">
 <style>
 #${uid} *{box-sizing:border-box}
-#${uid} .dgf-wrap{background:${bg};border-radius:16px;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
-#${uid} .dgf-title{font-size:20px;font-weight:700;color:${text};margin:0 0 24px;font-family:inherit}
+#${uid} .dgf-wrap{background:${bg};border-radius:16px;padding:32px;box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1)}
+#${uid} .dgf-title{font-size:22px;font-weight:700;color:${text};margin:0 0 24px;font-family:inherit}
 #${uid} .dgf-field{margin-bottom:16px}
 #${uid} .dgf-label{display:block;font-size:12px;font-weight:600;color:${text};margin-bottom:6px}
 #${uid} .dgf-req{color:#ef4444;margin-left:2px}
