@@ -482,6 +482,8 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
 }) {
   const canManageAutomation = usePermission('automation:manage');
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
+  const menuBtnRef = React.useRef<HTMLButtonElement>(null);
+  const [flipUp, setFlipUp] = React.useState(false);
 
   const triggerNode = wf.nodes.find((n) => n.type === 'trigger');
   const triggerDesc = triggerNode?.actionType
@@ -609,7 +611,14 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
       {/* 3-dot menu */}
       <div className="w-10 relative shrink-0 flex items-center justify-center py-4" onClick={(e) => e.stopPropagation()}>
         <button
-          onClick={stop(onToggleMenu)}
+          ref={menuBtnRef}
+          onClick={stop(() => {
+            if (!menuOpen && menuBtnRef.current) {
+              const rect = menuBtnRef.current.getBoundingClientRect();
+              setFlipUp(rect.bottom + 240 > window.innerHeight);
+            }
+            onToggleMenu();
+          })}
           className="w-7 h-7 rounded-lg flex items-center justify-center text-[#7a6b5c] hover:bg-white hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
         >
           <MoreVertical className="w-4 h-4" />
@@ -617,7 +626,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-30" onClick={stop(onToggleMenu)} />
-            <div className="absolute right-0 top-9 z-40 w-44 bg-white rounded-xl border border-black/5 shadow-xl py-1 overflow-hidden">
+            <div className={`absolute right-0 z-40 w-44 bg-white rounded-xl border border-black/5 shadow-xl py-1 overflow-hidden ${flipUp ? 'bottom-9' : 'top-9'}`}>
               {canManageAutomation && (
                 <button onClick={stop(onOpen)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
                   <Pencil className="w-3.5 h-3.5 text-[#7a6b5c]" /> Edit
