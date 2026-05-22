@@ -959,7 +959,7 @@ export default function AutomationPage() {
         {/* List */}
         <div className="flex-1 min-w-0 overflow-y-auto">
           {/* Column header */}
-          <div className="flex items-center border-b border-black/[0.06] bg-[#faf8f6] sticky top-0">
+          <div className="flex items-center border-b border-black/[0.06] bg-[#faf8f6] sticky top-0 z-10">
             {/* Select-all checkbox */}
             <div className="w-10 flex items-center justify-center shrink-0 py-2.5">
               <button
