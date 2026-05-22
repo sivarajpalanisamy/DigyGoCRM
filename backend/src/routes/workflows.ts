@@ -2541,6 +2541,116 @@ router.post('/:id/bulk-trigger', checkPermission('automation:manage'), async (re
   }
 });
 
+// ── Broadcast to Group — staggered interval send ──────────────────────────────
+// POST /api/workflows/:id/broadcast-group
+router.post('/:id/broadcast-group', checkPermission('automation:manage'), async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  try {
+    const wfRes = await query(
+      `SELECT * FROM workflows WHERE id=$1 AND tenant_id=$2`,
+      [req.params.id, tenantId]
+    );
+    if (!wfRes.rows[0]) { res.status(404).json({ error: 'Workflow not found' }); return; }
+    const wf = wfRes.rows[0];
+    const nodes: WFNode[] = Array.isArray(wf.nodes) ? wf.nodes : JSON.parse(wf.nodes ?? '[]');
+
+    const triggerNode = nodes.find((n: WFNode) => n.type === 'trigger');
+    if (triggerNode?.actionType !== 'broadcast_to_group') {
+      res.status(400).json({ error: 'This workflow does not use a Broadcast to Group trigger' }); return;
+    }
+
+    const groupId       = triggerNode.config?.group_id as string;
+    const intervalValue = Number(triggerNode.config?.interval_value ?? 2);
+    const intervalUnit  = (triggerNode.config?.interval_unit as string) ?? 'minutes';
+
+    if (!groupId) {
+      res.status(400).json({ error: 'No contact group configured on this workflow trigger' }); return;
+    }
+
+    const intervalMs =
+      intervalUnit === 'hours'   ? intervalValue * 3600 * 1000 :
+      intervalUnit === 'minutes' ? intervalValue * 60   * 1000 :
+                                   intervalValue         * 1000; // seconds
+
+    const grpRes = await query(
+      `SELECT id, name FROM contact_groups WHERE id=$1::uuid AND tenant_id=$2::uuid`,
+      [groupId, tenantId]
+    );
+    if (!grpRes.rows[0]) { res.status(404).json({ error: 'Contact group not found' }); return; }
+
+    const membersRes = await query(
+      `SELECT l.id, l.name FROM contact_group_members cgm
+       JOIN leads l ON l.id = cgm.lead_id AND l.is_deleted = FALSE
+       WHERE cgm.group_id = $1::uuid`,
+      [groupId]
+    );
+    const members = membersRes.rows;
+    if (members.length === 0) { res.status(400).json({ error: 'Contact group has no members' }); return; }
+
+    const estimatedMinutes = Math.ceil((members.length - 1) * intervalMs / 60000);
+    res.json({ queued: members.length, group: grpRes.rows[0].name, interval_ms: intervalMs, estimated_minutes: estimatedMinutes });
+
+    members.forEach((m: any, i: number) => {
+      setTimeout(async () => {
+        try {
+          if (!wf.allow_reentry) {
+            const ex = await query(
+              `SELECT id FROM workflow_executions WHERE workflow_id=$1 AND lead_id=$2 LIMIT 1`,
+              [wf.id, m.id]
+            );
+            if (ex.rows.length > 0) return;
+          }
+
+          const leadRes = await query(
+            `SELECT l.*, ps.name AS stage_name, p.name AS pipeline_name, u.name AS assigned_staff_name
+             FROM leads l
+             LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
+             LEFT JOIN pipelines p ON p.id = l.pipeline_id
+             LEFT JOIN users u ON u.id = l.assigned_to
+             WHERE l.id=$1::uuid AND l.tenant_id=$2::uuid AND l.is_deleted=FALSE`,
+            [m.id, tenantId]
+          );
+          if (!leadRes.rows[0]) return;
+          const enrichedLead = await enrichLead(leadRes.rows[0] as LeadContext);
+
+          const execRes = await query(
+            `INSERT INTO workflow_executions
+               (workflow_id, tenant_id, lead_id, lead_name, trigger_type, status, enrolled_at)
+             VALUES ($1,$2,$3,$4,'broadcast_to_group','running',NOW()) RETURNING id`,
+            [wf.id, tenantId, m.id, enrichedLead.name]
+          );
+          if (!execRes.rows[0]) return;
+          const executionId = execRes.rows[0].id;
+
+          try {
+            const stats = await executeNodes(nodes, enrichedLead, tenantId!, userId!, executionId, wf.id);
+            const execStatus = stats.failed > 0 ? 'completed_with_errors' : 'completed';
+            await query(`UPDATE workflow_executions SET status=$1, completed_at=NOW() WHERE id=$2`, [execStatus, executionId]);
+            await query(
+              `UPDATE workflows SET total_contacts=total_contacts+1, completed=completed+$2, completed_with_errors=completed_with_errors+$3, skipped=skipped+$4, failed=failed+$5, updated_at=NOW() WHERE id=$1`,
+              [wf.id, stats.failed === 0 ? 1 : 0, stats.failed > 0 ? 1 : 0, stats.skipped, stats.failed]
+            ).catch(() => null);
+          } catch (err: any) {
+            await query(
+              `UPDATE workflow_executions SET status='failed', completed_at=NOW(), error=$1 WHERE id=$2`,
+              [err.message ?? 'Unknown', executionId]
+            ).catch(() => null);
+            await query(
+              `UPDATE workflows SET total_contacts=total_contacts+1, failed=failed+1, updated_at=NOW() WHERE id=$1`,
+              [wf.id]
+            ).catch(() => null);
+          }
+        } catch (e: any) {
+          console.error('[broadcast-group] lead', m.id, e.message);
+        }
+      }, i * intervalMs);
+    });
+  } catch (err) {
+    console.error('[broadcast-group]', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ── Inbound webhook trigger (Task #5) ─────────────────────────────────────────
 // POST /api/workflows/trigger/:tenantId (public, no auth)
 

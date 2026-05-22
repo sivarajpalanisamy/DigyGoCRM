@@ -13,7 +13,7 @@ import {
   ListChecks, Code2, CalendarDays, CalendarClock, CalendarRange, ArrowRight,
   UserMinus, UserX, FolderX, PlayCircle, PauseCircle, LogOut, SquareMinus, Users, UserRoundCog,
   RotateCcw, ChevronRight, Copy, Power, Info, ExternalLink, Loader2, TrendingUp, MapPin, RefreshCw,
-  Paperclip, Upload, Eye, Edit2,
+  Paperclip, Upload, Eye, Edit2, Radio,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 import { Button } from '@/components/ui/button';
@@ -105,6 +105,12 @@ const TRIGGER_CATEGORIES: TriggerCategory[] = [
     id: 'lms', label: 'LMS',
     items: [
       { id: 'course_enrolled', label: 'Course Enrolled', Icon: GraduationCap, sourceId: 'lms' },
+    ],
+  },
+  {
+    id: 'broadcast', label: 'Broadcast',
+    items: [
+      { id: 'broadcast_to_group', label: 'Broadcast to Group', Icon: Radio, sourceId: 'broadcast' },
     ],
   },
 ];
@@ -849,6 +855,50 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
           </select>
         </FieldRow>
       )}
+
+      {node.actionType === 'broadcast_to_group' && (<>
+        <FieldRow label="Contact Group" required hint="All members of this group will receive the broadcast.">
+          <select className={selectCls} value={(cfg.group_id as string) ?? ''} onChange={sel('group_id')}>
+            <option value="">Select a group...</option>
+            {(contactGroups ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </FieldRow>
+        {!(cfg.group_id) && (
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-800">
+              <span className="font-semibold">No group selected.</span> Select a contact group before running the broadcast.
+            </p>
+          </div>
+        )}
+        <FieldRow label="Interval between each message" required>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              min={1}
+              max={3600}
+              className="w-20 border border-border rounded-lg px-3 py-2 text-sm bg-card outline-none focus:border-primary/50"
+              value={Number(cfg.interval_value ?? 2)}
+              onChange={(e) => onUpdate({ config: { ...cfg, interval_value: e.target.value } })}
+            />
+            <select
+              className={selectCls}
+              value={(cfg.interval_unit as string) ?? 'minutes'}
+              onChange={sel('interval_unit')}
+            >
+              <option value="seconds">Seconds</option>
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+            </select>
+          </div>
+        </FieldRow>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-xs text-blue-800 font-semibold mb-1">How to use</p>
+          <p className="text-xs text-blue-700">
+            After saving, click <strong>Run Broadcast</strong> in the workflow list to start sending. Messages go out one by one with the interval you set.
+          </p>
+        </div>
+      </>)}
 
       {(!node.actionType || node.actionType === '') && (
         <div className="py-6 text-center text-sm text-muted-foreground">

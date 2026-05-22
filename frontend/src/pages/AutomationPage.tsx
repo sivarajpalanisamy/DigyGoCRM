@@ -6,7 +6,7 @@ import {
   Search, Plus, Zap, MoreVertical, X, CheckCircle2, Clock,
   Users, Activity, Pencil, Copy, Trash2, ChevronRight,
   ToggleRight, ToggleLeft, SkipForward, Loader2, User, TrendingUp,
-  ChevronDown, ChevronUp, Play, RefreshCw, AlertTriangle,
+  ChevronDown, ChevronUp, Play, RefreshCw, AlertTriangle, Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -468,7 +468,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 }
 
 // ── Workflow Row ───────────────────────────────────────────────────────────────
-function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, onToggleMenu, onContactPanel, onAnalytics, onRetry, onRetryErrors, onToggleReentry, selected, onSelect }: {
+function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, onToggleMenu, onContactPanel, onAnalytics, onRetry, onRetryErrors, onToggleReentry, selected, onSelect, onRunBroadcast }: {
   wf: WFRecord; onOpen: () => void; onToggle: () => void; onDuplicate: () => void;
   onDelete: () => void; menuOpen: boolean; onToggleMenu: () => void;
   onContactPanel: (status: SidebarFilter) => void;
@@ -478,16 +478,18 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
   onToggleReentry: () => void;
   selected: boolean;
   onSelect: () => void;
+  onRunBroadcast: () => void;
 }) {
   const canManageAutomation = usePermission('automation:manage');
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
 
   const triggerNode = wf.nodes.find((n) => n.type === 'trigger');
   const triggerDesc = triggerNode?.actionType
-    ? triggerNode.actionType === 'lead_created' ? 'Trigger will fire when a new lead is created'
-    : triggerNode.actionType === 'meta_form'    ? 'Trigger will fire when selected facebook form is submitted'
-    : triggerNode.actionType === 'appointment_booked' ? 'When an appointment is booked automation will trigger'
+    ? triggerNode.actionType === 'lead_created'        ? 'Trigger will fire when a new lead is created'
+    : triggerNode.actionType === 'meta_form'           ? 'Trigger will fire when selected facebook form is submitted'
+    : triggerNode.actionType === 'appointment_booked'  ? 'When an appointment is booked automation will trigger'
     : triggerNode.actionType === 'pipeline_stage_change' ? 'When a contact is added to selected pipeline automation will trigger'
+    : triggerNode.actionType === 'broadcast_to_group'  ? 'Broadcast to group — click Run Broadcast to start sending'
     : triggerNode.label && triggerNode.label !== 'Select Trigger' ? triggerNode.label
     : 'No trigger configured'
     : 'No trigger configured';
@@ -627,6 +629,11 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
               {canManageAutomation && (
                 <button onClick={stop(onDuplicate)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
                   <Copy className="w-3.5 h-3.5 text-[#7a6b5c]" /> Duplicate
+                </button>
+              )}
+              {canManageAutomation && triggerNode?.actionType === 'broadcast_to_group' && (
+                <button onClick={stop(onRunBroadcast)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-emerald-600 hover:bg-emerald-50 transition-colors text-left">
+                  <Send className="w-3.5 h-3.5" /> Run Broadcast
                 </button>
               )}
               {canManageAutomation && (
@@ -811,6 +818,24 @@ export default function AutomationPage() {
     setWorkflows((prev) => prev.map((w) => w.id === wf.id ? { ...w, allowReentry: newVal } : w));
     await api.patch(`/api/workflows/${wf.id}`, { allow_reentry: newVal }).catch(() => null);
     toast.success(newVal ? 'Re-entry enabled' : 'Re-entry disabled');
+  };
+
+  const runBroadcast = async (wf: WFRecord) => {
+    const triggerNode = wf.nodes.find((n) => n.type === 'trigger');
+    if (!triggerNode?.config?.group_id) {
+      toast.error('No contact group configured — edit the workflow trigger first.');
+      return;
+    }
+    try {
+      const result = await api.post<any>(`/api/workflows/${wf.id}/broadcast-group`);
+      const mins = result.estimated_minutes ?? 0;
+      toast.success(
+        `Broadcast started — ${result.queued} messages queued for "${result.group}". ${mins > 0 ? `Est. ${mins} min to complete.` : 'Sending now.'}`
+      );
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to start broadcast');
+    }
+    setOpenMenu(null);
   };
 
   const duplicateWorkflow = async (wf: WFRecord) => {
@@ -1006,6 +1031,7 @@ export default function AutomationPage() {
                 onToggleReentry={() => toggleReentry(wf)}
                 selected={selectedRows.has(wf.id)}
                 onSelect={() => setSelectedRows((prev) => { const n = new Set(prev); n.has(wf.id) ? n.delete(wf.id) : n.add(wf.id); return n; })}
+                onRunBroadcast={() => runBroadcast(wf)}
               />
             ))
           )}
