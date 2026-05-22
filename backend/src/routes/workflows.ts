@@ -2194,13 +2194,37 @@ async function runScheduledBroadcast(wf: any, nodes: WFNode[]): Promise<void> {
   });
 }
 
+// Convert a Date to { date: "YYYY-MM-DD", time: "HH:MM", day: "Monday", dom: N } in a given timezone
+function getTimeParts(d: Date, tz: string) {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+    weekday: 'long',
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(d).map(p => [p.type, p.value]));
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${hour}:${parts.minute}`,
+    day: parts.weekday,
+    dom: parseInt(parts.day, 10),
+  };
+}
+
+// Returns true if the scheduled HH:MM falls within the past 2 minutes of now (handles worker timing drift)
+function withinFireWindow(now: Date, scheduledHhmm: string, scheduledDate: string, tz: string): boolean {
+  for (let offset = 0; offset <= 120; offset += 60) {
+    const t = new Date(now.getTime() - offset * 1000);
+    const p = getTimeParts(t, tz);
+    if (p.date === scheduledDate && p.time === scheduledHhmm) return true;
+  }
+  return false;
+}
+
 export async function processScheduledTriggers(): Promise<void> {
   try {
-    const now   = new Date();
-    const hhmm  = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-    const today = now.toISOString().slice(0, 10);  // "2026-05-01"
-    const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][now.getDay()];
-    const dayOfMonth = now.getDate();
+    const now = new Date();
 
     const wfs = await query(
       `SELECT * FROM workflows WHERE status='active'
@@ -2214,18 +2238,25 @@ export async function processScheduledTriggers(): Promise<void> {
       if (!tn) continue;
       const cfg = tn.config ?? {};
 
+      // Use configured timezone (default IST); compare current time in that zone
+      const tz = (cfg.timezone as string) || 'Asia/Kolkata';
+      const p = getTimeParts(now, tz);
+
       // Check whether this workflow fires right now
       let shouldFire = false;
       if (wf.trigger_key === 'specific_date') {
-        shouldFire = (cfg.date as string) === today && (cfg.time as string) === hhmm;
+        // 2-minute window handles cases where the 60s worker fires slightly after the scheduled minute
+        shouldFire = withinFireWindow(now, cfg.time as string, cfg.date as string, tz);
       } else if (wf.trigger_key === 'weekly_recurring') {
         const days: string[] = Array.isArray(cfg.days) ? cfg.days as string[] : [];
-        shouldFire = days.includes(dayName) && (cfg.time as string) === hhmm;
+        shouldFire = days.includes(p.day) && (cfg.time as string) === p.time;
       } else if (wf.trigger_key === 'monthly_recurring') {
         const dom = parseInt(String(cfg.dayOfMonth ?? '0'));
-        shouldFire = dom === dayOfMonth && (cfg.time as string) === hhmm;
+        shouldFire = dom === p.dom && (cfg.time as string) === p.time;
       }
       if (!shouldFire) continue;
+
+      console.log(`[Scheduler] "${wf.name}" firing at ${p.time} ${tz} (UTC: ${now.toISOString()})`);
 
       // If workflow has a broadcast_group action, fan out to group members instead of all leads
       const hasBroadcastAction = nodes.some((n: WFNode) => n.actionType === 'broadcast_group');
