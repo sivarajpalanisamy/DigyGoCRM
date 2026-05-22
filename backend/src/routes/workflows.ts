@@ -2173,6 +2173,14 @@ async function runScheduledBroadcast(wf: any, nodes: WFNode[]): Promise<void> {
         if (!execRes.rows[0]) return;
         const executionId = execRes.rows[0].id;
 
+        // Log the broadcast_group node itself as completed (orchestrator step)
+        await query(
+          `INSERT INTO workflow_execution_logs
+             (execution_id, workflow_id, tenant_id, node_id, action_type, status, message)
+           VALUES ($1,$2,$3,$4,'broadcast_group','completed','Broadcast dispatched — sending to group member')`,
+          [executionId, wf.id, wf.tenant_id, broadcastNode.id ?? 'broadcast_group']
+        ).catch(() => null);
+
         try {
           const stats = afterNodes.length > 0
             ? await executeNodes(afterNodes, enrichedLead, wf.tenant_id, 'scheduler', executionId, wf.id)
