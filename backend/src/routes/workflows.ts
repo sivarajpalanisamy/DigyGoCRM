@@ -2147,11 +2147,56 @@ async function runScheduledBroadcast(wf: any, nodes: WFNode[]): Promise<void> {
     [groupId]
   );
   const members = membersRes.rows;
-  console.log(`[Scheduler] broadcast_group "${wf.name}" → ${members.length} leads, interval=${intervalValue} ${intervalUnit}`);
+  console.log(`[Scheduler] broadcast_group "${wf.name}" → ${members.length} leads queued, interval=${intervalValue} ${intervalUnit}`);
 
-  members.forEach((m: any, i: number) => {
-    setTimeout(async () => {
+  const now = Date.now();
+  for (let i = 0; i < members.length; i++) {
+    const sendAt = new Date(now + i * intervalMs);
+    await query(
+      `INSERT INTO broadcast_queue
+         (workflow_id, tenant_id, lead_id, broadcast_node_id, nodes, trigger_type, allow_reentry, send_at)
+       VALUES ($1,$2,$3,$4,$5,'broadcast_group',$6,$7)`,
+      [wf.id, wf.tenant_id, members[i].id, broadcastNode.id ?? 'broadcast_group',
+       JSON.stringify(afterNodes), wf.allow_reentry ?? false, sendAt]
+    ).catch((e: any) => console.error('[Broadcast] queue insert failed:', e.message));
+  }
+}
+
+// ── Broadcast queue worker ─────────────────────────────────────────────────────
+// Runs every 30s. Picks up to 10 rows where send_at <= NOW() and processes them.
+// Using FOR UPDATE SKIP LOCKED so cluster-mode PM2 processes don't double-send.
+export async function processBroadcastQueue(): Promise<void> {
+  try {
+    const res = await query(
+      `UPDATE broadcast_queue SET status='processing'
+       WHERE id IN (
+         SELECT id FROM broadcast_queue
+         WHERE status='pending' AND send_at <= NOW()
+         ORDER BY send_at
+         LIMIT 10
+         FOR UPDATE SKIP LOCKED
+       )
+       RETURNING *`,
+      []
+    ).catch(() => ({ rows: [] as any[] }));
+
+    for (const row of res.rows) {
       try {
+        const nodes: WFNode[] = Array.isArray(row.nodes) ? row.nodes : JSON.parse(row.nodes ?? '[]');
+        const triggerType     = (row.trigger_type as string) ?? 'broadcast_group';
+
+        // Respect allow_reentry
+        if (!row.allow_reentry) {
+          const ex = await query(
+            `SELECT id FROM workflow_executions WHERE workflow_id=$1 AND lead_id=$2 LIMIT 1`,
+            [row.workflow_id, row.lead_id]
+          );
+          if (ex.rows.length > 0) {
+            await query(`UPDATE broadcast_queue SET status='skipped', processed_at=NOW() WHERE id=$1`, [row.id]);
+            continue;
+          }
+        }
+
         const leadRes = await query(
           `SELECT l.*, ps.name AS stage_name, p.name AS pipeline_name, u.name AS assigned_staff_name
            FROM leads l
@@ -2159,47 +2204,60 @@ async function runScheduledBroadcast(wf: any, nodes: WFNode[]): Promise<void> {
            LEFT JOIN pipelines p ON p.id = l.pipeline_id
            LEFT JOIN users u ON u.id = l.assigned_to
            WHERE l.id=$1::uuid AND l.tenant_id=$2::uuid AND l.is_deleted=FALSE`,
-          [m.id, wf.tenant_id]
+          [row.lead_id, row.tenant_id]
         );
-        if (!leadRes.rows[0]) return;
+        if (!leadRes.rows[0]) {
+          await query(`UPDATE broadcast_queue SET status='skipped', error='Lead not found or deleted', processed_at=NOW() WHERE id=$1`, [row.id]);
+          continue;
+        }
         const enrichedLead = await enrichLead(leadRes.rows[0] as LeadContext);
 
         const execRes = await query(
           `INSERT INTO workflow_executions
              (workflow_id, tenant_id, lead_id, lead_name, trigger_type, status, enrolled_at)
-           VALUES ($1,$2,$3,$4,'broadcast_group','running',NOW()) RETURNING id`,
-          [wf.id, wf.tenant_id, m.id, enrichedLead.name]
+           VALUES ($1,$2,$3,$4,$5,'running',NOW()) RETURNING id`,
+          [row.workflow_id, row.tenant_id, row.lead_id, enrichedLead.name, triggerType]
         );
-        if (!execRes.rows[0]) return;
+        if (!execRes.rows[0]) {
+          await query(`UPDATE broadcast_queue SET status='failed', error='Failed to create execution', processed_at=NOW() WHERE id=$1`, [row.id]);
+          continue;
+        }
         const executionId = execRes.rows[0].id;
 
-        // Log the broadcast_group node itself as completed (orchestrator step)
-        await query(
-          `INSERT INTO workflow_execution_logs
-             (execution_id, workflow_id, tenant_id, node_id, action_type, status, message)
-           VALUES ($1,$2,$3,$4,'broadcast_group','completed','Broadcast dispatched — sending to group member')`,
-          [executionId, wf.id, wf.tenant_id, broadcastNode.id ?? 'broadcast_group']
-        ).catch(() => null);
+        // For broadcast_group action path: log the orchestrator node as completed
+        if (row.broadcast_node_id) {
+          await query(
+            `INSERT INTO workflow_execution_logs
+               (execution_id, workflow_id, tenant_id, node_id, action_type, status, message)
+             VALUES ($1,$2,$3,$4,'broadcast_group','completed','Broadcast dispatched — sending to group member')`,
+            [executionId, row.workflow_id, row.tenant_id, row.broadcast_node_id]
+          ).catch(() => null);
+        }
 
         try {
-          const stats = afterNodes.length > 0
-            ? await executeNodes(afterNodes, enrichedLead, wf.tenant_id, 'scheduler', executionId, wf.id)
+          const stats = nodes.length > 0
+            ? await executeNodes(nodes, enrichedLead, row.tenant_id, 'scheduler', executionId, row.workflow_id)
             : { skipped: 0, failed: 0 };
           const execStatus = stats.failed > 0 ? 'completed_with_errors' : 'completed';
           await query(`UPDATE workflow_executions SET status=$1, completed_at=NOW() WHERE id=$2`, [execStatus, executionId]);
           await query(
             `UPDATE workflows SET total_contacts=total_contacts+1, completed=completed+$2, completed_with_errors=completed_with_errors+$3, skipped=skipped+$4, failed=failed+$5, updated_at=NOW() WHERE id=$1`,
-            [wf.id, stats.failed === 0 ? 1 : 0, stats.failed > 0 ? 1 : 0, stats.skipped, stats.failed]
+            [row.workflow_id, stats.failed === 0 ? 1 : 0, stats.failed > 0 ? 1 : 0, stats.skipped, stats.failed]
           ).catch(() => null);
+          await query(`UPDATE broadcast_queue SET status='completed', processed_at=NOW() WHERE id=$1`, [row.id]);
         } catch (err: any) {
           await query(`UPDATE workflow_executions SET status='failed', completed_at=NOW(), error=$1 WHERE id=$2`, [err.message ?? 'Unknown', executionId]).catch(() => null);
-          await query(`UPDATE workflows SET total_contacts=total_contacts+1, failed=failed+1, updated_at=NOW() WHERE id=$1`, [wf.id]).catch(() => null);
+          await query(`UPDATE workflows SET total_contacts=total_contacts+1, failed=failed+1, updated_at=NOW() WHERE id=$1`, [row.workflow_id]).catch(() => null);
+          await query(`UPDATE broadcast_queue SET status='failed', error=$1, processed_at=NOW() WHERE id=$2`, [err.message ?? 'Unknown', row.id]).catch(() => null);
         }
       } catch (e: any) {
-        console.error('[Scheduler] broadcast_group lead', m.id, e.message);
+        console.error('[BroadcastQueue] error processing row', row.id, e.message);
+        await query(`UPDATE broadcast_queue SET status='failed', error=$1, processed_at=NOW() WHERE id=$2`, [e.message, row.id]).catch(() => null);
       }
-    }, i * intervalMs);
-  });
+    }
+  } catch (err) {
+    console.error('[BroadcastQueue] worker error:', err);
+  }
 }
 
 // Convert a Date to { date: "YYYY-MM-DD", time: "HH:MM", day: "Monday", dom: N } in a given timezone
@@ -2712,61 +2770,16 @@ router.post('/:id/broadcast-group', checkPermission('automation:manage'), async 
     const estimatedMinutes = Math.ceil((members.length - 1) * intervalMs / 60000);
     res.json({ queued: members.length, group: grpRes.rows[0].name, interval_ms: intervalMs, estimated_minutes: estimatedMinutes });
 
-    members.forEach((m: any, i: number) => {
-      setTimeout(async () => {
-        try {
-          if (!wf.allow_reentry) {
-            const ex = await query(
-              `SELECT id FROM workflow_executions WHERE workflow_id=$1 AND lead_id=$2 LIMIT 1`,
-              [wf.id, m.id]
-            );
-            if (ex.rows.length > 0) return;
-          }
-
-          const leadRes = await query(
-            `SELECT l.*, ps.name AS stage_name, p.name AS pipeline_name, u.name AS assigned_staff_name
-             FROM leads l
-             LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
-             LEFT JOIN pipelines p ON p.id = l.pipeline_id
-             LEFT JOIN users u ON u.id = l.assigned_to
-             WHERE l.id=$1::uuid AND l.tenant_id=$2::uuid AND l.is_deleted=FALSE`,
-            [m.id, tenantId]
-          );
-          if (!leadRes.rows[0]) return;
-          const enrichedLead = await enrichLead(leadRes.rows[0] as LeadContext);
-
-          const execRes = await query(
-            `INSERT INTO workflow_executions
-               (workflow_id, tenant_id, lead_id, lead_name, trigger_type, status, enrolled_at)
-             VALUES ($1,$2,$3,$4,'broadcast_to_group','running',NOW()) RETURNING id`,
-            [wf.id, tenantId, m.id, enrichedLead.name]
-          );
-          if (!execRes.rows[0]) return;
-          const executionId = execRes.rows[0].id;
-
-          try {
-            const stats = await executeNodes(nodes, enrichedLead, tenantId!, userId!, executionId, wf.id);
-            const execStatus = stats.failed > 0 ? 'completed_with_errors' : 'completed';
-            await query(`UPDATE workflow_executions SET status=$1, completed_at=NOW() WHERE id=$2`, [execStatus, executionId]);
-            await query(
-              `UPDATE workflows SET total_contacts=total_contacts+1, completed=completed+$2, completed_with_errors=completed_with_errors+$3, skipped=skipped+$4, failed=failed+$5, updated_at=NOW() WHERE id=$1`,
-              [wf.id, stats.failed === 0 ? 1 : 0, stats.failed > 0 ? 1 : 0, stats.skipped, stats.failed]
-            ).catch(() => null);
-          } catch (err: any) {
-            await query(
-              `UPDATE workflow_executions SET status='failed', completed_at=NOW(), error=$1 WHERE id=$2`,
-              [err.message ?? 'Unknown', executionId]
-            ).catch(() => null);
-            await query(
-              `UPDATE workflows SET total_contacts=total_contacts+1, failed=failed+1, updated_at=NOW() WHERE id=$1`,
-              [wf.id]
-            ).catch(() => null);
-          }
-        } catch (e: any) {
-          console.error('[broadcast-group] lead', m.id, e.message);
-        }
-      }, i * intervalMs);
-    });
+    const now = Date.now();
+    for (let i = 0; i < members.length; i++) {
+      const sendAt = new Date(now + i * intervalMs);
+      await query(
+        `INSERT INTO broadcast_queue
+           (workflow_id, tenant_id, lead_id, nodes, trigger_type, allow_reentry, send_at)
+         VALUES ($1,$2,$3,$4,'broadcast_to_group',$5,$6)`,
+        [wf.id, tenantId, members[i].id, JSON.stringify(nodes), wf.allow_reentry ?? false, sendAt]
+      ).catch((e: any) => console.error('[broadcast-group] queue insert failed:', e.message));
+    }
   } catch (err) {
     console.error('[broadcast-group]', err);
     if (!res.headersSent) res.status(500).json({ error: 'Server error' });

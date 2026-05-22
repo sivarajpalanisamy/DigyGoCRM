@@ -17,7 +17,7 @@ import calendarRoutes     from './routes/calendar';
 import formsRoutes        from './routes/forms';
 import settingsRoutes     from './routes/settings';
 import pipelinesRoutes    from './routes/pipelines';
-import workflowsRoutes, { processDelayedSteps, processScheduledTriggers, publicWorkflowRouter } from './routes/workflows';
+import workflowsRoutes, { processDelayedSteps, processScheduledTriggers, processBroadcastQueue, publicWorkflowRouter } from './routes/workflows';
 import tagsRoutes         from './routes/tags';
 import opportunitiesRoutes from './routes/opportunities';
 import templatesRoutes    from './routes/templates';
@@ -193,6 +193,9 @@ runMigrations()
     // ── Delay queue worker: runs every 30 seconds ─────────────────────────────
     setInterval(() => processDelayedSteps().catch(() => null), 30_000);
     console.log('⏱️   Delay queue worker started (30s interval)');
+
+    setInterval(() => processBroadcastQueue().catch(() => null), 30_000);
+    console.log('📡  Broadcast queue worker started (30s interval)');
 
     setInterval(() => pollMetaLeads().catch(() => null), 5 * 60_000);
     console.log('📘  Meta leads poll worker started (5min interval)');
