@@ -40,6 +40,8 @@ import leadGenerationRoutes   from './routes/leadGeneration';
 import reportsRoutes          from './routes/reports';
 import contactGroupsRoutes    from './routes/contact_groups';
 import waPersonalTemplatesRoutes from './routes/wa_personal_templates';
+import callsRoutes from './routes/calls';
+import { processRecordingDownloads } from './utils/recordingDownloader';
 
 const app        = express();
 const httpServer = createServer(app);
@@ -179,6 +181,7 @@ app.use('/api/reports',           reportsRoutes);
 app.use('/api/contact-groups',    contactGroupsRoutes);
 app.use('/api/whatsapp-personal', waPersonalRoutes);
 app.use('/api/wa-personal-templates', waPersonalTemplatesRoutes);
+app.use('/api/calls',             callsRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
@@ -205,6 +208,9 @@ runMigrations()
 
     setInterval(() => processFollowUpReminders().catch(() => null), 5 * 60_000);
     console.log('🔔  Follow-up reminder worker started (5min interval)');
+
+    setInterval(() => processRecordingDownloads().catch(() => null), 10 * 60_000);
+    console.log('🎙️   Recording download worker started (10min interval)');
 
     restoreAllSessions().catch(() => null);
     console.log('📱  WhatsApp Personal session restore initiated');
