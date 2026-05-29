@@ -5,7 +5,7 @@ import { decrypt } from '../utils/crypto';
 import { parseMetaFieldData } from '../utils/meta';
 import { upsertContact } from '../utils/contacts';
 import { emitToTenant } from '../socket';
-import { sendNewLeadNotification } from '../utils/notifications';
+import { sendNewLeadNotification, sendCallLoggedNotification } from '../utils/notifications';
 import crypto from 'crypto';
 import https from 'https';
 
@@ -385,15 +385,17 @@ router.post('/superfone/:tenantId', async (req: Request, res: Response) => {
 
     // Match caller phone to a lead
     let leadId: string | null = null;
+    let leadName: string | null = null;
     let isUnknown = false;
     if (cdr_phone) {
       const leadMatch = await query(
-        `SELECT id FROM leads WHERE tenant_id=$1::uuid AND phone=$2 AND is_deleted=FALSE
+        `SELECT id, name FROM leads WHERE tenant_id=$1::uuid AND phone=$2 AND is_deleted=FALSE
          ORDER BY created_at DESC LIMIT 1`,
         [tenantId, cdr_phone]
       );
       if (leadMatch.rows[0]) {
         leadId = leadMatch.rows[0].id;
+        leadName = leadMatch.rows[0].name ?? null;
       } else {
         isUnknown = true;
       }
@@ -445,6 +447,20 @@ router.post('/superfone/:tenantId', async (req: Request, res: Response) => {
       staffName,
       startedAt: cdr_start,
     });
+
+    // In-app notification to staff + owner/managers
+    sendCallLoggedNotification(tenantId, {
+      id: callLogId,
+      leadId,
+      leadName,
+      isUnknown,
+      direction: (cdr_call_type ?? 'INBOUND').toUpperCase(),
+      outcome: (cdr_disposition ?? 'UNKNOWN').toUpperCase(),
+      callerPhone: cdr_phone ?? null,
+      duration: cdr_duration ?? null,
+      staffName,
+      staffUserId,
+    }).catch(() => null);
 
   } catch (err: any) {
     console.error('[superfone webhook]', err.message);

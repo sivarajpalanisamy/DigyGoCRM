@@ -13,6 +13,7 @@ import { parseMetaFieldData } from '../utils/meta';
 import https from 'https';
 import { emitToTenant } from '../socket';
 import { sendNewLeadNotification, sendLeadAssignedNotification, sendBulkImportNotification } from '../utils/notifications';
+import { pushLeadToSuperfone } from '../utils/superfone';
 import * as XLSX from 'xlsx';
 
 const router = Router();
@@ -448,6 +449,7 @@ router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(
       sendNewLeadNotification(tenantId!, lead, userId).catch((err) =>
         console.error('Failed to create lead notifications:', err)
       );
+      pushLeadToSuperfone(tenantId!, lead).catch(() => null);
     });
   } catch (err) {
     console.error(err);

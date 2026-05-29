@@ -206,6 +206,102 @@ export async function sendBulkImportNotification(
 }
 
 /**
+ * Notify staff + owner/managers when a Superfone call is logged.
+ * For missed calls, also notifies the lead's assigned staff member.
+ */
+export async function sendCallLoggedNotification(
+  tenantId: string,
+  callLog: {
+    id: string;
+    leadId: string | null;
+    leadName: string | null;
+    isUnknown: boolean;
+    direction: string;
+    outcome: string;
+    callerPhone: string | null;
+    duration: number | null;
+    staffName: string | null;
+    staffUserId: string | null;
+  }
+): Promise<void> {
+  const isMissed = callLog.outcome !== 'ANSWERED';
+  const recipientSet = new Set<string>();
+
+  // Always notify the staff member who handled the call
+  if (callLog.staffUserId) recipientSet.add(callLog.staffUserId);
+
+  // For missed calls: also notify owner + managers + lead's assigned staff
+  if (isMissed) {
+    const ownerRow = await query(
+      `SELECT id FROM users WHERE tenant_id=$1::uuid AND is_owner=TRUE AND is_active=TRUE LIMIT 1`,
+      [tenantId]
+    );
+    if (ownerRow.rows[0]) recipientSet.add(ownerRow.rows[0].id);
+
+    const managers = await query(
+      `SELECT u.id FROM users u
+       LEFT JOIN user_permissions up ON up.user_id = u.id
+       WHERE u.tenant_id=$1::uuid AND u.is_active=TRUE AND u.is_owner IS NOT TRUE
+         AND (up.permissions->>'staff:manage')::boolean = TRUE`,
+      [tenantId]
+    );
+    for (const row of managers.rows) recipientSet.add(row.id);
+
+    if (callLog.leadId) {
+      const assignedRow = await query(
+        `SELECT assigned_to FROM leads WHERE id=$1::uuid AND is_deleted=FALSE`,
+        [callLog.leadId]
+      );
+      if (assignedRow.rows[0]?.assigned_to) recipientSet.add(assignedRow.rows[0].assigned_to);
+    }
+  }
+
+  if (recipientSet.size === 0) return;
+
+  const type = isMissed ? 'call_missed' : 'call_received';
+  const display = callLog.leadName ?? callLog.callerPhone ?? 'Unknown';
+  const durationStr = callLog.duration
+    ? ` (${Math.floor(callLog.duration / 60)}m ${callLog.duration % 60}s)`
+    : '';
+  const dirLabel = callLog.direction === 'INBOUND' ? 'Inbound' : 'Outbound';
+
+  const title = isMissed
+    ? `Missed call from ${display}`
+    : `${dirLabel} call: ${display} — Answered${durationStr}`;
+  const message = callLog.staffName ? `Handled by ${callLog.staffName}` : 'No agent assigned';
+
+  const allIds = [...recipientSet];
+  const prefsMap = await batchGetPrefs(allIds);
+  const filteredIds = allIds.filter((id) => prefAllows(prefsMap.get(id), type));
+  if (filteredIds.length === 0) return;
+
+  for (const uid of filteredIds) {
+    const nRes = callLog.leadId
+      ? await query(
+          `INSERT INTO notifications (tenant_id, user_id, title, message, type, lead_id)
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::uuid) RETURNING id, created_at`,
+          [tenantId, uid, title, message, type, callLog.leadId]
+        )
+      : await query(
+          `INSERT INTO notifications (tenant_id, user_id, title, message, type)
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5) RETURNING id, created_at`,
+          [tenantId, uid, title, message, type]
+        );
+    if (nRes.rows[0]) {
+      emitToUser(uid, 'notification:new', {
+        id:         nRes.rows[0].id,
+        type,
+        title,
+        message,
+        lead_id:    callLog.leadId ?? undefined,
+        is_read:    false,
+        created_at: nRes.rows[0].created_at,
+      });
+    }
+  }
+}
+
+/**
  * Runs every 5 minutes. Finds follow-ups due within the next 30 minutes
  * that haven't had a reminder sent yet, sends an in-app notification to
  * the assigned staff member, and marks reminder_sent = TRUE.
