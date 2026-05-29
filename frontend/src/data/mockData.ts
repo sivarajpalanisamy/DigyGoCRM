@@ -33,6 +33,7 @@ export interface StaffMember {
   leadsAssigned: number;
   lastActive: string;
   avatar: string;
+  phone?: string;
 }
 
 export interface Conversation {

@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
+import { checkPermission, hasPermission } from '../middleware/permissions';
 import { RECORDINGS_DIR } from '../utils/recordingDownloader';
 
 const router = Router();
@@ -10,12 +11,24 @@ router.use(requireAuth);
 router.use(requireTenant);
 
 // GET /api/calls — all calls for tenant with filters + pagination
-router.get('/', async (req: AuthRequest, res: Response) => {
-  const { tenantId } = req.user!;
+router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
   const { direction, outcome, staff_name, date_from, date_to, page = '1', limit = '50' } = req.query as Record<string, string>;
+
+  // Scope: owner/super_admin and calls:view_all → see all; calls:view_own only → own calls
+  const isSuper = role === 'super_admin';
+  let viewAll = false;
+  if (isSuper) {
+    viewAll = true;
+  } else {
+    const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+    viewAll = isOwner || await hasPermission(userId, 'calls:view_all', tenantId);
+  }
 
   const params: any[] = [tenantId];
   const conditions: string[] = ['cl.tenant_id=$1::uuid'];
+
+  if (!viewAll) { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
 
   if (direction)  { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
   if (outcome)    { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
@@ -48,12 +61,23 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/calls/export — Excel export
-router.get('/export', async (req: AuthRequest, res: Response) => {
-  const { tenantId } = req.user!;
+router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
   const { direction, outcome, staff_name, date_from, date_to } = req.query as Record<string, string>;
+
+  const isSuper = role === 'super_admin';
+  let viewAll = false;
+  if (isSuper) {
+    viewAll = true;
+  } else {
+    const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+    viewAll = isOwner || await hasPermission(userId, 'calls:view_all', tenantId);
+  }
 
   const params: any[] = [tenantId];
   const conditions: string[] = ['cl.tenant_id=$1::uuid'];
+
+  if (!viewAll) { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
 
   if (direction)  { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
   if (outcome)    { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }

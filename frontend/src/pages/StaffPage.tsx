@@ -90,6 +90,14 @@ const PERM_GROUPS: PermGroup[] = [
   },
   {
     type: 'flat',
+    label: 'Calls',
+    items: [
+      { key: 'calls:view_own', label: 'View Own Calls' },
+      { key: 'calls:view_all', label: 'View All Calls' },
+    ],
+  },
+  {
+    type: 'flat',
     label: 'Administration',
     items: [
       { key: 'fields:view',        label: 'View Fields' },
@@ -127,6 +135,7 @@ const CUSTOM_DEFAULTS = new Set([
   'contacts:read', 'contact_groups:read',
   'automation:view', 'automation_templates:read',
   'inbox:view_all', 'inbox:send',
+  'calls:view_own',
   'fields:view', 'staff:view',
 ]);
 
@@ -147,7 +156,7 @@ const buildDefaultPerms = (full_access: boolean): Record<string, boolean> => {
 interface StaffModalProps {
   initial?: StaffMember | null;
   onClose: () => void;
-  onSave: (data: { name: string; email: string; full_access: boolean; password?: string }) => void;
+  onSave: (data: { name: string; email: string; full_access: boolean; password?: string; phone?: string }) => void;
 }
 
 const COUNTRY_CODES = [
@@ -164,7 +173,7 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
   const [lastName,   setLastName]   = useState(initial ? initial.name.split(' ').slice(1).join(' ') : '');
   const [email,      setEmail]      = useState(initial?.email ?? '');
   const [fullAccess, setFullAccess] = useState(true);
-  const [phone,      setPhone]      = useState('');
+  const [phone,      setPhone]      = useState(initial?.phone ?? '');
   const [password,   setPassword]   = useState('');
   const [countryCode, setCountryCode] = useState(COUNTRY_CODES[0]);
   const [showCountryDrop, setShowCountryDrop] = useState(false);
@@ -186,11 +195,13 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length) return;
+    const fullPhone = phone.trim() ? `${countryCode.code}${phone.trim()}` : undefined;
     onSave({
       name: `${firstName.trim()} ${lastName.trim()}`,
       email: email.trim(),
       full_access: fullAccess,
       ...(password.trim() ? { password: password.trim() } : {}),
+      ...(fullPhone ? { phone: fullPhone } : {}),
     });
   };
 
@@ -764,10 +775,11 @@ export default function StaffPage() {
     }));
   }, [staff]);
 
-  const handleInvite = async (data: { name: string; email: string; full_access: boolean; password?: string }) => {
+  const handleInvite = async (data: { name: string; email: string; full_access: boolean; password?: string; phone?: string }) => {
     try {
       const res = await api.post<{ id: string; name: string; email: string; role: string }>('/api/settings/staff', {
         name: data.name, email: data.email, full_access: data.full_access, password: data.password,
+        ...(data.phone ? { phone: data.phone } : {}),
       });
       const initials = data.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
       const newMember: StaffMember = {
@@ -784,14 +796,15 @@ export default function StaffPage() {
     }
   };
 
-  const handleEdit = async (data: { name: string; email: string; full_access: boolean; password?: string }) => {
+  const handleEdit = async (data: { name: string; email: string; full_access: boolean; password?: string; phone?: string }) => {
     if (!editMember) return;
     const initials = data.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
-    const updates = { name: data.name, email: data.email, avatar: initials };
+    const updates = { name: data.name, email: data.email, avatar: initials, phone: data.phone };
     try {
       await api.patch(`/api/settings/staff/${editMember.id}`, {
         name: data.name, email: data.email,
         ...(data.password ? { password: data.password } : {}),
+        phone: data.phone ?? '',
       });
       setStaff((prev) => prev.map((m) => m.id === editMember.id ? { ...m, ...updates } : m));
       updateStaff(editMember.id, updates);
