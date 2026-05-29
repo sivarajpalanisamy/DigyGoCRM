@@ -9,6 +9,24 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireTenant);
 
+// GET /api/calls/lead/:leadId — all call logs for a lead
+router.get('/lead/:leadId', async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { leadId } = req.params;
+  try {
+    const result = await query(
+      `SELECT id, cdr_id, direction, outcome, caller_phone, superfone_number,
+              duration_seconds, started_at, ended_at, staff_name,
+              recording_url, recording_path, recording_downloaded, is_unknown, created_at
+       FROM call_logs
+       WHERE tenant_id=$1::uuid AND lead_id=$2::uuid
+       ORDER BY COALESCE(started_at, created_at) DESC`,
+      [tenantId, leadId],
+    );
+    res.json(result.rows);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 // GET /api/calls/:callId/recording — stream audio (supports Range for seeking)
 router.get('/:callId/recording', async (req: AuthRequest, res: Response) => {
   const { tenantId } = req.user!;

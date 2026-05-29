@@ -67,6 +67,15 @@ export const api = {
   delete: <T>(path: string)                  => request<T>(path, { method: 'DELETE' }),
 };
 
+export async function fetchBlob(path: string): Promise<Blob> {
+  const res = await fetch(`${BASE}${path}`, {
+    credentials: 'include',
+    headers: _accessToken ? { Authorization: `Bearer ${_accessToken}` } : {},
+  });
+  if (!res.ok) throw new Error('Failed to fetch audio');
+  return res.blob();
+}
+
 export async function downloadBlob(path: string, filename: string): Promise<void> {
   const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
