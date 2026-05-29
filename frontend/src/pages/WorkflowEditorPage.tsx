@@ -13,7 +13,7 @@ import {
   ListChecks, Code2, CalendarDays, CalendarClock, CalendarRange, ArrowRight,
   UserMinus, UserX, FolderX, PlayCircle, PauseCircle, LogOut, SquareMinus, Users, UserRoundCog,
   RotateCcw, ChevronRight, Copy, Power, Info, ExternalLink, Loader2, TrendingUp, MapPin, RefreshCw,
-  Paperclip, Upload, Eye, Edit2, Radio,
+  Paperclip, Upload, Eye, Edit2, Radio, PhoneCall, PhoneMissed,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 import { Button } from '@/components/ui/button';
@@ -111,6 +111,13 @@ const TRIGGER_CATEGORIES: TriggerCategory[] = [
     id: 'broadcast', label: 'Broadcast',
     items: [
       { id: 'broadcast_to_group', label: 'Broadcast to Group', Icon: Radio, sourceId: 'broadcast' },
+    ],
+  },
+  {
+    id: 'calls', label: 'Calls',
+    items: [
+      { id: 'call_answered', label: 'Call Answered', Icon: PhoneCall, sourceId: 'calls' },
+      { id: 'call_missed',   label: 'Call Missed',   Icon: PhoneMissed, sourceId: 'calls' },
     ],
   },
 ];
@@ -854,6 +861,17 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
           <select className={selectCls} value={(cfg.group_id as string) ?? ''} onChange={sel('group_id')}>
             <option value="">Any group</option>
             {(contactGroups ?? []).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </FieldRow>
+      )}
+
+      {/* Calls triggers */}
+      {(node.actionType === 'call_answered' || node.actionType === 'call_missed') && (
+        <FieldRow label="Direction" hint="Leave blank to fire for any call direction.">
+          <select className={selectCls} value={(cfg.direction as string) ?? ''} onChange={sel('direction')}>
+            <option value="">Any direction</option>
+            <option value="INBOUND">Inbound</option>
+            <option value="OUTBOUND">Outbound</option>
           </select>
         </FieldRow>
       )}

@@ -1881,6 +1881,7 @@ export interface TriggerContext {
   apptType?:     string;   // for appointment_* triggers (event type name)
   calendarId?:   string;   // for calendar_form_submitted (booking_link.id)
   group_id?:     string;   // for contact_group_added trigger
+  callDirection?: string;  // for call_answered / call_missed (INBOUND|OUTBOUND)
 }
 
 export async function triggerWorkflows(
@@ -1991,6 +1992,11 @@ export async function triggerWorkflows(
         const cfgKeyword = (triggerNode.config?.keyword  as string) ?? '';
         if (cfgChannel && cfgChannel !== (ctx.channel ?? '')) continue;
         if (cfgKeyword && !(ctx.messageBody ?? '').toLowerCase().includes(cfgKeyword.toLowerCase())) continue;
+      }
+
+      if (triggerType === 'call_answered' || triggerType === 'call_missed') {
+        const cfgDirection = (triggerNode.config?.direction as string) ?? '';
+        if (cfgDirection && cfgDirection !== (ctx.callDirection ?? '')) continue;
       }
 
       // Calendar form submitted — must select at least one booking link; blank = don't fire

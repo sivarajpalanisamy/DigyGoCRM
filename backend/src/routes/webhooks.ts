@@ -462,6 +462,24 @@ router.post('/superfone/:tenantId', async (req: Request, res: Response) => {
       staffUserId,
     }).catch(() => null);
 
+    // Fire automation triggers for matched leads (skip unknown callers — no lead to attach)
+    if (!isUnknown && leadId) {
+      const outcome = (cdr_disposition ?? 'UNKNOWN').toUpperCase();
+      const triggerKey = outcome === 'ANSWERED' ? 'call_answered'
+                       : outcome === 'MISSED'   ? 'call_missed'
+                       : null;
+      if (triggerKey) {
+        const callDirection = (cdr_call_type ?? 'INBOUND').toUpperCase();
+        setImmediate(() => triggerWorkflows(
+          triggerKey,
+          { id: leadId, name: leadName ?? '' },
+          tenantId,
+          staffUserId ?? 'webhook',
+          { triggerContext: { callDirection } }
+        ).catch(() => null));
+      }
+    }
+
   } catch (err: any) {
     console.error('[superfone webhook]', err.message);
   }
