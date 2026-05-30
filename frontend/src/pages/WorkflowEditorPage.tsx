@@ -1322,14 +1322,22 @@ function TagChipInput({ tags, onChange, placeholder }: {
   );
 }
 
-// ── Assign Staff Panel (multi-select tags + split traffic) ────────────────────
+// ── Assign Staff Panel (multi-select tags + split traffic + by-pipeline mode) ──
 function AssignStaffPanel({ cfg, staff, onUpdate }: {
   cfg: Record<string, unknown>;
   staff: StaffOpt[];
   onUpdate: (updates: Partial<WFNode>) => void;
 }) {
+  const { pipelines } = useCrmStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const assignMode = (cfg.assign_mode as string) ?? 'specific';
+  const mapping: Array<{ pipeline_id: string; staff_id: string }> =
+    Array.isArray(cfg.pipeline_staff_mapping)
+      ? (cfg.pipeline_staff_mapping as Array<{ pipeline_id: string; staff_id: string }>)
+      : [];
+
   const selectedIds: string[] = Array.isArray(cfg.staff_ids) ? (cfg.staff_ids as string[]) : [];
   const selectedStaff = selectedIds.map((id) => staff.find((s) => s.id === id)).filter(Boolean) as StaffOpt[];
   const unselected = staff.filter((s) => !selectedIds.includes(s.id));
@@ -1385,9 +1393,50 @@ function AssignStaffPanel({ cfg, staff, onUpdate }: {
   const totalWeight = selectedIds.reduce((sum, id) => sum + (weights[id] ?? 0), 0);
   const weightValid = totalWeight === 100;
 
+  const updateMapping = (i: number, field: 'pipeline_id' | 'staff_id', val: string) => {
+    const newMapping = mapping.map((m, idx) => idx === i ? { ...m, [field]: val } : m);
+    onUpdate({ config: { ...cfg, pipeline_staff_mapping: newMapping } });
+  };
+  const addMappingRow = () => onUpdate({ config: { ...cfg, pipeline_staff_mapping: [...mapping, { pipeline_id: '', staff_id: '' }] } });
+  const removeMappingRow = (i: number) => onUpdate({ config: { ...cfg, pipeline_staff_mapping: mapping.filter((_, idx) => idx !== i) } });
+
   return (
     <div className="space-y-4">
-      {/* Select Staff */}
+      {/* Mode toggle */}
+      <div>
+        <label className="block text-[13px] font-semibold text-[#1c1410] mb-1.5">Assignment Mode</label>
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-[12px] font-semibold">
+          <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'specific' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'specific' } })}>Specific Staff</button>
+          <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'by_pipeline' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'by_pipeline' } })}>By Pipeline</button>
+        </div>
+      </div>
+
+      {assignMode === 'by_pipeline' ? (
+        <div className="space-y-2">
+          <label className="block text-[13px] font-semibold text-[#1c1410]">Pipeline → Staff</label>
+          {mapping.length === 0 && (
+            <p className="text-[12px] text-[#b09e8d]">No rules yet — add a pipeline and the staff to assign.</p>
+          )}
+          {mapping.map((row, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <select value={row.pipeline_id} onChange={(e) => updateMapping(i, 'pipeline_id', e.target.value)} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
+                <option value="">Pipeline…</option>
+                {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <span className="text-[12px] text-[#7a6b5c] shrink-0">→</span>
+              <select value={row.staff_id} onChange={(e) => updateMapping(i, 'staff_id', e.target.value)} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
+                <option value="">Staff…</option>
+                {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <button type="button" onClick={() => removeMappingRow(i)} className="p-1.5 rounded-lg text-[#b09e8d] hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"><X className="w-4 h-4" /></button>
+            </div>
+          ))}
+          <button type="button" onClick={addMappingRow} className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:opacity-80 transition-opacity">
+            <Plus className="w-3.5 h-3.5" /> Add Rule
+          </button>
+        </div>
+      ) : (
+      <>{/* Select Staff */}
       <div>
         <label className="block text-[13px] font-semibold text-[#1c1410] mb-1.5">
           Select Staff <span className="text-red-500">*</span>
@@ -1491,6 +1540,9 @@ function AssignStaffPanel({ cfg, staff, onUpdate }: {
             <p className="text-[11px] text-green-600 font-medium">✓ Weights sum to 100%</p>
           )}
         </div>
+      )}
+
+      </>{/* end specific mode */}
       )}
 
       {/* Only unassigned toggle */}
