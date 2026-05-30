@@ -120,6 +120,12 @@ const TRIGGER_CATEGORIES: TriggerCategory[] = [
       { id: 'call_missed',   label: 'Call Missed',   Icon: PhoneMissed, sourceId: 'calls' },
     ],
   },
+  {
+    id: 'sheets', label: 'Spreadsheets',
+    items: [
+      { id: 'sheets_row_added', label: 'Google Sheet Row Added', Icon: FileText, sourceId: 'sheets' },
+    ],
+  },
 ];
 
 // ── Action Categories ──────────────────────────────────────────────────────────
@@ -306,7 +312,7 @@ type FormOpt = { id: string; name: string };
 type TemplateOpt = { id: string; name: string; body?: string };
 type WaTemplate = { id: string; name: string; message: string; file_path: string | null; file_type: string | null; file_name: string | null; created_at: string; updated_at: string };
 
-function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff, forms, metaForms, eventTypes, bookingLinks, metaPages, webhookUrls, contactGroups, allowReentry, onToggleReentry, workflowId, apiToken, onRegenerateToken }: {
+function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff, forms, metaForms, eventTypes, bookingLinks, metaPages, webhookUrls, contactGroups, sheetConfigs, allowReentry, onToggleReentry, workflowId, apiToken, onRegenerateToken }: {
   node: WFNode;
   onUpdate: (updates: Partial<WFNode>) => void;
   onChangeTrigger: () => void;
@@ -319,6 +325,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
   metaPages: FormOpt[];
   webhookUrls: { webhookInbound: string; paymentReceived: string; courseEnrolled: string };
   contactGroups?: { id: string; name: string }[];
+  sheetConfigs?: { id: string; spreadsheet_name: string; sheet_name: string }[];
   allowReentry: boolean;
   onToggleReentry: (val: boolean) => void;
   workflowId?: string;
@@ -874,6 +881,48 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
             <option value="OUTBOUND">Outbound</option>
           </select>
         </FieldRow>
+      )}
+
+      {/* Google Sheets trigger */}
+      {node.actionType === 'sheets_row_added' && (
+        <>
+          <FieldRow label="Watch Sheet" hint="Leave blank to fire for any connected Google Sheet.">
+            <div className="w-full border border-border rounded-lg px-3 py-2 min-h-10 flex flex-wrap gap-1.5 items-center cursor-text bg-card">
+              {((cfg.config_ids as string[]) ?? []).map((cid) => (
+                <span key={cid} className="flex items-center gap-1 bg-muted text-foreground text-xs px-2 py-1 rounded-full">
+                  {(() => {
+                    const sc = (sheetConfigs ?? []).find((s) => s.id === cid);
+                    return sc ? `${sc.spreadsheet_name} › ${sc.sheet_name}` : cid;
+                  })()}
+                  <button onClick={() => onUpdate({ config: { ...cfg, config_ids: ((cfg.config_ids as string[]) ?? []).filter((x) => x !== cid) } })}>
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+              <select
+                className="flex-1 min-w-24 outline-none text-sm bg-transparent text-muted-foreground"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value && !((cfg.config_ids as string[]) ?? []).includes(e.target.value))
+                    onUpdate({ config: { ...cfg, config_ids: [...((cfg.config_ids as string[]) ?? []), e.target.value] } });
+                }}
+              >
+                <option value="">+ Add sheet...</option>
+                {(sheetConfigs ?? []).map((sc) => (
+                  <option key={sc.id} value={sc.id}>{sc.spreadsheet_name} › {sc.sheet_name}</option>
+                ))}
+              </select>
+            </div>
+          </FieldRow>
+          {(sheetConfigs ?? []).length === 0 && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-800">
+                <span className="font-semibold">No sheets connected.</span> Go to Settings → Integrations → Google Sheets to connect a spreadsheet first.
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       {node.actionType === 'broadcast_to_group' && (<>
@@ -3592,7 +3641,7 @@ interface BranchNodeContext {
 // ── Node Config Modal ──────────────────────────────────────────────────────────
 function NodeConfigModal({
   node, branchCtx, onClose, onUpdate, onDelete, onChangeTrigger, onChangeAction,
-  pipelines, staff, forms, metaForms, eventTypes, bookingLinks, metaPages, webhookUrls, templates, workflows, routingSets, contactGroups,
+  pipelines, staff, forms, metaForms, eventTypes, bookingLinks, metaPages, webhookUrls, templates, workflows, routingSets, contactGroups, sheetConfigs,
   showAIPanel, setShowAIPanel,
   aiPrompt, setAIPrompt, aiTone, setAITone, aiFormat, setAIFormat, aiLength, setAILength,
   onAIGenerate, allowReentry, onToggleReentry, onRefreshPipelines, refreshingPipelines,
@@ -3617,6 +3666,7 @@ function NodeConfigModal({
   workflows: { id: string; name: string; status: string }[];
   routingSets?: { id: string; name: string; match_field: string; match_type: string }[];
   contactGroups?: { id: string; name: string }[];
+  sheetConfigs?: { id: string; spreadsheet_name: string; sheet_name: string }[];
   showAIPanel: boolean;
   setShowAIPanel: (v: boolean) => void;
   aiPrompt: string; setAIPrompt: (v: string) => void;
@@ -3752,7 +3802,7 @@ function NodeConfigModal({
             /* Settings tab */
             <>
               {node.type === 'trigger'
-                ? <TriggerConfigPanel node={node} onUpdate={onUpdate} onChangeTrigger={onChangeTrigger} pipelines={pipelines} staff={staff} forms={forms} metaForms={metaForms} eventTypes={eventTypes} bookingLinks={bookingLinks} metaPages={metaPages} webhookUrls={webhookUrls} contactGroups={contactGroups} allowReentry={allowReentry} onToggleReentry={onToggleReentry} workflowId={workflowId} apiToken={apiToken} onRegenerateToken={onRegenerateToken} />
+                ? <TriggerConfigPanel node={node} onUpdate={onUpdate} onChangeTrigger={onChangeTrigger} pipelines={pipelines} staff={staff} forms={forms} metaForms={metaForms} eventTypes={eventTypes} bookingLinks={bookingLinks} metaPages={metaPages} webhookUrls={webhookUrls} contactGroups={contactGroups} sheetConfigs={sheetConfigs} allowReentry={allowReentry} onToggleReentry={onToggleReentry} workflowId={workflowId} apiToken={apiToken} onRegenerateToken={onRegenerateToken} />
                 : node.type === 'condition'
                 ? <ConditionConfigPanel node={node} onUpdate={onUpdate} pipelines={pipelines} staff={staff} />
                 : <ActionConfigPanel node={node} onUpdate={onUpdate} pipelines={pipelines} staff={staff} templates={templates} workflows={workflows} routingSets={routingSets} contactGroups={contactGroups} onRefreshPipelines={onRefreshPipelines} refreshingPipelines={refreshingPipelines} />
@@ -4057,6 +4107,7 @@ export default function WorkflowEditorPage() {
   const [editorWebhookUrls, setEditorWebhookUrls] = useState({ webhookInbound: '', paymentReceived: '', courseEnrolled: '' });
   const [editorRoutingSets, setEditorRoutingSets] = useState<{ id: string; name: string; match_field: string; match_type: string }[]>([]);
   const [editorContactGroups, setEditorContactGroups] = useState<{ id: string; name: string }[]>([]);
+  const [editorSheetConfigs, setEditorSheetConfigs] = useState<{ id: string; spreadsheet_name: string; sheet_name: string }[]>([]);
   const [refreshingPipelines, setRefreshingPipelines] = useState(false);
 
   const refreshPipelines = () => {
@@ -4104,6 +4155,11 @@ export default function WorkflowEditorPage() {
     }).catch(() => {});
     api.get<any[]>('/api/contact-groups').then((rows) => {
       setEditorContactGroups((rows ?? []).map((g) => ({ id: g.id, name: g.name })));
+    }).catch(() => {});
+    api.get<{ configs: any[] }>('/api/integrations/sheets/status').then((data) => {
+      setEditorSheetConfigs((data.configs ?? []).map((c: any) => ({
+        id: c.id, spreadsheet_name: c.spreadsheet_name ?? c.spreadsheet_id, sheet_name: c.sheet_name,
+      })));
     }).catch(() => {});
     api.get<any[]>('/api/fields/custom').then((rows) => {
       useCrmStore.getState().reorderCustomFields((rows ?? []).map((cf: any) => ({
@@ -4803,7 +4859,7 @@ export default function WorkflowEditorPage() {
 
                     {/* Main config */}
                     {selectedNode.type === 'trigger'
-                      ? <TriggerConfigPanel node={selectedNode} onUpdate={(u) => updateNode(selectedNode.id, u)} onChangeTrigger={() => setShowTriggerPicker(true)} pipelines={editorPipelines} staff={editorStaff} forms={editorForms} metaForms={editorMetaForms} eventTypes={editorEventTypes} bookingLinks={editorBookingLinks} metaPages={editorMetaPages} webhookUrls={editorWebhookUrls} contactGroups={editorContactGroups} allowReentry={workflow.allowReentry} onToggleReentry={(val) => setWorkflow((w) => ({ ...w, allowReentry: val }))} workflowId={workflow.id} apiToken={workflow.apiToken} onRegenerateToken={handleRegenerateToken} />
+                      ? <TriggerConfigPanel node={selectedNode} onUpdate={(u) => updateNode(selectedNode.id, u)} onChangeTrigger={() => setShowTriggerPicker(true)} pipelines={editorPipelines} staff={editorStaff} forms={editorForms} metaForms={editorMetaForms} eventTypes={editorEventTypes} bookingLinks={editorBookingLinks} metaPages={editorMetaPages} webhookUrls={editorWebhookUrls} contactGroups={editorContactGroups} sheetConfigs={editorSheetConfigs} allowReentry={workflow.allowReentry} onToggleReentry={(val) => setWorkflow((w) => ({ ...w, allowReentry: val }))} workflowId={workflow.id} apiToken={workflow.apiToken} onRegenerateToken={handleRegenerateToken} />
                       : selectedNodeIsCondition
                       ? <ConditionConfigPanel node={selectedNode} onUpdate={(u) => selectedBranchCtx ? updateBranchNode('', 'yes', selectedNode.id, u) : updateNode(selectedNode.id, u)} pipelines={editorPipelines} staff={editorStaff} />
                       : <ActionConfigPanel node={selectedNode} onUpdate={(u) => selectedBranchCtx ? updateBranchNode('', 'yes', selectedNode.id, u) : updateNode(selectedNode.id, u)} pipelines={editorPipelines} staff={editorStaff} templates={editorTemplates} workflows={editorWorkflows} routingSets={editorRoutingSets} contactGroups={editorContactGroups} onRefreshPipelines={refreshPipelines} refreshingPipelines={refreshingPipelines} />
@@ -4857,6 +4913,7 @@ export default function WorkflowEditorPage() {
           workflows={editorWorkflows}
           routingSets={editorRoutingSets}
           contactGroups={editorContactGroups}
+          sheetConfigs={editorSheetConfigs}
           showAIPanel={showAIPanel}
           setShowAIPanel={setShowAIPanel}
           aiPrompt={aiPrompt} setAIPrompt={setAIPrompt}

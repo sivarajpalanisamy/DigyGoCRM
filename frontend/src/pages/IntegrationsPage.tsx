@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, X, RefreshCw, Check, Mail, ExternalLink, Unplug, Eye, EyeOff, QrCode, Wifi, WifiOff, BarChart2 } from 'lucide-react';
+import { ArrowLeft, X, RefreshCw, Check, Mail, ExternalLink, Unplug, Eye, EyeOff, QrCode, Wifi, WifiOff, BarChart2, Plus, Trash2, ChevronLeft } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { getSocket } from '@/lib/socket';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
@@ -516,6 +517,303 @@ function WaPersonalModal({ onClose, onConnected }: { onClose: () => void; onConn
 
 // ── Integration card ───────────────────────────────────────────────────────────
 
+// ── Google Sheets icon ────────────────────────────────────────────────────────
+
+function GoogleSheetsIcon() {
+  return (
+    <div className="w-12 h-12 rounded-2xl bg-[#0F9D58] flex items-center justify-center shrink-0">
+      <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/>
+      </svg>
+    </div>
+  );
+}
+
+// ── Google Sheets modal ───────────────────────────────────────────────────────
+
+const CRM_FIELDS = [
+  { key: 'name',   label: 'Lead Name' },
+  { key: 'phone',  label: 'Phone' },
+  { key: 'email',  label: 'Email' },
+  { key: 'source', label: 'Source' },
+];
+
+function GoogleSheetsModal({ onClose, onSaved, connected, email, configs: initialConfigs }: {
+  onClose: () => void;
+  onSaved: () => void;
+  connected: boolean;
+  email: string | null;
+  configs: any[];
+}) {
+  const [view, setView]   = useState<'list' | 'add'>('list');
+  const [step, setStep]   = useState<1 | 2 | 3>(1);
+  const [connecting, setConnecting] = useState(false);
+  const [configs, setConfigs] = useState<any[]>(initialConfigs);
+
+  // Add-sheet state
+  const [spreadsheets, setSpreadsheets] = useState<any[]>([]);
+  const [loadingSheets, setLoadingSheets] = useState(false);
+  const [selectedSheet, setSelectedSheet] = useState<{ id: string; name: string } | null>(null);
+  const [tabs, setTabs]           = useState<any[]>([]);
+  const [loadingTabs, setLoadingTabs] = useState(false);
+  const [selectedTab, setSelectedTab]   = useState('');
+  const [headers, setHeaders]     = useState<string[]>([]);
+  const [loadingHeaders, setLoadingHeaders] = useState(false);
+  const [mapping, setMapping]     = useState<Record<string, string>>({});
+  const [saving, setSaving]       = useState(false);
+
+  const handleConnect = async () => {
+    setConnecting(true);
+    try {
+      const data = await api.get<{ url: string }>('/api/integrations/sheets/oauth-url');
+      window.location.href = data.url;
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to start Google authorization');
+      setConnecting(false);
+    }
+  };
+
+  const startAdd = async () => {
+    setView('add');
+    setStep(1);
+    setSelectedSheet(null);
+    setSelectedTab('');
+    setHeaders([]);
+    setMapping({});
+    setLoadingSheets(true);
+    try {
+      const data = await api.get<{ files: any[] }>('/api/integrations/sheets/list');
+      setSpreadsheets(data.files ?? []);
+    } catch {
+      toast.error('Failed to load spreadsheets');
+    } finally {
+      setLoadingSheets(false);
+    }
+  };
+
+  const selectSheet = async (file: { id: string; name: string }) => {
+    setSelectedSheet(file);
+    setStep(2);
+    setSelectedTab('');
+    setLoadingTabs(true);
+    try {
+      const data = await api.get<{ tabs: any[] }>(`/api/integrations/sheets/${file.id}/tabs`);
+      setTabs(data.tabs ?? []);
+    } catch {
+      toast.error('Failed to load sheet tabs');
+    } finally {
+      setLoadingTabs(false);
+    }
+  };
+
+  const selectTab = async (tabName: string) => {
+    setSelectedTab(tabName);
+    setStep(3);
+    setLoadingHeaders(true);
+    try {
+      const data = await api.get<{ headers: string[] }>(`/api/integrations/sheets/${selectedSheet!.id}/headers?sheet=${encodeURIComponent(tabName)}`);
+      setHeaders(data.headers ?? []);
+    } catch {
+      toast.error('Failed to load column headers');
+    } finally {
+      setLoadingHeaders(false);
+    }
+  };
+
+  const saveConfig = async () => {
+    if (!mapping.name && !mapping.phone && !mapping.email) {
+      toast.error('Map at least one field (Name, Phone, or Email)');
+      return;
+    }
+    setSaving(true);
+    try {
+      const result = await api.post<any>('/api/integrations/sheets/configs', {
+        spreadsheet_id:   selectedSheet!.id,
+        spreadsheet_name: selectedSheet!.name,
+        sheet_name:       selectedTab,
+        column_mapping:   mapping,
+      });
+      setConfigs((prev) => [result, ...prev]);
+      toast.success('Sheet connected! New rows will be synced every 5 minutes.');
+      setView('list');
+      onSaved();
+    } catch {
+      toast.error('Failed to save sheet config');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteConfig = async (id: string) => {
+    try {
+      await api.delete(`/api/integrations/sheets/configs/${id}`);
+      setConfigs((prev) => prev.filter((c) => c.id !== id));
+      toast.success('Sheet removed');
+    } catch {
+      toast.error('Failed to remove sheet');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
+      <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {view === 'add' && (
+              <button onClick={() => setView('list')} className="p-1 rounded hover:bg-[#f5ede3] text-[#7a6b5c]">
+                <ChevronLeft size={16} />
+              </button>
+            )}
+            <p className="text-[15px] font-bold text-[#1c1410]">
+              {view === 'list' ? 'Google Sheets' : step === 1 ? 'Pick Spreadsheet' : step === 2 ? 'Pick Tab' : 'Map Columns'}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#f5ede3] text-[#7a6b5c]"><X size={15} /></button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 max-h-[65vh] overflow-y-auto">
+
+          {/* Not connected */}
+          {!connected && (
+            <div className="text-center py-6 space-y-4">
+              <p className="text-[13px] text-[#7a6b5c]">
+                Connect your Google account to sync leads from any Google Sheet directly into the CRM.
+                New rows added to the sheet are detected every 5 minutes.
+              </p>
+              <Button onClick={handleConnect} disabled={connecting} className="mx-auto">
+                {connecting
+                  ? <><RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />Redirecting…</>
+                  : <><Check className="w-3.5 h-3.5 mr-1.5" />Connect with Google</>}
+              </Button>
+            </div>
+          )}
+
+          {/* Connected — list view */}
+          {connected && view === 'list' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[12px] text-[#7a6b5c]">
+                  Connected as <span className="font-semibold text-[#1c1410]">{email}</span>
+                </p>
+                <Button size="sm" variant="outline" onClick={startAdd}>
+                  <Plus className="w-3.5 h-3.5 mr-1" />Add Sheet
+                </Button>
+              </div>
+
+              {configs.length === 0 ? (
+                <div className="text-center py-8 text-[12px] text-[#9e8e7e]">
+                  No sheets connected yet. Click "Add Sheet" to get started.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {configs.map((c) => (
+                    <div key={c.id} className="flex items-center gap-3 bg-[#faf8f6] rounded-xl border border-black/5 px-4 py-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-[#1c1410] truncate">{c.spreadsheet_name ?? c.spreadsheet_id}</p>
+                        <p className="text-[11px] text-[#9e8e7e]">Tab: {c.sheet_name} &nbsp;·&nbsp; Synced up to row {c.last_row_synced}</p>
+                      </div>
+                      <button onClick={() => deleteConfig(c.id)} className="text-[#9e8e7e] hover:text-red-500 transition-colors p-1">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Connected — add sheet flow */}
+          {connected && view === 'add' && (
+            <div className="space-y-3">
+              {/* Step 1: pick spreadsheet */}
+              {step === 1 && (
+                loadingSheets ? (
+                  <div className="text-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-[#9e8e7e] mx-auto" /></div>
+                ) : spreadsheets.length === 0 ? (
+                  <p className="text-[12px] text-[#9e8e7e] text-center py-6">No Google Sheets found in your Drive.</p>
+                ) : (
+                  spreadsheets.map((f) => (
+                    <button key={f.id} onClick={() => selectSheet(f)}
+                      className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border border-black/5 hover:border-primary/30 hover:bg-[#fdf6f0] transition-all">
+                      <div className="w-8 h-8 rounded-lg bg-[#0F9D58] flex items-center justify-center shrink-0">
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
+                          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/>
+                        </svg>
+                      </div>
+                      <p className="text-[13px] font-medium text-[#1c1410] truncate">{f.name}</p>
+                    </button>
+                  ))
+                )
+              )}
+
+              {/* Step 2: pick tab */}
+              {step === 2 && (
+                loadingTabs ? (
+                  <div className="text-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-[#9e8e7e] mx-auto" /></div>
+                ) : (
+                  <>
+                    <p className="text-[12px] text-[#7a6b5c]">Select which tab to sync from <strong>{selectedSheet?.name}</strong>:</p>
+                    {tabs.map((t) => (
+                      <button key={t.id} onClick={() => selectTab(t.name)}
+                        className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border border-black/5 hover:border-primary/30 hover:bg-[#fdf6f0] transition-all">
+                        <p className="text-[13px] font-medium text-[#1c1410]">{t.name}</p>
+                      </button>
+                    ))}
+                  </>
+                )
+              )}
+
+              {/* Step 3: map columns */}
+              {step === 3 && (
+                loadingHeaders ? (
+                  <div className="text-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-[#9e8e7e] mx-auto" /></div>
+                ) : (
+                  <>
+                    <p className="text-[12px] text-[#7a6b5c] mb-3">
+                      Map the columns in <strong>{selectedTab}</strong> to CRM fields:
+                    </p>
+                    {CRM_FIELDS.map((f) => (
+                      <div key={f.key} className="grid grid-cols-2 gap-3 items-center">
+                        <p className="text-[12px] font-semibold text-[#5c5245]">{f.label}</p>
+                        <select
+                          className="text-[12px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
+                          value={mapping[f.key] ?? ''}
+                          onChange={(e) => setMapping((m) => {
+                            const next = { ...m };
+                            if (e.target.value) next[f.key] = e.target.value;
+                            else delete next[f.key];
+                            return next;
+                          })}
+                        >
+                          <option value="">— not mapped —</option>
+                          {headers.map((h) => <option key={h} value={h}>{h}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </>
+                )
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-black/5 bg-[#faf8f6]">
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          {connected && view === 'add' && step === 3 && (
+            <Button onClick={saveConfig} disabled={saving}>
+              {saving ? <><RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</> : <><Check className="w-3.5 h-3.5 mr-1.5" />Save</>}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Superfone icon ────────────────────────────────────────────────────────────
 
 function SuperfoneIcon() {
@@ -617,7 +915,7 @@ function SuperfoneModal({ onClose, onSaved, tenantId }: { onClose: () => void; o
   );
 }
 
-type ModalType = 'waba' | 'smtp' | 'razorpay' | 'n8n' | 'wa_personal' | 'superfone';
+type ModalType = 'waba' | 'smtp' | 'razorpay' | 'n8n' | 'wa_personal' | 'superfone' | 'google_sheets';
 
 interface IntegCardProps {
   icon: React.ReactNode;
@@ -680,6 +978,7 @@ function IntegCard({ icon, name, tagline, connected, onConnect, onConfigure, onD
 
 export default function IntegrationsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [modal, setModal] = useState<ModalType | null>(null);
   const { waPersonalStatus, waPersonalPhone, setWaPersonalStatus } = useCrmStore();
   const { currentUser } = useAuthStore();
@@ -690,16 +989,19 @@ export default function IntegrationsPage() {
     razorpay: false,
     n8n: false,
     superfone: false,
+    sheets: false,
   });
+  const [sheetsInfo, setSheetsInfo] = useState<{ email: string | null; configs: any[] }>({ email: null, configs: [] });
 
   const loadStatus = async () => {
-    const [meta, waba, smtp, configs, waPersStatus, superfone] = await Promise.allSettled([
+    const [meta, waba, smtp, configs, waPersStatus, superfone, sheets] = await Promise.allSettled([
       api.get<{ connected: boolean }>('/api/integrations/meta/status'),
       api.get<{ connected: boolean }>('/api/integrations/waba/status'),
       api.get<{ connected: boolean }>('/api/integrations/smtp/status'),
       api.get<Record<string, { is_active: boolean }>>('/api/integrations/configs'),
       api.get<{ status: string; phone: string | null }>('/api/whatsapp-personal/status'),
       api.get<{ connected: boolean }>('/api/integrations/superfone/status'),
+      api.get<{ connected: boolean; email: string | null; configs: any[] }>('/api/integrations/sheets/status'),
     ]);
 
     setStatus({
@@ -709,13 +1011,30 @@ export default function IntegrationsPage() {
       razorpay:  configs.status   === 'fulfilled' && !!configs.value?.razorpay?.is_active,
       n8n:       configs.status   === 'fulfilled' && !!configs.value?.n8n?.is_active,
       superfone: superfone.status === 'fulfilled' && !!superfone.value?.connected,
+      sheets:    sheets.status    === 'fulfilled' && !!sheets.value?.connected,
     });
+
+    if (sheets.status === 'fulfilled' && sheets.value) {
+      setSheetsInfo({ email: sheets.value.email, configs: sheets.value.configs ?? [] });
+    }
 
     if (waPersStatus.status === 'fulfilled') {
       setWaPersonalStatus(waPersStatus.value.status as any, waPersStatus.value.phone);
     }
-
   };
+
+  // Detect return from Google OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('sheets_connected') === '1') {
+      toast.success('Google Sheets connected!');
+      window.history.replaceState({}, '', '/integrations');
+      loadStatus();
+    } else if (params.get('sheets_error')) {
+      toast.error(`Google connection failed: ${params.get('sheets_error')}`);
+      window.history.replaceState({}, '', '/integrations');
+    }
+  }, []);
 
   useEffect(() => { loadStatus(); }, []);
 
@@ -896,6 +1215,16 @@ export default function IntegrationsPage() {
           onDisconnect={() => disconnect('superfone', '/api/integrations/superfone/disconnect')}
         />
 
+        <IntegCard
+          icon={<GoogleSheetsIcon />}
+          name="Google Sheets"
+          tagline="Automatically capture leads from any Google Sheet into the CRM every 5 minutes and trigger automations."
+          connected={status.sheets}
+          onConnect={() => setModal('google_sheets')}
+          onConfigure={() => setModal('google_sheets')}
+          onDisconnect={() => disconnect('sheets', '/api/integrations/sheets/disconnect')}
+        />
+
       </div>
 
       {/* Modals */}
@@ -905,6 +1234,15 @@ export default function IntegrationsPage() {
       {modal === 'n8n'         && <N8nModal        onClose={() => setModal(null)} onSaved={() => onSaved('n8n')}      />}
       {modal === 'wa_personal' && <WaPersonalModal onClose={() => setModal(null)} onConnected={() => { setWaPersonalStatus('connected'); loadStatus(); }} />}
       {modal === 'superfone'   && <SuperfoneModal  onClose={() => setModal(null)} onSaved={() => onSaved('superfone')} tenantId={currentUser?.tenantId ?? ''} />}
+      {modal === 'google_sheets' && (
+        <GoogleSheetsModal
+          onClose={() => setModal(null)}
+          onSaved={() => { setStatus((s) => ({ ...s, sheets: true })); loadStatus(); }}
+          connected={status.sheets}
+          email={sheetsInfo.email}
+          configs={sheetsInfo.configs}
+        />
+      )}
 
     </div>
   );

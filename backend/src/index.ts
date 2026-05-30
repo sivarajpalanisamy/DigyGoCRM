@@ -41,7 +41,9 @@ import reportsRoutes          from './routes/reports';
 import contactGroupsRoutes    from './routes/contact_groups';
 import waPersonalTemplatesRoutes from './routes/wa_personal_templates';
 import callsRoutes from './routes/calls';
+import googleSheetsRoutes from './routes/google_sheets';
 import { processRecordingDownloads } from './utils/recordingDownloader';
+import { pollGoogleSheets } from './utils/googleSheetsPoller';
 
 const app        = express();
 const httpServer = createServer(app);
@@ -182,6 +184,7 @@ app.use('/api/contact-groups',    contactGroupsRoutes);
 app.use('/api/whatsapp-personal', waPersonalRoutes);
 app.use('/api/wa-personal-templates', waPersonalTemplatesRoutes);
 app.use('/api/calls',             callsRoutes);
+app.use('/api/integrations/sheets', googleSheetsRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
@@ -211,6 +214,9 @@ runMigrations()
 
     setInterval(() => processRecordingDownloads().catch(() => null), 10 * 60_000);
     console.log('🎙️   Recording download worker started (10min interval)');
+
+    setInterval(() => pollGoogleSheets().catch(() => null), 5 * 60_000);
+    console.log('📊  Google Sheets poll worker started (5min interval)');
 
     restoreAllSessions().catch(() => null);
     console.log('📱  WhatsApp Personal session restore initiated');

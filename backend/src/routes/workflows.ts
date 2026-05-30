@@ -1882,6 +1882,7 @@ export interface TriggerContext {
   calendarId?:   string;   // for calendar_form_submitted (booking_link.id)
   group_id?:     string;   // for contact_group_added trigger
   callDirection?: string;  // for call_answered / call_missed (INBOUND|OUTBOUND)
+  configId?:     string;  // for sheets_row_added (google_sheets_configs.id)
 }
 
 export async function triggerWorkflows(
@@ -1997,6 +1998,11 @@ export async function triggerWorkflows(
       if (triggerType === 'call_answered' || triggerType === 'call_missed') {
         const cfgDirection = (triggerNode.config?.direction as string) ?? '';
         if (cfgDirection && cfgDirection !== (ctx.callDirection ?? '')) continue;
+      }
+
+      if (triggerType === 'sheets_row_added') {
+        const cfgIds = (triggerNode.config?.config_ids as string[]) ?? [];
+        if (cfgIds.length > 0 && (!ctx.configId || !cfgIds.includes(ctx.configId))) continue;
       }
 
       // Calendar form submitted — must select at least one booking link; blank = don't fire
