@@ -47,7 +47,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md px-5 flex flex-col items-center relative z-10 pt-4 pb-0 mt-[-6vh]">
 
         {/* Logo */}
-        <img src="/digygo-logo.png" alt="DigyGo CRM" className="w-44 h-auto object-contain drop-shadow-md mb-3" />
+        <img src="/digygo-logo.png" alt="DigyGo CRM" className="w-44 h-auto object-contain drop-shadow-md mb-0" />
 
         {/* Form card */}
         <main className="w-full">
