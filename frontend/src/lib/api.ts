@@ -44,12 +44,12 @@ async function request<T>(path: string, options: RequestInit = {}, _retry = true
     if (newToken) {
       _accessToken = newToken;
       import('@/store/authStore').then(({ useAuthStore }) => {
-        useAuthStore.getState().setToken(newToken);
+        setTimeout(() => useAuthStore.getState().setToken(newToken), 0);
       });
       return request<T>(path, options, false);
     }
     import('@/store/authStore').then(({ useAuthStore }) => {
-      useAuthStore.getState().logout();
+      setTimeout(() => useAuthStore.getState().logout(), 0);
     });
     throw new SessionExpiredError();
   }
