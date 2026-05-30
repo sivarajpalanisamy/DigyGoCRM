@@ -1,7 +1,6 @@
--- Fix cross-tenant slug collisions: rename duplicate slugs in custom_forms,
--- booking_links, landing_pages, and event_types so every slug is globally unique.
--- Strategy: keep the oldest row (created_at ASC) unchanged; rename newer duplicates
--- by appending -2, -3, ... ensuring each new slug is also globally unique.
+-- Fix cross-tenant slug collisions in custom_forms, booking_links,
+-- landing_pages, and event_types so every slug is globally unique.
+-- Keep oldest row unchanged and rename newer duplicates with -2/-3 suffix.
 
 DO $$
 DECLARE
