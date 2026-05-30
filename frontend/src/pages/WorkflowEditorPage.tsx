@@ -1422,8 +1422,8 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
       <div>
         <label className="block text-[13px] font-semibold text-[#1c1410] mb-1.5">Assignment Mode</label>
         <div className="flex rounded-lg border border-gray-200 overflow-hidden text-[12px] font-semibold">
-          <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'specific' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'specific', pipeline_staff_mapping: [] } })}>Specific Staff</button>
-          <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'by_pipeline' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'by_pipeline', staff_ids: [], staff_weights: {} } })}>By Pipeline</button>
+          <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'specific' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'specific' } })}>Specific Staff</button>
+          <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'by_pipeline' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'by_pipeline' } })}>By Pipeline</button>
         </div>
       </div>
 
