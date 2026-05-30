@@ -511,6 +511,15 @@ export async function executeNodes(
               message = `add_to_crm: lead not placed in configured stage after update`;
             } else {
               message = stageName ? `Added to CRM · ${stageName}` : 'Added to CRM';
+              if (node.config.pipeline_id) {
+                lead.pipeline_id = node.config.pipeline_id as string;
+                const pnRes = await query('SELECT name FROM pipelines WHERE id=$1', [node.config.pipeline_id]).catch(() => ({ rows: [] as any[] }));
+                lead.pipeline_name = pnRes.rows[0]?.name ?? '';
+              }
+              if (node.config.stage_id) {
+                lead.stage_id = node.config.stage_id as string;
+                lead.stage_name = stageName;
+              }
               if (node.config.stage_id) {
                 const updatedLead2 = (await query('SELECT * FROM leads WHERE id=$1', [lead.id])).rows[0];
                 if (updatedLead2) setImmediate(() => triggerWorkflows('stage_changed', { ...updatedLead2, stage_name: stageName }, tenantId, safeUserId ?? userId).catch(() => null));
@@ -538,6 +547,8 @@ export async function executeNodes(
               status = 'failed'; message = 'change_stage: stage was not updated on lead';
             } else {
               message = `Moved to ${stageName}`;
+              lead.stage_id = stageId;
+              lead.stage_name = stageName;
               // Re-fetch with JOIN so socket carries assigned_name display field
               const updatedLead = await query(
                 `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
@@ -620,6 +631,8 @@ export async function executeNodes(
             if (vStaff.rows[0]?.assigned_to !== staffId) {
               status = 'failed'; message = `assign_staff: lead was not assigned to ${ur.rows[0]?.name ?? staffId}`;
             } else {
+              lead.assigned_to = staffId;
+              lead.assigned_staff_name = ur.rows[0]?.name ?? '';
               message = `Assigned: ${ur.rows[0]?.name ?? staffId}`;
             }
           } else {
