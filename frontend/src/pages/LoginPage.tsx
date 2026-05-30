@@ -46,20 +46,17 @@ export default function LoginPage() {
       {/* Content */}
       <div className="w-full max-w-md px-5 flex flex-col items-center relative z-10 pt-4 pb-0 mt-[-6vh]">
 
-        {/* Header */}
-        <header className="flex flex-col items-center mb-4">
-          <img src="/digygo-logo.png" alt="DigyGo CRM" className="w-44 h-auto object-contain mb-2 drop-shadow-md" />
-          <h1 className="font-headline text-2xl font-bold tracking-tight text-[#1c1410]">
-            Welcome back
-          </h1>
-          <p className="text-[#5c5245] mt-1 text-center text-[14px] leading-relaxed max-w-[260px]">
-            Sign in to your DigyGo CRM account to continue
-          </p>
-        </header>
+        {/* Logo */}
+        <img src="/digygo-logo.png" alt="DigyGo CRM" className="w-44 h-auto object-contain drop-shadow-md mb-3" />
 
         {/* Form card */}
         <main className="w-full">
           <div className="bg-white rounded-2xl p-5 border border-black/5" style={{ boxShadow: '0 8px 32px -4px rgba(0,0,0,0.06)' }}>
+            {/* Heading inside card */}
+            <div className="text-center mb-4">
+              <h1 className="font-headline text-xl font-bold tracking-tight text-[#1c1410]">Welcome back</h1>
+              <p className="text-[#5c5245] mt-1 text-[13px] leading-relaxed">Sign in to your DigyGo CRM account</p>
+            </div>
             <form onSubmit={handleLogin} className="space-y-4">
 
               {/* Email */}
