@@ -4363,7 +4363,13 @@ export default function WorkflowEditorPage() {
     for (const node of nodes) {
       if (node.type === 'trigger' && !node.actionType) return 'Trigger type is not set.';
       if (node.type === 'action') {
-        if (node.actionType === 'assign_staff' && !((node.config.staff_ids as string[] | undefined)?.length)) return `"Assign To Staff" is missing a staff member.`;
+        if (node.actionType === 'assign_staff') {
+          const mode = (node.config.assign_mode as string) ?? 'specific';
+          const hasSpecific = ((node.config.staff_ids as string[] | undefined)?.length ?? 0) > 0;
+          const hasByPipeline = ((node.config.pipeline_staff_mapping as any[] | undefined) ?? []).some((m: any) => (m.staff_ids?.length ?? 0) > 0 || m.staff_id);
+          if (mode === 'specific' && !hasSpecific) return `"Assign To Staff" is missing a staff member.`;
+          if (mode === 'by_pipeline' && !hasByPipeline) return `"Assign To Staff" has no pipeline rules with staff assigned.`;
+        }
         if (node.actionType === 'change_stage' && !node.config.stage_id) return `"Change Pipeline Stage" is missing a stage.`;
         if (node.actionType === 'send_email' && !node.config.subject) return `"Send Email" is missing a subject.`;
         if (node.actionType === 'send_whatsapp' && !node.config.template) return `"WhatsApp Message" is missing a template.`;
