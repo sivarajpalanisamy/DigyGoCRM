@@ -667,6 +667,8 @@ export async function executeNodes(
             if (vRemove.rows[0]?.assigned_to !== null) {
               status = 'failed'; message = 'remove_staff: staff assignment was not cleared';
             } else {
+              lead.assigned_to = undefined as any;
+              lead.assigned_staff_name = '';
               message = 'Staff unassigned';
             }
           }
@@ -699,6 +701,7 @@ export async function executeNodes(
               status = 'failed';
               message = `add_tag: tag(s) not found on lead after update: ${missing.join(', ')}`;
             } else {
+              lead.tags = actualTags;
               message = `Tags added: ${tagList.join(', ')}`;
             }
           } else {
@@ -732,6 +735,7 @@ export async function executeNodes(
               status = 'failed';
               message = `remove_tag: tag(s) still present on lead after removal: ${stillPresent.join(', ')}`;
             } else {
+              lead.tags = remainingTags;
               message = `Tags removed: ${tagList.join(', ')}`;
             }
           } else {
@@ -807,6 +811,33 @@ export async function executeNodes(
               `UPDATE leads SET ${sets.join(',')} WHERE id=$${vals.length - 1} AND tenant_id=$${vals.length}`,
               vals
             );
+            // Sync simple scalar fields back onto the in-memory lead
+            const fieldValuePairs: Record<string, string> = {};
+            if (node.config.attrField && node.config.attrValue !== undefined) {
+              fieldValuePairs[(node.config.attrField as string).trim()] = interpolate(node.config.attrValue as string, lead, valueTokens);
+            } else {
+              for (const field of directCols) {
+                if (node.config[field] !== undefined && node.config[field] !== '') {
+                  fieldValuePairs[field] = interpolate(node.config[field] as string, lead, valueTokens);
+                }
+              }
+            }
+            for (const [field, val] of Object.entries(fieldValuePairs)) {
+              (lead as any)[field] = val;
+            }
+            // Resolve human-readable names for ID fields that were updated
+            if (fieldValuePairs.pipeline_id) {
+              const r = await query('SELECT name FROM pipelines WHERE id=$1', [fieldValuePairs.pipeline_id]).catch(() => ({ rows: [] }));
+              lead.pipeline_name = r.rows[0]?.name ?? '';
+            }
+            if (fieldValuePairs.stage_id) {
+              const r = await query('SELECT name FROM pipeline_stages WHERE id=$1', [fieldValuePairs.stage_id]).catch(() => ({ rows: [] }));
+              lead.stage_name = r.rows[0]?.name ?? '';
+            }
+            if (fieldValuePairs.assigned_to) {
+              const r = await query('SELECT name FROM users WHERE id=$1', [fieldValuePairs.assigned_to]).catch(() => ({ rows: [] }));
+              lead.assigned_staff_name = r.rows[0]?.name ?? '';
+            }
             const updatedCols = [
               ...sets.slice(1).filter((s) => !s.startsWith('custom_fields')).map((s) => s.split('=')[0]),
               ...Object.keys(jsonbMerge),
@@ -1321,6 +1352,7 @@ export async function executeNodes(
                 );
                 if ((fbMove.rowCount ?? 0) > 0) {
                   lead.pipeline_id = pipeline_id; lead.stage_id = stage_id;
+                  lead.pipeline_name = fbName; lead.stage_name = stage_name;
                   const updFb = await query(
                     `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
                     [lead.id]
@@ -1386,6 +1418,7 @@ export async function executeNodes(
               break;
             }
             lead.pipeline_id = pipeline_id; lead.stage_id = stage_id; lead.stage_name = stage_name;
+            lead.pipeline_name = effectivePipeline;
             const updatedLead = await query(
               `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
               [lead.id]
@@ -1842,16 +1875,16 @@ export async function enrichLead(lead: LeadContext): Promise<LeadContext> {
     ).catch(() => ({ rows: [] }));
     enriched.form_name = r.rows[0]?.form_name ?? '';
   }
-  if (lead.assigned_to && !lead.assigned_staff_name) {
-    const r = await query('SELECT name FROM users WHERE id=$1', [lead.assigned_to]);
+  if (enriched.assigned_to && !enriched.assigned_staff_name) {
+    const r = await query('SELECT name FROM users WHERE id=$1', [enriched.assigned_to]);
     enriched.assigned_staff_name = r.rows[0]?.name ?? '';
   }
-  if (lead.pipeline_id && !lead.pipeline_name) {
-    const r = await query('SELECT name FROM pipelines WHERE id=$1', [lead.pipeline_id]);
+  if (enriched.pipeline_id && !enriched.pipeline_name) {
+    const r = await query('SELECT name FROM pipelines WHERE id=$1', [enriched.pipeline_id]);
     enriched.pipeline_name = r.rows[0]?.name ?? '';
   }
-  if (lead.stage_id && !lead.stage_name) {
-    const r = await query('SELECT name FROM pipeline_stages WHERE id=$1', [lead.stage_id]);
+  if (enriched.stage_id && !enriched.stage_name) {
+    const r = await query('SELECT name FROM pipeline_stages WHERE id=$1', [enriched.stage_id]);
     enriched.stage_name = r.rows[0]?.name ?? '';
   }
   // Derive first_name / last_name from full name so if_else conditions can match on them

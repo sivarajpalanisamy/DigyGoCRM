@@ -417,15 +417,24 @@ export const useCrmStore = create<CrmState>((set) => ({
     set((s) => ({ pipelines: [...s.pipelines, mapped] }));
   },
   updatePipeline: async (id, updates) => {
-    // Capture old stages BEFORE optimistic update
-    const oldStages = useCrmStore.getState().pipelines.find((p) => p.id === id)?.stages ?? [];
+    // Capture old pipeline BEFORE optimistic update for rollback
+    const oldPipeline = useCrmStore.getState().pipelines.find((p) => p.id === id);
+    const oldStages = oldPipeline?.stages ?? [];
 
     // Optimistic update
     set((s) => ({ pipelines: s.pipelines.map((p) => p.id === id ? { ...p, ...updates } : p) }));
 
-    // Persist name change
+    // Persist name change — let errors propagate so the caller can rollback + toast
     if (updates.name) {
-      await api.patch(`/api/pipelines/${id}`, { name: updates.name }).catch(() => null);
+      try {
+        await api.patch(`/api/pipelines/${id}`, { name: updates.name });
+      } catch (err) {
+        // Rollback optimistic update then re-throw so handleSave shows the error
+        if (oldPipeline) {
+          set((s) => ({ pipelines: s.pipelines.map((p) => p.id === id ? oldPipeline : p) }));
+        }
+        throw err;
+      }
     }
 
     // Persist stage changes

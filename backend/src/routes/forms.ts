@@ -225,7 +225,7 @@ router.post('/:id/submit', async (req: AuthRequest, res: Response) => {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
     const formRes = await query(
       isUUID
-        ? `SELECT * FROM custom_forms WHERE (id=$1::uuid OR slug=$1) AND is_active=TRUE LIMIT 1`
+        ? `SELECT * FROM custom_forms WHERE (id=$1::uuid OR slug=$1::text) AND is_active=TRUE LIMIT 1`
         : `SELECT * FROM custom_forms WHERE slug=$1 AND is_active=TRUE LIMIT 1`,
       [idOrSlug]
     );
