@@ -1683,6 +1683,11 @@ router.patch('/meta/connected-forms/:id', checkPermission('meta_forms:edit'), as
   if (pipeline_id !== undefined) { params.push(pipeline_id); setClauses.push(`pipeline_id=$${params.length}`); }
   if (stage_id    !== undefined) { params.push(stage_id);    setClauses.push(`stage_id=$${params.length}`); }
   if (!setClauses.length) { res.status(400).json({ error: 'Nothing to update' }); return; }
+  // Record the moment Auto is first switched ON — used as the initial cron cursor
+  // so the cron only fetches leads submitted after activation, not historical ones.
+  if (is_active === true) {
+    setClauses.push(`activated_at = COALESCE(activated_at, NOW())`);
+  }
   params.push(req.params.id, req.user!.tenantId);
   try {
     const result = await query(
@@ -1904,11 +1909,12 @@ export async function pollMetaLeads(): Promise<void> {
     for (const mf of formsRes.rows) {
       try {
         const token = decrypt(mf.enc_token);
-        // Leak 9 fix: on first run (no last_sync_at), look back 30 days so no leads are missed.
-        // Subsequent runs use last_sync_at with a 60-second overlap to guard against clock skew.
+        // On first run use activated_at as the cursor so only leads submitted
+        // AFTER the user turned Auto ON are fetched — no historical mass-import.
+        // Subsequent runs use last_sync_at with a 60-second overlap for clock skew.
         const since = mf.last_sync_at
           ? Math.floor(new Date(mf.last_sync_at).getTime() / 1000) - 60
-          : Math.floor(Date.now() / 1000) - 30 * 24 * 3600;
+          : Math.floor(new Date(mf.activated_at ?? Date.now()).getTime() / 1000);
 
         // Request `id` (leadgen_id) so we can do exact idempotency checks
         const leadsRes = await graphGet(

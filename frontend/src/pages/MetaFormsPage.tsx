@@ -767,6 +767,7 @@ export default function MetaFormsPage() {
   const [downloadFormId, setDownloadFormId] = useState('');
   const [downloading, setDownloading] = useState(false);
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+  const [historicalImportTarget, setHistoricalImportTarget] = useState<MetaFormRow | null>(null);
   const [disconnectPageTarget, setDisconnectPageTarget] = useState<{ id: string; name: string } | null>(null);
   const [disconnectingPage, setDisconnectingPage] = useState(false);
   const [deleteFormTarget, setDeleteFormTarget] = useState<MetaFormRow | null>(null);
@@ -1451,7 +1452,7 @@ export default function MetaFormsPage() {
                     <span className={`text-[11px] font-medium ${isActive ? 'text-emerald-600' : 'text-[#b09e8d]'}`}>
                       {isActive ? 'Auto' : 'Manual'}
                     </span>
-                    <span title={!isMapped ? 'Map fields first to enable auto-import' : isActive ? 'Auto-import ON — new leads captured in real time' : 'Enable to auto-capture incoming leads'}>
+                    <span title={!isMapped ? 'Map fields first to enable auto-import' : isActive ? 'Auto ON — captures only NEW leads going forward. Does not import past leads.' : 'Enable to capture new leads from Meta ads in real time (past leads not imported)'}>
                       <Switch
                         checked={isActive}
                         onCheckedChange={() => isMapped && toggleForm(form)}
@@ -1465,14 +1466,15 @@ export default function MetaFormsPage() {
                   {isMapped && (
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
-                        onClick={() => openTriggerModal(form)}
+                        onClick={() => setHistoricalImportTarget(form)}
                         disabled={!!exportingId}
+                        title="Import all leads ever submitted to this form from Meta (past leads)"
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-[#f5ede3] text-primary hover:bg-primary hover:text-white disabled:opacity-50 transition-colors whitespace-nowrap"
                       >
                         {exportingId === `${form.form_id}-old`
                           ? <RefreshCw className="w-3 h-3 animate-spin" />
                           : <History className="w-3 h-3" />}
-                        Import All Leads
+                        Import Historical Leads
                       </button>
                       <button
                         onClick={() => { setOpenForm(form); setContactSearch(''); }}
@@ -2019,6 +2021,34 @@ export default function MetaFormsPage() {
                   {connecting ? 'Redirecting…' : 'Open Facebook →'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Historical import confirmation modal */}
+      {historicalImportTarget && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-[16px] font-bold text-[#1c1410] mb-2">Import Historical Leads?</h3>
+            <p className="text-[13px] text-[#7a6b5c] mb-1">
+              This will import <strong>all leads ever submitted</strong> to <strong>{historicalImportTarget.form_name}</strong> from Meta — including leads from before you connected this form.
+            </p>
+            <p className="text-[12px] text-[#9e8e7e] mb-5">Existing leads will be skipped. This is a one-time manual action and does not affect your Auto toggle.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setHistoricalImportTarget(null)}
+                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold bg-gray-100 text-[#1c1410] hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { const t = historicalImportTarget; setHistoricalImportTarget(null); openTriggerModal(t); }}
+                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all"
+                style={{ background: 'linear-gradient(135deg, #c2410c 0%, #ea580c 55%, #f97316 100%)' }}
+              >
+                Yes, Import All
+              </button>
             </div>
           </div>
         </div>
