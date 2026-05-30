@@ -1333,9 +1333,9 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
   const ref = useRef<HTMLDivElement>(null);
 
   const assignMode = (cfg.assign_mode as string) ?? 'specific';
-  const mapping: Array<{ pipeline_id: string; staff_id: string }> =
+  const mapping: Array<{ pipeline_id: string; staff_ids?: string[]; staff_id?: string }> =
     Array.isArray(cfg.pipeline_staff_mapping)
-      ? (cfg.pipeline_staff_mapping as Array<{ pipeline_id: string; staff_id: string }>)
+      ? (cfg.pipeline_staff_mapping as Array<{ pipeline_id: string; staff_ids?: string[]; staff_id?: string }>)
       : [];
 
   const selectedIds: string[] = Array.isArray(cfg.staff_ids) ? (cfg.staff_ids as string[]) : [];
@@ -1393,11 +1393,27 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
   const totalWeight = selectedIds.reduce((sum, id) => sum + (weights[id] ?? 0), 0);
   const weightValid = totalWeight === 100;
 
-  const updateMapping = (i: number, field: 'pipeline_id' | 'staff_id', val: string) => {
-    const newMapping = mapping.map((m, idx) => idx === i ? { ...m, [field]: val } : m);
+  const updateMappingPipeline = (i: number, val: string) => {
+    const newMapping = mapping.map((m, idx) => idx === i ? { ...m, pipeline_id: val } : m);
     onUpdate({ config: { ...cfg, pipeline_staff_mapping: newMapping } });
   };
-  const addMappingRow = () => onUpdate({ config: { ...cfg, pipeline_staff_mapping: [...mapping, { pipeline_id: '', staff_id: '' }] } });
+  const addStaffToRow = (i: number, staffId: string) => {
+    const newMapping = mapping.map((m, idx) => {
+      if (idx !== i) return m;
+      const ids = Array.isArray(m.staff_ids) ? m.staff_ids : (m.staff_id ? [m.staff_id] : []);
+      return { ...m, staff_ids: [...ids, staffId], staff_id: undefined };
+    });
+    onUpdate({ config: { ...cfg, pipeline_staff_mapping: newMapping } });
+  };
+  const removeStaffFromRow = (i: number, staffId: string) => {
+    const newMapping = mapping.map((m, idx) => {
+      if (idx !== i) return m;
+      const ids = Array.isArray(m.staff_ids) ? m.staff_ids : (m.staff_id ? [m.staff_id] : []);
+      return { ...m, staff_ids: ids.filter((id) => id !== staffId), staff_id: undefined };
+    });
+    onUpdate({ config: { ...cfg, pipeline_staff_mapping: newMapping } });
+  };
+  const addMappingRow = () => onUpdate({ config: { ...cfg, pipeline_staff_mapping: [...mapping, { pipeline_id: '', staff_ids: [] }] } });
   const removeMappingRow = (i: number) => onUpdate({ config: { ...cfg, pipeline_staff_mapping: mapping.filter((_, idx) => idx !== i) } });
 
   return (
@@ -1417,20 +1433,39 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
           {mapping.length === 0 && (
             <p className="text-[12px] text-[#b09e8d]">No rules yet — add a pipeline and the staff to assign.</p>
           )}
-          {mapping.map((row, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <select value={row.pipeline_id} onChange={(e) => updateMapping(i, 'pipeline_id', e.target.value)} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
-                <option value="">Pipeline…</option>
-                {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              <span className="text-[12px] text-[#7a6b5c] shrink-0">→</span>
-              <select value={row.staff_id} onChange={(e) => updateMapping(i, 'staff_id', e.target.value)} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
-                <option value="">Staff…</option>
-                {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-              <button type="button" onClick={() => removeMappingRow(i)} className="p-1.5 rounded-lg text-[#b09e8d] hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"><X className="w-4 h-4" /></button>
-            </div>
-          ))}
+          {mapping.map((row, i) => {
+            const rowStaffIds: string[] = Array.isArray(row.staff_ids) ? row.staff_ids : (row.staff_id ? [row.staff_id] : []);
+            const rowSelected = rowStaffIds.map((id) => staff.find((s) => s.id === id)).filter(Boolean) as StaffOpt[];
+            const rowUnselected = staff.filter((s) => !rowStaffIds.includes(s.id));
+            return (
+              <div key={i} className="border border-gray-200 rounded-lg p-2.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <select value={row.pipeline_id} onChange={(e) => updateMappingPipeline(i, e.target.value)} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
+                    <option value="">Pipeline…</option>
+                    {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                  <button type="button" onClick={() => removeMappingRow(i)} className="p-1.5 rounded-lg text-[#b09e8d] hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 min-h-[32px]">
+                  {rowSelected.map((s) => (
+                    <span key={s.id} className="inline-flex items-center gap-1 bg-orange-500 text-white text-[11px] font-medium px-2 py-0.5 rounded-md">
+                      <button type="button" className="text-white/80 hover:text-white font-bold leading-none" onClick={() => removeStaffFromRow(i, s.id)}>×</button>
+                      {s.name}
+                    </span>
+                  ))}
+                  {rowUnselected.length > 0 && (
+                    <select value="" onChange={(e) => { if (e.target.value) addStaffToRow(i, e.target.value); }} className="text-[12px] border border-dashed border-gray-300 rounded-md px-2 py-0.5 bg-white outline-none text-[#7a6b5c] cursor-pointer">
+                      <option value="">+ Add staff…</option>
+                      {rowUnselected.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  )}
+                </div>
+                {rowStaffIds.length >= 2 && (
+                  <p className="text-[11px] text-[#7a6b5c]">Round-robin across {rowStaffIds.length} staff</p>
+                )}
+              </div>
+            );
+          })}
           <button type="button" onClick={addMappingRow} className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:opacity-80 transition-opacity">
             <Plus className="w-3.5 h-3.5" /> Add Rule
           </button>

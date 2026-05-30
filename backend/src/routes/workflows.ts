@@ -569,14 +569,17 @@ export async function executeNodes(
           // By-pipeline mode: resolve staff from pipeline→staff mapping
           const assignMode = (node.config.assign_mode as string) ?? 'specific';
           if (assignMode === 'by_pipeline') {
-            const mapping = (node.config.pipeline_staff_mapping as Array<{ pipeline_id: string; staff_id: string }>) ?? [];
+            const mapping = (node.config.pipeline_staff_mapping as Array<{ pipeline_id: string; staff_ids?: string[]; staff_id?: string }>) ?? [];
             const match = mapping.find((m) => m.pipeline_id === lead.pipeline_id);
-            if (!match?.staff_id) {
+            const pipelineStaffIds: string[] = match?.staff_ids?.length
+              ? match.staff_ids
+              : (match?.staff_id ? [match.staff_id] : []);
+            if (!pipelineStaffIds.length) {
               status = 'skipped';
               message = `assign_staff: no pipeline mapping for "${lead.pipeline_name ?? lead.pipeline_id ?? 'unknown pipeline'}"`;
               break;
             }
-            (node.config as any).staff_ids = [match.staff_id];
+            (node.config as any).staff_ids = pipelineStaffIds;
           }
           const staffIds: string[] = Array.isArray(node.config.staff_ids)
             ? (node.config.staff_ids as string[])
