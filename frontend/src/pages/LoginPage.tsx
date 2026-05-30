@@ -48,7 +48,7 @@ export default function LoginPage() {
 
         {/* Header */}
         <header className="flex flex-col items-center pt-12 pb-8">
-          <img src="/digygo-logo.png" alt="DigyGo CRM" className="w-20 h-20 object-contain mb-5 drop-shadow-md" />
+          <img src="/digygo-logo.png" alt="DigyGo CRM" className="w-48 h-auto object-contain mb-5 drop-shadow-md" />
           <h1 className="font-headline text-2xl font-bold tracking-tight text-[#1c1410]">
             Welcome back
           </h1>
