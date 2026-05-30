@@ -12,6 +12,7 @@ export interface SystemField {
 
 export const SYSTEM_STANDARD_FIELDS: SystemField[] = [
   // Contact
+  { id: 'c00', name: 'Full Name',           slug: 'contact.full_name',          group: 'Contact', isSystem: true },
   { id: 'c01', name: 'First Name',          slug: 'contact.first_name',         group: 'Contact', isSystem: true },
   { id: 'c02', name: 'Last Name',           slug: 'contact.last_name',          group: 'Contact', isSystem: true },
   { id: 'c03', name: 'Email',               slug: 'contact.email',              group: 'Contact', isSystem: true },

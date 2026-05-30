@@ -57,6 +57,7 @@ router.use(requireTenant);
 // ── System Fields (single source of truth — same for every tenant) ────────────
 
 const SYSTEM_FIELDS = [
+  { id: 'c00',  name: 'Full Name',            slug: 'contact.full_name',          group: 'Contact' },
   { id: 'c01',  name: 'First Name',           slug: 'contact.first_name',         group: 'Contact' },
   { id: 'c02',  name: 'Last Name',            slug: 'contact.last_name',          group: 'Contact' },
   { id: 'c03',  name: 'Email',                slug: 'contact.email',              group: 'Contact' },

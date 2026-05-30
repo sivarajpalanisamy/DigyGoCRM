@@ -1722,7 +1722,7 @@ export default function MetaFormsPage() {
                     onClick={() => handlePushToAutomation(triggerModal, 'old')}
                     className="w-full py-2 rounded-xl text-[12px] font-medium text-[#7a6b5c] border border-black/10 hover:bg-[#faf8f6] transition-colors"
                   >
-                    Import to CRM only (no automation)
+                    Import leads + run all matching workflows
                   </button>
                 )}
               </div>
