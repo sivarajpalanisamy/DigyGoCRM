@@ -44,7 +44,7 @@ export default function LoginPage() {
       </div>
 
       {/* Content */}
-      <div className="w-full max-w-md px-5 flex flex-col items-center justify-center flex-1 relative z-10 py-10">
+      <div className="w-full max-w-md px-5 flex flex-col items-center relative z-10 py-10">
 
         {/* Header */}
         <header className="flex flex-col items-center mb-6">
