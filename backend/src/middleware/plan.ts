@@ -8,10 +8,10 @@ type PlanTier = 'starter' | 'growth' | 'pro' | 'enterprise';
 
 // Numeric usage limits per plan tier
 export const PLAN_LIMITS: Record<PlanTier, Record<string, number>> = {
-  starter:    { leads: 500,   contacts: 500,   staff: 5,   forms: 5,   workflows: 5   },
-  growth:     { leads: 5000,  contacts: 5000,  staff: 25,  forms: 50,  workflows: 50  },
-  pro:        { leads: 10000, contacts: 10000, staff: 50,  forms: 100, workflows: 100 },
-  enterprise: { leads: 99999, contacts: 99999, staff: 999, forms: 999, workflows: 999 },
+  starter:    { leads: 500,   contacts: 500,   forms: 5,   workflows: 5   },
+  growth:     { leads: 5000,  contacts: 5000,  forms: 50,  workflows: 50  },
+  pro:        { leads: 10000, contacts: 10000, forms: 100, workflows: 100 },
+  enterprise: { leads: 99999, contacts: 99999, forms: 999, workflows: 999 },
 };
 
 // Feature gates per plan (features NOT in the list are blocked)
