@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, Eye, EyeOff, ArrowRight, Mail } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Mail } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
@@ -48,10 +48,7 @@ export default function LoginPage() {
 
         {/* Header */}
         <header className="flex flex-col items-center pt-12 pb-8">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-primary/20"
-            style={{ background: 'linear-gradient(135deg, #c2410c 0%, #ea580c 55%, #f97316 100%)' }}>
-            <Zap className="w-8 h-8 text-white" />
-          </div>
+          <img src="/digygo-logo.png" alt="DigyGo CRM" className="w-20 h-20 object-contain mb-5 drop-shadow-md" />
           <h1 className="font-headline text-2xl font-bold tracking-tight text-[#1c1410]">
             Welcome back
           </h1>
@@ -110,13 +107,6 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-              </div>
-
-              {/* Forgot password */}
-              <div className="flex justify-end">
-                <a href="#" className="text-[12px] text-primary font-semibold hover:underline">
-                  Forgot password?
-                </a>
               </div>
 
               {/* Error */}
