@@ -34,7 +34,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-[100dvh] flex flex-col items-center bg-[#faf8f6] font-sans text-[#1c1410]"
+      className="min-h-[100dvh] flex flex-col items-center justify-center bg-[#faf8f6] font-sans text-[#1c1410]"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
       {/* Ambient background blobs */}
@@ -44,21 +44,21 @@ export default function LoginPage() {
       </div>
 
       {/* Content */}
-      <div className="w-full max-w-md px-5 flex flex-col min-h-[100dvh] relative z-10">
+      <div className="w-full max-w-md px-5 flex flex-col items-center justify-center flex-1 relative z-10 py-10">
 
         {/* Header */}
-        <header className="flex flex-col items-center pt-12 pb-8">
-          <img src="/digygo-logo.png" alt="DigyGo CRM" className="w-48 h-auto object-contain mb-5 drop-shadow-md" />
+        <header className="flex flex-col items-center mb-6">
+          <img src="/digygo-logo.png" alt="DigyGo CRM" className="w-48 h-auto object-contain mb-4 drop-shadow-md" />
           <h1 className="font-headline text-2xl font-bold tracking-tight text-[#1c1410]">
             Welcome back
           </h1>
-          <p className="text-[#5c5245] mt-2 text-center text-[15px] leading-relaxed max-w-[280px]">
+          <p className="text-[#5c5245] mt-1.5 text-center text-[15px] leading-relaxed max-w-[280px]">
             Sign in to your DigyGo CRM account to continue
           </p>
         </header>
 
         {/* Form card */}
-        <main className="flex-1">
+        <main className="w-full">
           <div className="bg-white rounded-2xl p-6 border border-black/5" style={{ boxShadow: '0 8px 32px -4px rgba(0,0,0,0.06)' }}>
             <form onSubmit={handleLogin} className="space-y-5">
 
@@ -132,7 +132,7 @@ export default function LoginPage() {
         </main>
 
         {/* Footer */}
-        <footer className="mt-8 mb-6 text-center">
+        <footer className="mt-6 text-center">
           <p className="text-[11px] text-[#b09e8d]">Powered by DigyGo CRM © 2026</p>
         </footer>
       </div>
