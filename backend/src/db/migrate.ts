@@ -75,6 +75,7 @@ const MIGRATIONS = [
   'migration_073_superfone.sql',
   'migration_074_fix_duplicate_slugs.sql',
   'migration_075_google_sheets_integration.sql',
+  'migration_076_google_sheets_simplify.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
