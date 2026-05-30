@@ -1542,7 +1542,7 @@ function AssignStaffPanel({ cfg, staff, onUpdate }: {
         </div>
       )}
 
-      </>{/* end specific mode */}
+      </>
       )}
 
       {/* Only unassigned toggle */}
