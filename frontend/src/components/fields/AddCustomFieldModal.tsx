@@ -43,8 +43,14 @@ const DATA_TYPES: { label: DataType; Icon: ElementType; hint: string; hasOptions
   { label: 'File Upload',    Icon: FileUp,         hint: 'Attach a file'                  },
 ];
 
-const slugify = (s: string) =>
-  s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
+const slugify = (s: string): string => {
+  const ascii = s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
+  if (ascii) return ascii;
+  // Non-ASCII input (Tamil, etc.): stable hash so the slug never changes for the same name
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+  return 'field_' + Math.abs(h).toString(36).slice(0, 8);
+};
 
 const inputCls =
   'w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
@@ -151,7 +157,6 @@ export function AddCustomFieldModal({
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('Name is required'); return; }
-    if (!slug) { toast.error('Name must contain letters or numbers'); return; }
     const validOptions = options.map((o) => o.name.trim()).filter(Boolean);
     if (typeInfo.hasOptions && validOptions.length === 0) {
       toast.error('Add at least one option'); return;
