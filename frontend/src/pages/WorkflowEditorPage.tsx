@@ -1337,6 +1337,16 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
     Array.isArray(cfg.pipeline_staff_mapping)
       ? (cfg.pipeline_staff_mapping as Array<{ pipeline_id: string; staff_ids?: string[]; staff_id?: string }>)
       : [];
+  const rrPairs: Array<{ pipeline_id: string; stage_id: string; staff_id: string }> =
+    Array.isArray(cfg.round_robin_pairs)
+      ? (cfg.round_robin_pairs as Array<{ pipeline_id: string; stage_id: string; staff_id: string }>)
+      : [];
+  const addRRPair = () => onUpdate({ config: { ...cfg, round_robin_pairs: [...rrPairs, { pipeline_id: '', stage_id: '', staff_id: '' }] } });
+  const removeRRPair = (i: number) => onUpdate({ config: { ...cfg, round_robin_pairs: rrPairs.filter((_, idx) => idx !== i) } });
+  const updateRRPair = (i: number, field: string, val: string) => {
+    const next = rrPairs.map((p, idx) => idx === i ? { ...p, [field]: val, ...(field === 'pipeline_id' ? { stage_id: '' } : {}) } : p);
+    onUpdate({ config: { ...cfg, round_robin_pairs: next } });
+  };
 
   const selectedIds: string[] = Array.isArray(cfg.staff_ids) ? (cfg.staff_ids as string[]) : [];
   const selectedStaff = selectedIds.map((id) => staff.find((s) => s.id === id)).filter(Boolean) as StaffOpt[];
@@ -1424,10 +1434,47 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
         <div className="flex rounded-lg border border-gray-200 overflow-hidden text-[12px] font-semibold">
           <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'specific' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'specific' } })}>Specific Staff</button>
           <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'by_pipeline' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'by_pipeline' } })}>By Pipeline</button>
+          <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'round_robin' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'round_robin' } })}>Round Robin</button>
         </div>
       </div>
 
-      {assignMode === 'by_pipeline' ? (
+      {assignMode === 'round_robin' ? (
+        <div className="space-y-2">
+          <label className="block text-[13px] font-semibold text-[#1c1410]">Pipeline + Staff Rotation</label>
+          <p className="text-[11px] text-[#9a8a7a]">Leads alternate between these pairs in order. Each pair gets an equal share.</p>
+          {rrPairs.length === 0 && (
+            <p className="text-[12px] text-[#b09e8d]">No pairs yet — add one per destination.</p>
+          )}
+          {rrPairs.map((pair, i) => {
+            const pairStages = pipelines.find((p) => p.id === pair.pipeline_id)?.stages ?? [];
+            return (
+              <div key={i} className="border border-gray-200 rounded-lg p-2.5 space-y-2 bg-[#faf8f6]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide">Pair {i + 1}</span>
+                  <button type="button" onClick={() => removeRRPair(i)} className="p-1 rounded text-[#b09e8d] hover:text-red-500 hover:bg-red-50 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                </div>
+                <select value={pair.pipeline_id} onChange={(e) => updateRRPair(i, 'pipeline_id', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
+                  <option value="">Pipeline…</option>
+                  {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                {pairStages.length > 0 && (
+                  <select value={pair.stage_id} onChange={(e) => updateRRPair(i, 'stage_id', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
+                    <option value="">Stage (optional)…</option>
+                    {pairStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                )}
+                <select value={pair.staff_id} onChange={(e) => updateRRPair(i, 'staff_id', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
+                  <option value="">Assign staff…</option>
+                  {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+            );
+          })}
+          <button type="button" onClick={addRRPair} className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:opacity-80 transition-opacity">
+            <Plus className="w-3.5 h-3.5" /> Add Pair
+          </button>
+        </div>
+      ) : assignMode === 'by_pipeline' ? (
         <div className="space-y-2">
           <label className="block text-[13px] font-semibold text-[#1c1410]">Pipeline → Staff</label>
           {mapping.length === 0 && (
@@ -4367,8 +4414,10 @@ export default function WorkflowEditorPage() {
           const mode = (node.config.assign_mode as string) ?? 'specific';
           const hasSpecific = ((node.config.staff_ids as string[] | undefined)?.length ?? 0) > 0;
           const hasByPipeline = ((node.config.pipeline_staff_mapping as any[] | undefined) ?? []).some((m: any) => (m.staff_ids?.length ?? 0) > 0 || m.staff_id);
+          const hasRoundRobin = ((node.config.round_robin_pairs as any[] | undefined) ?? []).some((p: any) => p.staff_id);
           if (mode === 'specific' && !hasSpecific) return `"Assign To Staff" is missing a staff member.`;
           if (mode === 'by_pipeline' && !hasByPipeline) return `"Assign To Staff" has no pipeline rules with staff assigned.`;
+          if (mode === 'round_robin' && !hasRoundRobin) return `"Assign To Staff" round-robin has no pairs with staff assigned.`;
         }
         if (node.actionType === 'change_stage' && !node.config.stage_id) return `"Change Pipeline Stage" is missing a stage.`;
         if (node.actionType === 'send_email' && !node.config.subject) return `"Send Email" is missing a subject.`;

@@ -566,8 +566,69 @@ export async function executeNodes(
 
         // ── Assign To Staff ────────────────────────────────────────────────────
         case 'assign_staff': {
-          // By-pipeline mode: resolve staff from pipeline→staff mapping
           const assignMode = (node.config.assign_mode as string) ?? 'specific';
+
+          // ── Round Robin mode: cycle through (pipeline, stage, staff) pairs ──
+          if (assignMode === 'round_robin') {
+            const pairs = (node.config.round_robin_pairs as Array<{ pipeline_id: string; stage_id: string; staff_id: string }>) ?? [];
+            if (!pairs.length) { status = 'skipped'; message = 'assign_staff: no round-robin pairs configured'; break; }
+
+            const nodeId = node.id ?? 'default';
+            const counters = await query(
+              `SELECT staff_id, count FROM workflow_staff_counters WHERE workflow_id=$1 AND node_id=$2`,
+              [workflowId, nodeId]
+            ).catch(() => ({ rows: [] as any[] }));
+
+            // Use "pair_N" as the key so indices don't clash with real staff UUIDs
+            const countMap: Record<string, number> = {};
+            for (let i = 0; i < pairs.length; i++) countMap[`pair_${i}`] = 0;
+            for (const row of counters.rows) {
+              if (countMap[row.staff_id] !== undefined) countMap[row.staff_id] = Number(row.count);
+            }
+
+            // Pick pair with lowest count; ties resolved by order
+            let pairIdx = 0;
+            let minCount = Infinity;
+            for (let i = 0; i < pairs.length; i++) {
+              const c = countMap[`pair_${i}`] ?? 0;
+              if (c < minCount) { minCount = c; pairIdx = i; }
+            }
+            const pair = pairs[pairIdx];
+            const pairKey = `pair_${pairIdx}`;
+
+            if (!pair.staff_id) { status = 'skipped'; message = `assign_staff: pair ${pairIdx + 1} has no staff`; break; }
+
+            // Move to pipeline + stage and assign staff in one UPDATE
+            await query(
+              `UPDATE leads SET pipeline_id=$1, stage_id=$2, assigned_to=$3::uuid, updated_at=NOW()
+               WHERE id=$4::uuid AND tenant_id=$5::uuid`,
+              [pair.pipeline_id || null, pair.stage_id || null, pair.staff_id, lead.id, tenantId]
+            );
+
+            // Increment counter
+            await query(
+              `INSERT INTO workflow_staff_counters (workflow_id, node_id, staff_id, count) VALUES ($1,$2,$3,1)
+               ON CONFLICT (workflow_id, node_id, staff_id) DO UPDATE SET count = workflow_staff_counters.count + 1`,
+              [workflowId, nodeId, pairKey]
+            ).catch(() => null);
+
+            // Sync in-memory lead context for subsequent nodes
+            lead.pipeline_id = pair.pipeline_id;
+            lead.stage_id    = pair.stage_id;
+            lead.assigned_to = pair.staff_id;
+            const [rStaff, rPipeline, rStage] = await Promise.all([
+              query('SELECT name FROM users           WHERE id=$1', [pair.staff_id]).catch(() => ({ rows: [] })),
+              query('SELECT name FROM pipelines       WHERE id=$1', [pair.pipeline_id]).catch(() => ({ rows: [] })),
+              query('SELECT name FROM pipeline_stages WHERE id=$1', [pair.stage_id]).catch(() => ({ rows: [] })),
+            ]);
+            lead.assigned_staff_name = (rStaff as any).rows[0]?.name ?? '';
+            lead.pipeline_name       = (rPipeline as any).rows[0]?.name ?? '';
+            lead.stage_name          = (rStage as any).rows[0]?.name ?? '';
+            message = `Round-robin pair ${pairIdx + 1}: ${lead.pipeline_name} → ${lead.assigned_staff_name}`;
+            break;
+          }
+
+          // By-pipeline mode: resolve staff from pipeline→staff mapping
           if (assignMode === 'by_pipeline') {
             const mapping = (node.config.pipeline_staff_mapping as Array<{ pipeline_id: string; staff_ids?: string[]; staff_id?: string }>) ?? [];
             const match = mapping.find((m) => m.pipeline_id === lead.pipeline_id);
