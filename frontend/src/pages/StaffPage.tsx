@@ -696,11 +696,17 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
             className="px-5 py-2 rounded-xl text-xs font-semibold text-[#7a6b5c] bg-[#f0ebe5] hover:bg-[#e8ddd4] transition-colors uppercase tracking-wide">
             Cancel
           </button>
-          {accessType === 'custom' && (
+          {accessType === 'custom' ? (
             <button type="button" onClick={handleSave} disabled={saving || loading}
               className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-colors uppercase tracking-wide">
               <Check className="w-3.5 h-3.5" />
               {saving ? 'Saving…' : 'Save Permissions'}
+            </button>
+          ) : (
+            <button type="button" onClick={onClose}
+              className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-white bg-primary hover:bg-primary/90 transition-colors uppercase tracking-wide">
+              <Check className="w-3.5 h-3.5" />
+              Done
             </button>
           )}
         </div>
