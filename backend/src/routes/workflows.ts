@@ -3015,68 +3015,78 @@ publicWorkflowRouter.post('/:workflowId/execute', async (req: any, res: any) => 
     for (const [k, v] of Object.entries(body)) {
       if (!reservedKeys.has(k)) {
         const cleanKey = cleanFieldKey(k);
-        if (cleanKey) extraFields[cleanKey] = String(v);
+        if (cleanKey) extraFields[cleanKey] = String(v ?? '');
       }
     }
 
-    // Find or create lead
     const tenantId = wf.tenant_id;
-    let lead: any;
 
-    const findClause = contactEmail
-      ? `WHERE tenant_id=$1 AND LOWER(email)=$2 AND is_deleted=FALSE LIMIT 1`
-      : `WHERE tenant_id=$1 AND phone=$2 AND is_deleted=FALSE LIMIT 1`;
-    const findVal = contactEmail || contactPhone;
-
-    const existing = await query(
-      `SELECT id, name, email, phone, stage_id, pipeline_id, assigned_to, tags, source, status, custom_fields
-       FROM leads ${findClause}`,
-      [tenantId, findVal]
-    );
-
-    if (existing.rows[0]) {
-      lead = existing.rows[0];
-      // Write extra fields to lead_field_values (proper storage) + keep JSONB in sync
-      if (Object.keys(extraFields).length > 0) {
-        const merged = { ...(lead.custom_fields ?? {}), ...extraFields };
-        await query(`UPDATE leads SET custom_fields=$1, updated_at=NOW() WHERE id=$2`, [JSON.stringify(merged), lead.id]);
-        lead.custom_fields = merged;
-        await backfillCustomFields(lead.id, tenantId, extraFields);
-      }
-    } else {
-      // Create new lead with clean-key JSONB
-      const cfJson = Object.keys(extraFields).length > 0 ? JSON.stringify(extraFields) : '{}';
-      const ins = await query(
-        `INSERT INTO leads (tenant_id, name, email, phone, source, custom_fields, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, 'api', $5::jsonb, NOW(), NOW())
-         RETURNING id, name, email, phone, stage_id, pipeline_id, assigned_to, tags, source, status, custom_fields`,
-        [tenantId, contactName || contactEmail || contactPhone, contactEmail, contactPhone, cfJson]
-      );
-      lead = ins.rows[0];
-      // Write to lead_field_values immediately so fields appear in the UI
-      if (Object.keys(extraFields).length > 0) {
-        await backfillCustomFields(lead.id, tenantId, extraFields);
-      }
-    }
-
-    // Respond immediately
+    // Respond immediately — never let lead creation or DB errors cause a 500 to n8n
     res.json({
       status: 'success',
       message: 'Automation triggered successfully',
       data: { automation_id: workflowId }
     });
 
-    // Execute nodes asynchronously
+    // All DB work + workflow execution happens asynchronously after response is sent
     setImmediate(async () => {
       try {
+        // Find or create lead
+        let lead: any;
+
+        const findClause = contactEmail
+          ? `WHERE tenant_id=$1 AND LOWER(email)=$2 AND is_deleted=FALSE LIMIT 1`
+          : `WHERE tenant_id=$1 AND phone=$2 AND is_deleted=FALSE LIMIT 1`;
+        const findVal = contactEmail || contactPhone;
+
+        const existing = await query(
+          `SELECT id, name, email, phone, stage_id, pipeline_id, assigned_to, tags, source, status, custom_fields
+           FROM leads ${findClause}`,
+          [tenantId, findVal]
+        );
+
+        if (existing.rows[0]) {
+          lead = existing.rows[0];
+          if (Object.keys(extraFields).length > 0) {
+            const merged = { ...(lead.custom_fields ?? {}), ...extraFields };
+            await query(`UPDATE leads SET custom_fields=$1, updated_at=NOW() WHERE id=$2`, [JSON.stringify(merged), lead.id]);
+            lead.custom_fields = merged;
+            await backfillCustomFields(lead.id, tenantId, extraFields);
+          }
+        } else {
+          const cfJson = Object.keys(extraFields).length > 0 ? JSON.stringify(extraFields) : '{}';
+          let ins;
+          try {
+            ins = await query(
+              `INSERT INTO leads (tenant_id, name, email, phone, source, custom_fields, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, 'api', $5::jsonb, NOW(), NOW())
+               RETURNING id, name, email, phone, stage_id, pipeline_id, assigned_to, tags, source, status, custom_fields`,
+              [tenantId, contactName || contactEmail || contactPhone, contactEmail || null, contactPhone || null, cfJson]
+            );
+          } catch {
+            // Race condition or constraint — retry SELECT
+            const retry = await query(
+              `SELECT id, name, email, phone, stage_id, pipeline_id, assigned_to, tags, source, status, custom_fields
+               FROM leads ${findClause}`,
+              [tenantId, findVal]
+            );
+            if (!retry.rows[0]) { console.error('[API1.0 execute] lead insert failed and retry found nothing'); return; }
+            ins = { rows: [retry.rows[0]] };
+          }
+          lead = ins.rows[0];
+          if (Object.keys(extraFields).length > 0) {
+            await backfillCustomFields(lead.id, tenantId, extraFields);
+          }
+        }
+
         // Enforce allow_reentry
         if (!wf.allow_reentry) {
-          const existing = await query(
+          const dup = await query(
             `SELECT id FROM workflow_executions
              WHERE workflow_id=$1 AND lead_id=$2 AND status IN ('running','completed') LIMIT 1`,
             [workflowId, lead.id]
           );
-          if (existing.rows[0]) {
+          if (dup.rows[0]) {
             await query(
               `INSERT INTO workflow_executions (workflow_id, lead_id, tenant_id, lead_name, trigger_type, status, enrolled_at, completed_at)
                VALUES ($1,$2,$3,$4,'api','skipped',NOW(),NOW())`,
