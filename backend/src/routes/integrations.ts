@@ -1683,10 +1683,10 @@ router.patch('/meta/connected-forms/:id', checkPermission('meta_forms:edit'), as
   if (pipeline_id !== undefined) { params.push(pipeline_id); setClauses.push(`pipeline_id=$${params.length}`); }
   if (stage_id    !== undefined) { params.push(stage_id);    setClauses.push(`stage_id=$${params.length}`); }
   if (!setClauses.length) { res.status(400).json({ error: 'Nothing to update' }); return; }
-  // Record the moment Auto is first switched ON — used as the initial cron cursor
-  // so the cron only fetches leads submitted after activation, not historical ones.
+  // Reset cursor to NOW() on every activation so the cron only fetches leads
+  // submitted after this activation, not historical ones from a previous activation.
   if (is_active === true) {
-    setClauses.push(`activated_at = COALESCE(activated_at, NOW())`);
+    setClauses.push(`activated_at = NOW()`);
   }
   params.push(req.params.id, req.user!.tenantId);
   try {

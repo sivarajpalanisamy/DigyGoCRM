@@ -588,7 +588,7 @@ export default function ContactsPage() {
                     className="w-4 h-4 accent-primary"
                   />
                 </th>
-                {['Contact', 'Source', 'Stage', 'Tags', 'Type', 'Created', 'Last Activity', ''].map((col) => (
+                {['Contact', 'Source', 'Pipeline', 'Tags', 'Type', 'Created', 'Last Activity', ''].map((col) => (
                   <th key={col} className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] whitespace-nowrap">
                     {col}
                   </th>
@@ -642,9 +642,11 @@ export default function ContactsPage() {
                       </span>
                     </td>
 
-                    {/* Stage */}
+                    {/* Pipeline */}
                     <td className="px-4 py-3.5">
-                      <span className="text-[12px] font-medium text-[#1c1410]">{lead.stage}</span>
+                      <span className="text-[12px] font-medium text-[#1c1410]">
+                        {pipelines.find((p) => p.id === lead.pipelineId)?.name ?? '—'}
+                      </span>
                     </td>
 
                     {/* Tags */}
