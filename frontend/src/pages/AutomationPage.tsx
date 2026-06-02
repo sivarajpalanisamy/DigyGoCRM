@@ -134,7 +134,21 @@ function ContactSidebar({
   };
 
   // ── UI helpers ───────────────────────────────────────────────────────────────
-  const actionNodes = workflow.nodes.filter((n) => n.type !== 'trigger');
+  const actionNodes = workflow.nodes.filter((n: any) => n.type !== 'trigger');
+
+  // Recursive map of ALL nodes (including nested branch nodes) by ID
+  const allNodesMap = (() => {
+    const map = new Map<string, any>();
+    const walk = (ns: any[]) => {
+      for (const n of ns) {
+        map.set(n.id, n);
+        if (n.branches?.yes) walk(n.branches.yes);
+        if (n.branches?.no)  walk(n.branches.no);
+      }
+    };
+    walk(workflow.nodes);
+    return map;
+  })();
 
   const bgPalette = ['#fde8d8','#dbeafe','#dcfce7','#ede9fe','#fce7f3'];
   const fgPalette = ['#c2410c','#1d4ed8','#15803d','#7c3aed','#be185d'];
@@ -369,23 +383,25 @@ function ContactSidebar({
                             <p className="text-[11px] text-red-700 font-mono break-all select-text">{log.error}</p>
                           </div>
                         )}
-                        {actionNodes.length === 0 ? (
+                        {(log.steps ?? []).length === 0 && actionNodes.length === 0 ? (
                           <p className="text-[11px] text-[#b09e8d] py-2">No steps configured.</p>
-                        ) : (
-                          actionNodes.map((node, ni) => {
-                            const step     = stepStatusMap[node.id];
-                            const isDone   = step?.status === 'completed';
-                            const isFailed = step?.status === 'failed';
-                            const isSkip   = step?.status === 'skipped';
+                        ) : (log.steps ?? []).length > 0 ? (
+                          // Render actual executed steps in order — includes nested branch steps
+                          (log.steps as any[]).map((step, ni) => {
+                            const node     = allNodesMap.get(step.node_id);
+                            const label    = node?.label || step.action_type || 'Action';
+                            const isDone   = step.status === 'completed';
+                            const isFailed = step.status === 'failed';
+                            const isSkip   = step.status === 'skipped';
                             return (
-                              <div key={node.id} className="flex items-start justify-between gap-2">
+                              <div key={step.node_id || ni} className="flex items-start justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-400 text-[9px] flex items-center justify-center font-bold shrink-0">
                                     {ni + 1}
                                   </span>
                                   <div className="min-w-0">
-                                    <span className="text-[12px] text-[#1c1410] truncate block">{node.label}</span>
-                                    {(isFailed || isSkip) && step?.message && (
+                                    <span className="text-[12px] text-[#1c1410] truncate block">{label}</span>
+                                    {(isFailed || isSkip) && step.message && (
                                       <span className={`text-[10px] break-all block select-text font-mono ${isFailed ? 'text-red-600' : 'text-[#b09e8d]'}`}>
                                         {step.message}
                                       </span>
@@ -412,6 +428,19 @@ function ContactSidebar({
                               </div>
                             );
                           })
+                        ) : (
+                          // Fallback: no step logs yet — show top-level nodes as pending
+                          actionNodes.map((node: any, ni: number) => (
+                            <div key={node.id} className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-400 text-[9px] flex items-center justify-center font-bold shrink-0">
+                                  {ni + 1}
+                                </span>
+                                <span className="text-[12px] text-[#1c1410] truncate block">{node.label}</span>
+                              </div>
+                              <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">Pending</span>
+                            </div>
+                          ))
                         )}
                       </div>
                     )}
