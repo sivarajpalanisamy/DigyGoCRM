@@ -2623,6 +2623,9 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
         const addRow    = (fields: KV[], setFn: (f: KV[]) => void) => setFn([...fields, { key: '', value: '' }]);
         const updateRow = (fields: KV[], setFn: (f: KV[]) => void, idx: number, patch: Partial<KV>) => setFn(fields.map((r, i) => i === idx ? { ...r, ...patch } : r));
         const removeRow = (fields: KV[], setFn: (f: KV[]) => void, idx: number) => setFn(fields.filter((_, i) => i !== idx));
+        const bodyMode  = (cfg.body_mode as string) ?? 'fields';
+        const rawPayload = (cfg.payload as string) ?? '';
+        const updateBodyMode = (mode: string) => onUpdate({ config: { ...cfg, body_mode: mode } });
 
         // Custom Values modal state
         const [cvOpen, setCvOpen] = useState<{ section: 'body'|'header'; idx: number } | null>(null);
@@ -2810,46 +2813,76 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
           )}
 
           {/* Body */}
-          {/* helper: one key-value row */}
           {hasBody && (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-gray-500" />
-                  <span className="text-[14px] font-bold text-gray-800">Body</span>
-                </div>
-                <p className="text-[12px] text-gray-500 mt-0.5">
-                  {requestFormat === 'form' ? 'Form fields sent as the request body' : 'JSON fields sent as the request body'}
-                </p>
-              </div>
-              <div className="p-4 space-y-2">
-                {bodyFields.map((row, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <input placeholder="Key" value={row.key}
-                      onChange={(e) => updateRow(bodyFields, updateBodyFields, i, { key: e.target.value })}
-                      className="w-[38%] border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400" />
-                    <input placeholder="Value" value={row.value}
-                      onChange={(e) => updateRow(bodyFields, updateBodyFields, i, { value: e.target.value })}
-                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400" />
-                    <button type="button" title="Insert variable"
-                      onClick={() => { setCvOpen({ section: 'body', idx: i }); setCvTab(cvTabs[0]?.id ?? ''); }}
-                      className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 shrink-0">
-                      <Tag className="w-3.5 h-3.5" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-gray-500" />
+                    <span className="text-[14px] font-bold text-gray-800">Body</span>
+                  </div>
+                  {/* Mode toggle */}
+                  <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                    <button type="button"
+                      onClick={() => updateBodyMode('fields')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${bodyMode === 'fields' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                      Field Builder
                     </button>
-                    <button type="button" onClick={() => removeRow(bodyFields, updateBodyFields, i)}
-                      className="p-1.5 rounded-lg border border-red-100 hover:bg-red-50 text-red-400 hover:text-red-600 shrink-0">
-                      <Trash2 className="w-3.5 h-3.5" />
+                    <button type="button"
+                      onClick={() => updateBodyMode('raw')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${bodyMode === 'raw' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                      Raw JSON
                     </button>
                   </div>
-                ))}
-                {bodyFields.length === 0 && (
-                  <p className="text-[12px] text-gray-400 text-center py-2">No fields — full lead object sent by default</p>
-                )}
-                <button type="button" onClick={() => addRow(bodyFields, updateBodyFields)}
-                  className="mt-1 flex items-center gap-1 text-[13px] text-gray-500 border border-dashed border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 w-full justify-center">
-                  <Plus className="w-3.5 h-3.5" /> Add Item
-                </button>
+                </div>
+                <p className="text-[12px] text-gray-500 mt-0.5">
+                  {bodyMode === 'raw' ? 'Write nested JSON with variable tokens like {first_name}, {%city%}' : requestFormat === 'form' ? 'Form fields sent as the request body' : 'JSON fields sent as the request body'}
+                </p>
               </div>
+
+              {bodyMode === 'raw' ? (
+                <div className="p-4 space-y-2">
+                  <textarea
+                    rows={12}
+                    value={rawPayload}
+                    onChange={(e) => onUpdate({ config: { ...cfg, payload: e.target.value } })}
+                    placeholder={`{\n  "first_name": "{first_name}",\n  "email": "{email}",\n  "phone": "{phone}",\n  "city": "{%city%}",\n  "extra": {\n    "First Name": "{first_name}",\n    "Grams": "{%grams%}",\n    "Pincode": "{%pincode%}",\n    "City": "{%city%}"\n  }\n}`}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[12px] font-mono outline-none focus:border-gray-400 resize-none bg-gray-50"
+                  />
+                  <p className="text-[11px] text-gray-400">
+                    Supports: <code className="bg-gray-100 px-1 rounded">{'{first_name}'}</code> <code className="bg-gray-100 px-1 rounded">{'{email}'}</code> <code className="bg-gray-100 px-1 rounded">{'{phone}'}</code> <code className="bg-gray-100 px-1 rounded">{'{pipeline}'}</code> <code className="bg-gray-100 px-1 rounded">{'{assigned_staff}'}</code> <code className="bg-gray-100 px-1 rounded">{'{%city%}'}</code> <code className="bg-gray-100 px-1 rounded">{'{%grams%}'}</code> etc.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 space-y-2">
+                  {bodyFields.map((row, i) => (
+                    <div key={i} className="flex gap-2 items-center">
+                      <input placeholder="Key" value={row.key}
+                        onChange={(e) => updateRow(bodyFields, updateBodyFields, i, { key: e.target.value })}
+                        className="w-[45%] border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400" />
+                      <input placeholder="Value" value={row.value}
+                        onChange={(e) => updateRow(bodyFields, updateBodyFields, i, { value: e.target.value })}
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400" />
+                      <button type="button" title="Insert variable"
+                        onClick={() => { setCvOpen({ section: 'body', idx: i }); setCvTab(cvTabs[0]?.id ?? ''); }}
+                        className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 shrink-0">
+                        <Tag className="w-3.5 h-3.5" />
+                      </button>
+                      <button type="button" onClick={() => removeRow(bodyFields, updateBodyFields, i)}
+                        className="p-1.5 rounded-lg border border-red-100 hover:bg-red-50 text-red-400 hover:text-red-600 shrink-0">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {bodyFields.length === 0 && (
+                    <p className="text-[12px] text-gray-400 text-center py-2">No fields — full lead object sent by default</p>
+                  )}
+                  <button type="button" onClick={() => addRow(bodyFields, updateBodyFields)}
+                    className="mt-1 flex items-center gap-1 text-[13px] text-gray-500 border border-dashed border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 w-full justify-center">
+                    <Plus className="w-3.5 h-3.5" /> Add Item
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -4170,6 +4203,7 @@ export default function WorkflowEditorPage() {
     if (passedWorkflow || !id || id === 'new') return;
     setLoadingWF(true);
     api.get<any>(`/api/workflows/${id}`).then((r) => {
+      justLoadedFromApi.current = true;
       setWorkflow({
         id: r.id, name: r.name, description: r.description ?? '',
         allowReentry: r.allow_reentry ?? false,
@@ -4187,6 +4221,7 @@ export default function WorkflowEditorPage() {
   // Debounced auto-save whenever nodes or name/status change
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (justLoadedFromApi.current) { justLoadedFromApi.current = false; return; }
     if (!workflow.id || workflow.id === 'new') return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
@@ -4326,6 +4361,7 @@ export default function WorkflowEditorPage() {
   const [loadingWF, setLoadingWF] = useState(!passedWorkflow && !!id && id !== 'new');
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
+  const justLoadedFromApi = useRef(false);
   const workflowRef = useRef(workflow);
   const [zoom, setZoom] = useState(100);
   const [panelWidth, setPanelWidth] = useState(340);
