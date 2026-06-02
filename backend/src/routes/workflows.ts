@@ -287,6 +287,7 @@ export function interpolate(
     name:                   lead.name ?? '',
     email:                  lead.email ?? '',
     phone:                  lead.phone ?? '',
+    phone_intl:             (() => { const p = (lead.phone ?? '').replace(/\D/g, ''); if (!p) return ''; if (p.startsWith('91') && p.length >= 12) return `+${p}`; return `+91${p}`; })(),
     stage:                  lead.stage_name ?? '',
     pipeline:               lead.pipeline_name ?? '',
     assigned_staff:         lead.assigned_staff_name ?? '',
