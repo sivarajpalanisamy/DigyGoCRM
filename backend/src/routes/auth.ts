@@ -12,7 +12,9 @@ import { requireAuth, requireSuperAdmin, AuthRequest, invalidateTenantCache } fr
 import { invalidateDomainCache, setCachedDomain } from '../utils/domainCache';
 import { addAllowedOrigin, removeAllowedOrigin } from '../utils/corsOrigins';
 
-const dnsLookup = promisify(dns.resolve4);
+const dnsResolve4 = promisify(dns.resolve4);
+// OS-level resolver (same as `ping`/getaddrinfo) — reliably follows CNAME chains
+const dnsLookupAll = promisify(dns.lookup) as (host: string, opts: { all: true; family: 4 }) => Promise<Array<{ address: string }>>;
 
 // Traefik dynamic config directory — Traefik watches this and auto-provisions SSL
 const TRAEFIK_DYNAMIC_DIR = '/etc/traefik/dynamic';
@@ -740,19 +742,34 @@ router.post('/tenants/:id/domain/verify', requireAuth, requireSuperAdmin, async 
     await query("UPDATE tenants SET domain_status='verifying', domain_last_attempt_at=NOW() WHERE id=$1", [req.params.id]);
 
     if (!skipDnsCheck) {
-      // Step 1: DNS verification — domain must point to our server
+      // Step 1: DNS verification — domain must resolve to our server
       const serverIp = process.env.SERVER_IP ?? '31.97.227.208';
       let dnsOk = false;
       let resolvedIps: string[] = [];
+
+      // Primary: OS resolver (getaddrinfo) — same as `ping`, follows CNAME chains reliably
       try {
-        resolvedIps = await dnsLookup(domain);
+        const addrs = await dnsLookupAll(domain, { all: true, family: 4 });
+        resolvedIps = addrs.map((a) => a.address);
         dnsOk = resolvedIps.includes(serverIp);
-      } catch {
+      } catch { /* try fallbacks below */ }
+
+      // Fallback 1: c-ares A-record query
+      if (!dnsOk) {
+        try {
+          const a = await dnsResolve4(domain);
+          resolvedIps = a;
+          dnsOk = a.includes(serverIp);
+        } catch { /* continue */ }
+      }
+
+      // Fallback 2: CNAME points to crm.digygo.in
+      if (!dnsOk) {
         try {
           const cnames = await new Promise<string[]>((resolve, reject) =>
             dns.resolveCname(domain, (err, addrs) => err ? reject(err) : resolve(addrs))
           );
-          dnsOk = cnames.some(c => c.includes('crm.digygo.in'));
+          dnsOk = cnames.some((c) => c.includes('crm.digygo.in'));
         } catch { /* unresolvable */ }
       }
 
