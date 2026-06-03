@@ -237,6 +237,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         useCompanyStore.getState().setLogo(stored.tenant.logoUrl ?? null);
         if (role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(stored.tenant);
       }
+      // Always refresh branding from server in the background — cached localStorage tenant
+      // may be stale (missing brandColor/appBgColor) and show wrong/old theme.
+      if (role !== 'super_admin') {
+        api.get<{ tenant?: any }>('/api/auth/me')
+          .then((me) => { if (me?.tenant) {
+            useBrandingStore.getState().applyTenantBranding(me.tenant);
+            saveSession(stored.token, stored.user, me.tenant);
+          }})
+          .catch(() => {});
+      }
 
       // Fetch permissions and wait — sidebar must not render with empty permissions
       await get().refreshPermissions();

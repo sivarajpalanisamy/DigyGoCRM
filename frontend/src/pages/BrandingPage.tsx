@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { usePermission } from '@/hooks/usePermission';
-import { useBrandingStore } from '@/store/brandingStore';
+import { useBrandingStore, derivePalette } from '@/store/brandingStore';
 import { useCompanyStore } from '@/store/companyStore';
 
 const COLOR_PRESETS = [
@@ -82,16 +82,15 @@ export default function BrandingPage() {
         favicon_url: form.favicon_url,
         banner_url: form.banner_url,
         brand_color: form.brand_color,
-        login_bg_color: form.login_bg_color,
         tab_title: form.tab_title,
-        app_bg_color: form.app_bg_color,
-        accent_color: form.accent_color,
+        // Theme is fully derived from brand_color — clear any legacy manual overrides
+        app_bg_color: null,
+        accent_color: null,
+        login_bg_color: null,
       });
       applyTenantBranding({
         name: form.name, logoUrl: form.logo_url, faviconUrl: form.favicon_url,
-        bannerUrl: form.banner_url, brandColor: form.brand_color,
-        loginBgColor: form.login_bg_color, tabTitle: form.tab_title,
-        appBgColor: form.app_bg_color, accentColor: form.accent_color,
+        bannerUrl: form.banner_url, brandColor: form.brand_color, tabTitle: form.tab_title,
       });
       setCompanyName(form.name || 'CRM');
       setLogo(form.logo_url);
@@ -107,6 +106,7 @@ export default function BrandingPage() {
     return <div className="p-8 text-center text-[#7a6b5c]">You don't have permission to manage branding.</div>;
   }
 
+  const pal = derivePalette(form.brand_color);
   const inp = 'w-full px-3 py-2 rounded-lg border border-[#e8ddd4] text-sm text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white';
   const labelCls = 'text-[12px] font-semibold text-[#1c1410] mb-1 block';
   const hintCls = 'text-[11px] text-[#9e8e7e] mt-1';
@@ -194,16 +194,16 @@ export default function BrandingPage() {
               </div>
             </section>
 
-            {/* Colors */}
+            {/* Brand Color — one color drives the whole palette */}
             <section className="bg-white rounded-xl border border-black/5 p-4">
-              <h2 className="font-semibold text-[#1c1410] text-[13px] mb-3">Colors</h2>
-              <label className={labelCls}>Primary / CRM Color</label>
+              <h2 className="font-semibold text-[#1c1410] text-[13px] mb-1">Brand Color</h2>
+              <p className={`${hintCls} mb-3 mt-0`}>Pick one color — the system automatically builds a matching palette (background, accents, charts) across your whole CRM.</p>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {COLOR_PRESETS.map((c) => (
                   <button key={c} type="button" onClick={() => upd('brand_color', c)}
-                    className="w-7 h-7 rounded-md border-2 transition-all flex items-center justify-center"
+                    className="w-8 h-8 rounded-md border-2 transition-all flex items-center justify-center"
                     style={{ background: c, borderColor: form.brand_color.toLowerCase() === c.toLowerCase() ? '#1c1410' : 'transparent' }}>
-                    {form.brand_color.toLowerCase() === c.toLowerCase() && <Check className="w-3.5 h-3.5 text-white" />}
+                    {form.brand_color.toLowerCase() === c.toLowerCase() && <Check className="w-4 h-4 text-white" />}
                   </button>
                 ))}
               </div>
@@ -214,47 +214,19 @@ export default function BrandingPage() {
                   placeholder="#c2410c" className={`${inp} max-w-[130px] font-mono`} />
               </div>
 
-              <div className="pt-3 mt-3 border-t border-black/5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>App Background</label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={form.app_bg_color ?? '#faf8f6'} onChange={(e) => upd('app_bg_color', e.target.value)}
-                      className="w-9 h-9 rounded-lg border border-[#e8ddd4] cursor-pointer p-0.5 shrink-0" />
-                    <input value={form.app_bg_color ?? ''} onChange={(e) => upd('app_bg_color', e.target.value || null)}
-                      placeholder="Default" className={`${inp} max-w-[120px] font-mono`} />
-                    {form.app_bg_color && (
-                      <button type="button" onClick={() => upd('app_bg_color', null)} className="text-[11px] text-red-500 hover:text-red-700">Reset</button>
-                    )}
+              {/* Derived palette swatches */}
+              <div className="flex items-center gap-3 mt-4 pt-3 border-t border-black/5">
+                <span className="text-[11px] text-[#9e8e7e]">Auto palette:</span>
+                {(() => { const p = derivePalette(form.brand_color); return (
+                  <div className="flex items-center gap-1.5">
+                    {[['Primary', p.brand], ['Dark', p.brandDark], ['Light', p.brandLight], ['Accent', p.accentTint], ['Surface', p.appBg]].map(([label, c]) => (
+                      <div key={label} className="flex flex-col items-center gap-1">
+                        <div className="w-7 h-7 rounded-md border border-black/10" style={{ background: c as string }} />
+                        <span className="text-[8px] text-[#9e8e7e]">{label}</span>
+                      </div>
+                    ))}
                   </div>
-                  <p className={hintCls}>Whole-app page background.</p>
-                </div>
-                <div>
-                  <label className={labelCls}>Accent</label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={form.accent_color ?? '#f5ede3'} onChange={(e) => upd('accent_color', e.target.value)}
-                      className="w-9 h-9 rounded-lg border border-[#e8ddd4] cursor-pointer p-0.5 shrink-0" />
-                    <input value={form.accent_color ?? ''} onChange={(e) => upd('accent_color', e.target.value || null)}
-                      placeholder="Default" className={`${inp} max-w-[120px] font-mono`} />
-                    {form.accent_color && (
-                      <button type="button" onClick={() => upd('accent_color', null)} className="text-[11px] text-red-500 hover:text-red-700">Reset</button>
-                    )}
-                  </div>
-                  <p className={hintCls}>Hover & selected highlights.</p>
-                </div>
-              </div>
-
-              <div className="pt-3 mt-3 border-t border-black/5">
-                <label className={labelCls}>Login Page Background</label>
-                <div className="flex items-center gap-2">
-                  <input type="color" value={form.login_bg_color ?? '#faf8f6'} onChange={(e) => upd('login_bg_color', e.target.value)}
-                    className="w-9 h-9 rounded-lg border border-[#e8ddd4] cursor-pointer p-0.5 shrink-0" />
-                  <input value={form.login_bg_color ?? ''} onChange={(e) => upd('login_bg_color', e.target.value || null)}
-                    placeholder="Default" className={`${inp} max-w-[130px] font-mono`} />
-                  {form.login_bg_color && (
-                    <button type="button" onClick={() => upd('login_bg_color', null)} className="text-[11px] text-red-500 hover:text-red-700">Reset</button>
-                  )}
-                </div>
-                <p className={hintCls}>Applies on your custom domain's login page.</p>
+                ); })()}
               </div>
             </section>
           </div>
@@ -276,7 +248,7 @@ export default function BrandingPage() {
               {/* App mock: sidebar + content */}
               <div className="border border-[#ece6df] rounded-b-lg rounded-tr-lg overflow-hidden flex h-[260px]">
                 {/* mini sidebar */}
-                <div className="w-[88px] border-r border-black/5 flex flex-col shrink-0" style={{ background: form.app_bg_color || '#faf8f6' }}>
+                <div className="w-[88px] border-r border-black/5 flex flex-col shrink-0" style={{ background: pal.appBg }}>
                   <div className="h-12 flex items-center justify-center border-b border-black/5 px-1">
                     {form.logo_url
                       ? <img src={form.logo_url} alt="" className="max-h-8 max-w-full object-contain" />
@@ -286,7 +258,7 @@ export default function BrandingPage() {
                     <div className="flex items-center gap-1 px-1.5 py-1 rounded-md" style={{ background: form.brand_color }}>
                       <LayoutDashboard className="w-3 h-3 text-white" /><span className="text-[8px] text-white font-medium">Dashboard</span>
                     </div>
-                    <div className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[#7a6b5c]" style={{ background: form.accent_color || 'transparent' }}>
+                    <div className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[#7a6b5c]" style={{ background: pal.accentTint }}>
                       <Users className="w-3 h-3" /><span className="text-[8px]">Leads</span>
                     </div>
                     <div className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[#7a6b5c]">
@@ -298,8 +270,8 @@ export default function BrandingPage() {
                 <div className="flex-1 bg-white p-3 flex flex-col gap-2">
                   <div className="h-2.5 w-20 rounded-full bg-[#ece6df]" />
                   <div className="flex gap-1.5">
-                    <div className="h-9 flex-1 rounded-md border border-black/5" style={{ background: form.app_bg_color || '#faf8f6' }} />
-                    <div className="h-9 flex-1 rounded-md border border-black/5" style={{ background: form.app_bg_color || '#faf8f6' }} />
+                    <div className="h-9 flex-1 rounded-md border border-black/5" style={{ background: pal.appBg }} />
+                    <div className="h-9 flex-1 rounded-md border border-black/5" style={{ background: pal.appBg }} />
                   </div>
                   <button className="text-[9px] text-white font-semibold rounded-md px-2 py-1.5 w-fit" style={{ background: form.brand_color }}>
                     + Add Lead

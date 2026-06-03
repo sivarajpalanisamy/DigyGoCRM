@@ -38,29 +38,48 @@ function shade(hex: string, delta: number): string {
   return '#' + [r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('');
 }
 
-const DEFAULTS = {
-  brand: '#ea580c', brandDark: '#c2410c', brandLight: '#f97316',
-  accentTint: '#f5ede3', appBg: '#faf8f6', primaryHsl: '21 90% 48%',
-};
+// Mix a hex color with white. amount=0 → pure color, amount=1 → white.
+function mixWhite(hex: string, amount: number): string {
+  const clean = hex.replace('#', '');
+  if (clean.length !== 6) return hex;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * amount);
+  return '#' + [mix(r), mix(g), mix(b)].map((c) => c.toString(16).padStart(2, '0')).join('');
+}
 
-// Apply the full theme by setting CSS variables that the whole app reads.
-function applyTheme(opts: { brandColor?: string | null; appBgColor?: string | null; accentColor?: string | null }): void {
+// DigyGo default brand — when a tenant uses this (or none), keep the original neutral palette.
+const DEFAULT_BRANDS = new Set(['#c2410c', '#ea580c', '#f97316']);
+
+// Derive a complete, harmonious palette from a single brand color.
+export function derivePalette(hex: string) {
+  return {
+    brand:      hex,
+    brandDark:  shade(hex, -0.14),    // gradients, hover, headings
+    brandLight: shade(hex, 0.10),     // gradient end
+    accentTint: mixWhite(hex, 0.90),  // soft hover / selected backgrounds
+    appBg:      mixWhite(hex, 0.96),  // subtle brand-tinted app background
+  };
+}
+
+// Apply theme. Single source of truth: the brand color.
+// Default DigyGo brand → clear overrides so index.css neutral defaults show (live clients unchanged).
+function applyTheme(brandColor?: string | null): void {
   const root = document.documentElement;
-  const brand = opts.brandColor || DEFAULTS.brand;
-  const brandDark = brand === DEFAULTS.brand ? DEFAULTS.brandDark : shade(brand, -0.18);
-  const brandLight = brand === DEFAULTS.brand ? DEFAULTS.brandLight : shade(brand, 0.12);
-  const appBg = opts.appBgColor || DEFAULTS.appBg;
-  const accentTint = opts.accentColor || DEFAULTS.accentTint;
+  const hex = (brandColor || '').toLowerCase();
+  if (!hex || DEFAULT_BRANDS.has(hex)) { clearTheme(); return; }
 
-  root.style.setProperty('--brand', brand);
-  root.style.setProperty('--brand-dark', brandDark);
-  root.style.setProperty('--brand-light', brandLight);
-  root.style.setProperty('--app-bg', appBg);
-  root.style.setProperty('--accent-tint', accentTint);
+  const p = derivePalette(hex);
+  root.style.setProperty('--brand', p.brand);
+  root.style.setProperty('--brand-dark', p.brandDark);
+  root.style.setProperty('--brand-light', p.brandLight);
+  root.style.setProperty('--app-bg', p.appBg);
+  root.style.setProperty('--accent-tint', p.accentTint);
   // Tailwind HSL tokens (bg-primary / text-primary / opacity variants)
-  root.style.setProperty('--primary', hexToHsl(brand));
-  root.style.setProperty('--primary-dark', hexToHsl(brandDark));
-  root.style.setProperty('--color-primary', brand);
+  root.style.setProperty('--primary', hexToHsl(p.brand));
+  root.style.setProperty('--primary-dark', hexToHsl(p.brandDark));
+  root.style.setProperty('--color-primary', p.brand);
 }
 
 function clearTheme(): void {
@@ -157,7 +176,7 @@ export const useBrandingStore = create<BrandingState>((set) => ({
         accentColor: data.accentColor ?? null,
         loaded: true,
       });
-      applyTheme({ brandColor, appBgColor: data.appBgColor, accentColor: data.accentColor });
+      applyTheme(brandColor);
       applyFavicon(data.faviconUrl ?? null);
       applyTitle(data.tabTitle ?? null);
     } catch {
@@ -182,7 +201,7 @@ export const useBrandingStore = create<BrandingState>((set) => ({
       accentColor: d.accentColor ?? null,
       loaded: true,
     });
-    applyTheme({ brandColor, appBgColor: d.appBgColor, accentColor: d.accentColor });
+    applyTheme(brandColor);
     applyFavicon(d.faviconUrl ?? null);
     applyTitle(d.tabTitle ?? null);
   },

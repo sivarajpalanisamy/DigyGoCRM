@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ExportModal } from '@/components/ui/ExportModal';
 import { cn, copyToClipboard } from '@/lib/utils';
+import { brandHex } from '@/lib/brand';
 import { formatDistanceToNow, format, isPast } from 'date-fns';
 import {
   DndContext, closestCorners, PointerSensor, useSensor, useSensors,
@@ -3414,7 +3415,10 @@ function StageColumn({ stage, leads: stageLeads, onLeadClick, onFollowUp, onNote
   showPhone: boolean; stageIndex: number; highlightId?: string | null;
 }) {
   const { setNodeRef } = useDroppable({ id: stage });
-  const accent  = STAGE_ACCENT_COLORS[stageIndex % STAGE_ACCENT_COLORS.length];
+  // First stage uses the tenant's brand color; remaining stages use the distinct palette
+  const accent  = (stageIndex % STAGE_ACCENT_COLORS.length) === 0
+    ? brandHex()
+    : STAGE_ACCENT_COLORS[stageIndex % STAGE_ACCENT_COLORS.length];
   const isEmpty = stageLeads.length === 0;
 
   return (
