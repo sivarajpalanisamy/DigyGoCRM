@@ -8,9 +8,11 @@ import { useBrandingStore, derivePalette } from '@/store/brandingStore';
 import { useCompanyStore } from '@/store/companyStore';
 
 const COLOR_PRESETS = [
-  '#c2410c', '#ea580c', '#dc2626', '#e11d48', '#db2777',
-  '#9333ea', '#7c3aed', '#4f46e5', '#2563eb', '#0284c7',
-  '#0891b2', '#059669', '#16a34a', '#65a30d', '#1c1410',
+  '#c2410c', '#ea580c', '#9a3412', '#7f1d1d', '#dc2626',
+  '#e11d48', '#db2777', '#a21caf', '#9333ea', '#7c3aed',
+  '#4f46e5', '#2563eb', '#0284c7', '#0891b2', '#0d9488',
+  '#059669', '#16a34a', '#65a30d', '#a16207', '#78350f',
+  '#1e3a8a', '#334155', '#1c1410',
 ];
 
 interface BrandingForm {

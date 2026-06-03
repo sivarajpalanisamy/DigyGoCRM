@@ -49,9 +49,6 @@ function mixWhite(hex: string, amount: number): string {
   return '#' + [mix(r), mix(g), mix(b)].map((c) => c.toString(16).padStart(2, '0')).join('');
 }
 
-// DigyGo default brand — when a tenant uses this (or none), keep the original neutral palette.
-const DEFAULT_BRANDS = new Set(['#c2410c', '#ea580c', '#f97316']);
-
 // Derive a complete, harmonious palette from a single brand color.
 export function derivePalette(hex: string) {
   return {
@@ -64,11 +61,11 @@ export function derivePalette(hex: string) {
 }
 
 // Apply theme. Single source of truth: the brand color.
-// Default DigyGo brand → clear overrides so index.css neutral defaults show (live clients unchanged).
+// Always derives + applies the full palette from the chosen color.
 function applyTheme(brandColor?: string | null): void {
   const root = document.documentElement;
   const hex = (brandColor || '').toLowerCase();
-  if (!hex || DEFAULT_BRANDS.has(hex)) { clearTheme(); return; }
+  if (!hex || hex.length !== 7) { clearTheme(); return; }
 
   const p = derivePalette(hex);
   root.style.setProperty('--brand', p.brand);
