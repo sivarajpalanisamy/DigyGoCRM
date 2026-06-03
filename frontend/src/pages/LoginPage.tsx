@@ -12,8 +12,12 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpStep, setOtpStep] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [rememberDevice, setRememberDevice] = useState(true);
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
+  const verifyOtp = useAuthStore((s) => s.verifyOtp);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { isCustomDomain, tenantName, logoUrl, brandColor, bannerUrl, loginBgColor, loaded, fetchBranding } = useBrandingStore();
 
@@ -28,13 +32,31 @@ export default function LoginPage() {
     if (!email || !password) { setError('Please fill in all fields'); return; }
     setLoading(true);
     await new Promise((r) => setTimeout(r, 400)); // brief animation
-    const ok = await login(email, password);
+    const result = await login(email, password);
+    setLoading(false);
+    if (result.otpRequired) {
+      setOtpStep(true);
+      setError('');
+      toast.success('Verification code sent to your email');
+    } else if (result.ok) {
+      toast.success('Welcome back!');
+      navigate('/dashboard');
+    } else {
+      setError('Invalid email or password');
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.trim().length !== 4) { setError('Enter the 4-digit code'); return; }
+    setLoading(true);
+    const ok = await verifyOtp(email, otp.trim(), rememberDevice);
     setLoading(false);
     if (ok) {
       toast.success('Welcome back!');
       navigate('/dashboard');
     } else {
-      setError('Invalid email or password');
+      setError('Incorrect or expired code');
     }
   };
 
@@ -79,11 +101,41 @@ export default function LoginPage() {
           <div className="bg-white rounded-2xl p-5 border border-black/5" style={{ boxShadow: '0 8px 32px -4px rgba(0,0,0,0.06)' }}>
             {/* Heading inside card */}
             <div className="text-center mb-4">
-              <h1 className="font-headline text-xl font-bold tracking-tight text-[#1c1410]">Welcome back</h1>
+              <h1 className="font-headline text-xl font-bold tracking-tight text-[#1c1410]">{otpStep ? "Verify it's you" : 'Welcome back'}</h1>
               <p className="text-[#5c5245] mt-1 text-[13px] leading-relaxed">
-                Sign in to your {isCustomDomain && tenantName ? tenantName : 'DigyGo CRM'} account
+                {otpStep
+                  ? `Enter the 4-digit code sent to ${email}`
+                  : `Sign in to your ${isCustomDomain && tenantName ? tenantName : 'DigyGo CRM'} account`}
               </p>
             </div>
+
+            {otpStep ? (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <input
+                  inputMode="numeric"
+                  autoFocus
+                  maxLength={4}
+                  value={otp}
+                  onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
+                  placeholder="0000"
+                  className="w-full text-center tracking-[0.5em] text-2xl font-bold h-[54px] rounded-xl border border-[#e8ddd4] outline-none focus:border-primary"
+                />
+                <label className="flex items-center gap-2 text-[13px] text-[#5c5245] cursor-pointer">
+                  <input type="checkbox" checked={rememberDevice} onChange={(e) => setRememberDevice(e.target.checked)} />
+                  Remember this device for 30 days
+                </label>
+                {error && (
+                  <div className="px-3 py-2.5 bg-[#ffdad6] rounded-xl"><p className="text-sm text-[#ba1a1a] font-medium">{error}</p></div>
+                )}
+                <button type="submit" disabled={loading}
+                  className="w-full h-[54px] rounded-xl text-white text-[16px] font-bold flex items-center justify-center gap-2 active:scale-[0.97] transition-all disabled:opacity-70 shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
+                  {loading ? 'Verifying…' : 'Verify & Continue'}
+                </button>
+                <button type="button" onClick={() => { setOtpStep(false); setOtp(''); setError(''); }}
+                  className="w-full text-center text-[12px] text-[#7a6b5c] hover:text-primary">← Back to login</button>
+              </form>
+            ) : (
             <form onSubmit={handleLogin} className="space-y-4">
 
               {/* Email */}
@@ -158,6 +210,7 @@ export default function LoginPage() {
               </button>
 
             </form>
+            )}
           </div>
         </main>
 

@@ -11,7 +11,7 @@ import { config } from '../config';
 import { requireAuth, requireSuperAdmin, AuthRequest, invalidateTenantCache } from '../middleware/auth';
 import { invalidateDomainCache, setCachedDomain } from '../utils/domainCache';
 import { addAllowedOrigin, removeAllowedOrigin } from '../utils/corsOrigins';
-import { sendEmail } from '../services/email';
+import { sendEmail, getTenantEmailIdentity } from '../services/email';
 
 // OS-level resolver (same as `ping`/getaddrinfo) — used as a final fallback
 const dnsLookupAll = promisify(dns.lookup) as (host: string, opts: { all: true; family: 4 }) => Promise<Array<{ address: string }>>;
@@ -99,6 +99,92 @@ function auditLog(
   ).catch((err) => console.error('[audit_log]', err.message));
 }
 
+// ── 2FA (email OTP) helpers ───────────────────────────────────────────────────
+const DEVICE_COOKIE = 'digygo_device';
+const OTP_TTL_MS = 10 * 60 * 1000;       // OTP valid 10 minutes
+const OTP_MAX_ATTEMPTS = 5;
+
+function generateOtp(): string {
+  return String(Math.floor(1000 + Math.random() * 9000)); // 4 digits
+}
+
+function setDeviceCookie(res: Response, token: string) {
+  res.cookie(DEVICE_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.COOKIE_SECURE === 'true',
+    sameSite: 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    path: '/',
+  });
+}
+
+// True only when 2FA should challenge this login (tenant opted in, not super-admin, kill-switch off)
+function needsTwoFactor(user: any): boolean {
+  if (process.env.DISABLE_2FA === 'true') return false;
+  if (user.role === 'super_admin') return false; // super-admin bypass — never lock out
+  return !!user.tenant_id && user.two_factor_enabled === true;
+}
+
+// Is there a valid remembered-device cookie for this user? (skips OTP)
+async function hasTrustedDevice(req: Request, userId: string): Promise<boolean> {
+  const token = req.cookies?.[DEVICE_COOKIE];
+  if (!token) return false;
+  try {
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    const r = await query(
+      `SELECT id FROM trusted_devices WHERE user_id=$1 AND token_hash=$2 AND expires_at > NOW() LIMIT 1`,
+      [userId, hash]
+    );
+    return !!r.rows[0];
+  } catch { return false; }
+}
+
+// Issue the full session (refresh token + access token + branding) and return the JSON payload.
+// Shared by /login (no-2FA path) and /verify-otp.
+async function completeLogin(res: Response, user: any): Promise<any> {
+  const refreshToken = crypto.randomBytes(40).toString('hex');
+  const refreshHash  = await bcrypt.hash(refreshToken, 10);
+  const prefix       = tokenPrefix(refreshToken);
+  await query(
+    `UPDATE users
+       SET refresh_token_hash=$1, refresh_token_prefix=$2,
+           failed_login_attempts=0, locked_until=NULL, last_login_at=NOW(),
+           otp_code_hash=NULL, otp_expires_at=NULL, otp_attempts=0
+     WHERE id=$3`,
+    [refreshHash, prefix, user.id]
+  );
+
+  let tenantName = 'DigyGo CRM';
+  let tenantBranding: any = { name: tenantName, logoUrl: null };
+  if (user.tenant_id) {
+    const brandRes = await query(
+      `SELECT t.name, t.logo_url, t.favicon_url, t.banner_url, t.brand_color,
+              t.login_bg_color, t.tab_title, t.app_bg_color, t.accent_color, cs.legal_name
+       FROM tenants t
+       LEFT JOIN company_settings cs ON cs.tenant_id = t.id
+       WHERE t.id = $1`,
+      [user.tenant_id]
+    );
+    if (brandRes.rows[0]) {
+      const b = brandRes.rows[0];
+      tenantName = b.legal_name || b.name || tenantName;
+      tenantBranding = {
+        name: tenantName, logoUrl: b.logo_url || null, faviconUrl: b.favicon_url || null,
+        bannerUrl: b.banner_url || null, brandColor: b.brand_color || '#c2410c',
+        loginBgColor: b.login_bg_color || null, tabTitle: b.tab_title || null,
+        appBgColor: b.app_bg_color || null, accentColor: b.accent_color || null,
+      };
+    }
+  }
+  const accessToken = issueAccessToken(user.id, user.tenant_id, user.role, user.tenant_plan ?? 'starter');
+  setRefreshCookie(res, refreshToken);
+  return {
+    token: accessToken,
+    user: { id: user.id, tenantId: user.tenant_id, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatar_url },
+    tenant: tenantBranding,
+  };
+}
+
 // POST /api/auth/login
 router.post('/login', async (req: Request, res: Response) => {
   const parsed = loginSchema.safeParse(req.body);
@@ -112,7 +198,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const result = await query(
       `SELECT u.id, u.tenant_id, u.email, u.password_hash, u.name, u.role, u.avatar_url,
               u.failed_login_attempts, u.locked_until, u.is_active,
-              t.plan AS tenant_plan
+              t.plan AS tenant_plan, t.two_factor_enabled
        FROM users u
        LEFT JOIN tenants t ON t.id = u.tenant_id
        WHERE lower(u.email) = lower($1)`,
@@ -149,60 +235,87 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     // Issue refresh token; store bcrypt hash + indexed prefix (#1)
-    const refreshToken  = crypto.randomBytes(40).toString('hex');
-    const refreshHash   = await bcrypt.hash(refreshToken, 10);
-    const prefix        = tokenPrefix(refreshToken);
-    await query(
-      `UPDATE users
-         SET refresh_token_hash=$1, refresh_token_prefix=$2,
-             failed_login_attempts=0, locked_until=NULL, last_login_at=NOW()
-       WHERE id=$3`,
-      [refreshHash, prefix, user.id]
-    );
-
-    // Fetch tenant branding
-    let tenantName = 'DigyGo CRM';
-    let tenantBranding: any = { name: tenantName, logoUrl: null };
-    if (user.tenant_id) {
-      const brandRes = await query(
-        `SELECT t.name, t.logo_url, t.favicon_url, t.banner_url, t.brand_color,
-                t.login_bg_color, t.tab_title, t.app_bg_color, t.accent_color, cs.legal_name
-         FROM tenants t
-         LEFT JOIN company_settings cs ON cs.tenant_id = t.id
-         WHERE t.id = $1`,
-        [user.tenant_id]
+    // ── 2FA branch: if the tenant opted in and this isn't a trusted device, send an OTP ──
+    if (needsTwoFactor(user) && !(await hasTrustedDevice(req, user.id))) {
+      // Password was correct — clear failed attempts, then issue an email OTP
+      const otp = generateOtp();
+      const otpHash = await bcrypt.hash(otp, 10);
+      await query(
+        `UPDATE users SET failed_login_attempts=0, locked_until=NULL,
+           otp_code_hash=$1, otp_expires_at=$2, otp_attempts=0 WHERE id=$3`,
+        [otpHash, new Date(Date.now() + OTP_TTL_MS), user.id]
       );
-      if (brandRes.rows[0]) {
-        const b = brandRes.rows[0];
-        tenantName = b.legal_name || b.name || tenantName;
-        tenantBranding = {
-          name:         tenantName,
-          logoUrl:      b.logo_url || null,
-          faviconUrl:   b.favicon_url || null,
-          bannerUrl:    b.banner_url || null,
-          brandColor:   b.brand_color || '#c2410c',
-          loginBgColor: b.login_bg_color || null,
-          tabTitle:     b.tab_title || null,
-          appBgColor:   b.app_bg_color || null,
-          accentColor:  b.accent_color || null,
-        };
-      }
+      // Resolve white-label identity for the OTP email
+      const ident = await getTenantEmailIdentity(user.tenant_id);
+      const brand = ident.fromName || 'DigyGo CRM';
+      setImmediate(() => sendEmail({
+        to: user.email,
+        subject: `Your ${brand} login code: ${otp}`,
+        fromName: ident.fromName,
+        replyTo: ident.replyTo,
+        html: `<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto;text-align:center">
+                 <p style="color:#5c5245;font-size:14px">Your ${brand} login verification code is:</p>
+                 <p style="font-size:34px;font-weight:800;letter-spacing:8px;color:#1c1410;margin:12px 0">${otp}</p>
+                 <p style="color:#9c8f84;font-size:12px">This code expires in 10 minutes. If you didn't try to log in, ignore this email.</p>
+               </div>`,
+      }).catch((e) => console.error('[2fa otp email]', e?.message)));
+
+      res.json({ otpRequired: true, email: user.email });
+      return;
     }
 
-    const plan        = user.tenant_plan ?? 'starter';
-    const accessToken = issueAccessToken(user.id, user.tenant_id, user.role, plan);
-    setRefreshCookie(res, refreshToken);
-
-    res.json({
-      token: accessToken,
-      user: {
-        id: user.id, tenantId: user.tenant_id, email: user.email,
-        name: user.name, role: user.role, avatarUrl: user.avatar_url,
-      },
-      tenant: tenantBranding,
-    });
+    // ── Normal login (no 2FA, or trusted device) ──
+    const payload = await completeLogin(res, user);
+    res.json(payload);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/auth/verify-otp — complete 2FA login with the 4-digit code
+router.post('/verify-otp', async (req: Request, res: Response) => {
+  const email = (req.body?.email ?? '').toString().trim().toLowerCase();
+  const otp = (req.body?.otp ?? '').toString().trim();
+  const rememberDevice = req.body?.rememberDevice === true;
+  if (!email || !otp) { res.status(400).json({ error: 'Email and code required' }); return; }
+  try {
+    const r = await query(
+      `SELECT u.id, u.tenant_id, u.email, u.name, u.role, u.avatar_url, u.is_active,
+              u.otp_code_hash, u.otp_expires_at, u.otp_attempts, t.plan AS tenant_plan
+       FROM users u LEFT JOIN tenants t ON t.id = u.tenant_id
+       WHERE lower(u.email)=lower($1)`,
+      [email]
+    );
+    const user = r.rows[0];
+    if (!user || !user.is_active || !user.otp_code_hash) {
+      res.status(401).json({ error: 'Invalid or expired code' }); return;
+    }
+    if (user.otp_expires_at && new Date(user.otp_expires_at) < new Date()) {
+      res.status(410).json({ error: 'Code expired — please log in again' }); return;
+    }
+    if ((user.otp_attempts ?? 0) >= OTP_MAX_ATTEMPTS) {
+      res.status(429).json({ error: 'Too many attempts — please log in again' }); return;
+    }
+    const ok = await bcrypt.compare(otp, user.otp_code_hash);
+    if (!ok) {
+      await query(`UPDATE users SET otp_attempts=otp_attempts+1 WHERE id=$1`, [user.id]);
+      res.status(401).json({ error: 'Incorrect code' }); return;
+    }
+    // Success — optionally remember this device for 30 days
+    if (rememberDevice) {
+      const deviceToken = crypto.randomBytes(32).toString('hex');
+      const deviceHash = crypto.createHash('sha256').update(deviceToken).digest('hex');
+      await query(
+        `INSERT INTO trusted_devices (user_id, token_hash, expires_at) VALUES ($1,$2,$3)`,
+        [user.id, deviceHash, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)]
+      );
+      setDeviceCookie(res, deviceToken);
+    }
+    const payload = await completeLogin(res, user);
+    res.json(payload);
+  } catch (err) {
+    console.error('[verify-otp]', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

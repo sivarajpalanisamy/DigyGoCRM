@@ -189,6 +189,25 @@ router.put('/branding', checkPermission('settings:manage'), async (req: AuthRequ
   } catch (err) { console.error('[branding update]', err); res.status(500).json({ error: 'Server error' }); }
 });
 
+// ── Security (2FA toggle) ─────────────────────────────────────────────────────
+
+// GET /api/settings/security — current tenant's security settings
+router.get('/security', async (req: AuthRequest, res: Response) => {
+  try {
+    const r = await query('SELECT two_factor_enabled FROM tenants WHERE id=$1', [req.user!.tenantId]);
+    res.json({ twoFactorEnabled: r.rows[0]?.two_factor_enabled === true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// PUT /api/settings/security — toggle email-OTP 2FA for the whole tenant
+router.put('/security', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+  const enabled = req.body?.two_factor_enabled === true;
+  try {
+    await query('UPDATE tenants SET two_factor_enabled=$1 WHERE id=$2', [enabled, req.user!.tenantId]);
+    res.json({ success: true, twoFactorEnabled: enabled });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 // GET /api/settings/staff — no permission guard: every tenant member needs this to display assignee names
 router.get('/staff', async (req: AuthRequest, res: Response) => {
   try {

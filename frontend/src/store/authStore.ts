@@ -32,7 +32,8 @@ interface AuthState {
   permissions: Record<string, boolean>;
   permAll: boolean;
   setToken: (token: string) => void;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; otpRequired?: boolean }>;
+  verifyOtp: (email: string, otp: string, rememberDevice: boolean) => Promise<boolean>;
   logout: () => void;
   bootstrapFromRefresh: () => Promise<boolean>;
   impersonateTenant: (tenantId: string) => Promise<boolean>;
@@ -94,6 +95,19 @@ function getStoredSession(): { token: string; user: User; tenant?: { name: strin
   }
 }
 
+// Apply a successful auth response (login or OTP verify): set token, state, branding.
+function applySession(data: any, set: any, _get: any) {
+  setAccessToken(data.token);
+  const role = data.user.role;
+  set({ currentUser: data.user, isAuthenticated: true, permAll: role === 'super_admin' || role === 'owner' });
+  saveSession(data.token, data.user, data.tenant);
+  if (data.tenant) {
+    useCompanyStore.getState().setCompanyName(data.tenant.name ?? 'DigyGo CRM');
+    useCompanyStore.getState().setLogo(data.tenant.logoUrl ?? null);
+    if (role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(data.tenant);
+  }
+}
+
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -130,18 +144,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+      if (!res.ok) return { ok: false };
+      const data = await res.json();
+      // 2FA: server is asking for an emailed OTP — don't log in yet
+      if (data.otpRequired) return { ok: false, otpRequired: true };
+      applySession(data, set, get);
+      await get().refreshPermissions();
+      get().listenForPermissionUpdates();
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
+  },
+
+  verifyOtp: async (email, otp, rememberDevice) => {
+    try {
+      const res = await fetch(`${BASE}/api/auth/verify-otp`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp, rememberDevice }),
+      });
       if (!res.ok) return false;
       const data = await res.json();
-      setAccessToken(data.token);
-      const role = data.user.role;
-      set({ currentUser: data.user, isAuthenticated: true, permAll: role === 'super_admin' || role === 'owner' });
-      saveSession(data.token, data.user, data.tenant);
-      if (data.tenant) {
-        useCompanyStore.getState().setCompanyName(data.tenant.name ?? 'DigyGo CRM');
-        useCompanyStore.getState().setLogo(data.tenant.logoUrl ?? null);
-        if (role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(data.tenant);
-      }
-      // Await permissions so the sidebar renders correctly on first navigation
+      applySession(data, set, get);
       await get().refreshPermissions();
       get().listenForPermissionUpdates();
       return true;
