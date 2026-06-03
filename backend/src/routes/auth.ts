@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
 import * as fs from 'fs';
 import * as dns from 'dns';
+import { promisify } from 'util';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { query, pool } from '../db';
@@ -13,8 +12,37 @@ import { requireAuth, requireSuperAdmin, AuthRequest, invalidateTenantCache } fr
 import { invalidateDomainCache, setCachedDomain } from '../utils/domainCache';
 import { addAllowedOrigin, removeAllowedOrigin } from '../utils/corsOrigins';
 
-const execFileAsync = promisify(execFile);
 const dnsLookup = promisify(dns.resolve4);
+
+// Traefik dynamic config directory — Traefik watches this and auto-provisions SSL
+const TRAEFIK_DYNAMIC_DIR = '/etc/traefik/dynamic';
+
+function writeTraefikConfig(domain: string): void {
+  // Sanitize domain for use as router/service name
+  const name = domain.replace(/\./g, '-').replace(/[^a-z0-9-]/gi, '');
+  const yaml = `http:
+  routers:
+    ${name}:
+      rule: "Host(\`${domain}\`)"
+      entrypoints:
+        - websecure
+      tls:
+        certResolver: mytlschallenge
+      service: ${name}-svc
+
+  services:
+    ${name}-svc:
+      loadBalancer:
+        servers:
+          - url: "http://172.18.0.1:8090"
+`;
+  fs.writeFileSync(`${TRAEFIK_DYNAMIC_DIR}/${domain}.yml`, yaml, 'utf8');
+}
+
+function removeTraefikConfig(domain: string): void {
+  const path = `${TRAEFIK_DYNAMIC_DIR}/${domain}.yml`;
+  if (fs.existsSync(path)) fs.unlinkSync(path);
+}
 
 const router = Router();
 
@@ -650,13 +678,14 @@ router.post('/tenants/:id/domain', requireAuth, requireSuperAdmin, async (req: A
   }
 });
 
-// POST /api/auth/tenants/:id/domain/verify — verify DNS + provision SSL
+// POST /api/auth/tenants/:id/domain/verify — verify DNS + activate via Traefik
+// Traefik watches /etc/traefik/dynamic/ and auto-provisions SSL via TLS challenge
 router.post('/tenants/:id/domain/verify', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
-  const skipCertbot = process.env.SKIP_CERTBOT === 'true';
+  const skipDnsCheck = process.env.SKIP_CERTBOT === 'true'; // reuse flag for local dev
 
   try {
     const tenantRes = await query(
-      'SELECT custom_domain, domain_cert_attempts, domain_last_attempt_at, name, logo_url, brand_color, reply_to_email FROM tenants WHERE id=$1',
+      'SELECT custom_domain, name, logo_url, brand_color, reply_to_email FROM tenants WHERE id=$1',
       [req.params.id]
     );
     const tenant = tenantRes.rows[0];
@@ -665,165 +694,60 @@ router.post('/tenants/:id/domain/verify', requireAuth, requireSuperAdmin, async 
 
     const domain = tenant.custom_domain;
 
-    // Rate limit guard — block at 4 attempts (LE hard-blocks after 5)
-    if (!skipCertbot && tenant.domain_cert_attempts >= 4) {
-      const lastAttempt = new Date(tenant.domain_last_attempt_at);
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      if (lastAttempt > weekAgo) {
-        res.status(429).json({
-          error: `Weekly attempt limit reached (${tenant.domain_cert_attempts}/4 used). Let's Encrypt will permanently block this domain after 5 failures. Try again next week.`,
-        }); return;
-      }
-      // Reset counter if a week has passed
-      await query('UPDATE tenants SET domain_cert_attempts=0 WHERE id=$1', [req.params.id]);
-    }
-
     // Mark as verifying
-    await query(
-      'UPDATE tenants SET domain_status=$1, domain_last_attempt_at=NOW(), domain_cert_attempts=domain_cert_attempts+1 WHERE id=$2',
-      ['verifying', req.params.id]
-    );
+    await query("UPDATE tenants SET domain_status='verifying', domain_last_attempt_at=NOW() WHERE id=$1", [req.params.id]);
 
-    if (skipCertbot) {
-      // Dev mode: skip DNS + certbot, activate directly
-      console.warn(`[domain-verify] SKIP_CERTBOT=true — activating ${domain} without SSL provisioning`);
-      await query(
-        "UPDATE tenants SET domain_status='ssl_active', domain_verified_at=NOW(), domain_error=NULL WHERE id=$1",
-        [req.params.id]
-      );
-      addAllowedOrigin(domain);
-      setCachedDomain(domain, req.params.id, {
-        tenantId: req.params.id,
-        name: tenant.name,
-        logoUrl: tenant.logo_url ?? null,
-        brandColor: tenant.brand_color ?? '#c2410c',
-        replyToEmail: tenant.reply_to_email ?? null,
-        cachedAt: Date.now(),
-      });
-      res.json({ success: true, activated_at: new Date().toISOString(), dev_mode: true });
-      return;
-    }
-
-    // Step 1: DNS verification
-    const serverIp = process.env.SERVER_IP ?? '31.97.227.208';
-    let dnsOk = false;
-    let resolvedIps: string[] = [];
-    try {
-      resolvedIps = await dnsLookup(domain);
-      dnsOk = resolvedIps.includes(serverIp);
-    } catch {
-      // Try CNAME resolution
+    if (!skipDnsCheck) {
+      // Step 1: DNS verification — domain must point to our server
+      const serverIp = process.env.SERVER_IP ?? '31.97.227.208';
+      let dnsOk = false;
+      let resolvedIps: string[] = [];
       try {
-        const cnames = await new Promise<string[]>((resolve, reject) =>
-          dns.resolveCname(domain, (err, addrs) => err ? reject(err) : resolve(addrs))
-        );
-        dnsOk = cnames.some(c => c.includes('crm.digygo.in'));
-      } catch { /* DNS not found at all */ }
-    }
+        resolvedIps = await dnsLookup(domain);
+        dnsOk = resolvedIps.includes(serverIp);
+      } catch {
+        try {
+          const cnames = await new Promise<string[]>((resolve, reject) =>
+            dns.resolveCname(domain, (err, addrs) => err ? reject(err) : resolve(addrs))
+          );
+          dnsOk = cnames.some(c => c.includes('crm.digygo.in'));
+        } catch { /* unresolvable */ }
+      }
 
-    if (!dnsOk) {
-      const resolvedStr = resolvedIps.length > 0 ? resolvedIps.join(', ') : 'unresolvable';
-      await query(
-        "UPDATE tenants SET domain_status='failed', domain_error=$1 WHERE id=$2",
-        [`DNS not pointing to server. Resolved to: ${resolvedStr}. Expected: ${serverIp}`, req.params.id]
-      );
-      res.status(400).json({
-        error: `DNS not pointing to server. Resolved to: ${resolvedStr}. Expected: ${serverIp}. Please add a CNAME record: ${domain} → crm.digygo.in`,
-      }); return;
-    }
-
-    // Step 2: Check if cert already exists (avoid hitting LE rate limit)
-    const certPath = `/etc/letsencrypt/live/${domain}/fullchain.pem`;
-    const certExists = fs.existsSync(certPath);
-
-    if (!certExists) {
-      // Step 3: Run certbot certonly --webroot (NEVER --nginx)
-      try {
-        await execFileAsync('certbot', [
-          'certonly', '--webroot',
-          '-w', '/var/www/certbot',
-          '-d', domain,
-          '--non-interactive', '--agree-tos',
-          '-m', process.env.CERTBOT_EMAIL ?? 'admin@digygo.in',
-          '--keep-until-expiring',
-        ]);
-      } catch (err: any) {
-        const errMsg = err.stderr ?? err.message ?? 'certbot failed';
+      if (!dnsOk) {
+        const resolvedStr = resolvedIps.length > 0 ? resolvedIps.join(', ') : 'unresolvable';
         await query(
           "UPDATE tenants SET domain_status='failed', domain_error=$1 WHERE id=$2",
-          [errMsg.slice(0, 500), req.params.id]
+          [`DNS not pointing to server. Resolved to: ${resolvedStr}. Expected: ${serverIp}`, req.params.id]
         );
-        res.status(500).json({ error: `SSL provisioning failed: ${errMsg.slice(0, 200)}` }); return;
+        res.status(400).json({
+          error: `DNS not pointing to server. Current: ${resolvedStr}. Expected: ${serverIp}. Add CNAME: ${domain} → crm.digygo.in`,
+        }); return;
       }
+    } else {
+      console.warn(`[domain-verify] SKIP_CERTBOT=true — skipping DNS check for ${domain}`);
     }
 
-    // Step 4: Parse SSL expiry date
-    let sslExpiry: Date | null = null;
+    // Step 2: Write Traefik dynamic config — Traefik auto-provisions SSL via TLS challenge
+    // No certbot, no nginx reload needed. Traefik watches this directory.
     try {
-      const { stdout } = await execFileAsync('openssl', [
-        'x509', '-enddate', '-noout', '-in', certPath,
-      ]);
-      const match = stdout.match(/notAfter=(.*)/);
-      if (match) sslExpiry = new Date(match[1].trim());
-    } catch { /* non-fatal */ }
-
-    // Step 5: Write per-domain nginx include file
-    const nginxConf = `/etc/nginx/custom-domains/${domain}.conf`;
-    const nginxContent = `server {
-    listen 443 ssl;
-    server_name ${domain};
-
-    ssl_certificate     /etc/letsencrypt/live/${domain}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${domain}/privkey.pem;
-    ssl_protocols       TLSv1.2 TLSv1.3;
-    ssl_ciphers         HIGH:!aNULL:!MD5;
-
-    proxy_set_header Host              $host;
-    proxy_set_header X-Real-IP         $remote_addr;
-    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-
-    root  /var/www/digygocrm/frontend/dist;
-    index index.html;
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /api/ {
-        proxy_pass         http://127.0.0.1:4000;
-        proxy_http_version 1.1;
-    }
-
-    location /socket.io/ {
-        proxy_pass         http://127.0.0.1:4000;
-        proxy_http_version 1.1;
-        proxy_set_header   Upgrade    $http_upgrade;
-        proxy_set_header   Connection "upgrade";
-    }
-}
-`;
-    try {
-      fs.writeFileSync(nginxConf, nginxContent, 'utf8');
+      writeTraefikConfig(domain);
+      console.log(`[domain-verify] Traefik config written for ${domain}`);
     } catch (err: any) {
-      console.warn(`[domain-verify] Could not write nginx config: ${err.message}`);
+      await query(
+        "UPDATE tenants SET domain_status='failed', domain_error=$1 WHERE id=$2",
+        [`Failed to write Traefik config: ${err.message}`, req.params.id]
+      );
+      res.status(500).json({ error: `Failed to activate domain: ${err.message}` }); return;
     }
 
-    // Step 6: Backup + test + reload nginx
-    try {
-      await execFileAsync('cp', ['/etc/nginx/nginx.conf', '/etc/nginx/nginx.conf.bak']);
-      await execFileAsync('nginx', ['-t']);
-      await execFileAsync('nginx', ['-s', 'reload']);
-    } catch (err: any) {
-      console.warn(`[domain-verify] nginx reload warning: ${err.message}`);
-      // Non-fatal if nginx isn't available (local dev) — cert is provisioned, reload will happen on next deploy
-    }
-
-    // Step 7: Activate
+    // Step 3: Activate — Traefik provisions SSL automatically on first HTTPS request
+    // SSL cert will be ready within seconds of the first visit to the custom domain
     await query(
-      "UPDATE tenants SET domain_status='ssl_active', domain_verified_at=NOW(), domain_ssl_expires_at=$1, domain_error=NULL WHERE id=$2",
-      [sslExpiry?.toISOString() ?? null, req.params.id]
+      "UPDATE tenants SET domain_status='ssl_active', domain_verified_at=NOW(), domain_error=NULL WHERE id=$1",
+      [req.params.id]
     );
+
     addAllowedOrigin(domain);
     setCachedDomain(domain, req.params.id, {
       tenantId: req.params.id,
@@ -834,11 +758,7 @@ router.post('/tenants/:id/domain/verify', requireAuth, requireSuperAdmin, async 
       cachedAt: Date.now(),
     });
 
-    res.json({
-      success: true,
-      activated_at: new Date().toISOString(),
-      ssl_expires_at: sslExpiry?.toISOString() ?? null,
-    });
+    res.json({ success: true, activated_at: new Date().toISOString() });
   } catch (err) {
     console.error('[domain verify]', err);
     res.status(500).json({ error: 'Server error' });
@@ -852,19 +772,8 @@ router.delete('/tenants/:id/domain', requireAuth, requireSuperAdmin, async (req:
     const domain = t.rows[0]?.custom_domain;
 
     if (domain) {
-      // Remove nginx include file
-      const nginxConf = `/etc/nginx/custom-domains/${domain}.conf`;
-      try {
-        if (fs.existsSync(nginxConf)) {
-          fs.unlinkSync(nginxConf);
-          await execFileAsync('cp', ['/etc/nginx/nginx.conf', '/etc/nginx/nginx.conf.bak']).catch(() => null);
-          const { stdout: testOut } = await execFileAsync('nginx', ['-t']).catch(() => ({ stdout: '' }));
-          if (!testOut.includes('failed')) {
-            await execFileAsync('nginx', ['-s', 'reload']).catch(() => null);
-          }
-        }
-      } catch { /* non-fatal */ }
-
+      // Remove Traefik dynamic config — Traefik stops routing this domain immediately
+      try { removeTraefikConfig(domain); } catch { /* non-fatal */ }
       invalidateDomainCache(domain);
       removeAllowedOrigin(domain);
     }

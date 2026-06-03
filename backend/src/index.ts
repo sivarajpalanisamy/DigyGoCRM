@@ -241,17 +241,18 @@ runMigrations()
     console.log('📱  WhatsApp Personal session restore initiated');
 
     // SSL expiry monitoring — runs nightly (every 24 hours)
+    // Traefik auto-renews certs, but alert if any domain has been active > 75 days
+    // (LE certs expire at 90 days; Traefik renews at ~60 days)
     const checkDomainExpiry = async () => {
       try {
         const r = await dbQuery(`
-          SELECT custom_domain, name, domain_ssl_expires_at
+          SELECT custom_domain, name, domain_verified_at
           FROM tenants
           WHERE domain_status = 'ssl_active'
-            AND domain_ssl_expires_at IS NOT NULL
-            AND domain_ssl_expires_at < NOW() + INTERVAL '14 days'
+            AND domain_verified_at < NOW() - INTERVAL '75 days'
         `);
         for (const tenant of r.rows) {
-          const expiryDate = new Date(tenant.domain_ssl_expires_at).toDateString();
+          const expiryDate = new Date(new Date(tenant.domain_verified_at).getTime() + 90 * 24 * 60 * 60 * 1000).toDateString();
           await sendEmail({
             to: process.env.ADMIN_ALERT_EMAIL ?? 'admin@digygo.in',
             subject: `⚠️ SSL Expiring Soon: ${tenant.custom_domain}`,
