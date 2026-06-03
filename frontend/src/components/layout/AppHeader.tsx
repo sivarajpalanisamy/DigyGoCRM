@@ -94,7 +94,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const { notifications, markAllNotificationsRead, markNotificationRead, removeNotification, clearAllNotifications } = useCrmStore();
   const { currentUser, logout, isImpersonating } = useAuthStore();
   const { companyName } = useCompanyStore();
-  const { isCustomDomain, tenantName, logoUrl } = useBrandingStore();
+  const { branded, tenantName, logoUrl } = useBrandingStore();
 
   // Badge counts only alerts (action-required) — activity is FYI
   const alertNotifs = notifications.filter((n) => n.category === 'alert');
@@ -161,10 +161,10 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
 
         {/* Mobile: logo mark */}
         <div className="md:hidden flex items-center gap-2 shrink-0">
-          {isCustomDomain ? (
-            logoUrl
-              ? <img src={logoUrl} alt={tenantName ?? ''} className="h-7 max-w-[100px] object-contain" />
-              : <span className="font-headline text-[15px] font-bold text-[#1c1410]">{tenantName}</span>
+          {branded && logoUrl ? (
+            <img src={logoUrl} alt={tenantName ?? ''} className="h-7 max-w-[100px] object-contain" />
+          ) : branded && tenantName ? (
+            <span className="font-headline text-[15px] font-bold text-[#1c1410]">{tenantName}</span>
           ) : (
             <>
               <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">

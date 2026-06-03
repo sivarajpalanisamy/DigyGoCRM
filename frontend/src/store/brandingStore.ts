@@ -24,31 +24,70 @@ function hexToHsl(hex: string): string {
 }
 
 function applyBrandColor(hex: string): void {
+  if (!hex) return;
   const hsl = hexToHsl(hex);
   const root = document.documentElement;
   root.style.setProperty('--primary', hsl);
-  root.style.setProperty('--primary-dark', hsl); // same hue, sidebar uses this
-  root.style.setProperty('--color-primary', hex); // raw hex for inline styles
+  root.style.setProperty('--primary-dark', hsl);
+  root.style.setProperty('--color-primary', hex);
+}
+
+function applyFavicon(url: string | null): void {
+  if (!url) return;
+  let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    document.head.appendChild(link);
+  }
+  link.href = url;
+}
+
+function applyTitle(title: string | null): void {
+  if (title) document.title = title;
+}
+
+export interface BrandingData {
+  name?: string | null;
+  logoUrl?: string | null;
+  faviconUrl?: string | null;
+  bannerUrl?: string | null;
+  brandColor?: string | null;
+  loginBgColor?: string | null;
+  tabTitle?: string | null;
 }
 
 interface BrandingState {
   isCustomDomain: boolean;
+  branded: boolean;          // true if any custom branding (logo/name) is active
   tenantName: string | null;
   logoUrl: string | null;
+  faviconUrl: string | null;
+  bannerUrl: string | null;
   brandColor: string;
-  replyToEmail: string | null;
+  loginBgColor: string | null;
+  tabTitle: string | null;
   loaded: boolean;
-  fetchBranding: () => Promise<void>;
+  fetchBranding: () => Promise<void>;          // pre-login: by custom domain
+  applyTenantBranding: (d: BrandingData) => void; // post-login: by authed tenant
+  resetBranding: () => void;                   // on logout
 }
+
+const DEFAULT_COLOR = '#c2410c';
 
 export const useBrandingStore = create<BrandingState>((set) => ({
   isCustomDomain: false,
+  branded: false,
   tenantName: null,
   logoUrl: null,
-  brandColor: '#c2410c',
-  replyToEmail: null,
+  faviconUrl: null,
+  bannerUrl: null,
+  brandColor: DEFAULT_COLOR,
+  loginBgColor: null,
+  tabTitle: null,
   loaded: false,
 
+  // Pre-login: fetch branding for the current custom domain (login page)
   fetchBranding: async () => {
     const hostname = window.location.hostname;
     const isCustom = hostname !== 'crm.digygo.in' && hostname !== 'localhost' && hostname !== '127.0.0.1';
@@ -59,29 +98,57 @@ export const useBrandingStore = create<BrandingState>((set) => ({
     }
 
     try {
-      const data = await api.get<{
-        name: string;
-        logoUrl: string | null;
-        brandColor: string;
-        replyToEmail: string | null;
-      }>(`/api/public/branding?domain=${hostname}`);
-
-      const brandColor = data.brandColor ?? '#c2410c';
-
+      const data = await api.get<BrandingData>(`/api/public/branding?domain=${hostname}`);
+      const brandColor = data.brandColor ?? DEFAULT_COLOR;
       set({
         isCustomDomain: true,
-        tenantName: data.name,
-        logoUrl: data.logoUrl,
+        branded: true,
+        tenantName: data.name ?? null,
+        logoUrl: data.logoUrl ?? null,
+        faviconUrl: data.faviconUrl ?? null,
+        bannerUrl: data.bannerUrl ?? null,
         brandColor,
-        replyToEmail: data.replyToEmail,
+        loginBgColor: data.loginBgColor ?? null,
+        tabTitle: data.tabTitle ?? null,
         loaded: true,
       });
-
-      // Apply brand color — updates all Tailwind primary classes via CSS variables
       applyBrandColor(brandColor);
+      applyFavicon(data.faviconUrl ?? null);
+      applyTitle(data.tabTitle ?? null);
     } catch {
-      // 404 or network error — silently fall back to DigyGo defaults
       set({ isCustomDomain: false, loaded: true });
     }
+  },
+
+  // Post-login: apply the authenticated tenant's branding (any domain)
+  applyTenantBranding: (d: BrandingData) => {
+    const brandColor = d.brandColor ?? DEFAULT_COLOR;
+    const hasCustom = !!(d.logoUrl || d.tabTitle || (d.brandColor && d.brandColor !== DEFAULT_COLOR) || d.faviconUrl);
+    set({
+      branded: hasCustom,
+      tenantName: d.name ?? null,
+      logoUrl: d.logoUrl ?? null,
+      faviconUrl: d.faviconUrl ?? null,
+      bannerUrl: d.bannerUrl ?? null,
+      brandColor,
+      loginBgColor: d.loginBgColor ?? null,
+      tabTitle: d.tabTitle ?? null,
+      loaded: true,
+    });
+    applyBrandColor(brandColor);
+    applyFavicon(d.faviconUrl ?? null);
+    applyTitle(d.tabTitle ?? null);
+  },
+
+  resetBranding: () => {
+    const root = document.documentElement;
+    root.style.removeProperty('--primary');
+    root.style.removeProperty('--primary-dark');
+    root.style.removeProperty('--color-primary');
+    set({
+      isCustomDomain: false, branded: false, tenantName: null, logoUrl: null,
+      faviconUrl: null, bannerUrl: null, brandColor: DEFAULT_COLOR,
+      loginBgColor: null, tabTitle: null,
+    });
   },
 }));

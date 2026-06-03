@@ -15,7 +15,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { isCustomDomain, tenantName, logoUrl, brandColor, loaded, fetchBranding } = useBrandingStore();
+  const { isCustomDomain, tenantName, logoUrl, brandColor, bannerUrl, loginBgColor, loaded, fetchBranding } = useBrandingStore();
 
   useEffect(() => {
     fetchBranding().catch(() => null);
@@ -41,13 +41,22 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-[100dvh] flex flex-col items-center justify-center bg-[#faf8f6] font-sans text-[#1c1410]"
-      style={{ WebkitTapHighlightColor: 'transparent' }}
+      style={{ WebkitTapHighlightColor: 'transparent', ...(isCustomDomain && loginBgColor ? { background: loginBgColor } : {}) }}
     >
-      {/* Ambient background blobs */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[5%] -left-[10%] w-[50%] h-[40%] rounded-full bg-[#c2410c]/5 blur-[80px]" />
-        <div className="absolute bottom-[10%] -right-[10%] w-[45%] h-[40%] rounded-full bg-[#fed7aa]/30 blur-[80px]" />
-      </div>
+      {/* Ambient background blobs — hidden when a custom login background is set */}
+      {!(isCustomDomain && loginBgColor) && (
+        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-[5%] -left-[10%] w-[50%] h-[40%] rounded-full bg-[#c2410c]/5 blur-[80px]" />
+          <div className="absolute bottom-[10%] -right-[10%] w-[45%] h-[40%] rounded-full bg-[#fed7aa]/30 blur-[80px]" />
+        </div>
+      )}
+
+      {/* Banner image (custom domain) */}
+      {isCustomDomain && bannerUrl && (
+        <div className="w-full max-w-md px-5 relative z-10 mb-4">
+          <img src={bannerUrl} alt="" className="w-full h-auto rounded-2xl object-cover max-h-40 shadow-md" />
+        </div>
+      )}
 
       {/* Content */}
       <div className="w-full max-w-md px-5 flex flex-col items-center relative z-10 pt-4 pb-0 mt-[-6vh]">

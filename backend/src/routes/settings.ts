@@ -143,6 +143,53 @@ router.put('/', checkPermission('settings:manage'), async (req: AuthRequest, res
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
+// ── Branding (tenant self-service) ────────────────────────────────────────────
+
+// GET /api/settings/branding — current tenant's branding
+router.get('/branding', async (req: AuthRequest, res: Response) => {
+  try {
+    const r = await query(
+      `SELECT name, logo_url, favicon_url, banner_url, brand_color, login_bg_color, tab_title
+       FROM tenants WHERE id=$1`,
+      [req.user!.tenantId]
+    );
+    const t = r.rows[0] ?? {};
+    res.json({
+      name:         t.name ?? '',
+      logoUrl:      t.logo_url ?? null,
+      faviconUrl:   t.favicon_url ?? null,
+      bannerUrl:    t.banner_url ?? null,
+      brandColor:   t.brand_color ?? '#c2410c',
+      loginBgColor: t.login_bg_color ?? null,
+      tabTitle:     t.tab_title ?? null,
+    });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// PUT /api/settings/branding — update current tenant's branding
+router.put('/branding', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+  const { name, logo_url, favicon_url, banner_url, brand_color, login_bg_color, tab_title } = req.body;
+  const updates: string[] = [];
+  const params: any[] = [];
+  if (name !== undefined)         { params.push(name || 'CRM');             updates.push(`name=$${params.length}`); }
+  if (logo_url !== undefined)     { params.push(logo_url || null);          updates.push(`logo_url=$${params.length}`); }
+  if (favicon_url !== undefined)  { params.push(favicon_url || null);       updates.push(`favicon_url=$${params.length}`); }
+  if (banner_url !== undefined)   { params.push(banner_url || null);        updates.push(`banner_url=$${params.length}`); }
+  if (brand_color !== undefined)  { params.push(brand_color || '#c2410c');  updates.push(`brand_color=$${params.length}`); }
+  if (login_bg_color !== undefined) { params.push(login_bg_color || null);  updates.push(`login_bg_color=$${params.length}`); }
+  if (tab_title !== undefined)    { params.push(tab_title || null);         updates.push(`tab_title=$${params.length}`); }
+  if (!updates.length) { res.status(400).json({ error: 'No fields to update' }); return; }
+  params.push(req.user!.tenantId);
+  try {
+    await query(`UPDATE tenants SET ${updates.join(',')} WHERE id=$${params.length}`, params);
+    // Invalidate domain cache so custom-domain branding reflects immediately
+    const dr = await query('SELECT custom_domain FROM tenants WHERE id=$1', [req.user!.tenantId]);
+    const domain = dr.rows[0]?.custom_domain;
+    if (domain) { try { const { invalidateDomainCache } = await import('../utils/domainCache'); invalidateDomainCache(domain); } catch {} }
+    res.json({ success: true });
+  } catch (err) { console.error('[branding update]', err); res.status(500).json({ error: 'Server error' }); }
+});
+
 // GET /api/settings/staff — no permission guard: every tenant member needs this to display assignee names
 router.get('/staff', async (req: AuthRequest, res: Response) => {
   try {

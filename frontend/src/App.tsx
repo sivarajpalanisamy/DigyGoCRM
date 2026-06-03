@@ -27,6 +27,7 @@ import FieldsPage from "./pages/FieldsPage";
 import StaffPage from "./pages/StaffPage";
 import SettingsPage from "./pages/SettingsPage";
 import CompanyDetailsPage from "./pages/CompanyDetailsPage";
+import BrandingPage from "./pages/BrandingPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import AssignmentRulesPage from "./pages/AssignmentRulesPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
@@ -98,6 +99,7 @@ const App = () => (
             {/* Settings */}
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/company" element={<CompanyDetailsPage />} />
+            <Route path="/settings/branding" element={<BrandingPage />} />
             <Route path="/settings/notifications" element={<NotificationsPage />} />
             <Route path="/settings/assignment-rules" element={<AssignmentRulesPage />} />
             <Route path="/settings/integrations" element={<IntegrationsPage />} />

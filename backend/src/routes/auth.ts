@@ -160,18 +160,28 @@ router.post('/login', async (req: Request, res: Response) => {
 
     // Fetch tenant branding
     let tenantName = 'DigyGo CRM';
-    let tenantLogo: string | null = null;
+    let tenantBranding: any = { name: tenantName, logoUrl: null };
     if (user.tenant_id) {
       const brandRes = await query(
-        `SELECT t.name, t.logo_url, cs.legal_name
+        `SELECT t.name, t.logo_url, t.favicon_url, t.banner_url, t.brand_color,
+                t.login_bg_color, t.tab_title, cs.legal_name
          FROM tenants t
          LEFT JOIN company_settings cs ON cs.tenant_id = t.id
          WHERE t.id = $1`,
         [user.tenant_id]
       );
       if (brandRes.rows[0]) {
-        tenantName = brandRes.rows[0].legal_name || brandRes.rows[0].name || tenantName;
-        tenantLogo = brandRes.rows[0].logo_url || null;
+        const b = brandRes.rows[0];
+        tenantName = b.legal_name || b.name || tenantName;
+        tenantBranding = {
+          name:         tenantName,
+          logoUrl:      b.logo_url || null,
+          faviconUrl:   b.favicon_url || null,
+          bannerUrl:    b.banner_url || null,
+          brandColor:   b.brand_color || '#c2410c',
+          loginBgColor: b.login_bg_color || null,
+          tabTitle:     b.tab_title || null,
+        };
       }
     }
 
@@ -185,7 +195,7 @@ router.post('/login', async (req: Request, res: Response) => {
         id: user.id, tenantId: user.tenant_id, email: user.email,
         name: user.name, role: user.role, avatarUrl: user.avatar_url,
       },
-      tenant: { name: tenantName, logoUrl: tenantLogo },
+      tenant: tenantBranding,
     });
   } catch (err) {
     console.error(err);
@@ -302,6 +312,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
     const result = await query(
       `SELECT u.id, u.tenant_id, u.email, u.name, u.role, u.avatar_url,
               t.name AS tenant_name, t.logo_url AS tenant_logo, t.plan AS tenant_plan,
+              t.favicon_url, t.banner_url, t.brand_color, t.login_bg_color, t.tab_title,
               cs.legal_name
        FROM users u
        LEFT JOIN tenants t ON t.id = u.tenant_id
@@ -314,13 +325,22 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
 
     let tenantName = user.legal_name || user.tenant_name || 'DigyGo CRM';
     let tenantLogo = user.tenant_logo || null;
-    if (user.role === 'super_admin') { tenantName = 'DigyGo CRM'; tenantLogo = null; }
+    const isSuper = user.role === 'super_admin';
+    if (isSuper) { tenantName = 'DigyGo CRM'; tenantLogo = null; }
 
     res.json({
       id: user.id, tenantId: user.tenant_id, email: user.email,
       name: user.name, role: user.role, avatarUrl: user.avatar_url,
       plan: user.tenant_plan ?? 'starter',
-      tenant: { name: tenantName, logoUrl: tenantLogo },
+      tenant: {
+        name:         tenantName,
+        logoUrl:      tenantLogo,
+        faviconUrl:   isSuper ? null : (user.favicon_url || null),
+        bannerUrl:    isSuper ? null : (user.banner_url || null),
+        brandColor:   isSuper ? '#c2410c' : (user.brand_color || '#c2410c'),
+        loginBgColor: isSuper ? null : (user.login_bg_color || null),
+        tabTitle:     isSuper ? null : (user.tab_title || null),
+      },
     });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

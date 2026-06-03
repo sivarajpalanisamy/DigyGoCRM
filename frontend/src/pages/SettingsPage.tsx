@@ -1,9 +1,10 @@
-import { Building2, Plug, Bell, ChevronRight } from 'lucide-react';
+import { Building2, Plug, Bell, ChevronRight, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
 const settingsCards = [
-  { title: 'Company Details', description: 'Manage branding, legal info, and workspace identity', icon: Building2, iconBg: 'bg-purple-100 text-purple-600', path: '/settings/company' },
+  { title: 'Branding', description: 'Customize logo, favicon, colors, and login page', icon: Palette, iconBg: 'bg-pink-100 text-pink-600', path: '/settings/branding' },
+  { title: 'Company Details', description: 'Manage legal info and workspace identity', icon: Building2, iconBg: 'bg-purple-100 text-purple-600', path: '/settings/company' },
   { title: 'Integrations', description: 'Connect Meta, WhatsApp, email providers, and more', icon: Plug, iconBg: 'bg-primary/10 text-primary', path: '/settings/integrations' },
   { title: 'Notifications', description: 'Configure in-app and email notification preferences', icon: Bell, iconBg: 'bg-yellow-100 text-yellow-600', path: '/settings/notifications' },
 ];

@@ -45,7 +45,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const location = useLocation();
   const [expanded, setExpanded] = useState<string[]>(['Lead Generation', 'Automation']);
   const currentUser = useAuthStore((s) => s.currentUser);
-  const { isCustomDomain, tenantName, logoUrl } = useBrandingStore();
+  const { branded, tenantName, logoUrl } = useBrandingStore();
   const permissions = useAuthStore((s) => s.permissions);
   const permAll = useAuthStore((s) => s.permAll);
   const isSuperAdmin = currentUser?.role === 'super_admin';
@@ -100,10 +100,10 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
           className="relative flex justify-center items-center border-b border-black/5 shrink-0 overflow-hidden"
           style={{ height: '80px' }}
         >
-          {isCustomDomain ? (
-            logoUrl
-              ? <img src={logoUrl} alt={tenantName ?? ''} className="max-h-12 max-w-[160px] object-contain" />
-              : <span className="font-bold text-[15px] text-[#1c1410] px-3 text-center">{tenantName}</span>
+          {branded && logoUrl ? (
+            <img src={logoUrl} alt={tenantName ?? ''} className="max-h-12 max-w-[160px] object-contain" />
+          ) : branded && tenantName ? (
+            <span className="font-bold text-[15px] text-[#1c1410] px-3 text-center">{tenantName}</span>
           ) : (
             <img
               src="/digygo-logo.png"

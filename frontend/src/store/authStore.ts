@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api, setAccessToken } from '@/lib/api';
 import { useCompanyStore } from '@/store/companyStore';
+import { useBrandingStore } from '@/store/brandingStore';
 import { getSocket } from '@/lib/socket';
 
 const BASE = import.meta.env.VITE_API_URL ?? '';
@@ -42,11 +43,15 @@ interface AuthState {
 
 // ── localStorage helpers ──────────────────────────────────────────────────────
 
-function saveSession(token: string, user: User, tenant?: { name: string; logoUrl: string | null }) {
+function saveSession(token: string, user: User, tenant?: any) {
   try {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
-    if (tenant) localStorage.setItem(TENANT_KEY, JSON.stringify(tenant));
+    if (tenant) {
+      // Strip the heavy banner image (only used on login page, not in-app) to stay under localStorage quota
+      const { bannerUrl, ...lightTenant } = tenant;
+      localStorage.setItem(TENANT_KEY, JSON.stringify(lightTenant));
+    }
   } catch {}
 }
 
@@ -134,6 +139,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (data.tenant) {
         useCompanyStore.getState().setCompanyName(data.tenant.name ?? 'DigyGo CRM');
         useCompanyStore.getState().setLogo(data.tenant.logoUrl ?? null);
+        if (role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(data.tenant);
       }
       // Await permissions so the sidebar renders correctly on first navigation
       await get().refreshPermissions();
@@ -154,6 +160,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     _ceoUser  = null;
     useCompanyStore.getState().setCompanyName('DigyGo CRM');
     useCompanyStore.getState().setLogo(null);
+    useBrandingStore.getState().resetBranding();
     set({ currentUser: null, isAuthenticated: false, isImpersonating: false, permissions: {}, permAll: false });
   },
 
@@ -184,6 +191,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (data.tenant) {
         useCompanyStore.getState().setCompanyName(data.tenant.name ?? 'DigyGo CRM');
         useCompanyStore.getState().setLogo(data.tenant.logoUrl ?? null);
+        useBrandingStore.getState().applyTenantBranding(data.tenant);
       }
       get().refreshPermissions();
       get().listenForPermissionUpdates();
@@ -207,6 +215,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ currentUser: ceoUser, isAuthenticated: true, isImpersonating: false, permAll: ceoPermAll, permissions: {} });
       useCompanyStore.getState().setCompanyName('DigyGo CRM');
       useCompanyStore.getState().setLogo(null);
+      useBrandingStore.getState().resetBranding();
       get().refreshPermissions();
     } catch {}
   },
@@ -226,6 +235,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (stored.tenant) {
         useCompanyStore.getState().setCompanyName(stored.tenant.name ?? 'DigyGo CRM');
         useCompanyStore.getState().setLogo(stored.tenant.logoUrl ?? null);
+        if (role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(stored.tenant);
       }
 
       // Fetch permissions and wait — sidebar must not render with empty permissions
@@ -277,6 +287,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             if (tenant) {
               useCompanyStore.getState().setCompanyName(tenant.name ?? 'DigyGo CRM');
               useCompanyStore.getState().setLogo(tenant.logoUrl ?? null);
+              if (user.role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(tenant);
             }
             get().refreshPermissions();
             return true;

@@ -32,7 +32,7 @@ router.get('/branding', async (req: Request, res: Response) => {
 
   try {
     const r = await query(
-      `SELECT id, name, logo_url, brand_color, reply_to_email
+      `SELECT id, name, logo_url, favicon_url, banner_url, brand_color, login_bg_color, tab_title, reply_to_email
        FROM tenants WHERE custom_domain=$1 AND ${statusFilter} LIMIT 1`,
       [domain]
     );
@@ -40,9 +40,13 @@ router.get('/branding', async (req: Request, res: Response) => {
     const t = r.rows[0];
     res.setHeader('Cache-Control', 'public, max-age=300');
     res.json({
-      name:        t.name,
-      logoUrl:     t.logo_url ?? null,
-      brandColor:  t.brand_color ?? '#c2410c',
+      name:         t.name,
+      logoUrl:      t.logo_url ?? null,
+      faviconUrl:   t.favicon_url ?? null,
+      bannerUrl:    t.banner_url ?? null,
+      brandColor:   t.brand_color ?? '#c2410c',
+      loginBgColor: t.login_bg_color ?? null,
+      tabTitle:     t.tab_title ?? null,
       replyToEmail: t.reply_to_email ?? null,
     });
   } catch { res.status(500).json({ error: 'Server error' }); }
