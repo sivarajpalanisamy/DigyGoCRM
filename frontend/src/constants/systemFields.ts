@@ -45,9 +45,17 @@ export const SYSTEM_STANDARD_FIELDS: SystemField[] = [
   { id: 'cal2', name: 'Appointment Start Time', slug: 'calendar.appointment_start_time',  group: 'Calendar', isSystem: true },
   { id: 'cal3', name: 'Appointment End Time',   slug: 'calendar.appointment_end_time',    group: 'Calendar', isSystem: true },
   { id: 'cal4', name: 'Appointment Timezone',   slug: 'calendar.appointment_timezone',    group: 'Calendar', isSystem: true },
+  // CRM — short-form variables resolved at runtime by interpolate()
+  { id: 'crm1', name: 'Pipeline',       slug: 'pipeline',           group: 'CRM', isSystem: true },
+  { id: 'crm2', name: 'Stage',          slug: 'stage',              group: 'CRM', isSystem: true },
+  { id: 'crm3', name: 'Assigned Staff', slug: 'assigned_staff',     group: 'CRM', isSystem: true },
+  { id: 'crm4', name: 'Staff ID',       slug: 'assigned_staff_id',  group: 'CRM', isSystem: true },
+  { id: 'crm5', name: 'Source',         slug: 'source',             group: 'CRM', isSystem: true },
+  { id: 'crm6', name: 'Created At',      slug: 'created_at',         group: 'CRM', isSystem: true },
+  { id: 'crm7', name: 'Form Name',      slug: 'form_name',          group: 'CRM', isSystem: true },
 ];
 
-export const SYSTEM_GROUPS = ['Contact', 'Company', 'Calendar'] as const;
+export const SYSTEM_GROUPS = ['Contact', 'Company', 'Calendar', 'CRM'] as const;
 
 /** Returns the variable string for a slug, e.g. "contact.first_name" → "{%contact.first_name%}" */
 export const slugToVar = (slug: string) => `{%${slug}%}`;

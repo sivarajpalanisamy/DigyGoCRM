@@ -92,6 +92,7 @@ interface CrmState {
   activities: LeadActivity[];
   additionalFields: AdditionalField[];
   systemFields: { id: string; name: string; slug: string; group: string }[];
+  valueTokens: { id: string; name: string; replace_with: string }[];
 
   // Activity actions
   addActivity: (activity: LeadActivity) => void;
@@ -228,6 +229,7 @@ export const useCrmStore = create<CrmState>((set) => ({
   activities: [],
   additionalFields: [],
   systemFields: SYSTEM_FIELDS_FALLBACK,
+  valueTokens: [],
 
   // Activity actions
   addActivity: (activity) => set((s) => ({ activities: [activity, ...s.activities] })),
@@ -519,7 +521,7 @@ export const useCrmStore = create<CrmState>((set) => ({
     _initInProgress = true;
 
     try {
-      const [leadsRes, staffRes, pipelinesRes, calRes, tagsRes, questionsRes, convsRes, notifsRes, bookingLinksRes, followUpsRes, customFieldsRes, workflowsRes, systemFieldsRes] = await Promise.all([
+      const [leadsRes, staffRes, pipelinesRes, calRes, tagsRes, questionsRes, convsRes, notifsRes, bookingLinksRes, followUpsRes, customFieldsRes, workflowsRes, systemFieldsRes, valueTokensRes] = await Promise.all([
         api.get<any[]>('/api/leads?limit=5000').catch(safeEmpty),
         api.get<any[]>('/api/settings/staff').catch(safeEmpty),
         api.get<any[]>('/api/pipelines').catch(safeEmpty),
@@ -533,6 +535,7 @@ export const useCrmStore = create<CrmState>((set) => ({
         api.get<any[]>('/api/fields/custom').catch(safeEmpty),
         api.get<any[]>('/api/workflows').catch(safeEmpty),
         api.get<any[]>('/api/fields/system').catch(safeEmpty),
+        api.get<any[]>('/api/fields/values').catch(safeEmpty),
       ]);
 
       // Guarantee arrays — HTTP 200 with non-JSON body parses to {} which would crash .map()
@@ -729,6 +732,9 @@ export const useCrmStore = create<CrmState>((set) => ({
         systemFields: safeSystem.length > 0
           ? safeSystem.map((f) => ({ id: f.id, name: f.name, slug: f.slug, group: f.group }))
           : SYSTEM_FIELDS_FALLBACK,
+        valueTokens: Array.isArray(valueTokensRes)
+          ? valueTokensRes.map((v: any) => ({ id: v.id, name: v.name, replace_with: v.replace_with }))
+          : [],
       });
     } catch (e) {
       // SessionExpiredError: logout already triggered asynchronously — don't stomp the store

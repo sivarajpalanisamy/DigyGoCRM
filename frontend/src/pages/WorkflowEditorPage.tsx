@@ -1809,6 +1809,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
   const customFields = useCrmStore((s) => s.customFields);
   const additionalFields = useCrmStore((s) => s.additionalFields);
   const systemFields = useCrmStore((s) => s.systemFields);
+  const valueTokens = useCrmStore((s) => s.valueTokens);
 
   // WA Personal template state
   const [waTemplates, setWaTemplates] = useState<WaTemplate[]>([]);
@@ -2089,8 +2090,9 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
 
         const systemGroups = Array.from(new Set(systemFields.map((f) => f.group)));
         const EXCLUDED_UA = new Set(['assigned_to_staff']);
+        const slugifyTokenUa = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
         const uaTabs = [
-          ...systemGroups.map((group) => ({
+          ...systemGroups.filter((g) => g !== 'CRM').map((group) => ({
             id: group,
             label: group,
             fields: systemFields
@@ -2113,6 +2115,11 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
             id: 'Custom',
             label: 'Custom',
             fields: customFields.map((f) => ({ name: f.name, variable: `{%${f.slug}%}` })),
+          },
+          {
+            id: 'Values',
+            label: 'Values',
+            fields: valueTokens.map((v) => ({ name: v.name, variable: `{%${slugifyTokenUa(v.name)}%}` })),
           },
         ];
 
@@ -2636,8 +2643,10 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
         const systemGroups = Array.from(new Set(systemFields.map((f) => f.group)));
         // assigned_to_staff is excluded from Contact tab — CRM tab covers it via {assigned_staff}
         const EXCLUDED_SLUGS = new Set(['assigned_to_staff']);
+        const slugifyToken = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
         const cvTabs = [
-          ...systemGroups.map((group) => ({
+          // CRM-group system fields render as their own CRM tab below; exclude here to avoid duplication
+          ...systemGroups.filter((g) => g !== 'CRM').map((group) => ({
             id: group,
             label: group,
             fields: systemFields
@@ -2661,6 +2670,12 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
             id: 'Custom',
             label: 'Custom',
             fields: customFields.map((f) => ({ name: f.name, variable: `{%${f.slug}%}` })),
+          },
+          // Values created in Fields → Values (e.g. Platform → {%platform%})
+          {
+            id: 'Values',
+            label: 'Values',
+            fields: valueTokens.map((v) => ({ name: v.name, variable: `{%${slugifyToken(v.name)}%}` })),
           },
         ];
 
