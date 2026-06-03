@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Upload, X, Check, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, Image as ImageIcon, LayoutDashboard, Users, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -10,8 +10,7 @@ import { useCompanyStore } from '@/store/companyStore';
 const COLOR_PRESETS = [
   '#c2410c', '#ea580c', '#dc2626', '#e11d48', '#db2777',
   '#9333ea', '#7c3aed', '#4f46e5', '#2563eb', '#0284c7',
-  '#0891b2', '#059669', '#16a34a', '#65a30d', '#ca8a04',
-  '#1c1410', '#374151', '#0f172a',
+  '#0891b2', '#059669', '#16a34a', '#65a30d', '#1c1410',
 ];
 
 interface BrandingForm {
@@ -81,15 +80,10 @@ export default function BrandingPage() {
         login_bg_color: form.login_bg_color,
         tab_title: form.tab_title,
       });
-      // Apply immediately so the change is visible without reload
       applyTenantBranding({
-        name: form.name,
-        logoUrl: form.logo_url,
-        faviconUrl: form.favicon_url,
-        bannerUrl: form.banner_url,
-        brandColor: form.brand_color,
-        loginBgColor: form.login_bg_color,
-        tabTitle: form.tab_title,
+        name: form.name, logoUrl: form.logo_url, faviconUrl: form.favicon_url,
+        bannerUrl: form.banner_url, brandColor: form.brand_color,
+        loginBgColor: form.login_bg_color, tabTitle: form.tab_title,
       });
       setCompanyName(form.name || 'CRM');
       setLogo(form.logo_url);
@@ -105,46 +99,44 @@ export default function BrandingPage() {
     return <div className="p-8 text-center text-[#7a6b5c]">You don't have permission to manage branding.</div>;
   }
 
-  const inp = 'w-full px-3 py-2 rounded-xl border border-[#e8ddd4] text-sm text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white';
+  const inp = 'w-full px-3 py-2 rounded-lg border border-[#e8ddd4] text-sm text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white';
+  const labelCls = 'text-[12px] font-semibold text-[#1c1410] mb-1 block';
+  const hintCls = 'text-[11px] text-[#9e8e7e] mt-1';
 
-  const UploadBox = ({ url, onPick, onClear, label, hint, aspect }: {
-    url: string | null; onPick: () => void; onClear: () => void; label: string; hint: string; aspect: string;
-  }) => (
-    <div>
-      <label className="text-xs font-semibold text-[#1c1410] mb-1.5 block">{label}</label>
-      <div className="flex items-center gap-3">
-        <button type="button" onClick={onPick}
-          className={`relative ${aspect} rounded-xl overflow-hidden group border-2 border-dashed border-black/10 hover:border-primary/40 transition-colors bg-[#faf8f6] flex items-center justify-center shrink-0`}>
-          {url
-            ? <img src={url} alt={label} className="w-full h-full object-contain" />
-            : <ImageIcon className="w-6 h-6 text-[#c4b09e]" />}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100">
-            <Upload className="w-5 h-5 text-white" />
-          </div>
-        </button>
-        <div className="flex flex-col gap-1">
-          <p className="text-[11px] text-[#7a6b5c]">{hint}</p>
-          {url && (
-            <button type="button" onClick={onClear} className="text-[11px] text-red-500 hover:text-red-700 flex items-center gap-1 w-fit">
-              <X className="w-3 h-3" /> Remove
-            </button>
-          )}
+  const Uploader = ({ url, onPick, onClear, size }: { url: string | null; onPick: () => void; onClear: () => void; size: string }) => (
+    <div className="flex items-center gap-2">
+      <button type="button" onClick={onPick}
+        className={`relative ${size} rounded-lg overflow-hidden group border-2 border-dashed border-black/10 hover:border-primary/40 transition-colors bg-[#faf8f6] flex items-center justify-center shrink-0`}>
+        {url ? <img src={url} alt="" className="w-full h-full object-contain" /> : <ImageIcon className="w-5 h-5 text-[#c4b09e]" />}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100">
+          <Upload className="w-4 h-4 text-white" />
         </div>
-      </div>
+      </button>
+      {url && (
+        <button type="button" onClick={onClear} className="text-[11px] text-red-500 hover:text-red-700 flex items-center gap-1">
+          <X className="w-3 h-3" /> Remove
+        </button>
+      )}
     </div>
   );
 
   return (
-    <div className="max-w-2xl mx-auto pb-12">
+    <div className="max-w-5xl mx-auto w-full">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/settings')} className="p-1.5 rounded-lg hover:bg-[#f5ede3] text-[#7a6b5c]">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="font-headline font-bold text-[#1c1410] text-lg">Branding</h1>
-          <p className="text-[12px] text-[#7a6b5c]">Customize your CRM's logo, colors, and identity</p>
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/settings')} className="p-1.5 rounded-lg hover:bg-[#f5ede3] text-[#7a6b5c]">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="font-headline font-bold text-[#1c1410] text-lg leading-tight">Branding</h1>
+            <p className="text-[12px] text-[#7a6b5c]">Customize your CRM's logo, colors, and identity</p>
+          </div>
         </div>
+        <button onClick={handleSave} disabled={saving}
+          className="px-5 py-2 rounded-lg text-white text-sm font-semibold bg-primary hover:bg-primary/90 transition-colors disabled:opacity-60 shrink-0">
+          {saving ? 'Saving…' : 'Save Changes'}
+        </button>
       </div>
 
       {loading ? (
@@ -152,89 +144,141 @@ export default function BrandingPage() {
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 items-start">
 
-          {/* Identity */}
-          <section className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
-            <h2 className="font-semibold text-[#1c1410] text-sm">Identity</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-[#1c1410] mb-1.5 block">Company Name</label>
-                <input value={form.name} onChange={(e) => upd('name', e.target.value)} placeholder="Your Company" className={inp} />
-                <p className="text-[11px] text-[#7a6b5c] mt-1">Shown in the sidebar, header, and login page.</p>
+          {/* ── Left: form ── */}
+          <div className="space-y-4">
+
+            {/* Identity */}
+            <section className="bg-white rounded-xl border border-black/5 p-4">
+              <h2 className="font-semibold text-[#1c1410] text-[13px] mb-3">Identity</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Company Name</label>
+                  <input value={form.name} onChange={(e) => upd('name', e.target.value)} placeholder="Your Company" className={inp} />
+                </div>
+                <div>
+                  <label className={labelCls}>Browser Tab Title</label>
+                  <input value={form.tab_title ?? ''} onChange={(e) => upd('tab_title', e.target.value)} placeholder="Your Company CRM" className={inp} />
+                </div>
               </div>
-              <div>
-                <label className="text-xs font-semibold text-[#1c1410] mb-1.5 block">Browser Tab Title</label>
-                <input value={form.tab_title ?? ''} onChange={(e) => upd('tab_title', e.target.value)} placeholder="Your Company CRM" className={inp} />
-                <p className="text-[11px] text-[#7a6b5c] mt-1">Text shown on the browser tab.</p>
+            </section>
+
+            {/* Images */}
+            <section className="bg-white rounded-xl border border-black/5 p-4">
+              <h2 className="font-semibold text-[#1c1410] text-[13px] mb-3">Images</h2>
+              <input ref={logoRef} type="file" accept="image/*" hidden onChange={handleFile('logo_url', 2)} />
+              <input ref={faviconRef} type="file" accept="image/png,image/x-icon,image/svg+xml" hidden onChange={handleFile('favicon_url', 1)} />
+              <input ref={bannerRef} type="file" accept="image/*" hidden onChange={handleFile('banner_url', 3)} />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div><label className={labelCls}>Logo</label><p className={hintCls}>Sidebar & header · PNG/SVG · max 2 MB</p></div>
+                  <Uploader url={form.logo_url} onPick={() => logoRef.current?.click()} onClear={() => upd('logo_url', null)} size="w-16 h-16" />
+                </div>
+                <div className="flex items-center justify-between gap-4 pt-3 border-t border-black/5">
+                  <div><label className={labelCls}>Favicon</label><p className={hintCls}>Browser tab icon · square · max 1 MB</p></div>
+                  <Uploader url={form.favicon_url} onPick={() => faviconRef.current?.click()} onClear={() => upd('favicon_url', null)} size="w-10 h-10" />
+                </div>
+                <div className="flex items-center justify-between gap-4 pt-3 border-t border-black/5">
+                  <div><label className={labelCls}>Login Banner</label><p className={hintCls}>Login page banner · max 3 MB</p></div>
+                  <Uploader url={form.banner_url} onPick={() => bannerRef.current?.click()} onClear={() => upd('banner_url', null)} size="w-24 h-12" />
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Images */}
-          <section className="bg-white rounded-2xl border border-black/5 p-5 space-y-5">
-            <h2 className="font-semibold text-[#1c1410] text-sm">Images</h2>
-            <input ref={logoRef} type="file" accept="image/*" hidden onChange={handleFile('logo_url', 2)} />
-            <input ref={faviconRef} type="file" accept="image/png,image/x-icon,image/svg+xml" hidden onChange={handleFile('favicon_url', 1)} />
-            <input ref={bannerRef} type="file" accept="image/*" hidden onChange={handleFile('banner_url', 3)} />
-
-            <UploadBox url={form.logo_url} onPick={() => logoRef.current?.click()} onClear={() => upd('logo_url', null)}
-              label="Logo" hint="Shown in sidebar & header. PNG/SVG, max 2 MB." aspect="w-20 h-20" />
-            <UploadBox url={form.favicon_url} onPick={() => faviconRef.current?.click()} onClear={() => upd('favicon_url', null)}
-              label="Favicon" hint="Browser tab icon. Square PNG/ICO, max 1 MB." aspect="w-12 h-12" />
-            <UploadBox url={form.banner_url} onPick={() => bannerRef.current?.click()} onClear={() => upd('banner_url', null)}
-              label="Login Banner" hint="Banner image on the login page. Max 3 MB." aspect="w-32 h-16" />
-          </section>
-
-          {/* Colors */}
-          <section className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
-            <h2 className="font-semibold text-[#1c1410] text-sm">Colors</h2>
-
-            <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-2 block">Primary / CRM Color</label>
-              <div className="flex flex-wrap gap-2 mb-3">
+            {/* Colors */}
+            <section className="bg-white rounded-xl border border-black/5 p-4">
+              <h2 className="font-semibold text-[#1c1410] text-[13px] mb-3">Colors</h2>
+              <label className={labelCls}>Primary / CRM Color</label>
+              <div className="flex flex-wrap gap-1.5 mb-3">
                 {COLOR_PRESETS.map((c) => (
                   <button key={c} type="button" onClick={() => upd('brand_color', c)}
-                    className="w-8 h-8 rounded-lg border-2 transition-all flex items-center justify-center"
+                    className="w-7 h-7 rounded-md border-2 transition-all flex items-center justify-center"
                     style={{ background: c, borderColor: form.brand_color.toLowerCase() === c.toLowerCase() ? '#1c1410' : 'transparent' }}>
-                    {form.brand_color.toLowerCase() === c.toLowerCase() && <Check className="w-4 h-4 text-white" />}
+                    {form.brand_color.toLowerCase() === c.toLowerCase() && <Check className="w-3.5 h-3.5 text-white" />}
                   </button>
                 ))}
               </div>
               <div className="flex items-center gap-2">
                 <input type="color" value={form.brand_color} onChange={(e) => upd('brand_color', e.target.value)}
-                  className="w-10 h-10 rounded-lg border border-[#e8ddd4] cursor-pointer p-0.5" />
+                  className="w-9 h-9 rounded-lg border border-[#e8ddd4] cursor-pointer p-0.5 shrink-0" />
                 <input value={form.brand_color} onChange={(e) => upd('brand_color', e.target.value)}
-                  placeholder="#c2410c" className={`${inp} max-w-[140px] font-mono`} />
-                {/* Live preview */}
-                <span className="px-4 py-2 rounded-lg text-white text-sm font-semibold ml-2" style={{ background: form.brand_color }}>
-                  Preview
-                </span>
+                  placeholder="#c2410c" className={`${inp} max-w-[130px] font-mono`} />
               </div>
-            </div>
 
-            <div className="pt-2 border-t border-black/5">
-              <label className="text-xs font-semibold text-[#1c1410] mb-2 block">Login Page Background</label>
-              <div className="flex items-center gap-2">
-                <input type="color" value={form.login_bg_color ?? '#faf8f6'} onChange={(e) => upd('login_bg_color', e.target.value)}
-                  className="w-10 h-10 rounded-lg border border-[#e8ddd4] cursor-pointer p-0.5" />
-                <input value={form.login_bg_color ?? ''} onChange={(e) => upd('login_bg_color', e.target.value || null)}
-                  placeholder="Leave blank for default" className={`${inp} max-w-[220px] font-mono`} />
-                {form.login_bg_color && (
-                  <button type="button" onClick={() => upd('login_bg_color', null)} className="text-[11px] text-red-500 hover:text-red-700">Reset</button>
-                )}
+              <div className="pt-3 mt-3 border-t border-black/5">
+                <label className={labelCls}>Login Page Background</label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={form.login_bg_color ?? '#faf8f6'} onChange={(e) => upd('login_bg_color', e.target.value)}
+                    className="w-9 h-9 rounded-lg border border-[#e8ddd4] cursor-pointer p-0.5 shrink-0" />
+                  <input value={form.login_bg_color ?? ''} onChange={(e) => upd('login_bg_color', e.target.value || null)}
+                    placeholder="Default" className={`${inp} max-w-[130px] font-mono`} />
+                  {form.login_bg_color && (
+                    <button type="button" onClick={() => upd('login_bg_color', null)} className="text-[11px] text-red-500 hover:text-red-700">Reset</button>
+                  )}
+                </div>
+                <p className={hintCls}>Applies on your custom domain's login page.</p>
               </div>
-              <p className="text-[11px] text-[#7a6b5c] mt-1">Only applies on your custom domain's login page.</p>
-            </div>
-          </section>
-
-          {/* Save */}
-          <div className="flex justify-end">
-            <button onClick={handleSave} disabled={saving}
-              className="px-6 py-2.5 rounded-xl text-white text-sm font-semibold bg-primary hover:bg-primary/90 transition-colors disabled:opacity-60">
-              {saving ? 'Saving…' : 'Save Branding'}
-            </button>
+            </section>
           </div>
+
+          {/* ── Right: live preview (sticky) ── */}
+          <div className="lg:sticky lg:top-4">
+            <div className="bg-white rounded-xl border border-black/5 p-4">
+              <h2 className="font-semibold text-[#1c1410] text-[13px] mb-3">Live Preview</h2>
+
+              {/* Browser tab mock */}
+              <div className="flex items-center gap-1.5 bg-[#ece6df] rounded-t-lg px-2 py-1.5 w-fit max-w-full">
+                <div className="w-4 h-4 rounded-sm overflow-hidden bg-white flex items-center justify-center shrink-0">
+                  {form.favicon_url ? <img src={form.favicon_url} alt="" className="w-full h-full object-contain" /> : <div className="w-2 h-2 rounded-full" style={{ background: form.brand_color }} />}
+                </div>
+                <span className="text-[11px] text-[#5c5245] truncate max-w-[160px]">{form.tab_title || form.name || 'Your Company CRM'}</span>
+                <X className="w-3 h-3 text-[#9e8e7e] shrink-0" />
+              </div>
+
+              {/* App mock: sidebar + content */}
+              <div className="border border-[#ece6df] rounded-b-lg rounded-tr-lg overflow-hidden flex h-[260px]">
+                {/* mini sidebar */}
+                <div className="w-[88px] bg-[#faf8f6] border-r border-black/5 flex flex-col shrink-0">
+                  <div className="h-12 flex items-center justify-center border-b border-black/5 px-1">
+                    {form.logo_url
+                      ? <img src={form.logo_url} alt="" className="max-h-8 max-w-full object-contain" />
+                      : <span className="text-[9px] font-bold text-[#1c1410] text-center leading-tight truncate">{form.name || 'Logo'}</span>}
+                  </div>
+                  <div className="p-1.5 space-y-1">
+                    <div className="flex items-center gap-1 px-1.5 py-1 rounded-md" style={{ background: form.brand_color }}>
+                      <LayoutDashboard className="w-3 h-3 text-white" /><span className="text-[8px] text-white font-medium">Dashboard</span>
+                    </div>
+                    <div className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[#7a6b5c]">
+                      <Users className="w-3 h-3" /><span className="text-[8px]">Leads</span>
+                    </div>
+                    <div className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[#7a6b5c]">
+                      <Zap className="w-3 h-3" /><span className="text-[8px]">Automation</span>
+                    </div>
+                  </div>
+                </div>
+                {/* mini content */}
+                <div className="flex-1 bg-white p-3 flex flex-col gap-2">
+                  <div className="h-2.5 w-20 rounded-full bg-[#ece6df]" />
+                  <div className="flex gap-1.5">
+                    <div className="h-9 flex-1 rounded-md border border-black/5 bg-[#faf8f6]" />
+                    <div className="h-9 flex-1 rounded-md border border-black/5 bg-[#faf8f6]" />
+                  </div>
+                  <button className="text-[9px] text-white font-semibold rounded-md px-2 py-1.5 w-fit" style={{ background: form.brand_color }}>
+                    + Add Lead
+                  </button>
+                  <div className="space-y-1 mt-1">
+                    <div className="h-2 w-full rounded-full bg-[#f0eae3]" />
+                    <div className="h-2 w-4/5 rounded-full bg-[#f0eae3]" />
+                    <div className="h-2 w-3/5 rounded-full bg-[#f0eae3]" />
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-[#9e8e7e] mt-3 text-center">Changes apply across your whole CRM after saving.</p>
+            </div>
+          </div>
+
         </div>
       )}
     </div>
