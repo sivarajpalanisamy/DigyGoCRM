@@ -176,6 +176,7 @@ app.use('/api/auth/setup-password',  authLimiter);    // password setup rate lim
 app.use('/api/auth/forgot-password', authLimiter);    // anti-abuse on reset requests
 app.use('/api/auth/reset-password',  authLimiter);    // brute-force protection on reset
 app.use('/api/auth/verify-otp',      authLimiter);    // brute-force protection on 2FA codes
+app.use('/api/auth/activate',        authLimiter);    // brute-force protection on activation PIN
 app.use('/api/auth',          authRoutes);
 app.use('/api/dashboard',     dashboardRoutes);
 app.use('/api/leads',         leadsRoutes);

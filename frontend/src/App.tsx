@@ -36,6 +36,7 @@ import LoginPage from "./pages/LoginPage";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ActivatePage from "./pages/ActivatePage";
 import PublicFormPage from "./pages/PublicFormPage";
 import SuperAdminPage from "./pages/SuperAdminPage";
 import CreateBusinessPage from "./pages/CreateBusinessPage";
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/accept-invite" element={<AcceptInvitePage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/activate" element={<ActivatePage />} />
           <Route path="/f/:slug" element={<PublicFormPage />} />
           <Route path="/book/:slug" element={<PublicBookingPage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

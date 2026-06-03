@@ -1,0 +1,106 @@
+import { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
+import { toast } from 'sonner';
+import { Eye, EyeOff } from 'lucide-react';
+
+export default function ActivatePage() {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') ?? '';
+  const navigate = useNavigate();
+  const setToken = useAuthStore((s) => s.setToken);
+
+  const [pin, setPin] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) { toast.error('Invalid activation link — no token'); return; }
+    if (pin.trim().length !== 4) { toast.error('Enter the 4-digit PIN from your email'); return; }
+    if (password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    if (password !== confirm) { toast.error('Passwords do not match'); return; }
+    setLoading(true);
+    try {
+      const res = await api.post<{ token: string }>('/api/auth/activate', { token, pin: pin.trim(), password });
+      setToken(res.token);
+      const me = await api.get<any>('/api/auth/me');
+      useAuthStore.setState({ currentUser: me, isAuthenticated: true });
+      toast.success('Account activated! Welcome 🎉');
+      navigate('/dashboard');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Activation failed. Check your PIN or link.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)] p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 space-y-6">
+        <div className="text-center">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+               style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand))' }}>
+            <span className="text-white font-black text-xl">🎉</span>
+          </div>
+          <h1 className="text-2xl font-extrabold text-[#1c1410]">Activate your account</h1>
+          <p className="text-[13px] text-[#7a6b5c] mt-1">Enter the PIN from your welcome email and set a password</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Activation PIN</label>
+            <input
+              inputMode="numeric"
+              maxLength={4}
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="0000"
+              className="w-full text-center tracking-[0.5em] text-2xl font-bold border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-primary"
+              required
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">New Password</label>
+            <div className="relative">
+              <input
+                type={showPw ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-primary pr-10"
+                required
+              />
+              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Confirm Password</label>
+            <input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder="Repeat your password"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-primary"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 rounded-xl text-white font-bold text-[14px] transition-all hover:-translate-y-0.5 disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
+          >
+            {loading ? 'Activating…' : 'Activate Account'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

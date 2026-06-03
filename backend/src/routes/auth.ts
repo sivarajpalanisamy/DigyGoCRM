@@ -512,10 +512,16 @@ router.post('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest,
     }
 
     const hash = await bcrypt.hash(password, 10);
+    // Activation: link token + 4-digit PIN, valid 7 days. Owner activates via the welcome email.
+    const activationToken = crypto.randomBytes(24).toString('hex');
+    const activationPin   = generateOtp();
+    const activationPinHash = await bcrypt.hash(activationPin, 10);
+    const activationExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await conn.query(
-      `INSERT INTO users (tenant_id, email, password_hash, name, role, is_owner)
-       VALUES ($1,$2,$3,$4,'owner',TRUE)`,
-      [tenantId, email.toLowerCase().trim(), hash, adminName]
+      `INSERT INTO users (tenant_id, email, password_hash, name, role, is_owner,
+                          invite_token, invite_expires_at, otp_code_hash, otp_expires_at)
+       VALUES ($1,$2,$3,$4,'owner',TRUE,$5,$6,$7,$6)`,
+      [tenantId, email.toLowerCase().trim(), hash, adminName, activationToken, activationExpiry, activationPinHash]
     );
 
     const adminPerms: Record<string, boolean> = {
@@ -551,6 +557,32 @@ router.post('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest,
       metadata: { businessName, plan, email: email.toLowerCase().trim() },
       ip: req.ip,
     });
+
+    // Welcome + activation email to the new owner (login email + activation link + PIN)
+    const ownerEmail = email.toLowerCase().trim();
+    const frontendUrl = process.env.FRONTEND_URL ?? 'https://crm.digygo.in';
+    const activateLink = `${frontendUrl}/activate?token=${activationToken}`;
+    setImmediate(() => sendEmail({
+      to: ownerEmail,
+      subject: `Welcome to ${businessName} — activate your CRM`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #ece5de">
+        <div style="background:linear-gradient(135deg,#c2410c,#ea580c,#f97316);padding:28px">
+          <h1 style="color:#fff;margin:0;font-size:22px">Welcome, ${adminName} 👋</h1>
+          <p style="color:#fde8d8;margin:6px 0 0;font-size:14px">Your ${businessName} CRM is ready</p>
+        </div>
+        <div style="padding:28px">
+          <p style="color:#5c5245;font-size:14px;margin:0 0 20px">Activate your account to get started. You'll set your own password during activation.</p>
+          <div style="background:#faf8f6;border-radius:10px;padding:18px;margin-bottom:22px">
+            <p style="margin:0 0 10px;color:#7a6b5c;font-size:13px">Login email</p>
+            <p style="margin:0 0 16px;color:#1c1410;font-size:15px;font-weight:600">${ownerEmail}</p>
+            <p style="margin:0 0 6px;color:#7a6b5c;font-size:13px">Activation PIN</p>
+            <p style="margin:0;font-size:30px;font-weight:800;letter-spacing:6px;color:#1c1410">${activationPin}</p>
+          </div>
+          <a href="${activateLink}" style="display:inline-block;background:#c2410c;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 28px;border-radius:10px">Activate my account</a>
+          <p style="color:#9c8f84;font-size:12px;margin:20px 0 0">Enter the PIN above on the activation page and choose a password. This link &amp; PIN expire in 7 days.</p>
+        </div>
+      </div>`,
+    }).catch((e) => console.error('[welcome email]', e?.message)));
 
     res.status(201).json({
       message: 'Tenant created',
@@ -604,6 +636,48 @@ router.post('/setup-password', async (req: Request, res: Response) => {
     res.json({ token: accessToken, message: 'Password set successfully' });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/auth/activate — new white-label owner activates with token + PIN + new password
+router.post('/activate', async (req: Request, res: Response) => {
+  const { token, pin, password } = req.body;
+  if (!token || !pin || !password || password.length < 6) {
+    res.status(400).json({ error: 'Token, PIN, and a password (min 6 chars) are required' }); return;
+  }
+  try {
+    const r = await query(
+      `SELECT id, tenant_id, role, invite_expires_at, otp_code_hash, otp_attempts
+       FROM users WHERE invite_token=$1 LIMIT 1`,
+      [token]
+    );
+    const user = r.rows[0];
+    if (!user || !user.otp_code_hash) { res.status(404).json({ error: 'Invalid or expired activation link' }); return; }
+    if (user.invite_expires_at && new Date(user.invite_expires_at) < new Date()) {
+      res.status(410).json({ error: 'Activation link has expired' }); return;
+    }
+    if ((user.otp_attempts ?? 0) >= OTP_MAX_ATTEMPTS) {
+      res.status(429).json({ error: 'Too many attempts — contact your administrator' }); return;
+    }
+    const pinOk = await bcrypt.compare(String(pin).trim(), user.otp_code_hash);
+    if (!pinOk) {
+      await query(`UPDATE users SET otp_attempts=otp_attempts+1 WHERE id=$1`, [user.id]);
+      res.status(401).json({ error: 'Incorrect PIN' }); return;
+    }
+    const hash = await bcrypt.hash(password, 10);
+    const updated = await query(
+      `UPDATE users
+         SET password_hash=$1, password_set=TRUE,
+             invite_token=NULL, invite_expires_at=NULL, otp_code_hash=NULL, otp_expires_at=NULL, otp_attempts=0
+       WHERE id=$2 AND invite_token=$3 RETURNING id, tenant_id, role`,
+      [hash, user.id, token]
+    );
+    if (!updated.rows[0]) { res.status(410).json({ error: 'Activation already completed' }); return; }
+    const accessToken = issueAccessToken(user.id, user.tenant_id, user.role);
+    res.json({ token: accessToken, message: 'Account activated' });
+  } catch (err) {
+    console.error('[activate]', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
