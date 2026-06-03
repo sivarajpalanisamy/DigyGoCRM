@@ -29,6 +29,8 @@ interface Tenant {
   admin_name: string | null;
   admin_email: string | null;
   last_login_at: string | null;
+  domain_status?: string | null;
+  custom_domain?: string | null;
 }
 
 const PLAN_BADGE: Record<string, string> = {
@@ -392,7 +394,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
 
 // ── Row Actions Dropdown ────────────────────────────────────────────────────────
 
-function RowMenu({ tenant, onEdit, onDomain, onRefresh }: { tenant: Tenant; onEdit: () => void; onDomain: () => void; onRefresh: () => void }) {
+function RowMenu({ tenant, onEdit, onRefresh }: { tenant: Tenant; onEdit: () => void; onRefresh: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -427,10 +429,6 @@ function RowMenu({ tenant, onEdit, onDomain, onRefresh }: { tenant: Tenant; onEd
           <button onClick={() => { setOpen(false); onEdit(); }}
             className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 text-[#1c1410]">
             <Pencil className="w-3.5 h-3.5 text-gray-400" /> Edit Details
-          </button>
-          <button onClick={() => { setOpen(false); onDomain(); }}
-            className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 text-[#1c1410]">
-            <Globe className="w-3.5 h-3.5 text-gray-400" /> Custom Domain
           </button>
           <button onClick={() => {
             setOpen(false);
@@ -734,13 +732,21 @@ export default function SuperAdminPage() {
                           className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:border-primary/50 hover:bg-primary/5 text-gray-400 hover:text-primary transition-all">
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
+                        {/* Custom Domain */}
+                        <button onClick={() => setDomainTenant(t)} title="Custom Domain"
+                          className={cn('w-8 h-8 flex items-center justify-center rounded-lg border transition-all',
+                            t.domain_status === 'ssl_active'
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300'
+                              : 'border-gray-200 hover:border-primary/50 hover:bg-primary/5 text-gray-400 hover:text-primary')}>
+                          <Globe className="w-3.5 h-3.5" />
+                        </button>
                         {/* Email */}
                         <button onClick={() => window.location.href = `mailto:${t.admin_email ?? t.email}`} title="Email"
                           className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:border-red-300 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all">
                           <Mail className="w-3.5 h-3.5" />
                         </button>
                         {/* More */}
-                        <RowMenu tenant={t} onEdit={() => setEditTenant(t)} onDomain={() => setDomainTenant(t)} onRefresh={fetchTenants} />
+                        <RowMenu tenant={t} onEdit={() => setEditTenant(t)} onRefresh={fetchTenants} />
                       </div>
                     </td>
                   </tr>
