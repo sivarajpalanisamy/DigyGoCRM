@@ -91,7 +91,7 @@ export function AppLayout() {
         <AppHeader onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-hidden flex flex-col min-h-0 border-t border-black/[0.06]">
           {/* pb-16 on mobile reserves space for the bottom nav */}
-          <div className="px-3 py-4 md:px-6 md:py-5 flex flex-col flex-1 min-h-0 pb-20 md:pb-10 overflow-y-auto">
+          <div className="px-3 py-4 md:px-6 md:py-5 flex flex-col flex-1 min-h-0 pb-20 md:pb-10 overflow-y-auto overflow-x-hidden">
             <Outlet />
           </div>
         </main>
