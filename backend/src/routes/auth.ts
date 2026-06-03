@@ -12,8 +12,7 @@ import { requireAuth, requireSuperAdmin, AuthRequest, invalidateTenantCache } fr
 import { invalidateDomainCache, setCachedDomain } from '../utils/domainCache';
 import { addAllowedOrigin, removeAllowedOrigin } from '../utils/corsOrigins';
 
-const dnsResolve4 = promisify(dns.resolve4);
-// OS-level resolver (same as `ping`/getaddrinfo) — reliably follows CNAME chains
+// OS-level resolver (same as `ping`/getaddrinfo) — used as a final fallback
 const dnsLookupAll = promisify(dns.lookup) as (host: string, opts: { all: true; family: 4 }) => Promise<Array<{ address: string }>>;
 
 // Traefik dynamic config directory — Traefik watches this and auto-provisions SSL
@@ -742,34 +741,36 @@ router.post('/tenants/:id/domain/verify', requireAuth, requireSuperAdmin, async 
     await query("UPDATE tenants SET domain_status='verifying', domain_last_attempt_at=NOW() WHERE id=$1", [req.params.id]);
 
     if (!skipDnsCheck) {
-      // Step 1: DNS verification — domain must resolve to our server
+      // Step 1: DNS verification — domain must resolve to our server.
+      // Query PUBLIC resolvers (8.8.8.8 / 1.1.1.1) directly — the server's local
+      // systemd-resolved cache can hold a stale NXDOMAIN for newly-added domains.
       const serverIp = process.env.SERVER_IP ?? '31.97.227.208';
       let dnsOk = false;
       let resolvedIps: string[] = [];
 
-      // Primary: OS resolver (getaddrinfo) — same as `ping`, follows CNAME chains reliably
+      const resolver = new dns.promises.Resolver();
+      resolver.setServers(['8.8.8.8', '1.1.1.1']);
+
+      // Primary: A-record query via public DNS (follows CNAME → A)
       try {
-        const addrs = await dnsLookupAll(domain, { all: true, family: 4 });
-        resolvedIps = addrs.map((a) => a.address);
+        resolvedIps = await resolver.resolve4(domain);
         dnsOk = resolvedIps.includes(serverIp);
       } catch { /* try fallbacks below */ }
 
-      // Fallback 1: c-ares A-record query
+      // Fallback 1: CNAME points to crm.digygo.in (via public DNS)
       if (!dnsOk) {
         try {
-          const a = await dnsResolve4(domain);
-          resolvedIps = a;
-          dnsOk = a.includes(serverIp);
+          const cnames = await resolver.resolveCname(domain);
+          dnsOk = cnames.some((c) => c.includes('crm.digygo.in'));
         } catch { /* continue */ }
       }
 
-      // Fallback 2: CNAME points to crm.digygo.in
+      // Fallback 2: OS resolver (in case public DNS is blocked outbound)
       if (!dnsOk) {
         try {
-          const cnames = await new Promise<string[]>((resolve, reject) =>
-            dns.resolveCname(domain, (err, addrs) => err ? reject(err) : resolve(addrs))
-          );
-          dnsOk = cnames.some((c) => c.includes('crm.digygo.in'));
+          const addrs = await dnsLookupAll(domain, { all: true, family: 4 });
+          if (resolvedIps.length === 0) resolvedIps = addrs.map((a) => a.address);
+          dnsOk = addrs.some((a) => a.address === serverIp);
         } catch { /* unresolvable */ }
       }
 
