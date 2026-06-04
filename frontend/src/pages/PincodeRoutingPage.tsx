@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import * as XLSX from 'xlsx';
 import { formatDistanceToNow } from 'date-fns';
+import CreateCustomFieldModal from '@/components/CreateCustomFieldModal';
 
 interface RoutingSet {
   id: string;
@@ -24,21 +25,16 @@ interface RoutingRow {
   pipeline_name: string | null;
   district: string | null;
   state: string | null;
+  meta?: Record<string, string> | null;
 }
-
-interface ColumnMap { value: string; pipeline: string; district: string; state: string; }
 
 const MATCH_FIELD_LABELS: Record<string, string> = {
   pincode: 'Pincode', city: 'City', state: 'State', district: 'District',
   source: 'Source', product: 'Product', area: 'Area',
 };
 
-const SYSTEM_COLS = [
-  { key: 'value'    as keyof ColumnMap, label: 'Value (match key)', required: true },
-  { key: 'pipeline' as keyof ColumnMap, label: 'Pipeline',          required: true },
-  { key: 'district' as keyof ColumnMap, label: 'District (meta)',   required: false },
-  { key: 'state'    as keyof ColumnMap, label: 'State (meta)',      required: false },
-];
+const slugify = (s: string) =>
+  (s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 100) || 'field';
 
 export default function PincodeRoutingPage() {
   const [sets, setSets] = useState<RoutingSet[]>([]);
@@ -58,9 +54,16 @@ export default function PincodeRoutingPage() {
   // Upload state (per set)
   const [uploadingSetId, setUploadingSetId] = useState<string | null>(null);
   const [preview, setPreview] = useState<any[]>([]);
+  const [previewFields, setPreviewFields] = useState<Array<{ slug: string; name: string }>>([]);
+  const [pendingCreateFields, setPendingCreateFields] = useState<Array<{ name: string; slug: string }>>([]);
   const [rawRows, setRawRows] = useState<any[]>([]);
   const [rawColumns, setRawColumns] = useState<string[]>([]);
-  const [columnMap, setColumnMap] = useState<ColumnMap>({ value: '', pipeline: '', district: '', state: '' });
+  const [mapValue, setMapValue] = useState('');
+  const [mapPipeline, setMapPipeline] = useState('');
+  // Other sheet columns → destination: '' (ignore) | 'cf:<slug>' | 'new'
+  const [extraDest, setExtraDest] = useState<Record<string, string>>({});
+  const [customFields, setCustomFields] = useState<Array<{ name: string; slug: string }>>([]);
+  const [creatingCol, setCreatingCol] = useState<string | null>(null);
   const [mapperOpen, setMapperOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -132,25 +135,17 @@ export default function PincodeRoutingPage() {
   };
 
   // ── File parsing ────────────────────────────────────────────────────────────
-  const buildPreview = (raw: any[], valueKey: string, pipelineKey: string, districtKey: string, stateKey: string) => {
-    const rows = raw.map((r) => ({
-      match_value:   String(r[valueKey] ?? '').trim(),
-      pipeline_name: pipelineKey ? String(r[pipelineKey] ?? '').trim() || null : null,
-      district:      districtKey ? String(r[districtKey] ?? '').trim() || null : null,
-      state:         stateKey    ? String(r[stateKey] ?? '').trim() || null : null,
-    })).filter((r) => r.match_value);
-    if (rows.length === 0) { toast.error('No valid rows found (match value column was empty)'); return; }
-    setPreview(rows);
-    toast.success(`${rows.length} rows ready to upload`);
-  };
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     // Ensure uploadingSetId is set (fallback to ref in case state hasn't flushed yet)
     if (!uploadingSetId && pendingSetIdRef.current) {
       setUploadingSetId(pendingSetIdRef.current);
     }
+    // Load existing custom fields so they can be picked as destinations.
+    const cfs = await api.get<Array<{ name: string; slug: string }>>('/api/fields/custom').catch(() => []);
+    setCustomFields(cfs ?? []);
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
@@ -160,33 +155,85 @@ export default function PincodeRoutingPage() {
         const raw: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
         if (raw.length === 0) { toast.error('File is empty or unreadable'); return; }
 
-        const sample = raw[0];
+        const cols = Object.keys(raw[0]);
         const find = (candidates: string[]) =>
-          Object.keys(sample).find((k) => candidates.includes(k.toLowerCase().trim())) ?? '';
+          cols.find((k) => candidates.includes(k.toLowerCase().trim())) ?? '';
 
         const valueKey    = find(['value', 'match_value', 'pincode', 'city', 'district', 'source', 'product', 'area', 'field', 'key']);
         const pipelineKey = find(['pipeline', 'pipeline_name', 'pipeline name']);
-        const districtKey = find(['district', 'area']);
-        const stateKey    = find(['state', 'province']);
 
-        if (!valueKey || !pipelineKey) {
-          setRawColumns(Object.keys(sample));
-          setRawRows(raw);
-          setColumnMap({ value: valueKey, pipeline: pipelineKey, district: districtKey, state: stateKey });
-          setMapperOpen(true);
-          return;
+        // Every other column gets a destination: auto-map to an existing custom
+        // field by name, else default to "create new field" so nothing is dropped.
+        const dest: Record<string, string> = {};
+        for (const col of cols) {
+          if (col === valueKey || col === pipelineKey) continue;
+          const match = (cfs ?? []).find((c) => c.slug === slugify(col) || c.name.toLowerCase() === col.trim().toLowerCase());
+          dest[col] = match ? `cf:${match.slug}` : 'new';
         }
-        buildPreview(raw, valueKey, pipelineKey, districtKey, stateKey);
+
+        setRawColumns(cols);
+        setRawRows(raw);
+        setMapValue(valueKey);
+        setMapPipeline(pipelineKey);
+        setExtraDest(dest);
+        setMapperOpen(true);
       } catch { toast.error('Failed to read file. Use a valid .xlsx or .csv file.'); }
     };
     reader.readAsArrayBuffer(file);
     e.target.value = '';
   };
 
+  const setColDest = (col: string, d: string) => setExtraDest((m) => ({ ...m, [col]: d }));
+
   const applyColumnMap = () => {
-    if (!columnMap.value || !columnMap.pipeline) return;
-    buildPreview(rawRows, columnMap.value, columnMap.pipeline, columnMap.district, columnMap.state);
+    if (!mapValue || !mapPipeline) return;
+
+    // Resolve each mapped column to a field slug + name (collect new ones to create).
+    const fieldCols: Array<{ col: string; slug: string; name: string }> = [];
+    const createFields: Array<{ name: string; slug: string }> = [];
+    const taken = new Set<string>();
+    for (const col of rawColumns) {
+      if (col === mapValue || col === mapPipeline) continue;
+      const d = extraDest[col] || '';
+      if (d.startsWith('cf:')) {
+        const slug = d.slice(3);
+        fieldCols.push({ col, slug, name: (customFields.find((c) => c.slug === slug)?.name) ?? col });
+        taken.add(slug);
+      } else if (d === 'new') {
+        let slug = slugify(col); const base = slug; let i = 2;
+        while (taken.has(slug)) slug = `${base}_${i++}`;
+        taken.add(slug);
+        fieldCols.push({ col, slug, name: col.trim() || slug });
+        createFields.push({ name: col.trim() || slug, slug });
+      }
+    }
+
+    const rows = rawRows.map((r) => {
+      const meta: Record<string, string> = {};
+      for (const f of fieldCols) {
+        const v = String(r[f.col] ?? '').trim();
+        if (v) meta[f.slug] = v;
+      }
+      return {
+        match_value:   String(r[mapValue] ?? '').trim(),
+        pipeline_name: String(r[mapPipeline] ?? '').trim() || null,
+        meta,
+      };
+    }).filter((r) => r.match_value);
+
+    if (rows.length === 0) { toast.error('No valid rows found (match value column was empty)'); return; }
+    setPreview(rows);
+    setPreviewFields(fieldCols.map((f) => ({ slug: f.slug, name: f.name })));
+    setPendingCreateFields(createFields);
     setMapperOpen(false);
+    toast.success(`${rows.length} rows ready to upload`);
+  };
+
+  // Called after the rich field-creator persists a new custom field.
+  const handleFieldCreated = (f: { name: string; slug: string }) => {
+    setCustomFields((prev) => (prev.some((c) => c.slug === f.slug) ? prev : [...prev, { name: f.name, slug: f.slug }]));
+    if (creatingCol) setColDest(creatingCol, `cf:${f.slug}`);
+    setCreatingCol(null);
   };
 
   const handleUpload = async (replace: boolean) => {
@@ -194,9 +241,11 @@ export default function PincodeRoutingPage() {
     if (!targetId || preview.length === 0) return;
     setUploading(true);
     try {
-      const res = await api.post<any>(`/api/field-routing/sets/${targetId}/upload`, { rows: preview, replace });
+      const res = await api.post<any>(`/api/field-routing/sets/${targetId}/upload`, {
+        rows: preview, replace, create_fields: pendingCreateFields,
+      });
       toast.success(`Uploaded ${res.inserted} rows (${res.skipped} skipped)`);
-      setPreview([]); setUploadingSetId(null);
+      setPreview([]); setPreviewFields([]); setPendingCreateFields([]); setUploadingSetId(null);
       await loadSets();
     } catch { toast.error('Upload failed'); }
     finally { setUploading(false); }
@@ -233,7 +282,11 @@ export default function PincodeRoutingPage() {
     try {
       const rows = await api.get<any[]>(`/api/field-routing/sets/${set.id}/export`);
       const ws = XLSX.utils.json_to_sheet(rows.map((r) => ({
-        value: r.match_value, pipeline: r.pipeline_name ?? '', district: r.district ?? '', state: r.state ?? '',
+        value: r.match_value,
+        pipeline: r.pipeline_name ?? '',
+        ...(r.meta && typeof r.meta === 'object' ? r.meta : {}),
+        ...(r.district ? { district: r.district } : {}),
+        ...(r.state ? { state: r.state } : {}),
       })));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Routing');
@@ -439,39 +492,66 @@ export default function PincodeRoutingPage() {
                     >
                       <Upload className="w-6 h-6 text-[#c4b09e] mx-auto mb-1.5" />
                       <p className="text-[13px] font-semibold text-[#1c1410]">Click to select Excel / CSV</p>
-                      <p className="text-[11px] text-[#7a6b5c] mt-0.5">Columns: value, pipeline, district (optional), state (optional)</p>
+                      <p className="text-[11px] text-[#7a6b5c] mt-0.5">You'll map columns next — match value + pipeline, plus any extra columns to custom fields.</p>
                     </div>
                   )}
 
                   {mapperOpen && (
                     <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 space-y-3">
                       <p className="text-[13px] font-semibold text-[#1c1410]">Map your columns</p>
+
+                      {/* Required: match value + pipeline */}
                       <div className="space-y-2">
-                        {SYSTEM_COLS.map(({ key, label, required }) => (
-                          <div key={key} className="flex items-center gap-2">
-                            <span className="text-[12px] font-semibold text-[#1c1410] w-36 shrink-0">
-                              {label}{required && <span className="text-red-500 ml-0.5">*</span>}
-                            </span>
-                            <ArrowRight className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
-                            <select
-                              value={columnMap[key]}
-                              onChange={(e) => setColumnMap((m) => ({ ...m, [key]: e.target.value }))}
-                              className="flex-1 border border-black/10 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-primary/40 bg-white"
-                            >
-                              <option value="">— Not mapped —</option>
-                              {rawColumns.map((col) => (
-                                <option key={col} value={col}>
-                                  {col}{rawRows[0]?.[col] !== undefined ? `  (e.g. ${String(rawRows[0][col]).substring(0, 20)})` : ''}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        ))}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-semibold text-[#1c1410] w-36 shrink-0">Match value<span className="text-red-500 ml-0.5">*</span></span>
+                          <ArrowRight className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
+                          <select value={mapValue} onChange={(e) => setMapValue(e.target.value)}
+                            className="flex-1 border border-black/10 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-primary/40 bg-white">
+                            <option value="">— Not mapped —</option>
+                            {rawColumns.map((col) => <option key={col} value={col}>{col}</option>)}
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-semibold text-[#1c1410] w-36 shrink-0">Pipeline<span className="text-red-500 ml-0.5">*</span></span>
+                          <ArrowRight className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
+                          <select value={mapPipeline} onChange={(e) => setMapPipeline(e.target.value)}
+                            className="flex-1 border border-black/10 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-primary/40 bg-white">
+                            <option value="">— Not mapped —</option>
+                            {rawColumns.map((col) => <option key={col} value={col}>{col}</option>)}
+                          </select>
+                        </div>
                       </div>
+
+                      {/* Extra columns → custom fields */}
+                      {rawColumns.filter((c) => c !== mapValue && c !== mapPipeline).length > 0 && (
+                        <div className="space-y-2 pt-1 border-t border-amber-200/70">
+                          <p className="text-[11px] font-semibold text-[#7a6b5c] uppercase tracking-wide">Other columns → fields</p>
+                          {rawColumns.filter((c) => c !== mapValue && c !== mapPipeline).map((col) => (
+                            <div key={col} className="flex items-center gap-2">
+                              <span className="text-[12px] font-semibold text-[#5c5245] w-36 shrink-0 truncate" title={col}>{col}</span>
+                              <ArrowRight className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
+                              <select
+                                value={extraDest[col] ?? ''}
+                                onChange={(e) => { if (e.target.value === 'new') { setCreatingCol(col); return; } setColDest(col, e.target.value); }}
+                                className="flex-1 border border-black/10 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-primary/40 bg-white"
+                              >
+                                <option value="">— Don't import —</option>
+                                {customFields.length > 0 && (
+                                  <optgroup label="Existing fields">
+                                    {customFields.map((cf) => <option key={cf.slug} value={`cf:${cf.slug}`}>{cf.name}</option>)}
+                                  </optgroup>
+                                )}
+                                <option value="new">➕ New custom field…</option>
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => setMapperOpen(false)}>Cancel</Button>
                         <Button size="sm" onClick={applyColumnMap}
-                          disabled={!columnMap.value || !columnMap.pipeline}
+                          disabled={!mapValue || !mapPipeline}
                           style={{ background: 'linear-gradient(135deg,var(--brand-dark),var(--brand))' }}>
                           Apply → Preview
                         </Button>
@@ -497,21 +577,26 @@ export default function PincodeRoutingPage() {
                       <div className="overflow-hidden rounded-xl border border-black/5 max-h-48 overflow-y-auto">
                         <table className="w-full text-[12px]">
                           <thead className="bg-[var(--app-bg)] sticky top-0">
-                            <tr>{['Value', 'Pipeline', 'District', 'State'].map((h) => (
-                              <th key={h} className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-[#7a6b5c]">{h}</th>
-                            ))}</tr>
+                            <tr>
+                              <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-[#7a6b5c]">Value</th>
+                              <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-[#7a6b5c]">Pipeline</th>
+                              {previewFields.map((f) => (
+                                <th key={f.slug} className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-[#7a6b5c]">{f.name}</th>
+                              ))}
+                            </tr>
                           </thead>
                           <tbody className="divide-y divide-black/[0.04]">
                             {preview.slice(0, 30).map((r, i) => (
                               <tr key={i} className="hover:bg-[var(--app-bg)]">
                                 <td className="px-3 py-1.5 font-mono text-[#1c1410]">{r.match_value}</td>
                                 <td className="px-3 py-1.5 text-[#1c1410]">{r.pipeline_name ?? '—'}</td>
-                                <td className="px-3 py-1.5 text-[#7a6b5c]">{r.district ?? '—'}</td>
-                                <td className="px-3 py-1.5 text-[#7a6b5c]">{r.state ?? '—'}</td>
+                                {previewFields.map((f) => (
+                                  <td key={f.slug} className="px-3 py-1.5 text-[#7a6b5c]">{r.meta?.[f.slug] ?? '—'}</td>
+                                ))}
                               </tr>
                             ))}
                             {preview.length > 30 && (
-                              <tr><td colSpan={4} className="px-3 py-2 text-center text-[11px] text-[#7a6b5c]">…and {preview.length - 30} more rows</td></tr>
+                              <tr><td colSpan={2 + previewFields.length} className="px-3 py-2 text-center text-[11px] text-[#7a6b5c]">…and {preview.length - 30} more rows</td></tr>
                             )}
                           </tbody>
                         </table>
@@ -531,6 +616,15 @@ export default function PincodeRoutingPage() {
 
       {/* Hidden file input */}
       <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFile} />
+
+      {/* Create custom field inline (for "➕ New custom field…" in the column mapper) */}
+      {creatingCol !== null && (
+        <CreateCustomFieldModal
+          initialName={creatingCol}
+          onClose={() => setCreatingCol(null)}
+          onCreate={handleFieldCreated}
+        />
+      )}
 
       {/* ── Create Set Modal ── */}
       {showCreate && (
@@ -647,21 +741,24 @@ export default function PincodeRoutingPage() {
               ) : (
                 <table className="w-full text-[13px]">
                   <thead className="bg-[var(--app-bg)] sticky top-0">
-                    <tr>{['Value', 'Pipeline', 'District', 'State'].map((h) => (
+                    <tr>{['Value', 'Pipeline', 'Fields'].map((h) => (
                       <th key={h} className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#7a6b5c]">{h}</th>
                     ))}</tr>
                   </thead>
                   <tbody className="divide-y divide-black/[0.04]">
-                    {previewRows.map((r) => (
-                      <tr key={r.id} className="hover:bg-[var(--app-bg)]">
-                        <td className="px-4 py-2.5 font-mono text-[#1c1410]">{r.match_value}</td>
-                        <td className="px-4 py-2.5 text-[#1c1410]">{r.pipeline_name ?? '—'}</td>
-                        <td className="px-4 py-2.5 text-[#7a6b5c]">{r.district ?? '—'}</td>
-                        <td className="px-4 py-2.5 text-[#7a6b5c]">{r.state ?? '—'}</td>
-                      </tr>
-                    ))}
+                    {previewRows.map((r) => {
+                      const fields = { ...(r.meta ?? {}), ...(r.district ? { district: r.district } : {}), ...(r.state ? { state: r.state } : {}) };
+                      const summary = Object.entries(fields).map(([k, v]) => `${k}: ${v}`).join(' · ');
+                      return (
+                        <tr key={r.id} className="hover:bg-[var(--app-bg)]">
+                          <td className="px-4 py-2.5 font-mono text-[#1c1410]">{r.match_value}</td>
+                          <td className="px-4 py-2.5 text-[#1c1410]">{r.pipeline_name ?? '—'}</td>
+                          <td className="px-4 py-2.5 text-[#7a6b5c]">{summary || '—'}</td>
+                        </tr>
+                      );
+                    })}
                     {previewRows.length === 0 && (
-                      <tr><td colSpan={4} className="px-4 py-8 text-center text-[#7a6b5c]">No rows found</td></tr>
+                      <tr><td colSpan={3} className="px-4 py-8 text-center text-[#7a6b5c]">No rows found</td></tr>
                     )}
                   </tbody>
                 </table>

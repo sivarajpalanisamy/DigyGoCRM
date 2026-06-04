@@ -1387,13 +1387,13 @@ export async function executeNodes(
           }
 
           // ── Lookup: new field_routing_rows (if set_id set) or legacy pincode_district_map
-          let matchRow: { district: string | null; state: string | null; pipeline_name: string | null; set_name?: string } | null = null;
+          let matchRow: { district: string | null; state: string | null; pipeline_name: string | null; meta?: Record<string, any> | null; set_name?: string } | null = null;
 
           if (setId) {
             let lookupRes;
             if (matchType === 'contains') {
               lookupRes = await query(
-                `SELECT frr.match_value, frr.pipeline_name, frr.district, frr.state, frs.name AS set_name
+                `SELECT frr.match_value, frr.pipeline_name, frr.district, frr.state, frr.meta, frs.name AS set_name
                  FROM field_routing_rows frr
                  JOIN field_routing_sets frs ON frs.id = frr.set_id
                  WHERE frr.set_id=$1::uuid AND frr.tenant_id=$2::uuid
@@ -1404,7 +1404,7 @@ export async function executeNodes(
               ).catch(() => ({ rows: [] as any[] }));
             } else {
               lookupRes = await query(
-                `SELECT frr.match_value, frr.pipeline_name, frr.district, frr.state, frs.name AS set_name
+                `SELECT frr.match_value, frr.pipeline_name, frr.district, frr.state, frr.meta, frs.name AS set_name
                  FROM field_routing_rows frr
                  JOIN field_routing_sets frs ON frs.id = frr.set_id
                  WHERE frr.set_id=$1::uuid AND frr.tenant_id=$2::uuid AND LOWER(frr.match_value)=LOWER($3)`,
@@ -1470,18 +1470,27 @@ export async function executeNodes(
           }
 
           const { district, state, pipeline_name, set_name } = matchRow;
+          const metaFields: Record<string, string> = {};
+          if (matchRow.meta && typeof matchRow.meta === 'object') {
+            for (const [k, v] of Object.entries(matchRow.meta)) {
+              const val = String(v ?? '').trim();
+              if (k && val) metaFields[k] = val;
+            }
+          }
 
-          // Write district/state back to lead's custom_fields
-          if (lead.id && district) {
-            const patch: Record<string, string> = { district };
-            if (state) patch.state = state;
+          // Write district/state + any named meta fields back to the lead's custom fields.
+          const patch: Record<string, string> = { ...metaFields };
+          if (district) patch.district = district;
+          if (state) patch.state = state;
+          if (lead.id && Object.keys(patch).length) {
             await query(
-              `UPDATE leads SET custom_fields=custom_fields || $1::jsonb, updated_at=NOW() WHERE id=$2 AND tenant_id=$3`,
+              `UPDATE leads SET custom_fields=COALESCE(custom_fields,'{}'::jsonb) || $1::jsonb, updated_at=NOW() WHERE id=$2 AND tenant_id=$3`,
               [JSON.stringify(patch), lead.id, tenantId]
             ).catch(() => null);
             if (!lead.custom_fields) lead.custom_fields = {};
-            lead.custom_fields['district'] = district;
-            if (state) lead.custom_fields['state'] = state;
+            Object.assign(lead.custom_fields, patch);
+            // Persist to lead_field_values so the values show on the lead + exports.
+            setImmediate(() => backfillCustomFields(lead.id!, tenantId, patch).catch(() => null));
           }
 
           // Move lead to mapped pipeline (first stage)

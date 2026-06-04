@@ -7,6 +7,33 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireTenant);
 
+function slugify(s: string): string {
+  const base = (s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 100);
+  return base || 'field';
+}
+
+// Create custom-field definitions for columns the user mapped to a new field.
+// Idempotent — existing slugs are left untouched.
+async function ensureCustomFields(
+  tenantId: string | null | undefined,
+  fields: Array<{ name?: string; slug?: string; type?: string }>,
+): Promise<void> {
+  for (const f of fields) {
+    const slug = (f.slug || slugify(f.name ?? '')).slice(0, 100);
+    if (!slug) continue;
+    const name = (f.name || slug).slice(0, 255);
+    try {
+      await query(
+        `INSERT INTO custom_fields (tenant_id, name, type, slug, required)
+         VALUES ($1,$2,$3,$4,false) ON CONFLICT (tenant_id, slug) DO NOTHING`,
+        [tenantId, name, f.type || 'Single Line', slug],
+      );
+    } catch (err: any) {
+      console.error('[field-routing] ensureCustomFields', slug, err.message);
+    }
+  }
+}
+
 // ── GET /api/field-routing/sets ──────────────────────────────────────────────
 router.get('/sets', async (req: AuthRequest, res: Response) => {
   try {
@@ -79,9 +106,10 @@ router.delete('/sets/:id', checkPermission('settings:manage'), async (req: AuthR
 });
 
 // ── POST /api/field-routing/sets/:id/upload ──────────────────────────────────
-// Body: { rows: [{ match_value, pipeline_name?, district?, state? }], replace?: boolean }
+// Body: { rows: [{ match_value, pipeline_name?, district?, state?, meta?: {slug:value} }],
+//         create_fields?: [{name,slug,type}], replace?: boolean }
 router.post('/sets/:id/upload', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
-  const { rows, replace = false } = req.body as { rows?: any[]; replace?: boolean };
+  const { rows, replace = false, create_fields } = req.body as { rows?: any[]; replace?: boolean; create_fields?: any[] };
   if (!Array.isArray(rows) || rows.length === 0) {
     res.status(400).json({ error: 'rows array is required' }); return;
   }
@@ -93,6 +121,11 @@ router.post('/sets/:id/upload', checkPermission('settings:manage'), async (req: 
     [setId, tenantId]
   ).catch(() => ({ rows: [] as any[] }));
   if (!setCheck.rows[0]) { res.status(404).json({ error: 'Routing set not found' }); return; }
+
+  // Register any new custom fields the user mapped extra columns to.
+  if (Array.isArray(create_fields) && create_fields.length) {
+    await ensureCustomFields(tenantId, create_fields);
+  }
 
   try {
     if (replace) {
@@ -114,19 +147,28 @@ router.post('/sets/:id/upload', checkPermission('settings:manage'), async (req: 
         const pipelineName = String(row.pipeline_name ?? row.pipeline ?? '').trim() || null;
         const district     = String(row.district ?? '').trim() || null;
         const state        = String(row.state ?? '').trim() || null;
+        // Extra named fields: { slug: value } — drop empties.
+        const meta: Record<string, string> = {};
+        if (row.meta && typeof row.meta === 'object') {
+          for (const [k, v] of Object.entries(row.meta)) {
+            const val = String(v ?? '').trim();
+            if (k && val) meta[k] = val;
+          }
+        }
         const base = values.length;
-        values.push(setId, tenantId, matchValue, pipelineName, district, state);
-        placeholders.push(`($${base+1}::uuid,$${base+2}::uuid,$${base+3},$${base+4},$${base+5},$${base+6})`);
+        values.push(setId, tenantId, matchValue, pipelineName, district, state, JSON.stringify(meta));
+        placeholders.push(`($${base+1}::uuid,$${base+2}::uuid,$${base+3},$${base+4},$${base+5},$${base+6},$${base+7}::jsonb)`);
       }
 
       if (placeholders.length > 0) {
         await query(
-          `INSERT INTO field_routing_rows (set_id, tenant_id, match_value, pipeline_name, district, state)
+          `INSERT INTO field_routing_rows (set_id, tenant_id, match_value, pipeline_name, district, state, meta)
            VALUES ${placeholders.join(',')}
            ON CONFLICT (set_id, lower(match_value)) DO UPDATE
              SET pipeline_name=EXCLUDED.pipeline_name,
                  district=EXCLUDED.district,
-                 state=EXCLUDED.state`,
+                 state=EXCLUDED.state,
+                 meta=EXCLUDED.meta`,
           values
         );
         inserted += placeholders.length;
@@ -165,7 +207,7 @@ router.get('/sets/:id/rows', async (req: AuthRequest, res: Response) => {
 
     const [rowsRes, countRes] = await Promise.all([
       query(
-        `SELECT id, match_value, pipeline_name, district, state
+        `SELECT id, match_value, pipeline_name, district, state, meta
          FROM field_routing_rows
          WHERE set_id=$1::uuid AND tenant_id=$2::uuid${whereExtra}
          ORDER BY match_value ASC
@@ -189,7 +231,7 @@ router.get('/sets/:id/rows', async (req: AuthRequest, res: Response) => {
 router.get('/sets/:id/export', async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
-      `SELECT match_value, pipeline_name, district, state
+      `SELECT match_value, pipeline_name, district, state, meta
        FROM field_routing_rows
        WHERE set_id=$1::uuid AND tenant_id=$2::uuid
        ORDER BY match_value ASC`,
@@ -210,7 +252,7 @@ router.post('/sets/:id/test', async (req: AuthRequest, res: Response) => {
     let result;
     if (match_type === 'contains') {
       result = await query(
-        `SELECT match_value, pipeline_name, district, state
+        `SELECT match_value, pipeline_name, district, state, meta
          FROM field_routing_rows
          WHERE set_id=$1::uuid AND tenant_id=$2::uuid
            AND (LOWER($3) LIKE '%' || LOWER(match_value) || '%'
@@ -220,7 +262,7 @@ router.post('/sets/:id/test', async (req: AuthRequest, res: Response) => {
       );
     } else {
       result = await query(
-        `SELECT match_value, pipeline_name, district, state
+        `SELECT match_value, pipeline_name, district, state, meta
          FROM field_routing_rows
          WHERE set_id=$1::uuid AND tenant_id=$2::uuid AND LOWER(match_value)=LOWER($3)`,
         [req.params.id, req.user!.tenantId, value.trim()]
