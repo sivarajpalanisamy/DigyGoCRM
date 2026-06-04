@@ -341,6 +341,9 @@ export function interpolate(
     const slug = slugifyToken(token.name);
     result = result.replace(new RegExp(`\\{%${slug}%\\}`, 'g'), token.replace_with);
   }
+  // Step 5: any token still unresolved (field has no data / unknown slug) → empty string,
+  // so output never contains a literal {%slug%}.
+  result = result.replace(/\{%[^%]*%\}/g, '');
   return result;
 }
 
