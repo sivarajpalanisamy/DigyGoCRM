@@ -13,7 +13,7 @@ import {
   ListChecks, Code2, CalendarDays, CalendarClock, CalendarRange, ArrowRight,
   UserMinus, UserX, FolderX, PlayCircle, PauseCircle, LogOut, SquareMinus, Users, UserRoundCog,
   RotateCcw, ChevronRight, Copy, Power, Info, ExternalLink, Loader2, TrendingUp, MapPin, RefreshCw,
-  Paperclip, Upload, Eye, Edit2, Radio, PhoneCall, PhoneMissed,
+  Paperclip, Upload, Eye, Edit2, Radio, PhoneCall, PhoneMissed, AlertTriangle,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 import { Button } from '@/components/ui/button';
@@ -4241,23 +4241,18 @@ export default function WorkflowEditorPage() {
     if (justLoadedFromApi.current) { justLoadedFromApi.current = false; return; }
     if (!workflow.id || workflow.id === 'new') return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(async () => {
-      try {
-        await api.patch(`/api/workflows/${workflow.id}`, {
-          name: workflow.name,
-          description: workflow.description,
-          nodes: workflow.nodes,
-          status: workflow.status,
-          allow_reentry: workflow.allowReentry,
-        });
-        setLastSaved('just now');
-      } catch { /* silent — user can still manually save */ }
-    }, 1500);
+    autoSaveTimer.current = setTimeout(() => { persist(); }, 1200);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [workflow.nodes, workflow.name, workflow.status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [workflow.nodes, workflow.name, workflow.status, workflow.description, workflow.allowReentry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep ref in sync so beforeunload always has latest workflow
   useEffect(() => { workflowRef.current = workflow; }, [workflow]);
+
+  // Clear pending timers on unmount (avoid retry/autosave firing after leaving)
+  useEffect(() => () => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+  }, []);
 
   // Flush save on page unload (covers F5 within the debounce window)
   useEffect(() => {
@@ -4380,13 +4375,43 @@ export default function WorkflowEditorPage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState('just now');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isDirty, setIsDirty] = useState(false);
   const isDirtyFirstRender = useRef(true);
   const [loadingWF, setLoadingWF] = useState(!passedWorkflow && !!id && id !== 'new');
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
   const justLoadedFromApi = useRef(false);
   const workflowRef = useRef(workflow);
+
+  // Single source of truth for saving. Reads the latest workflow from the ref,
+  // surfaces status, clears the dirty flag on success, and retries on failure
+  // (covers transient errors + 401 token-refresh) instead of failing silently.
+  const persist = async (): Promise<boolean> => {
+    const wf = workflowRef.current;
+    if (!wf.id || wf.id === 'new') return false;
+    if (retryTimer.current) { clearTimeout(retryTimer.current); retryTimer.current = null; }
+    setSaveStatus('saving');
+    try {
+      await api.patch(`/api/workflows/${wf.id}`, {
+        name: wf.name,
+        description: wf.description,
+        nodes: wf.nodes,
+        status: wf.status,
+        allow_reentry: wf.allowReentry,
+      });
+      setSaveStatus('saved');
+      setLastSaved('just now');
+      setIsDirty(false);
+      return true;
+    } catch {
+      setSaveStatus('error');
+      // Keep retrying so a transient failure / expired-token refresh doesn't lose edits.
+      retryTimer.current = setTimeout(() => { persist(); }, 5000);
+      return false;
+    }
+  };
   const [zoom, setZoom] = useState(100);
   const [panelWidth, setPanelWidth] = useState(340);
   const [showNodeModal, setShowNodeModal] = useState(false);
@@ -4425,7 +4450,7 @@ export default function WorkflowEditorPage() {
   useEffect(() => {
     if (isDirtyFirstRender.current) { isDirtyFirstRender.current = false; return; }
     setIsDirty(true);
-  }, [workflow.nodes, workflow.name]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [workflow.nodes, workflow.name, workflow.description, workflow.status, workflow.allowReentry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Warn before navigating away with unsaved changes
   useEffect(() => {
@@ -4507,31 +4532,22 @@ export default function WorkflowEditorPage() {
     const validationError = validateNodes(workflow.nodes);
     if (validationError) { toast.error(validationError); return; }
     setSaving(true);
-    try {
-      await api.patch(`/api/workflows/${workflow.id}`, {
-        name: workflow.name,
-        description: workflow.description,
-        nodes: workflow.nodes,
-        status: workflow.status,
-        allow_reentry: workflow.allowReentry,
-      });
-      // Snapshot version on every save (Task #12)
+    const ok = await persist();
+    if (ok) {
+      // Snapshot version on every successful save (Task #12)
       api.post(`/api/workflows/${workflow.id}/snapshot`, {
         name: workflow.name,
         nodes: workflow.nodes,
       }).catch(() => null);
-      setLastSaved('just now');
-      setIsDirty(false);
       if (workflow.status === 'inactive') {
         toast.success('Workflow saved — click Publish to activate it');
       } else {
         toast.success('Workflow saved');
       }
-    } catch {
-      toast.error('Failed to save workflow');
-    } finally {
-      setSaving(false);
+    } else {
+      toast.error('Couldn’t save — will keep retrying. Check your connection.');
     }
+    setSaving(false);
   };
 
   const updateNode = (nodeId: string, updates: Partial<WFNode>) => {
@@ -4725,9 +4741,19 @@ export default function WorkflowEditorPage() {
 
         {/* Right: actions */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-[#b09e8d] flex items-center gap-1 mr-1">
-            <Clock className="w-3 h-3" />{lastSaved}
-          </span>
+          {saveStatus === 'saving' ? (
+            <span className="text-[10px] text-[#b09e8d] flex items-center gap-1 mr-1">
+              <RefreshCw className="w-3 h-3 animate-spin" />Saving…
+            </span>
+          ) : saveStatus === 'error' ? (
+            <button onClick={() => persist()} className="text-[10px] text-red-600 flex items-center gap-1 mr-1 hover:underline" title="Save failed — click to retry">
+              <AlertTriangle className="w-3 h-3" />Unsaved — retry
+            </button>
+          ) : (
+            <span className="text-[10px] text-[#b09e8d] flex items-center gap-1 mr-1">
+              <Clock className="w-3 h-3" />{isDirty ? 'Unsaved changes' : `Saved ${lastSaved}`}
+            </span>
+          )}
           <Button variant="outline" size="sm" onClick={() => navigate(`/automation/analytics/${workflow.id}`)} className="h-8 text-[12px] border-black/[0.1]">
             <TrendingUp className="w-3.5 h-3.5 mr-1" />Analytics
           </Button>
