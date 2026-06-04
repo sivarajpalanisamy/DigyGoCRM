@@ -9,6 +9,9 @@ const BASE = import.meta.env.VITE_API_URL ?? '';
 const TOKEN_KEY  = 'dg_tok';
 const USER_KEY   = 'dg_usr';
 const TENANT_KEY = 'dg_ten';
+// Marks that the current session is an impersonation, so the "Back to Admin"
+// button survives a page refresh. Only a boolean flag — no tokens stored.
+const IMP_KEY    = 'dg_imp';
 
 // CEO credentials are kept IN MEMORY ONLY during impersonation (#42).
 // Never stored in localStorage — a page refresh ends the impersonation session,
@@ -37,7 +40,7 @@ interface AuthState {
   logout: () => void;
   bootstrapFromRefresh: () => Promise<boolean>;
   impersonateTenant: (tenantId: string) => Promise<boolean>;
-  exitImpersonation: () => void;
+  exitImpersonation: () => Promise<void>;
   refreshPermissions: () => Promise<void>;
   listenForPermissionUpdates: () => void;
 }
@@ -61,6 +64,7 @@ function clearSession() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(TENANT_KEY);
+    localStorage.removeItem(IMP_KEY);
   } catch {}
 }
 
@@ -212,6 +216,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const data = await res.json();
       setAccessToken(data.token);
       saveSession(data.token, { ...data.user, tenantId: data.user.tenantId });
+      try { localStorage.setItem(IMP_KEY, '1'); } catch {}
       set({ currentUser: { ...data.user, tenantId: data.user.tenantId }, isAuthenticated: true, isImpersonating: true });
       // Update company header to reflect the impersonated tenant's branding
       if (data.tenant) {
@@ -229,9 +234,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  exitImpersonation: () => {
-    try {
-      if (!_ceoToken || !_ceoUser) return;
+  exitImpersonation: async () => {
+    try { localStorage.removeItem(IMP_KEY); } catch {}
+
+    // Fast path: CEO token still in memory (same page session, no refresh yet).
+    if (_ceoToken && _ceoUser) {
       const ceoUser = _ceoUser;
       setAccessToken(_ceoToken);
       saveSession(_ceoToken, ceoUser);
@@ -243,7 +250,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useCompanyStore.getState().setLogo(null);
       useBrandingStore.getState().resetBranding();
       get().refreshPermissions();
-    } catch {}
+      return;
+    }
+
+    // After a refresh the in-memory CEO token is gone — recover the super-admin
+    // session from the still-valid super-admin refresh cookie (impersonation never
+    // replaced it on the server).
+    try {
+      const r = await fetch(`${BASE}/api/auth/refresh`, { method: 'POST', credentials: 'include' });
+      if (!r.ok) { get().logout(); return; }
+      const { token } = await r.json();
+      setAccessToken(token);
+      const me = await api.get<User>('/api/auth/me');
+      saveSession(token, me);
+      const permAll = me.role === 'super_admin' || me.role === 'owner';
+      set({ currentUser: me, isAuthenticated: true, isImpersonating: false, permAll, permissions: {} });
+      useCompanyStore.getState().setCompanyName('DigyGo CRM');
+      useCompanyStore.getState().setLogo(null);
+      useBrandingStore.getState().resetBranding();
+      get().refreshPermissions();
+    } catch {
+      get().logout();
+    }
   },
 
   bootstrapFromRefresh: async () => {
@@ -253,9 +281,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       setAccessToken(stored.token);
       // Set permAll from role synchronously — both super_admin and owner are known from JWT.
       const role = stored.user.role;
+      // Restore impersonation flag so "Back to Admin" survives a page refresh.
+      let impersonating = false;
+      try { impersonating = localStorage.getItem(IMP_KEY) === '1'; } catch {}
       set({
         currentUser: stored.user,
         isAuthenticated: true,
+        isImpersonating: impersonating,
         permAll: role === 'super_admin' || role === 'owner',
       });
       if (stored.tenant) {
