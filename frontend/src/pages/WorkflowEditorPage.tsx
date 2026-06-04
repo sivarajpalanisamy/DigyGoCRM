@@ -22,7 +22,7 @@ import { Switch } from '@/components/ui/switch';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { cn, copyToClipboard } from '@/lib/utils';
 import { toast } from 'sonner';
-import { api, getAccessToken, BASE } from '@/lib/api';
+import { api, getAccessToken, BASE, ApiError } from '@/lib/api';
 import type { WFNode, WFRecord } from './AutomationPage';
 import { useCrmStore } from '@/store/crmStore';
 
@@ -287,6 +287,17 @@ const nodeIcon = (actionType: string): ElementType => {
 function NodeIconRenderer({ actionType }: { actionType: string }) {
   const Icon = nodeIcon(actionType);
   return <Icon className="w-4 h-4" />;
+}
+
+// Count all nodes including nested if/else branches — used to verify a save persisted.
+function countNodes(nodes: any[]): number {
+  let n = 0;
+  for (const node of nodes ?? []) {
+    n++;
+    if (node?.branches?.yes) n += countNodes(node.branches.yes);
+    if (node?.branches?.no)  n += countNodes(node.branches.no);
+  }
+  return n;
 }
 
 // Relative "time ago" label for the save indicator.
@@ -4233,6 +4244,7 @@ export default function WorkflowEditorPage() {
     setLoadingWF(true);
     api.get<any>(`/api/workflows/${id}`).then((r) => {
       justLoadedFromApi.current = true;
+      baseUpdatedAtRef.current = r.updated_at ?? null;
       setWorkflow({
         id: r.id, name: r.name, description: r.description ?? '',
         allowReentry: r.allow_reentry ?? false,
@@ -4247,6 +4259,13 @@ export default function WorkflowEditorPage() {
       .finally(() => setLoadingWF(false));
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When opened with a workflow passed from the list (no full load), still fetch
+  // its current version so the save guard is active (multi-tab safety).
+  useEffect(() => {
+    if (!passedWorkflow || !id || id === 'new') return;
+    api.get<any>(`/api/workflows/${id}`).then((r) => { baseUpdatedAtRef.current = r?.updated_at ?? null; }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Debounced auto-save whenever nodes or name/status change
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
@@ -4260,10 +4279,24 @@ export default function WorkflowEditorPage() {
   // Keep ref in sync so beforeunload always has latest workflow
   useEffect(() => { workflowRef.current = workflow; }, [workflow]);
 
-  // Clear pending timers on unmount (avoid retry/autosave firing after leaving)
+  // Mirror dirty state into a ref so the unmount cleanup can read the latest value.
+  useEffect(() => { dirtyRef.current = isDirty; }, [isDirty]);
+
+  // On unmount: clear timers AND flush a final save if there are unsaved changes
+  // (covers in-app navigation away within the autosave debounce window).
   useEffect(() => () => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     if (retryTimer.current) clearTimeout(retryTimer.current);
+    const wf = workflowRef.current;
+    if (wf.id && wf.id !== 'new' && dirtyRef.current) {
+      const token = getAccessToken();
+      fetch(`${BASE}/api/workflows/${wf.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ name: wf.name, description: wf.description, nodes: wf.nodes, status: wf.status, allow_reentry: wf.allowReentry, base_updated_at: baseUpdatedAtRef.current }),
+        keepalive: true,
+      }).catch(() => {});
+    }
   }, []);
 
   // Re-render every 20s so the "Saved X ago" label stays current.
@@ -4285,7 +4318,7 @@ export default function WorkflowEditorPage() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ name: wf.name, description: wf.description, nodes: wf.nodes, status: wf.status, allow_reentry: wf.allowReentry }),
+        body: JSON.stringify({ name: wf.name, description: wf.description, nodes: wf.nodes, status: wf.status, allow_reentry: wf.allowReentry, base_updated_at: baseUpdatedAtRef.current }),
         keepalive: true,
       });
     };
@@ -4394,8 +4427,9 @@ export default function WorkflowEditorPage() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [, forceTick] = useState(0);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'conflict'>('idle');
   const [isDirty, setIsDirty] = useState(false);
+  const dirtyRef = useRef(false);
   const isDirtyFirstRender = useRef(true);
   const [loadingWF, setLoadingWF] = useState(!passedWorkflow && !!id && id !== 'new');
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -4403,34 +4437,95 @@ export default function WorkflowEditorPage() {
   const isFirstRender = useRef(true);
   const justLoadedFromApi = useRef(false);
   const workflowRef = useRef(workflow);
+  // The updated_at the editor last loaded/saved — sent on every save so the server
+  // can reject a stale overwrite (multi-tab safety).
+  const baseUpdatedAtRef = useRef<string | null>(passedWorkflow ? null : null);
+  const saveBroadcast = useRef<BroadcastChannel | null>(null);
 
   // Single source of truth for saving. Reads the latest workflow from the ref,
   // surfaces status, clears the dirty flag on success, and retries on failure
   // (covers transient errors + 401 token-refresh) instead of failing silently.
+  // Reload the workflow from the server, replacing local state. Used after a
+  // version conflict so a stale tab adopts the latest instead of clobbering it.
+  const reloadFromServer = async () => {
+    const wf = workflowRef.current;
+    if (!wf.id || wf.id === 'new') return;
+    try {
+      const r = await api.get<any>(`/api/workflows/${wf.id}`);
+      justLoadedFromApi.current = true;
+      baseUpdatedAtRef.current = r.updated_at ?? null;
+      setWorkflow({
+        id: r.id, name: r.name, description: r.description ?? '',
+        allowReentry: r.allow_reentry ?? false,
+        totalContacts: r.total_contacts ?? 0, completed: r.completed ?? 0,
+        completedNodes: (r.nodes ?? []).filter((n: any) => n.type !== 'trigger').length,
+        lastUpdated: new Date(r.updated_at).toLocaleDateString(),
+        status: r.status as 'active' | 'inactive',
+        nodes: Array.isArray(r.nodes) ? r.nodes : (typeof r.nodes === 'string' ? JSON.parse(r.nodes) : []),
+        apiToken: r.api_token ?? '',
+      });
+      setIsDirty(false);
+      setSaveStatus('saved');
+      setSavedAt(Date.now());
+    } catch { /* leave as-is */ }
+  };
+
+  // Single source of truth for saving. Sends the base version so the server can
+  // reject a stale overwrite (multi-tab safety). On success updates the base
+  // version; on conflict reloads (never clobbers); on transient error retries.
   const persist = async (): Promise<boolean> => {
     const wf = workflowRef.current;
     if (!wf.id || wf.id === 'new') return false;
     if (retryTimer.current) { clearTimeout(retryTimer.current); retryTimer.current = null; }
     setSaveStatus('saving');
     try {
-      await api.patch(`/api/workflows/${wf.id}`, {
+      const saved = await api.patch<any>(`/api/workflows/${wf.id}`, {
         name: wf.name,
         description: wf.description,
         nodes: wf.nodes,
         status: wf.status,
         allow_reentry: wf.allowReentry,
+        base_updated_at: baseUpdatedAtRef.current,
       });
+      baseUpdatedAtRef.current = saved?.updated_at ?? baseUpdatedAtRef.current;
+      saveBroadcast.current?.postMessage({ id: wf.id, updated_at: baseUpdatedAtRef.current });
       setSaveStatus('saved');
       setSavedAt(Date.now());
       setIsDirty(false);
       return true;
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        // Another tab/session has a newer version — DO NOT overwrite. Reload it.
+        setSaveStatus('conflict');
+        toast.error('This automation was changed in another tab — reloaded the latest version to avoid overwriting it.');
+        await reloadFromServer();
+        return false;
+      }
       setSaveStatus('error');
       // Keep retrying so a transient failure / expired-token refresh doesn't lose edits.
       retryTimer.current = setTimeout(() => { persist(); }, 5000);
       return false;
     }
   };
+  // Cross-tab sync: when another tab saves this workflow, a clean tab adopts the
+  // latest immediately; a dirty tab is flagged (its next save will 409 + reload).
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined' || !workflow.id || workflow.id === 'new') return;
+    const ch = new BroadcastChannel(`wf-save-${workflow.id}`);
+    saveBroadcast.current = ch;
+    ch.onmessage = (e: MessageEvent) => {
+      const msg = e.data as { id?: string; updated_at?: string };
+      if (!msg || msg.id !== workflowRef.current.id) return;
+      if (!dirtyRef.current) {
+        baseUpdatedAtRef.current = msg.updated_at ?? baseUpdatedAtRef.current;
+        reloadFromServer();
+      } else {
+        setSaveStatus('conflict');
+      }
+    };
+    return () => { ch.close(); saveBroadcast.current = null; };
+  }, [workflow.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [zoom, setZoom] = useState(100);
   const [panelWidth, setPanelWidth] = useState(340);
   const [showNodeModal, setShowNodeModal] = useState(false);
@@ -4551,21 +4646,38 @@ export default function WorkflowEditorPage() {
     const validationError = validateNodes(workflow.nodes);
     if (validationError) { toast.error(validationError); return; }
     setSaving(true);
+    // Cancel any pending debounced autosave so it can't race the hard save.
+    if (autoSaveTimer.current) { clearTimeout(autoSaveTimer.current); autoSaveTimer.current = null; }
     const ok = await persist();
-    if (ok) {
-      // Snapshot version on every successful save (Task #12)
-      api.post(`/api/workflows/${workflow.id}/snapshot`, {
-        name: workflow.name,
-        nodes: workflow.nodes,
-      }).catch(() => null);
-      if (workflow.status === 'inactive') {
-        toast.success('Workflow saved — click Publish to activate it');
-      } else {
-        toast.success('Workflow saved');
-      }
-    } else {
-      toast.error('Couldn’t save — will keep retrying. Check your connection.');
+    if (!ok) {
+      // persist() already showed a specific message (conflict → reloaded, or
+      // transient → retrying). Don't show a misleading generic error.
+      setSaving(false);
+      return;
     }
+    // Hard-verify: read the workflow back and confirm every node persisted.
+    try {
+      const server = await api.get<any>(`/api/workflows/${workflow.id}`);
+      const raw = server?.nodes;
+      const serverNodes = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : []);
+      const sent = countNodes(workflowRef.current.nodes);
+      const got = countNodes(serverNodes);
+      if (got !== sent) {
+        setSaveStatus('error');
+        setIsDirty(true);
+        toast.error('Save could not be verified — please click Save again.');
+        setSaving(false);
+        return;
+      }
+    } catch { /* verification fetch failed; PATCH already succeeded — treat as saved */ }
+    // Snapshot version on every verified save (Task #12)
+    api.post(`/api/workflows/${workflow.id}/snapshot`, {
+      name: workflow.name,
+      nodes: workflow.nodes,
+    }).catch(() => null);
+    toast.success(workflow.status === 'inactive'
+      ? 'Saved ✓ — click Publish to activate it'
+      : 'Saved ✓ all changes stored');
     setSaving(false);
   };
 
@@ -4767,6 +4879,10 @@ export default function WorkflowEditorPage() {
           ) : saveStatus === 'error' ? (
             <button onClick={() => persist()} className="text-[10px] text-red-600 flex items-center gap-1 mr-1 hover:underline" title="Save failed — click to retry">
               <AlertTriangle className="w-3 h-3" />Unsaved — retry
+            </button>
+          ) : saveStatus === 'conflict' ? (
+            <button onClick={() => reloadFromServer()} className="text-[10px] text-amber-600 flex items-center gap-1 mr-1 hover:underline" title="Changed in another tab — click to reload latest">
+              <AlertTriangle className="w-3 h-3" />Changed elsewhere — reload
             </button>
           ) : (
             <span className="text-[10px] text-[#b09e8d] flex items-center gap-1 mr-1">

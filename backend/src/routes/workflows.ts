@@ -134,7 +134,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 router.patch('/:id', checkPermission('automation:manage'), async (req: AuthRequest, res: Response) => {
-  const { name, description, nodes, status, allow_reentry } = req.body;
+  const { name, description, nodes, status, allow_reentry, base_updated_at } = req.body;
   const fields: string[] = [];
   const params: any[] = [];
 
@@ -171,14 +171,36 @@ router.patch('/:id', checkPermission('automation:manage'), async (req: AuthReque
 
   if (!fields.length) { res.status(400).json({ error: 'Nothing to update' }); return; }
   fields.push(`updated_at=NOW()`);
-  params.push(req.params.id, req.user!.tenantId);
+  params.push(req.params.id);      const idIdx = params.length;
+  params.push(req.user!.tenantId); const tenantIdx = params.length;
+
+  // Optimistic concurrency: only save if the caller's base version matches the
+  // current row (i.e. nobody — another tab/user — saved in between). This makes a
+  // stale tab physically unable to overwrite newer data.
+  let guard = '';
+  if (base_updated_at) {
+    params.push(base_updated_at);
+    guard = ` AND updated_at <= $${params.length}::timestamptz`;
+  }
 
   try {
     const result = await query(
-      `UPDATE workflows SET ${fields.join(',')} WHERE id=$${params.length-1} AND tenant_id=$${params.length} RETURNING *`,
+      `UPDATE workflows SET ${fields.join(',')} WHERE id=$${idIdx} AND tenant_id=$${tenantIdx}${guard} RETURNING *`,
       params
     );
-    if (!result.rows[0]) { res.status(404).json({ error: 'Not found' }); return; }
+    if (!result.rows[0]) {
+      // No row updated — distinguish "not found" from "stale (conflict)".
+      const existing = await query(
+        'SELECT updated_at FROM workflows WHERE id=$1 AND tenant_id=$2',
+        [req.params.id, req.user!.tenantId]
+      );
+      if (existing.rows[0]) {
+        res.status(409).json({ error: 'This automation was changed elsewhere (another tab/session). Reload to get the latest before saving.', current_updated_at: existing.rows[0].updated_at });
+        return;
+      }
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
     res.json(result.rows[0]);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });

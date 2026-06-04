@@ -4,6 +4,11 @@ export class SessionExpiredError extends Error {
   constructor() { super('Session expired'); this.name = 'SessionExpiredError'; }
 }
 
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) { super(message); this.name = 'ApiError'; this.status = status; }
+}
+
 // In-memory token — never written to localStorage
 let _accessToken: string | null = null;
 export const setAccessToken = (t: string | null) => { _accessToken = t; };
@@ -55,7 +60,7 @@ async function request<T>(path: string, options: RequestInit = {}, _retry = true
   }
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error ?? 'Request failed');
+  if (!res.ok) throw new ApiError(res.status, (data as any).error ?? 'Request failed');
   return data as T;
 }
 
