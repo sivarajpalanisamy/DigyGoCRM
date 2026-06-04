@@ -238,8 +238,8 @@ runMigrations()
     setInterval(() => processRecordingDownloads().catch(() => null), 10 * 60_000);
     console.log('🎙️   Recording download worker started (10min interval)');
 
-    setInterval(() => pollGoogleSheets().catch(() => null), 5 * 60_000);
-    console.log('📊  Google Sheets poll worker started (5min interval)');
+    setInterval(() => pollGoogleSheets().catch(() => null), 60_000);
+    console.log('📊  Google Sheets poll worker started (1min interval)');
 
     restoreAllSessions().catch(() => null);
     console.log('📱  WhatsApp Personal session restore initiated');

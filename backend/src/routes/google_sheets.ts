@@ -49,9 +49,10 @@ export function parseSheetUrl(rawUrl: string): { spreadsheetId: string; gid: str
   }
 }
 
-// Build the public CSV export URL
+// Build the public CSV URL. Uses the gviz endpoint, which reflects new rows much
+// faster than /export?format=csv (the export endpoint caches aggressively).
 export function csvUrl(spreadsheetId: string, gid: string): string {
-  return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
+  return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
 }
 
 // Fetch the human-readable spreadsheet title from the public edit page <title>.
