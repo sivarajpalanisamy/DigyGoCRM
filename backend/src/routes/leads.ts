@@ -768,7 +768,7 @@ router.get('/:id/activities', async (req: AuthRequest, res: Response) => {
 // ── Per-lead custom field values ───────────────────────────────────────────────
 
 // Internal keys kept in leads.custom_fields JSONB that must NOT surface as "Additional Fields"
-const RESERVED_FIELD_KEYS = new Set(['lead_quality', 'ai_agent_id']);
+const RESERVED_FIELD_KEYS = new Set(['lead_quality', 'ai_agent_id', '_selens']);
 const prettifySlug = (slug: string) =>
   slug.split(/[_\-]+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
