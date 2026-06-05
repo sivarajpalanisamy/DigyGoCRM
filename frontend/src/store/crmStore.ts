@@ -527,17 +527,18 @@ export const useCrmStore = create<CrmState>((set) => ({
       // restricted staff just stop spamming the console with 403s once perms resolve.
       const { permAll, permissions } = useAuthStore.getState();
       const canViewWorkflows = permAll || permissions['automation:view'] !== false;
+      const canViewCalendar = permAll || permissions['calendar:view'] !== false;
 
       const [leadsRes, staffRes, pipelinesRes, calRes, tagsRes, questionsRes, convsRes, notifsRes, bookingLinksRes, followUpsRes, customFieldsRes, workflowsRes, systemFieldsRes, valueTokensRes] = await Promise.all([
         api.get<any[]>('/api/leads?limit=5000').catch(safeEmpty),
         api.get<any[]>('/api/settings/staff').catch(safeEmpty),
         api.get<any[]>('/api/pipelines').catch(safeEmpty),
-        api.get<any[]>('/api/calendar').catch(safeEmpty),
+        canViewCalendar ? api.get<any[]>('/api/calendar').catch(safeEmpty) : Promise.resolve([]),
         api.get<any[]>('/api/tags').catch(safeEmpty),
         api.get<any[]>('/api/fields/questions').catch(safeEmpty),
         api.get<any[]>('/api/conversations').catch(safeEmpty),
         api.get<any[]>('/api/notifications').catch(safeEmpty),
-        api.get<any[]>('/api/calendar/event-types').catch(safeEmpty),
+        canViewCalendar ? api.get<any[]>('/api/calendar/event-types').catch(safeEmpty) : Promise.resolve([]),
         api.get<any[]>('/api/leads/followups').catch(safeEmpty),
         api.get<any[]>('/api/fields/custom').catch(safeEmpty),
         canViewWorkflows ? api.get<any[]>('/api/workflows').catch(safeEmpty) : Promise.resolve([]),
