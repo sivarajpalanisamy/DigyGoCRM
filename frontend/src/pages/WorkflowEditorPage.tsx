@@ -4272,12 +4272,23 @@ export default function WorkflowEditorPage() {
     if (justLoadedFromApi.current) { justLoadedFromApi.current = false; return; }
     if (!workflow.id || workflow.id === 'new') return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => { persist(); }, 1200);
+    // Only autosave from the visible tab so a background tab can't fight the one
+    // you're editing (prevents the 409 ping-pong when the same workflow is open twice).
+    autoSaveTimer.current = setTimeout(() => {
+      if (document.visibilityState === 'visible') persist({ silent: true });
+    }, 1200);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   }, [workflow.nodes, workflow.name, workflow.status, workflow.description, workflow.allowReentry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep ref in sync so beforeunload always has latest workflow
   useEffect(() => { workflowRef.current = workflow; }, [workflow]);
+
+  // When a tab regains focus, flush any pending edits (covers edits made while hidden).
+  useEffect(() => {
+    const onVis = () => { if (document.visibilityState === 'visible' && dirtyRef.current) persist({ silent: true }); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // On unmount: clear timers AND flush a final save if there are unsaved changes
   // (covers in-app navigation away within the autosave debounce window).
@@ -4472,7 +4483,7 @@ export default function WorkflowEditorPage() {
   // Single source of truth for saving. Sends the base version so the server can
   // reject a stale overwrite (multi-tab safety). On success updates the base
   // version; on conflict reloads (never clobbers); on transient error retries.
-  const persist = async (): Promise<boolean> => {
+  const persist = async (opts?: { silent?: boolean }): Promise<boolean> => {
     const wf = workflowRef.current;
     if (!wf.id || wf.id === 'new') return false;
     if (retryTimer.current) { clearTimeout(retryTimer.current); retryTimer.current = null; }
@@ -4496,7 +4507,9 @@ export default function WorkflowEditorPage() {
       if (err instanceof ApiError && err.status === 409) {
         // Another tab/session has a newer version — DO NOT overwrite. Reload it.
         setSaveStatus('conflict');
-        toast.error('This automation was changed in another tab — reloaded the latest version to avoid overwriting it.');
+        // Stay quiet for background autosave conflicts; only tell the user on an
+        // explicit manual Save so two open tabs don't spam toasts.
+        if (!opts?.silent) toast.error('This automation was changed in another tab — reloaded the latest version to avoid overwriting it.');
         await reloadFromServer();
         return false;
       }
