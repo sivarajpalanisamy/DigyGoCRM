@@ -8,7 +8,7 @@ router.use(requireAuth);
 router.use(requireTenant);
 
 // GET /api/assignment-rules
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', checkPermission('assignment_rules:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `SELECT ar.*, u.name AS assign_to_name
@@ -22,7 +22,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/assignment-rules
-router.post('/', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.post('/', checkPermission('assignment_rules:manage'), async (req: AuthRequest, res: Response) => {
   const { name, method, condition, assign_to, sort_order } = req.body;
   if (!name) { res.status(400).json({ error: 'name required' }); return; }
   try {
@@ -36,7 +36,7 @@ router.post('/', checkPermission('settings:manage'), async (req: AuthRequest, re
 });
 
 // PATCH /api/assignment-rules/:id
-router.patch('/:id', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.patch('/:id', checkPermission('assignment_rules:manage'), async (req: AuthRequest, res: Response) => {
   const allowed = ['name', 'method', 'condition', 'assign_to', 'sort_order', 'is_active'];
   const fields: string[] = [];
   const params: any[] = [];
@@ -57,7 +57,7 @@ router.patch('/:id', checkPermission('settings:manage'), async (req: AuthRequest
 });
 
 // DELETE /api/assignment-rules/:id
-router.delete('/:id', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.delete('/:id', checkPermission('assignment_rules:manage'), async (req: AuthRequest, res: Response) => {
   try {
     await query('DELETE FROM assignment_rules WHERE id=$1 AND tenant_id=$2', [req.params.id, req.user!.tenantId]);
     res.json({ success: true });

@@ -8,7 +8,7 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireTenant);
 
-router.get('/', checkPlan('whatsapp'), async (req: AuthRequest, res: Response) => {
+router.get('/', checkPlan('whatsapp'), checkPermission('whatsapp_flows:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `SELECT * FROM whatsapp_flows WHERE tenant_id=$1 ORDER BY created_at DESC`,
@@ -18,7 +18,7 @@ router.get('/', checkPlan('whatsapp'), async (req: AuthRequest, res: Response) =
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-router.post('/', checkPlan('whatsapp'), checkPermission('automation:manage'), async (req: AuthRequest, res: Response) => {
+router.post('/', checkPlan('whatsapp'), checkPermission('whatsapp_flows:manage'), async (req: AuthRequest, res: Response) => {
   const { name, trigger, trigger_value, is_active, nodes, root_node_id } = req.body;
   if (!name?.trim()) { res.status(400).json({ error: 'name required' }); return; }
   try {
@@ -32,7 +32,7 @@ router.post('/', checkPlan('whatsapp'), checkPermission('automation:manage'), as
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-router.patch('/:id', checkPermission('automation:manage'), async (req: AuthRequest, res: Response) => {
+router.patch('/:id', checkPermission('whatsapp_flows:manage'), async (req: AuthRequest, res: Response) => {
   const { name, trigger, trigger_value, is_active, nodes, root_node_id } = req.body;
   const fields: string[] = [];
   const params: any[] = [];
@@ -58,7 +58,7 @@ router.patch('/:id', checkPermission('automation:manage'), async (req: AuthReque
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-router.delete('/:id', checkPermission('automation:manage'), async (req: AuthRequest, res: Response) => {
+router.delete('/:id', checkPermission('whatsapp_flows:manage'), async (req: AuthRequest, res: Response) => {
   try {
     await query('DELETE FROM whatsapp_flows WHERE id=$1 AND tenant_id=$2', [req.params.id, req.user!.tenantId]);
     res.json({ success: true });

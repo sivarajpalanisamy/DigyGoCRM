@@ -35,7 +35,7 @@ async function ensureCustomFields(
 }
 
 // ── GET /api/field-routing/sets ──────────────────────────────────────────────
-router.get('/sets', async (req: AuthRequest, res: Response) => {
+router.get('/sets', checkPermission('routing:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `SELECT id, name, match_field, match_type, row_count, times_used, created_at, updated_at
@@ -52,7 +52,7 @@ router.get('/sets', async (req: AuthRequest, res: Response) => {
 });
 
 // ── POST /api/field-routing/sets ─────────────────────────────────────────────
-router.post('/sets', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.post('/sets', checkPermission('routing:manage'), async (req: AuthRequest, res: Response) => {
   const { name, match_field = 'pincode', match_type = 'exact' } = req.body;
   if (!name?.trim()) { res.status(400).json({ error: 'name is required' }); return; }
   try {
@@ -68,7 +68,7 @@ router.post('/sets', checkPermission('settings:manage'), async (req: AuthRequest
 });
 
 // ── PATCH /api/field-routing/sets/:id ────────────────────────────────────────
-router.patch('/sets/:id', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.patch('/sets/:id', checkPermission('routing:manage'), async (req: AuthRequest, res: Response) => {
   const { name, match_field, match_type } = req.body;
   const sets: string[] = [];
   const params: any[] = [];
@@ -92,7 +92,7 @@ router.patch('/sets/:id', checkPermission('settings:manage'), async (req: AuthRe
 });
 
 // ── DELETE /api/field-routing/sets/:id ───────────────────────────────────────
-router.delete('/sets/:id', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.delete('/sets/:id', checkPermission('routing:manage'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `DELETE FROM field_routing_sets WHERE id=$1::uuid AND tenant_id=$2::uuid RETURNING id`,
@@ -108,7 +108,7 @@ router.delete('/sets/:id', checkPermission('settings:manage'), async (req: AuthR
 // ── POST /api/field-routing/sets/:id/upload ──────────────────────────────────
 // Body: { rows: [{ match_value, pipeline_name?, district?, state?, meta?: {slug:value} }],
 //         create_fields?: [{name,slug,type}], replace?: boolean }
-router.post('/sets/:id/upload', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.post('/sets/:id/upload', checkPermission('routing:manage'), async (req: AuthRequest, res: Response) => {
   const { rows, replace = false, create_fields } = req.body as { rows?: any[]; replace?: boolean; create_fields?: any[] };
   if (!Array.isArray(rows) || rows.length === 0) {
     res.status(400).json({ error: 'rows array is required' }); return;
@@ -191,7 +191,7 @@ router.post('/sets/:id/upload', checkPermission('settings:manage'), async (req: 
 });
 
 // ── GET /api/field-routing/sets/:id/rows?page=1&limit=50&search= ─────────────
-router.get('/sets/:id/rows', async (req: AuthRequest, res: Response) => {
+router.get('/sets/:id/rows', checkPermission('routing:view'), async (req: AuthRequest, res: Response) => {
   const page   = Math.max(1, parseInt(req.query.page as string) || 1);
   const limit  = Math.min(200, parseInt(req.query.limit as string) || 50);
   const search = (req.query.search as string ?? '').trim().toLowerCase();
@@ -228,7 +228,7 @@ router.get('/sets/:id/rows', async (req: AuthRequest, res: Response) => {
 });
 
 // ── GET /api/field-routing/sets/:id/export ────────────────────────────────────
-router.get('/sets/:id/export', async (req: AuthRequest, res: Response) => {
+router.get('/sets/:id/export', checkPermission('routing:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `SELECT match_value, pipeline_name, district, state, meta
@@ -244,7 +244,7 @@ router.get('/sets/:id/export', async (req: AuthRequest, res: Response) => {
 });
 
 // ── POST /api/field-routing/sets/:id/test ─────────────────────────────────────
-router.post('/sets/:id/test', async (req: AuthRequest, res: Response) => {
+router.post('/sets/:id/test', checkPermission('routing:view'), async (req: AuthRequest, res: Response) => {
   const { value, match_type = 'exact' } = req.body;
   if (!value?.trim()) { res.status(400).json({ error: 'value is required' }); return; }
 

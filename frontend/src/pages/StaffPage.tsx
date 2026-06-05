@@ -80,6 +80,12 @@ const PERM_GROUPS: PermGroup[] = [
       { key: 'automation_templates:manage',   label: 'Manage Templates' },
       { key: 'whatsapp_automation:read',      label: 'View WA Automation' },
       { key: 'whatsapp_automation:manage',    label: 'Manage WA Automation' },
+      { key: 'assignment_rules:view',         label: 'View Assignment Rules' },
+      { key: 'assignment_rules:manage',       label: 'Manage Assignment Rules' },
+      { key: 'routing:view',                  label: 'View Routing' },
+      { key: 'routing:manage',                label: 'Manage Routing' },
+      { key: 'whatsapp_flows:view',           label: 'View WhatsApp Flows' },
+      { key: 'whatsapp_flows:manage',         label: 'Manage WhatsApp Flows' },
     ],
   },
   {

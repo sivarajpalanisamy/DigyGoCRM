@@ -8,7 +8,7 @@ router.use(requireAuth);
 router.use(requireTenant);
 
 // GET /api/pincode-routing — list all mappings + stats
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', checkPermission('routing:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `SELECT pincode, district, state, pipeline_name
@@ -25,7 +25,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/pincode-routing/stats — count summary by district
-router.get('/stats', async (req: AuthRequest, res: Response) => {
+router.get('/stats', checkPermission('routing:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `SELECT district, state, pipeline_name, COUNT(*) AS pincode_count
@@ -47,7 +47,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/pincode-routing/lookup/:pincode — test a single pincode
-router.get('/lookup/:pincode', async (req: AuthRequest, res: Response) => {
+router.get('/lookup/:pincode', checkPermission('routing:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `SELECT pincode, district, state, pipeline_name
@@ -68,7 +68,7 @@ router.get('/lookup/:pincode', async (req: AuthRequest, res: Response) => {
 
 // POST /api/pincode-routing/upload — bulk upsert from frontend-parsed Excel
 // Body: { rows: [{ pincode, district, state?, pipeline_name? }] }
-router.post('/upload', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.post('/upload', checkPermission('routing:manage'), async (req: AuthRequest, res: Response) => {
   const { rows } = req.body as { rows?: any[] };
   if (!Array.isArray(rows) || rows.length === 0) {
     res.status(400).json({ error: 'rows array is required' }); return;
@@ -117,7 +117,7 @@ router.post('/upload', checkPermission('settings:manage'), async (req: AuthReque
 });
 
 // DELETE /api/pincode-routing — clear all mappings for this tenant
-router.delete('/', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.delete('/', checkPermission('routing:manage'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `DELETE FROM pincode_district_map WHERE tenant_id=$1`,
