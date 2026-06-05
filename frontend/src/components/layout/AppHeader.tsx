@@ -164,13 +164,13 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           {branded && logoUrl ? (
             <img src={logoUrl} alt={tenantName ?? ''} className="h-7 max-w-[100px] object-contain" />
           ) : branded && tenantName ? (
-            <span className="font-headline text-[15px] font-bold text-[#1c1410]">{tenantName}</span>
+            <span className="font-headline text-[15px] font-bold text-[#1c1410] truncate max-w-[120px]">{tenantName}</span>
           ) : (
             <>
               <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
                 <img src="/digygo-logo.png" alt="DigyGo" className="w-full h-full object-contain" />
               </div>
-              <span className="font-headline text-[15px] font-bold text-[#1c1410]">{companyName}</span>
+              <span className="font-headline text-[15px] font-bold text-[#1c1410] truncate max-w-[110px]">{companyName}</span>
             </>
           )}
         </div>

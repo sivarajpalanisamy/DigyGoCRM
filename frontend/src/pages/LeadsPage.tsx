@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useCrmStore, LeadActivity } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
 import { usePermission } from '@/hooks/usePermission';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { Lead, Pipeline } from '@/data/mockData';
@@ -154,7 +156,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
 
           <h4 className="text-[16px] font-bold text-[#1c1410]">Contact Info</h4>
 
-          <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
             <div>
               {lbl('Opportunity Name', true)}
               <input className={inputCls} placeholder="Add Opportunity Name" value={`${form.firstName} ${form.lastName}`.trim()} onChange={(e) => { const [f, ...l] = e.target.value.split(' '); setForm({ ...form, firstName: f, lastName: l.join(' ') }); }} />
@@ -430,12 +432,13 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
 }
 
 // ─── Compact Filter Popover (kept for deep filter) ─────────────────────────────
-function FilterPopover({ filters, onChange, onClose, stages, anchorRef }: {
+function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile }: {
   filters: FilterState;
   onChange: (f: FilterState) => void;
   onClose: () => void;
   stages: string[];
   anchorRef: React.RefObject<HTMLButtonElement>;
+  isMobile?: boolean;
 }) {
   const { tags: storeTags, staff } = useCrmStore();
   const [expanded, setExpanded] = useState<string>('assignedTo');
@@ -478,12 +481,18 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef }: {
 
   const countFor = (key: string) => { const v = (filters as any)[key]; return Array.isArray(v) ? v.length : (v ? 1 : 0); };
 
-  return (
+  const node = (
+    <>
+    {isMobile && <div className="fixed inset-0 z-[60] bg-black/40 animate-fade-in" onClick={onClose} />}
     <div
       ref={ref}
-      className="absolute right-0 top-11 z-50 w-[340px] bg-white rounded-2xl border border-black/5 overflow-hidden flex flex-col"
-      style={{ maxHeight: '70vh', boxShadow: '0 12px 40px rgba(0,0,0,0.14)' }}
+      className={cn('bg-white overflow-hidden flex flex-col',
+        isMobile
+          ? 'fixed inset-x-0 bottom-0 z-[70] rounded-t-2xl animate-slide-up'
+          : 'absolute right-0 top-11 z-50 w-[340px] rounded-2xl border border-black/5')}
+      style={isMobile ? { maxHeight: '85vh', boxShadow: '0 -8px 30px rgba(0,0,0,0.18)' } : { maxHeight: '70vh', boxShadow: '0 12px 40px rgba(0,0,0,0.14)' }}
     >
+      {isMobile && <div className="flex justify-center pt-2 pb-1 shrink-0"><div className="w-10 h-1 rounded-full bg-black/15" /></div>}
       <div className="px-4 py-3 border-b border-black/5 flex items-center gap-2 shrink-0">
         <Filter className="w-4 h-4 text-primary" />
         <h4 className="text-[14px] font-bold text-[#1c1410] flex-1">Filters</h4>
@@ -499,7 +508,7 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef }: {
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
           <input
-            autoFocus
+            autoFocus={!isMobile}
             className="w-full pl-8 pr-3 py-1.5 text-[12px] bg-[var(--app-bg)] border border-transparent rounded-lg outline-none focus:border-primary/30 focus:bg-white placeholder:text-gray-400"
             placeholder="Search filters..."
             value={search}
@@ -552,11 +561,19 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef }: {
         {matching.length === 0 && <p className="text-[12px] text-[#b09e8d] text-center py-6">No filters match "{search}"</p>}
       </div>
 
-      <div className="px-4 py-2 border-t border-black/5 bg-[var(--app-bg)] shrink-0 text-center">
-        <p className="text-[10px] text-[#7a6b5c]">Instant apply · <kbd className="text-[9px] bg-white border border-black/10 rounded px-1">Esc</kbd> to close</p>
-      </div>
+      {isMobile ? (
+        <div className="px-4 py-3 border-t border-black/5 shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+          <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-primary text-white text-[13px] font-bold active:scale-95">Done</button>
+        </div>
+      ) : (
+        <div className="px-4 py-2 border-t border-black/5 bg-[var(--app-bg)] shrink-0 text-center">
+          <p className="text-[10px] text-[#7a6b5c]">Instant apply · <kbd className="text-[9px] bg-white border border-black/10 rounded px-1">Esc</kbd> to close</p>
+        </div>
+      )}
     </div>
+    </>
   );
+  return isMobile ? createPortal(node, document.body) : node;
 }
 
 // ─── Removable Filter Chip ─────────────────────────────────────────────────────
@@ -3403,6 +3420,164 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
   </>);
 }
 
+// ─── Mobile Lead Card ───────────────────────────────────────────────────────────
+// Full-width, touch-first card used on phones. No drag — tap to open, menu to act.
+function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFollowUp, onAppointment, onAssign, onMove, selectionMode, selected, onToggleSelect, onEnterSelect }: {
+  lead: Lead; stages: string[]; accent: string; showPhone: boolean;
+  onClick: () => void; onEdit: () => void; onFollowUp: () => void;
+  onAppointment: () => void; onAssign: () => void; onMove: (stage: string) => void;
+  selectionMode?: boolean; selected?: boolean; onToggleSelect?: () => void; onEnterSelect?: () => void;
+}) {
+  const { staff: allStaff, followUps } = useCrmStore();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lpFired = useRef(false);
+
+  // Long-press (≈450ms) enters multi-select mode and selects this lead.
+  const startLongPress = () => {
+    if (selectionMode) return;
+    lpFired.current = false;
+    lpTimer.current = setTimeout(() => { lpFired.current = true; onEnterSelect?.(); }, 450);
+  };
+  const cancelLongPress = () => { if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; } };
+
+  const assignedStaff = allStaff.find((s) => s.id === lead.assignedTo);
+  const assignedName = assignedStaff?.name || lead.assignedName || '';
+  const assignedAvatar = assignedStaff?.avatar || assignedName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+
+  const initials = `${lead.firstName[0] ?? ''}${lead.lastName[0] ?? ''}`.toUpperCase() || '?';
+  const bgPalette = ['#f5ede3', '#dbeafe', '#dcfce7', '#ede9fe', '#fce7f3', '#fef9c3'];
+  const fgPalette = ['#c2410c', '#1d4ed8', '#15803d', '#7c3aed', '#be185d', '#a16207'];
+  const ci = (lead.firstName.charCodeAt(0) ?? 0) % bgPalette.length;
+
+  const now = new Date();
+  const leadFUs = followUps.filter((f) => f.leadId === lead.id);
+  const nextFU = leadFUs.filter((f) => !f.completed).sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0] ?? null;
+  const created = new Date(lead.createdAt);
+  const daysInPipeline = Math.max(0, Math.floor(
+    (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
+     Date.UTC(created.getFullYear(), created.getMonth(), created.getDate())) / (1000 * 60 * 60 * 24)
+  ));
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso);
+    const diff = Math.round((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+    const ds = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    if (diff === 0) return `${ds} · today`;
+    if (diff > 0) return `${ds} · ${diff}d ago`;
+    return `${ds} · in ${Math.abs(diff)}d`;
+  };
+  const nextOverdue = nextFU ? new Date(nextFU.dueAt) < now : false;
+  const ageColor = daysInPipeline <= 2 ? 'text-emerald-600' : daysInPipeline <= 7 ? 'text-amber-600' : 'text-red-500';
+  const phoneShown = showPhone ? lead.phone : lead.phone.replace(/\d(?=\d{4})/g, '*');
+
+  const act = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); setMenuOpen(false); setMoveOpen(false); fn(); };
+
+  return (
+    <div
+      onClick={() => { if (lpFired.current) { lpFired.current = false; return; } if (selectionMode) { onToggleSelect?.(); } else { onClick(); } }}
+      onPointerDown={startLongPress}
+      onPointerUp={cancelLongPress}
+      onPointerLeave={cancelLongPress}
+      onPointerMove={cancelLongPress}
+      className={cn('relative bg-white rounded-2xl border shadow-sm active:bg-[#fcfaf8] transition-colors',
+        selected ? 'border-primary ring-2 ring-primary/30' : 'border-black/[0.06]')}
+    >
+      {/* accent edge */}
+      <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full" style={{ background: accent }} />
+
+      <div className="pl-4 pr-2.5 py-3">
+        {/* Row 1 — identity + menu */}
+        <div className="flex items-start gap-3">
+          {selectionMode ? (
+            <div className={cn('w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
+              selected ? 'bg-primary border-primary text-white' : 'border-black/20 text-transparent')}>
+              <Check className="w-5 h-5" />
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-[14px] font-bold shrink-0"
+              style={{ background: bgPalette[ci], color: fgPalette[ci] }}>
+              {initials}
+            </div>
+          )}
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="text-[15px] font-bold text-[#1c1410] truncate leading-tight">{lead.firstName} {lead.lastName}</p>
+              {lead.leadQuality && (
+                <span className={cn('shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide',
+                  lead.leadQuality === 'Hot' ? 'bg-red-100 text-red-700' :
+                  lead.leadQuality === 'Warm' ? 'bg-amber-100 text-amber-700' :
+                  lead.leadQuality === 'Cold' ? 'bg-blue-100 text-blue-700' :
+                  lead.leadQuality === 'Unqualified' ? 'bg-gray-100 text-gray-500' : 'bg-emerald-100 text-emerald-700'
+                )}>{lead.leadQuality}</span>
+              )}
+            </div>
+            <a href={`tel:${lead.phone}`} onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1.5 mt-0.5 text-[13px] font-semibold text-primary">
+              <Phone className="w-3 h-3" /> {phoneShown}
+            </a>
+          </div>
+
+          <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button aria-label="Lead actions" onClick={() => { setMenuOpen((v) => !v); setMoveOpen(false); }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-[#7a6b5c] active:bg-orange-50 active:text-primary">
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => { setMenuOpen(false); setMoveOpen(false); }} />
+                <div className="absolute right-0 top-10 z-50 w-52 bg-white rounded-2xl border border-black/5 shadow-xl overflow-hidden py-1">
+                  {!moveOpen ? (
+                    <>
+                      {onEnterSelect && <button onClick={act(() => onEnterSelect())} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><CheckSquare className="w-4 h-4 text-[#7a6b5c]" /> Select</button>}
+                      <button onClick={act(onEdit)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><Pencil className="w-4 h-4 text-[#7a6b5c]" /> Edit</button>
+                      <button onClick={act(onFollowUp)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><CheckSquare className="w-4 h-4 text-[#7a6b5c]" /> Add Follow-up</button>
+                      <button onClick={act(onAppointment)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><CalendarPlus className="w-4 h-4 text-[#7a6b5c]" /> Book Appointment</button>
+                      <button onClick={(e) => { e.stopPropagation(); setMoveOpen(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><ArrowLeftRight className="w-4 h-4 text-[#7a6b5c]" /> Move to stage <ChevronRight className="w-3.5 h-3.5 ml-auto text-[#b09e8d]" /></button>
+                      {!assignedName && (
+                        <button onClick={act(onAssign)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><User className="w-4 h-4 text-[#7a6b5c]" /> Assign</button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={(e) => { e.stopPropagation(); setMoveOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold text-[#7a6b5c] border-b border-black/5"><ArrowLeft className="w-3.5 h-3.5" /> Move to…</button>
+                      <div className="max-h-56 overflow-y-auto">
+                        {stages.filter((s) => s !== lead.stage).map((s) => (
+                          <button key={s} onClick={act(() => onMove(s))} className="w-full text-left px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8] truncate">{s}</button>
+                        ))}
+                        {stages.filter((s) => s !== lead.stage).length === 0 && <p className="px-4 py-3 text-[12px] text-[#b09e8d]">No other stages</p>}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2 — meta line: age, assignee, next follow-up (only what exists) */}
+        <div className="flex items-center gap-2 flex-wrap mt-2.5 pl-[52px]">
+          <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold', ageColor)}>
+            <Clock className="w-3 h-3" /> {daysInPipeline}d
+          </span>
+          {assignedName && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#7a6b5c]">
+              <span className="w-4 h-4 rounded-full bg-[var(--accent-tint)] flex items-center justify-center text-[8px] font-bold text-primary">{assignedAvatar}</span>
+              {assignedName.split(' ')[0]}
+            </span>
+          )}
+          {nextFU && (
+            <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold ml-auto', nextOverdue ? 'text-red-500' : 'text-[#1c1410]')}>
+              <CalendarPlus className="w-3 h-3" /> {fmtDate(nextFU.dueAt)}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Stage Column ──────────────────────────────────────────────────────────────
 const STAGE_ACCENT_COLORS = [
   '#ea580c', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b',
@@ -3843,6 +4018,12 @@ export default function LeadsPage() {
     return () => clearTimeout(t);
   }, [highlightParam, leads, pipelines]);
   const [kanbanView, setKanbanView] = useState(!dashFilter);
+  const isMobile = useIsMobile();
+  const [mobileStage, setMobileStage] = useState<string>('');
+  const [mobileSelectMode, setMobileSelectMode] = useState(false);
+  const mobileTabsRef = useRef<HTMLDivElement>(null);
+  const swipeStartX = useRef(0);
+  const swipeStartY = useRef(0);
   const [showPhone, setShowPhone] = useState(true);
   const location = useLocation();
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -3987,6 +4168,7 @@ export default function LeadsPage() {
   const [quickNoteLead, setQuickNoteLead] = useState<Lead | null>(null);
   const [quickFollowUpLead, setQuickFollowUpLead] = useState<Lead | null>(null);
   const [quickAssignLead, setQuickAssignLead] = useState<Lead | null>(null);
+  const [quickApptLead, setQuickApptLead] = useState<Lead | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -4128,6 +4310,58 @@ export default function LeadsPage() {
     if (newStageId) api.patch(`/api/leads/${leadId}`, { stage_id: newStageId }).catch(() => null);
   };
 
+  // Move a single lead to a stage (mobile menu — no drag). Mirrors handleDragEnd.
+  const moveSingleLeadStage = (leadId: string, stage: string) => {
+    const pl = pipelines.find((p) => p.id === selectedPipelineId) ?? pipelines[0];
+    const stageId = pl?.stages.find((s) => s.name === stage)?.id;
+    moveLeadStage(leadId, stage, stageId);
+    if (apiLeads) {
+      setApiLeads((prev) => (prev ?? []).map((l) => l.id === leadId ? { ...l, stage, stageId: stageId ?? l.stageId } : l));
+    }
+    toast.success(`Lead moved to ${stage}`);
+    if (stageId) api.patch(`/api/leads/${leadId}`, { stage_id: stageId }).catch(() => null);
+  };
+
+  // Leads of one stage, sorted: overdue follow-ups first, then newest. Shared by board + mobile.
+  const stageLeadsFor = (stage: string) => {
+    const now = new Date();
+    return filteredLeads
+      .filter((l) => l.stage === stage)
+      .sort((a, b) => {
+        const nextA = followUps.filter((f) => f.leadId === a.id && !f.completed).sort((x, y) => new Date(x.dueAt).getTime() - new Date(y.dueAt).getTime())[0];
+        const nextB = followUps.filter((f) => f.leadId === b.id && !f.completed).sort((x, y) => new Date(x.dueAt).getTime() - new Date(y.dueAt).getTime())[0];
+        const aOverdue = nextA && new Date(nextA.dueAt) < now;
+        const bOverdue = nextB && new Date(nextB.dueAt) < now;
+        if (aOverdue && !bOverdue) return -1;
+        if (!aOverdue && bOverdue) return 1;
+        if (aOverdue && bOverdue) return new Date(nextA!.dueAt).getTime() - new Date(nextB!.dueAt).getTime();
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+  };
+
+  // Active stage tab on mobile — fall back to first stage if the stored one is gone.
+  const currentMobileStage = activeStages.includes(mobileStage) ? mobileStage : (activeStages[0] ?? '');
+
+  // Keep the active stage tab scrolled into view (e.g. after a swipe).
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = mobileTabsRef.current?.querySelector('[data-active="true"]') as HTMLElement | null;
+    el?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }, [currentMobileStage, isMobile]);
+
+  // Swipe left/right on the list to move to the adjacent stage.
+  const goAdjacentStage = (dir: -1 | 1) => {
+    const i = activeStages.indexOf(currentMobileStage);
+    const next = i + dir;
+    if (next >= 0 && next < activeStages.length) setMobileStage(activeStages[next]);
+  };
+  const onListTouchStart = (e: React.TouchEvent) => { swipeStartX.current = e.touches[0].clientX; swipeStartY.current = e.touches[0].clientY; };
+  const onListTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    const dy = e.changedTouches[0].clientY - swipeStartY.current;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) goAdjacentStage(dx < 0 ? 1 : -1);
+  };
+
   const activeLead = activeDragId ? (apiLeads ?? leads).find((l) => l.id === activeDragId) : null;
 
   const pipelineLeads = selectedPipelineId ? leads.filter((l) => l.pipelineId === selectedPipelineId) : leads;
@@ -4198,7 +4432,28 @@ export default function LeadsPage() {
       <div className="sticky top-0 z-20 bg-[var(--app-bg)] pt-2 pb-3 space-y-2.5">
 
         {/* Row 1: Contextual bar — bulk actions when leads selected, else default toolbar */}
-        {selectedIds.length > 0 ? (
+        {(isMobile && mobileSelectMode) ? (
+          /* ── Mobile Selection Bar ── */
+          <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl border border-primary/30 animate-fade-in" style={{ background: 'linear-gradient(to right, #faf0e8, #fff)' }}>
+            <span className="w-6 h-6 shrink-0 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center tabular-nums">{selectedIds.length}</span>
+            <div className="relative">
+              <button onClick={() => { setShowBulkStage((v) => !v); setShowBulkAssign(false); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-[#1c1410] active:bg-white whitespace-nowrap"><ArrowLeftRight className="w-3.5 h-3.5" /> Stage</button>
+              {showBulkStage && (<><div className="fixed inset-0 z-30" onClick={() => setShowBulkStage(false)} /><div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-44 py-1 max-h-60 overflow-y-auto">{activeStages.map((s) => (<button key={s} onClick={() => { bulkMove(s); setMobileSelectMode(false); }} className="w-full text-left px-3 py-2 text-[12px] active:bg-[#faf0e8]">{s}</button>))}</div></>)}
+            </div>
+            <div className="relative">
+              <button onClick={() => { setShowBulkAssign((v) => !v); setShowBulkStage(false); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-[#1c1410] active:bg-white whitespace-nowrap"><User className="w-3.5 h-3.5" /> Assign</button>
+              {showBulkAssign && (<><div className="fixed inset-0 z-30" onClick={() => setShowBulkAssign(false)} /><div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-48 py-1 max-h-60 overflow-y-auto"><button onClick={() => { bulkAssign(''); setMobileSelectMode(false); }} className="w-full text-left px-3 py-2 text-[12px] italic text-[#7a6b5c] active:bg-gray-50">Unassign</button><div className="border-t border-black/5 my-1" />{staff.map((s) => (<button key={s.id} onClick={() => { bulkAssign(s.id); setMobileSelectMode(false); }} className="w-full flex items-center gap-2 text-left px-3 py-2 text-[12px] active:bg-[#faf0e8]"><span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center">{s.avatar}</span>{s.name}</button>))}</div></>)}
+            </div>
+            {canDeleteLead && (
+              <button aria-label="Delete selected" onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center px-2 py-1.5 rounded-lg text-[12px] font-semibold text-red-500 active:bg-red-50 shrink-0"><Trash2 className="w-4 h-4" /></button>
+            )}
+            {showBulkDeleteConfirm && (
+              <ConfirmModal title={`Delete ${selectedIds.length} contact${selectedIds.length !== 1 ? 's' : ''}?`} message="This will permanently remove them from the CRM. This cannot be undone." confirmLabel="Yes, Delete" onConfirm={() => { bulkDelete(); setMobileSelectMode(false); }} onClose={() => setShowBulkDeleteConfirm(false)} />
+            )}
+            <div className="flex-1" />
+            <button onClick={() => { setSelectedIds([]); setMobileSelectMode(false); }} className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-white text-[12px] font-bold active:scale-95">Done</button>
+          </div>
+        ) : selectedIds.length > 0 ? (
           /* ── Bulk Action Bar ── */
           <div
             className="flex items-center gap-2 px-4 py-2 rounded-xl border border-primary/30 animate-fade-in"
@@ -4277,8 +4532,8 @@ export default function LeadsPage() {
             </button>
           </div>
         ) : (
-          /* ── Default Toolbar ── */
-          <div className="flex items-center gap-3">
+          /* ── Default Toolbar (responsive: wraps to 2 rows on phones) ── */
+          <div className="flex flex-wrap items-center gap-2 md:flex-nowrap md:gap-3">
 
             {/* Pipeline selector */}
             <div className="relative shrink-0">
@@ -4321,8 +4576,8 @@ export default function LeadsPage() {
               )}
             </div>
 
-            {/* Search */}
-            <div className="relative flex-1 max-w-xs">
+            {/* Search — full-width second row on phones, inline on desktop */}
+            <div className="relative order-last w-full md:order-none md:flex-1 md:max-w-xs">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d] pointer-events-none" />
               <input
                 ref={searchInputRef}
@@ -4336,13 +4591,13 @@ export default function LeadsPage() {
               )}
             </div>
 
-            <div className="flex-1" />
+            <div className="hidden md:block flex-1" />
 
             {/* Right action group */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
 
-              {/* View toggle — labeled pill */}
-              <div className="flex items-center h-10 bg-gray-100 rounded-xl p-1 gap-0.5">
+              {/* View toggle — labeled pill (desktop only; phones are board-only) */}
+              <div className="hidden md:flex items-center h-10 bg-gray-100 rounded-xl p-1 gap-0.5">
                 <button onClick={() => setKanbanView(true)}
                   className={cn('flex items-center gap-1.5 px-3 h-8 rounded-lg text-[12px] font-semibold transition-all', kanbanView ? 'bg-white shadow-sm text-primary' : 'text-[#7a6b5c] hover:text-[#1c1410]')}>
                   <LayoutGrid className="w-3.5 h-3.5" /> Board
@@ -4363,7 +4618,7 @@ export default function LeadsPage() {
                   Filter
                   {activeFiltersCount > 0 && <span className="bg-primary text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{activeFiltersCount}</span>}
                 </button>
-                {showFilters && <FilterPopover filters={filters} onChange={setFilters} onClose={() => setShowFilters(false)} stages={activeStages} anchorRef={filterBtnRef} />}
+                {showFilters && <FilterPopover filters={filters} onChange={setFilters} onClose={() => setShowFilters(false)} stages={activeStages} anchorRef={filterBtnRef} isMobile={isMobile} />}
               </div>
 
               {/* More */}
@@ -4398,10 +4653,10 @@ export default function LeadsPage() {
                 )}
               </div>
 
-              {/* Add Lead */}
+              {/* Add Lead (desktop button; phones use the floating + button) */}
               {canCreateLead && (
                 <button onClick={() => setShowAddLead(true)}
-                  className="flex items-center gap-2 px-4 h-10 rounded-xl text-[13px] font-bold text-white bg-primary hover:bg-primary/90 transition-all active:scale-95 shrink-0">
+                  className="hidden md:flex items-center gap-2 px-4 h-10 rounded-xl text-[13px] font-bold text-white bg-primary hover:bg-primary/90 transition-all active:scale-95 shrink-0">
                   <Plus className="w-4 h-4" /> Add Lead
                 </button>
               )}
@@ -4441,33 +4696,69 @@ export default function LeadsPage() {
 
       {/* ── Board ── */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      {kanbanView ? (
+      {isMobile ? (
+        /* ── Mobile Board — stage tabs + single-stage list ── */
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* Stage tabs */}
+          <div ref={mobileTabsRef} className="flex gap-2 overflow-x-auto pb-2.5 shrink-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+            {activeStages.map((stage, i) => {
+              const cnt = filteredLeads.filter((l) => l.stage === stage).length;
+              const acc = (i % STAGE_ACCENT_COLORS.length) === 0 ? brandHex() : STAGE_ACCENT_COLORS[i % STAGE_ACCENT_COLORS.length];
+              const active = currentMobileStage === stage;
+              return (
+                <button key={stage} data-active={active ? 'true' : 'false'} onClick={() => setMobileStage(stage)}
+                  className={cn('shrink-0 flex items-center gap-1.5 pl-3.5 pr-2 h-9 rounded-full border text-[13px] font-semibold transition-all active:scale-95',
+                    active ? 'text-white border-transparent shadow-sm' : 'bg-white text-[#7a6b5c] border-black/10')}
+                  style={active ? { background: acc } : undefined}>
+                  <span className="truncate max-w-[150px]">{stage}</span>
+                  <span className={cn('text-[11px] font-bold rounded-full px-1.5 min-w-[20px] text-center tabular-nums', active ? 'bg-white/25 text-white' : 'bg-black/[0.06] text-[#7a6b5c]')}>{cnt}</span>
+                </button>
+              );
+            })}
+          </div>
+          {/* Active-stage lead list (swipe left/right to change stage) */}
+          <div onTouchStart={onListTouchStart} onTouchEnd={onListTouchEnd}
+            className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pb-28 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+            {(() => {
+              const list = stageLeadsFor(currentMobileStage);
+              const i = activeStages.indexOf(currentMobileStage);
+              const acc = (i % STAGE_ACCENT_COLORS.length) === 0 ? brandHex() : STAGE_ACCENT_COLORS[i % STAGE_ACCENT_COLORS.length];
+              if (list.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center text-center gap-2 py-20">
+                    <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-black/10 flex items-center justify-center">
+                      <User className="w-6 h-6 text-[#c4b09e]" />
+                    </div>
+                    <p className="text-[14px] font-semibold text-[#7a6b5c]">No leads in {currentMobileStage || 'this stage'}</p>
+                    {canCreateLead && <p className="text-[12px] text-[#b09e8d]">Tap + to add one</p>}
+                  </div>
+                );
+              }
+              return list.map((lead) => (
+                <MobileLeadCard
+                  key={lead.id} lead={lead} stages={activeStages} accent={acc} showPhone={showPhone}
+                  onClick={() => setSelectedLeadId(lead.id)}
+                  onEdit={() => setQuickEditLead(lead)}
+                  onFollowUp={() => setQuickFollowUpLead(lead)}
+                  onAppointment={() => setQuickApptLead(lead)}
+                  onAssign={() => setQuickAssignLead(lead)}
+                  onMove={(s) => moveSingleLeadStage(lead.id, s)}
+                  selectionMode={mobileSelectMode}
+                  selected={selectedIds.includes(lead.id)}
+                  onEnterSelect={() => { setMobileSelectMode(true); setSelectedIds((prev) => prev.includes(lead.id) ? prev : [...prev, lead.id]); }}
+                  onToggleSelect={() => setSelectedIds((prev) => prev.includes(lead.id) ? prev.filter((x) => x !== lead.id) : [...prev, lead.id])}
+                />
+              ));
+            })()}
+          </div>
+        </div>
+      ) : kanbanView ? (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex gap-4 overflow-x-auto overflow-y-hidden flex-1 min-h-0 pb-4 items-stretch scrollbar-hide">
-            {activeStages.map((stage, stageIndex) => {
-              const now = new Date();
-              const stageLeadsSorted = filteredLeads
-                .filter((l) => l.stage === stage)
-                .sort((a, b) => {
-                  const nextA = followUps
-                    .filter((f) => f.leadId === a.id && !f.completed)
-                    .sort((x, y) => new Date(x.dueAt).getTime() - new Date(y.dueAt).getTime())[0];
-                  const nextB = followUps
-                    .filter((f) => f.leadId === b.id && !f.completed)
-                    .sort((x, y) => new Date(x.dueAt).getTime() - new Date(y.dueAt).getTime())[0];
-                  const aOverdue = nextA && new Date(nextA.dueAt) < now;
-                  const bOverdue = nextB && new Date(nextB.dueAt) < now;
-                  // Overdue follow-ups float to top, sorted by most overdue first
-                  if (aOverdue && !bOverdue) return -1;
-                  if (!aOverdue && bOverdue) return 1;
-                  if (aOverdue && bOverdue) return new Date(nextA!.dueAt).getTime() - new Date(nextB!.dueAt).getTime();
-                  // No overdue: newest lead first
-                  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                });
-              return (
+            {activeStages.map((stage, stageIndex) => (
               <StageColumn
                 key={stage} stage={stage}
-                leads={stageLeadsSorted}
+                leads={stageLeadsFor(stage)}
                 onLeadClick={(l) => setSelectedLeadId(l.id)}
                 onFollowUp={setQuickFollowUpLead}
                 onNote={setQuickNoteLead}
@@ -4476,8 +4767,7 @@ export default function LeadsPage() {
                 stageIndex={stageIndex}
                 highlightId={highlightId}
               />
-              );
-            })}
+            ))}
           </div>
           <DragOverlay>{activeLead && <div className="bg-card rounded-lg border-2 border-primary p-3 shadow-2xl opacity-90 w-[280px]"><span className="font-semibold text-sm">{activeLead.firstName} {activeLead.lastName}</span></div>}</DragOverlay>
         </DndContext>
@@ -4607,6 +4897,18 @@ export default function LeadsPage() {
       {quickNoteLead && <NoteModal leadId={quickNoteLead.id} onClose={() => setQuickNoteLead(null)} />}
       {quickFollowUpLead && <FollowUpModal leadId={quickFollowUpLead.id} onClose={() => setQuickFollowUpLead(null)} />}
       {quickAssignLead && <AssignModal lead={quickAssignLead} onClose={() => setQuickAssignLead(null)} />}
+      {quickApptLead && <AppointmentModal lead={quickApptLead} onClose={() => setQuickApptLead(null)} />}
+
+      {/* Mobile floating Add Lead button */}
+      {isMobile && canCreateLead && !mobileSelectMode && selectedIds.length === 0 && (
+        <button
+          onClick={() => setShowAddLead(true)}
+          aria-label="Add lead"
+          className="md:hidden fixed right-4 bottom-24 z-30 w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
     </div>
   );
 }
