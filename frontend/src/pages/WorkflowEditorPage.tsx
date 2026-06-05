@@ -4255,6 +4255,9 @@ export default function WorkflowEditorPage() {
         nodes: Array.isArray(r.nodes) ? r.nodes : (typeof r.nodes === 'string' ? JSON.parse(r.nodes) : []),
         apiToken: r.api_token ?? '',
       });
+      // Show the real last-saved time, not "Not saved yet", for an already-saved workflow.
+      const ts = r?.updated_at ? new Date(r.updated_at).getTime() : NaN;
+      if (!Number.isNaN(ts)) setSavedAt(ts);
     }).catch(() => toast.error('Failed to load workflow'))
       .finally(() => setLoadingWF(false));
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -4475,6 +4478,10 @@ export default function WorkflowEditorPage() {
       apiToken: r.api_token ?? '',
     });
     setIsDirty(false);
+    // Seed the "last saved" time from the server so a loaded workflow shows
+    // "Saved <time>" instead of a misleading "Not saved yet".
+    const ts = r?.updated_at ? new Date(r.updated_at).getTime() : NaN;
+    if (!Number.isNaN(ts)) setSavedAt(ts);
   };
 
   // Reload from server (only when there are no local edits to lose).
@@ -4889,10 +4896,6 @@ export default function WorkflowEditorPage() {
           ) : saveStatus === 'error' ? (
             <button onClick={() => persist()} className="text-[10px] text-red-600 flex items-center gap-1 mr-1 hover:underline" title="Save failed — click to retry">
               <AlertTriangle className="w-3 h-3" />Unsaved — retry
-            </button>
-          ) : saveStatus === 'conflict' ? (
-            <button onClick={() => reloadFromServer()} className="text-[10px] text-amber-600 flex items-center gap-1 mr-1 hover:underline" title="Changed in another tab — click to reload latest">
-              <AlertTriangle className="w-3 h-3" />Changed elsewhere — reload
             </button>
           ) : (
             <span className="text-[10px] text-[#b09e8d] flex items-center gap-1 mr-1">
