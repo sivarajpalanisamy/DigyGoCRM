@@ -4283,9 +4283,14 @@ export default function WorkflowEditorPage() {
   // Keep ref in sync so beforeunload always has latest workflow
   useEffect(() => { workflowRef.current = workflow; }, [workflow]);
 
-  // When a tab regains focus, flush any pending edits (covers edits made while hidden).
+  // On refocus: if this tab has unsaved edits, flush them; if it's clean, reload the
+  // latest so a previously-backgrounded tab never edits on top of a stale version.
   useEffect(() => {
-    const onVis = () => { if (document.visibilityState === 'visible' && dirtyRef.current) persist({ silent: true }); };
+    const onVis = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (dirtyRef.current) persist({ silent: true });
+      else reloadFromServer();
+    };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -4450,13 +4455,14 @@ export default function WorkflowEditorPage() {
   // The updated_at the editor last loaded/saved — sent on every save so the server
   // can reject a stale overwrite (multi-tab safety).
   const baseUpdatedAtRef = useRef<string | null>(passedWorkflow ? null : null);
-  const saveBroadcast = useRef<BroadcastChannel | null>(null);
-  const savingRef = useRef(false);     // a PATCH is currently in flight
-  const saveAgainRef = useRef(false);  // edits arrived during the in-flight save → save once more
+  const savingRef = useRef(false);      // a PATCH is currently in flight
+  const saveAgainRef = useRef(false);   // edits arrived during the in-flight save → save once more
+  const suppressDirtyRef = useRef(false); // suppress the dirty flag for a server-driven reload
 
-  // Apply a server workflow object to local state (shared by load / reload / conflict-resolve).
+  // Apply a server workflow object to local state (shared by load / reload).
   const applyServerWorkflow = (r: any) => {
     justLoadedFromApi.current = true;
+    suppressDirtyRef.current = true; // the setWorkflow below must not mark the tab dirty
     baseUpdatedAtRef.current = r?.updated_at ?? null;
     setWorkflow({
       id: r.id, name: r.name, description: r.description ?? '',
@@ -4483,14 +4489,15 @@ export default function WorkflowEditorPage() {
     } catch { /* leave as-is */ }
   };
 
-  // Serialized, edit-preserving save. Only one PATCH in flight at a time; edits
-  // during a save queue a follow-up; a genuine 409 re-bases and re-saves local
-  // edits (never wipes them) — only reloading when there is nothing unsaved.
-  const persist = async (opts?: { silent?: boolean }): Promise<boolean> => {
+  // Serialized save. Only one PATCH in flight at a time; edits during a save queue
+  // exactly one follow-up. Interactive saves are last-write-wins (NO version guard)
+  // so they can never 409/loop. Stale-tab protection lives elsewhere: only the
+  // visible tab autosaves, a clean tab reloads when refocused, and the close-flush
+  // is still version-guarded so a stale closing tab can't clobber.
+  const persist = async (_opts?: { silent?: boolean }): Promise<boolean> => {
     const wf = workflowRef.current;
     if (!wf.id || wf.id === 'new') return false;
 
-    // Serialize: if a save is already running, ask it to run once more afterwards.
     if (savingRef.current) { saveAgainRef.current = true; return false; }
     savingRef.current = true;
     if (retryTimer.current) { clearTimeout(retryTimer.current); retryTimer.current = null; }
@@ -4505,69 +4512,27 @@ export default function WorkflowEditorPage() {
         nodes: cur.nodes,
         status: cur.status,
         allow_reentry: cur.allowReentry,
-        base_updated_at: baseUpdatedAtRef.current,
       });
       baseUpdatedAtRef.current = saved?.updated_at ?? baseUpdatedAtRef.current;
-      saveBroadcast.current?.postMessage({ id: cur.id, updated_at: baseUpdatedAtRef.current });
       setSaveStatus('saved');
       setSavedAt(Date.now());
       setIsDirty(false);
       ok = true;
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        // Another tab/session changed it. Resolve without losing local work.
-        try {
-          const latest = await api.get<any>(`/api/workflows/${wf.id}`);
-          if (dirtyRef.current) {
-            // We have unsaved edits — KEEP them: adopt the new base and re-save so
-            // the active editor's work wins instead of being wiped.
-            baseUpdatedAtRef.current = latest?.updated_at ?? baseUpdatedAtRef.current;
-            saveAgainRef.current = true;
-            if (!opts?.silent) toast.message('Synced to the latest version — your changes are kept.');
-            setSaveStatus('saving');
-          } else {
-            // Nothing local to lose — adopt the server version.
-            applyServerWorkflow(latest);
-            setSaveStatus('saved');
-            setSavedAt(Date.now());
-          }
-        } catch {
-          setSaveStatus('error');
-        }
-      } else {
-        setSaveStatus('error');
-        // Transient failure / token refresh — retry shortly.
-        retryTimer.current = setTimeout(() => { persist({ silent: true }); }, 5000);
-      }
+    } catch {
+      setSaveStatus('error');
+      // Transient failure / token refresh — retry shortly.
+      retryTimer.current = setTimeout(() => { persist({ silent: true }); }, 5000);
     } finally {
       savingRef.current = false;
     }
 
-    // Edits arrived during this save (or a 409 re-base needs persisting) → save once more.
+    // Edits arrived during this save → save once more with the latest snapshot.
     if (saveAgainRef.current) {
       saveAgainRef.current = false;
       return persist({ silent: true });
     }
     return ok;
   };
-  // Cross-tab sync: when another tab saves this workflow, a clean tab adopts the
-  // latest immediately; a dirty tab is flagged (its next save will 409 + reload).
-  useEffect(() => {
-    if (typeof BroadcastChannel === 'undefined' || !workflow.id || workflow.id === 'new') return;
-    const ch = new BroadcastChannel(`wf-save-${workflow.id}`);
-    saveBroadcast.current = ch;
-    ch.onmessage = (e: MessageEvent) => {
-      const msg = e.data as { id?: string; updated_at?: string };
-      if (!msg || msg.id !== workflowRef.current.id) return;
-      if (!dirtyRef.current) {
-        baseUpdatedAtRef.current = msg.updated_at ?? baseUpdatedAtRef.current;
-        reloadFromServer();
-      } else {
-        setSaveStatus('conflict');
-      }
-    };
-    return () => { ch.close(); saveBroadcast.current = null; };
-  }, [workflow.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [zoom, setZoom] = useState(100);
   const [panelWidth, setPanelWidth] = useState(340);
@@ -4606,6 +4571,8 @@ export default function WorkflowEditorPage() {
   // Track unsaved changes
   useEffect(() => {
     if (isDirtyFirstRender.current) { isDirtyFirstRender.current = false; return; }
+    // A server-driven reload changed the workflow — that's not a user edit.
+    if (suppressDirtyRef.current) { suppressDirtyRef.current = false; return; }
     setIsDirty(true);
   }, [workflow.nodes, workflow.name, workflow.description, workflow.status, workflow.allowReentry]); // eslint-disable-line react-hooks/exhaustive-deps
 
