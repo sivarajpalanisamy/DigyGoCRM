@@ -379,6 +379,7 @@ function WaPersonalModal({ onClose, onConnected }: { onClose: () => void; onConn
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastQrRef = useRef<string | null>(null);
 
   const clearTimers = () => {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -388,15 +389,21 @@ function WaPersonalModal({ onClose, onConnected }: { onClose: () => void; onConn
 
   const onQrReceived = (qrData: string) => {
     setQr(qrData);
-    setCountdown(60);
-    setTimedOut(false);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    // Only reset the countdown when the QR ACTUALLY changes. The 1.5s poll returns
+    // the same QR repeatedly; resetting on every receipt made the timer bounce 59↔60.
+    if (qrData !== lastQrRef.current) {
+      lastQrRef.current = qrData;
+      setCountdown(60);
+      setTimedOut(false);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    }
   };
 
   const startSession = async () => {
     clearTimers();
     setStarting(true);
     setQr(null);
+    lastQrRef.current = null;
     setTimedOut(false);
     try {
       await api.post('/api/whatsapp-personal/connect', {});
