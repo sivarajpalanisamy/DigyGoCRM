@@ -1,5 +1,6 @@
 import { query } from '../../db';
 import { emitToTenant } from '../../socket';
+import { emitLeadCreated } from '../../utils/leadEvents';
 import { normalizePhone, fromJID, isGroupJID } from './phoneUtils';
 
 /**
@@ -173,6 +174,7 @@ export async function handleInboundMessage(
         if (newLead.rows[0]) {
           lead   = newLead.rows[0];
           leadId = newLead.rows[0].id;
+          emitLeadCreated(tenantId, leadId).catch(() => null);
         }
       }
     } catch { /* best-effort */ }

@@ -4206,7 +4206,11 @@ export default function LeadsPage() {
       } catch { /* ignore */ }
     }, delay);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [filters, search, selectedPipelineId, selectedPipeline?.id, hasServerFilter]);
+    // `leads.length` is intentionally a dep: when a new lead enters the store
+    // (realtime lead:created socket → addLead, the manual Add Lead modal, or the
+    // 30s background poll), this re-fetches the server-filtered apiLeads snapshot
+    // so the board shows it immediately instead of only after a manual refresh.
+  }, [filters, search, selectedPipelineId, selectedPipeline?.id, hasServerFilter, leads.length]);
 
   const filteredLeads = useMemo(() => {
     // Dashboard quick-filter — cross-pipeline, bypasses server fetch

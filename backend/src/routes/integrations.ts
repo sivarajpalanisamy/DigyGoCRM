@@ -7,6 +7,7 @@ import { encrypt, decrypt } from '../utils/crypto';
 import { parseMetaFieldData } from '../utils/meta';
 import { triggerWorkflows, executeNodes, enrichLead } from './workflows';
 import { sendNewLeadNotification } from '../utils/notifications';
+import { emitLeadCreated } from '../utils/leadEvents';
 import https from 'https';
 
 const router = Router();
@@ -531,6 +532,7 @@ router.post('/meta/webhook', async (req: Request, res: Response) => {
               const leadCtx = { ...ins.rows[0], form_id: mf.form_id, form_name: mf.form_name };
               upsertContact(mf.tenant_id, ins.rows[0]).catch(() => null);
               sendNewLeadNotification(mf.tenant_id, ins.rows[0], null).catch(() => null);
+              emitLeadCreated(mf.tenant_id, ins.rows[0].id).catch(() => null);
               setImmediate(() => triggerWorkflows('lead_created', leadCtx, mf.tenant_id, 'webhook').catch((e) => console.error('[webhook trigger new]', e)));
               setImmediate(() => triggerWorkflows('meta_form',    leadCtx, mf.tenant_id, 'webhook').catch((e) => console.error('[webhook trigger new]', e)));
             }

@@ -9,6 +9,7 @@ import { sendEmail, isSmtpConfigured, getTenantEmailIdentity } from '../services
 import { decrypt } from '../utils/crypto';
 import { maskPhone } from '../utils/phone';
 import { emitToTenant, emitToUser } from '../socket';
+import { emitLeadCreated } from '../utils/leadEvents';
 import { backfillCustomFields, cleanFieldKey } from '../utils/customFields';
 
 const router = Router();
@@ -3135,6 +3136,7 @@ publicWorkflowRouter.post('/:workflowId/execute', async (req: any, res: any) => 
         } else {
           const cfJson = Object.keys(extraFields).length > 0 ? JSON.stringify(extraFields) : '{}';
           let ins;
+          let didInsert = false;
           try {
             ins = await query(
               `INSERT INTO leads (tenant_id, name, email, phone, source, custom_fields, created_at, updated_at)
@@ -3142,6 +3144,7 @@ publicWorkflowRouter.post('/:workflowId/execute', async (req: any, res: any) => 
                RETURNING id, name, email, phone, stage_id, pipeline_id, assigned_to, tags, source, status, custom_fields`,
               [tenantId, contactName || contactEmail || contactPhone, contactEmail || null, contactPhone || null, cfJson]
             );
+            didInsert = true;
           } catch {
             // Race condition or constraint — retry SELECT
             const retry = await query(
@@ -3153,6 +3156,7 @@ publicWorkflowRouter.post('/:workflowId/execute', async (req: any, res: any) => 
             ins = { rows: [retry.rows[0]] };
           }
           lead = ins.rows[0];
+          if (didInsert && lead) emitLeadCreated(tenantId, lead.id).catch(() => null);
           if (Object.keys(extraFields).length > 0) {
             await backfillCustomFields(lead.id, tenantId, extraFields);
           }

@@ -240,7 +240,7 @@ export const useCrmStore = create<CrmState>((set) => ({
   deleteAdditionalField: (id) => set((s) => ({ additionalFields: s.additionalFields.filter((f) => f.id !== id) })),
 
   // Lead actions
-  addLead: (lead) => set((s) => ({ leads: [lead, ...s.leads] })),
+  addLead: (lead) => set((s) => (s.leads.some((l) => l.id === lead.id) ? {} : { leads: [lead, ...s.leads] })),
   updateLead: (id, updates) => set((s) => {
     const lead = s.leads.find((l) => l.id === id);
     const newActivities: LeadActivity[] = [];

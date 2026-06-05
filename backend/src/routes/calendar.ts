@@ -5,6 +5,7 @@ import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission, hasPermission } from '../middleware/permissions';
 import { triggerWorkflows } from './workflows';
 import { sendNewLeadNotification } from '../utils/notifications';
+import { emitLeadCreated } from '../utils/leadEvents';
 import { sendEmail, isSmtpConfigured, getTenantEmailIdentity } from '../services/email';
 
 const router = Router();
@@ -461,7 +462,10 @@ router.post('/public/book', publicBookingLimiter, async (req: Request, res: Resp
                 [et.tenant_id, guest_name, guest_email ?? null, guest_phone ?? null, `calendar:${et.name}`]
               );
               lead = ins.rows[0];
-              if (lead) sendNewLeadNotification(et.tenant_id, lead, null).catch(() => null);
+              if (lead) {
+                sendNewLeadNotification(et.tenant_id, lead, null).catch(() => null);
+                emitLeadCreated(et.tenant_id, lead.id).catch(() => null);
+              }
             } catch {
               if (guest_email) {
                 const r = await query(
