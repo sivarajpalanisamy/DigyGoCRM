@@ -1,13 +1,14 @@
 import { Router, Response } from 'express';
 import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
+import { checkPermission } from '../middleware/permissions';
 
 const router = Router();
 router.use(requireAuth);
 router.use(requireTenant);
 
 // GET /api/opportunities?lead_id=uuid
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', checkPermission('opportunities:read'), async (req: AuthRequest, res: Response) => {
   const { tenantId } = req.user!;
   const { lead_id } = req.query as Record<string, string>;
   try {
@@ -35,7 +36,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/opportunities
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', checkPermission('opportunities:create'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
   const {
     lead_id, title, value, currency = 'INR',
@@ -68,7 +69,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 });
 
 // PATCH /api/opportunities/:id
-router.patch('/:id', async (req: AuthRequest, res: Response) => {
+router.patch('/:id', checkPermission('opportunities:edit'), async (req: AuthRequest, res: Response) => {
   const { tenantId } = req.user!;
   const allowed = [
     'title', 'value', 'currency', 'pipeline_id', 'stage_id',
@@ -101,7 +102,7 @@ router.patch('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /api/opportunities/:id
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', checkPermission('opportunities:delete'), async (req: AuthRequest, res: Response) => {
   const { tenantId } = req.user!;
   try {
     await query(

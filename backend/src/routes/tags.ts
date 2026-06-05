@@ -2,13 +2,14 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
+import { checkPermission } from '../middleware/permissions';
 
 const router = Router();
 router.use(requireAuth);
 router.use(requireTenant);
 
 // GET /api/tags
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', checkPermission('tags:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `SELECT t.*, COUNT(lt.lead_id)::int AS lead_count
@@ -26,7 +27,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/tags
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', checkPermission('tags:manage'), async (req: AuthRequest, res: Response) => {
   const schema = z.object({
     name:  z.string().min(1).max(100),
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().default('#94a3b8'),
@@ -46,7 +47,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 });
 
 // PATCH /api/tags/:id
-router.patch('/:id', async (req: AuthRequest, res: Response) => {
+router.patch('/:id', checkPermission('tags:manage'), async (req: AuthRequest, res: Response) => {
   const schema = z.object({
     name:  z.string().min(1).max(100).optional(),
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
@@ -75,7 +76,7 @@ router.patch('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /api/tags/:id
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', checkPermission('tags:manage'), async (req: AuthRequest, res: Response) => {
   try {
     await query(
       'DELETE FROM tags WHERE id=$1 AND tenant_id=$2',
@@ -88,7 +89,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/tags/leads/:leadId — add tag to lead
-router.post('/leads/:leadId', async (req: AuthRequest, res: Response) => {
+router.post('/leads/:leadId', checkPermission('leads:edit'), async (req: AuthRequest, res: Response) => {
   const schema = z.object({ tag_id: z.string().uuid() });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: 'tag_id (UUID) required' }); return; }
@@ -110,7 +111,7 @@ router.post('/leads/:leadId', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /api/tags/leads/:leadId/:tagId — remove tag from lead
-router.delete('/leads/:leadId/:tagId', async (req: AuthRequest, res: Response) => {
+router.delete('/leads/:leadId/:tagId', checkPermission('leads:edit'), async (req: AuthRequest, res: Response) => {
   try {
     await query(
       'DELETE FROM lead_tags WHERE lead_id=$1 AND tag_id=$2',

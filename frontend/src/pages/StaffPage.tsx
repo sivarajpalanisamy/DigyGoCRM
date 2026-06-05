@@ -62,9 +62,11 @@ const PERM_GROUPS: PermGroup[] = [
     rows: [
       { label: 'Leads', keys: ['leads:view_all', 'leads:create', 'leads:edit', 'leads:delete'] },
       { label: 'Contacts', keys: ['contacts:read',  'contacts:create', 'contacts:edit', 'contacts:delete'] },
+      { label: 'Opportunities', keys: ['opportunities:read', 'opportunities:create', 'opportunities:edit', 'opportunities:delete'] },
     ],
     simpleRows: [
       { label: 'Contact Groups', keys: [{ key: 'contact_groups:read', label: 'Read' }, { key: 'contact_groups:manage', label: 'Manage' }] },
+      { label: 'Tags',           keys: [{ key: 'tags:view', label: 'View' }, { key: 'tags:manage', label: 'Manage' }] },
       { label: 'Export',         keys: [{ key: 'leads:export', label: 'Export Leads' }, { key: 'contacts:export', label: 'Export Contacts' }] },
     ],
   },
@@ -132,7 +134,7 @@ const CUSTOM_DEFAULTS = new Set([
   'dashboard:total_leads',
   'meta_forms:read', 'custom_forms:read', 'landing_pages:read', 'whatsapp_setup:read',
   'leads:view_all', 'leads:create', 'leads:edit', 'leads:view_own',
-  'contacts:read', 'contact_groups:read',
+  'contacts:read', 'contact_groups:read', 'tags:view',
   'automation:view', 'automation_templates:read',
   'inbox:view_all', 'inbox:send',
   'calls:view_own',

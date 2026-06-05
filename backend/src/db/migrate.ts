@@ -86,6 +86,7 @@ const MIGRATIONS = [
   'migration_084_two_factor.sql',
   'migration_085_google_sheets_imported_rows.sql',
   'migration_086_field_routing_meta.sql',
+  'migration_087_perms_phase1_backfill.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
