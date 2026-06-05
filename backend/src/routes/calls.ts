@@ -144,7 +144,7 @@ router.get('/lead/:leadId', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/calls/:callId/recording — stream audio (supports Range for seeking)
-router.get('/:callId/recording', async (req: AuthRequest, res: Response) => {
+router.get('/:callId/recording', checkPermission('calls:recordings'), async (req: AuthRequest, res: Response) => {
   const { tenantId } = req.user!;
   const { callId } = req.params;
 
@@ -180,7 +180,7 @@ router.get('/:callId/recording', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/calls/:callId/download — force file download
-router.get('/:callId/download', async (req: AuthRequest, res: Response) => {
+router.get('/:callId/download', checkPermission('calls:recordings'), async (req: AuthRequest, res: Response) => {
   const { tenantId } = req.user!;
   const { callId } = req.params;
 

@@ -33,7 +33,7 @@ const navItems: NavItem[] = [
     anyOf: ['leads:view_all', 'leads:view_own', 'contacts:read'],
   },
   { label: 'Automation',      icon: Zap,               path: '/automation',      permKey: 'automation:view' },
-  { label: 'Calendar',        icon: CalendarDays,       path: '/calendar' },
+  { label: 'Calendar',        icon: CalendarDays,       path: '/calendar',        permKey: 'calendar:view' },
   { label: 'Inbox',           icon: Inbox,              path: '/inbox',           permKey: 'inbox:view_all' },
   { label: 'Calls',           icon: Phone,              path: '/calls',           anyOf: ['calls:view_all', 'calls:view_own'] },
   { label: 'Fields',          icon: SlidersHorizontal,  path: '/fields',          permKey: 'fields:view' },

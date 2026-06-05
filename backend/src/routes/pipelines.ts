@@ -8,7 +8,7 @@ router.use(requireAuth);
 router.use(requireTenant);
 
 // GET /api/pipelines — requires at least one of: view_all or view_own
-router.get('/', checkPermission('leads:view_own'), async (req: AuthRequest, res: Response) => {
+router.get('/', checkPermission('pipeline:view'), async (req: AuthRequest, res: Response) => {
   try {
     const { tenantId, userId, role } = req.user!;
     const isSuperAdmin = role === 'super_admin';

@@ -163,7 +163,7 @@ router.get('/tags', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/leads/followups — follow-ups scoped by user access level
-router.get('/followups', async (req: AuthRequest, res: Response) => {
+router.get('/followups', checkPermission('followups:view'), async (req: AuthRequest, res: Response) => {
   const { userId, tenantId, role } = req.user!;
   try {
     const isSuperAdmin = role === 'super_admin';
@@ -678,7 +678,7 @@ router.delete('/:id/notes/:noteId', async (req: AuthRequest, res: Response) => {
 // ── Follow-ups ─────────────────────────────────────────────────────────────────
 
 // GET /api/leads/:id/followups
-router.get('/:id/followups', async (req: AuthRequest, res: Response) => {
+router.get('/:id/followups', checkPermission('followups:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `SELECT f.*, u.name AS assigned_name

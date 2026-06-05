@@ -88,6 +88,7 @@ const MIGRATIONS = [
   'migration_086_field_routing_meta.sql',
   'migration_087_perms_phase1_backfill.sql',
   'migration_088_perms_phase2_backfill.sql',
+  'migration_089_perms_phase3_backfill.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.

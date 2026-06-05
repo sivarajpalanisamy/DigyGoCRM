@@ -31,8 +31,9 @@ export const FULL_PERMISSIONS: Record<string, boolean> = {
   'landing_pages:read': true, 'landing_pages:create': true, 'landing_pages:edit': true, 'landing_pages:delete': true,
   'whatsapp_setup:read': true, 'whatsapp_setup:manage': true,
   'leads:view_all': true, 'leads:create': true, 'leads:edit': true, 'leads:delete': true, 'leads:view_own': true,
-  'leads:only_assigned': false, 'leads:mask_phone': false,
-  'contacts:read': true, 'contacts:create': true, 'contacts:edit': true, 'contacts:delete': true,
+  'leads:only_assigned': false, 'leads:mask_phone': false, 'leads:export': true,
+  'followups:view': true, 'pipeline:view': true,
+  'contacts:read': true, 'contacts:create': true, 'contacts:edit': true, 'contacts:delete': true, 'contacts:export': true,
   'contact_groups:read': true, 'contact_groups:manage': true,
   'opportunities:read': true, 'opportunities:create': true, 'opportunities:edit': true, 'opportunities:delete': true,
   'tags:view': true, 'tags:manage': true,
@@ -45,9 +46,9 @@ export const FULL_PERMISSIONS: Record<string, boolean> = {
   'inbox:view_all': true, 'inbox:send': true,
   'fields:view': true, 'fields:manage': true,
   'staff:view': true, 'staff:manage': true,
-  'settings:manage': true, 'calendar:manage': true, 'pipeline:manage': true,
+  'settings:manage': true, 'calendar:manage': true, 'calendar:view': true, 'pipeline:manage': true,
   'integrations:view': true, 'integrations:manage': true,
-  'calls:view_all': true, 'calls:view_own': true,
+  'calls:view_all': true, 'calls:view_own': true, 'calls:recordings': true,
 };
 
 // Default custom permissions for newly created staff (read-only access to most modules).
@@ -59,8 +60,9 @@ const CUSTOM_DEFAULT_PERMISSIONS: Record<string, boolean> = {
   'landing_pages:read': true, 'landing_pages:create': false, 'landing_pages:edit': false, 'landing_pages:delete': false,
   'whatsapp_setup:read': true, 'whatsapp_setup:manage': false,
   'leads:view_all': true, 'leads:create': true, 'leads:edit': true, 'leads:delete': false, 'leads:view_own': true,
-  'leads:only_assigned': false, 'leads:mask_phone': false,
-  'contacts:read': true, 'contacts:create': false, 'contacts:edit': false, 'contacts:delete': false,
+  'leads:only_assigned': false, 'leads:mask_phone': false, 'leads:export': false,
+  'followups:view': true, 'pipeline:view': true,
+  'contacts:read': true, 'contacts:create': false, 'contacts:edit': false, 'contacts:delete': false, 'contacts:export': false,
   'contact_groups:read': true, 'contact_groups:manage': false,
   'opportunities:read': false, 'opportunities:create': false, 'opportunities:edit': false, 'opportunities:delete': false,
   'tags:view': true, 'tags:manage': false,
@@ -73,9 +75,9 @@ const CUSTOM_DEFAULT_PERMISSIONS: Record<string, boolean> = {
   'inbox:view_all': true, 'inbox:send': true,
   'fields:view': true, 'fields:manage': false,
   'staff:view': true, 'staff:manage': false,
-  'settings:manage': false, 'calendar:manage': false, 'pipeline:manage': false,
+  'settings:manage': false, 'calendar:manage': false, 'calendar:view': true, 'pipeline:manage': false,
   'integrations:view': true, 'integrations:manage': false,
-  'calls:view_all': false, 'calls:view_own': true,
+  'calls:view_all': false, 'calls:view_own': true, 'calls:recordings': false,
 };
 
 // Reserved key (inside the permissions JSON) recording the admin's explicit choice

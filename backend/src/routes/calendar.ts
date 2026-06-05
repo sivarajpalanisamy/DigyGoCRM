@@ -591,7 +591,7 @@ router.put('/my-availability', async (req: AuthRequest, res: Response) => {
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', checkPermission('calendar:view'), async (req: AuthRequest, res: Response) => {
   const { from, to } = req.query as Record<string, string>;
   const { userId, tenantId, role } = req.user!;
 

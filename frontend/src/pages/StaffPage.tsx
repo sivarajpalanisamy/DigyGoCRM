@@ -67,6 +67,7 @@ const PERM_GROUPS: PermGroup[] = [
     simpleRows: [
       { label: 'Contact Groups', keys: [{ key: 'contact_groups:read', label: 'Read' }, { key: 'contact_groups:manage', label: 'Manage' }] },
       { label: 'Tags',           keys: [{ key: 'tags:view', label: 'View' }, { key: 'tags:manage', label: 'Manage' }] },
+      { label: 'Follow-ups',     keys: [{ key: 'followups:view', label: 'View' }] },
       { label: 'Export',         keys: [{ key: 'leads:export', label: 'Export Leads' }, { key: 'contacts:export', label: 'Export Contacts' }] },
     ],
   },
@@ -102,6 +103,7 @@ const PERM_GROUPS: PermGroup[] = [
     items: [
       { key: 'calls:view_own', label: 'View Own Calls' },
       { key: 'calls:view_all', label: 'View All Calls' },
+      { key: 'calls:recordings', label: 'Call Recordings' },
     ],
   },
   {
@@ -113,7 +115,9 @@ const PERM_GROUPS: PermGroup[] = [
       { key: 'staff:view',         label: 'View Staff' },
       { key: 'staff:manage',       label: 'Manage Staff' },
       { key: 'settings:manage',    label: 'Manage Settings' },
+      { key: 'calendar:view',      label: 'View Calendar' },
       { key: 'calendar:manage',    label: 'Manage Calendar' },
+      { key: 'pipeline:view',      label: 'View Pipelines' },
       { key: 'pipeline:manage',    label: 'Manage Pipelines' },
       { key: 'integrations:view',  label: 'View Integrations' },
       { key: 'integrations:manage', label: 'Manage Integrations' },
@@ -140,7 +144,7 @@ const CUSTOM_DEFAULTS = new Set([
   'dashboard:total_leads',
   'meta_forms:read', 'custom_forms:read', 'landing_pages:read', 'whatsapp_setup:read',
   'leads:view_all', 'leads:create', 'leads:edit', 'leads:view_own',
-  'contacts:read', 'contact_groups:read', 'tags:view',
+  'contacts:read', 'contact_groups:read', 'tags:view', 'followups:view', 'pipeline:view', 'calendar:view',
   'automation:view', 'automation_templates:read',
   'inbox:view_all', 'inbox:send',
   'calls:view_own',
