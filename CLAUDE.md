@@ -101,6 +101,7 @@ const isManager = !isPrivileged && usePermission('staff:manage');
 Never check `role === 'manager'` — it will never be true.
 
 ### Full Permission Key List
+Canonical source of truth: `FULL_PERMISSIONS` in `backend/src/routes/settings.ts`. The staff modal renders these via `PERM_GROUPS` in `frontend/src/pages/StaffPage.tsx`. Adding a key requires: FULL_PERMISSIONS + CUSTOM_DEFAULT_PERMISSIONS + route `checkPermission` + PERM_GROUPS + an idempotent backfill migration (see [Permission System Conventions] below).
 ```
 dashboard:total_leads, dashboard:active_staff, dashboard:conversations, dashboard:appointments
 meta_forms:read/create/edit/delete
@@ -108,19 +109,35 @@ custom_forms:read/create/edit/delete
 landing_pages:read/create/edit/delete
 whatsapp_setup:read/manage
 whatsapp_automation:read/manage
-leads:view_all, leads:view_own, leads:create, leads:edit, leads:delete
+leads:view_all, leads:view_own, leads:create, leads:edit, leads:delete, leads:export
 leads:only_assigned   ← ABSOLUTE restriction (default false — if true, user only sees their assigned leads)
 leads:mask_phone      ← Hide phone numbers (default false)
-contacts:read/create/edit/delete
+followups:view
+pipeline:view, pipeline:manage   ← pipeline:view gates the board read (was leads:view_own)
+contacts:read/create/edit/delete, contacts:export
 contact_groups:read/manage
+opportunities:read/create/edit/delete
+tags:view/manage   ← tag DEFINITIONS only; assigning a tag to a lead uses leads:edit
 automation:view/manage
 automation_templates:read/manage
-inbox:view_all/send
+assignment_rules:view/manage
+routing:view/manage   ← Pincode + Field routing
+whatsapp_flows:view/manage
+inbox:view_all/send/assign   ← view_all OR send gates conversation read; assign OR send gates assignment
+calendar:view, calendar:manage
+calls:view_all, calls:view_own, calls:recordings   ← recordings gates recording/download endpoints
 fields:view/manage
 staff:view/manage
-settings:manage, calendar:manage, pipeline:manage
+settings:manage   ← master; OR'd with the sub-keys below via checkAnyPermission
+settings:company, settings:branding, settings:security
 integrations:view/manage
 ```
+
+### Permission System Conventions
+- **Access type is explicit:** a reserved `_access_type: 'full' | 'custom'` key is stored inside the `user_permissions.permissions` JSONB (`ACCESS_KEY` in settings.ts). GET `/staff/:id/permissions` returns `access_type` (the marker, else server-side `isFullPerms()` vs FULL_PERMISSIONS). The frontend toggle reads `access_type` directly — never re-derive from values. The resolver reads `permissions->>$key`, so the marker is ignored by access checks.
+- **Granular splits use `checkAnyPermission(masterKey, subKey)`** (middleware/permissions.ts) — a master OR a sub-key both grant access (backward compatible). Used for `settings:manage` and inbox view/assign.
+- **Adding a key:** FULL_PERMISSIONS + CUSTOM_DEFAULT_PERMISSIONS + route `checkPermission` + PERM_GROUPS + a **backfill migration** (`WHERE NOT (permissions ? 'key')`, idempotent) granting it to existing rows so no staff loses access. Mirror the value of whatever key it used to borrow.
+- **Migration gotcha:** NEVER put a `;` inside a `--` comment in a migration — the splitter in `db/migrate.ts` splits on `;` even in comments (broke migration 087; same class as 030/082).
 
 ---
 
