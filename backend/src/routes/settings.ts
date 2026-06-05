@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import crypto from 'crypto';
 import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
-import { checkPermission, clearUserPermCache } from '../middleware/permissions';
+import { checkPermission, checkAnyPermission, clearUserPermCache } from '../middleware/permissions';
 import { checkUsage, incrementUsage, decrementUsage } from '../middleware/plan';
 import { emitToUser } from '../socket';
 import { sendEmail, getTenantEmailIdentity } from '../services/email';
@@ -43,10 +43,11 @@ export const FULL_PERMISSIONS: Record<string, boolean> = {
   'assignment_rules:view': true, 'assignment_rules:manage': true,
   'routing:view': true, 'routing:manage': true,
   'whatsapp_flows:view': true, 'whatsapp_flows:manage': true,
-  'inbox:view_all': true, 'inbox:send': true,
+  'inbox:view_all': true, 'inbox:send': true, 'inbox:assign': true,
   'fields:view': true, 'fields:manage': true,
   'staff:view': true, 'staff:manage': true,
-  'settings:manage': true, 'calendar:manage': true, 'calendar:view': true, 'pipeline:manage': true,
+  'settings:manage': true, 'settings:company': true, 'settings:branding': true, 'settings:security': true,
+  'calendar:manage': true, 'calendar:view': true, 'pipeline:manage': true,
   'integrations:view': true, 'integrations:manage': true,
   'calls:view_all': true, 'calls:view_own': true, 'calls:recordings': true,
 };
@@ -72,10 +73,11 @@ const CUSTOM_DEFAULT_PERMISSIONS: Record<string, boolean> = {
   'assignment_rules:view': false, 'assignment_rules:manage': false,
   'routing:view': false, 'routing:manage': false,
   'whatsapp_flows:view': false, 'whatsapp_flows:manage': false,
-  'inbox:view_all': true, 'inbox:send': true,
+  'inbox:view_all': true, 'inbox:send': true, 'inbox:assign': false,
   'fields:view': true, 'fields:manage': false,
   'staff:view': true, 'staff:manage': false,
-  'settings:manage': false, 'calendar:manage': false, 'calendar:view': true, 'pipeline:manage': false,
+  'settings:manage': false, 'settings:company': false, 'settings:branding': false, 'settings:security': false,
+  'calendar:manage': false, 'calendar:view': true, 'pipeline:manage': false,
   'integrations:view': true, 'integrations:manage': false,
   'calls:view_all': false, 'calls:view_own': true, 'calls:recordings': false,
 };
@@ -141,7 +143,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
-router.put('/', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.put('/', checkAnyPermission('settings:manage','settings:company'), async (req: AuthRequest, res: Response) => {
   const { workspace_name, legal_name, website, phone, address, industry, timezone, currency, date_format, logo_url } = req.body;
   try {
     await query(
@@ -190,7 +192,7 @@ router.get('/branding', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/settings/branding — update current tenant's branding
-router.put('/branding', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.put('/branding', checkAnyPermission('settings:manage','settings:branding'), async (req: AuthRequest, res: Response) => {
   const { name, logo_url, favicon_url, banner_url, brand_color, login_bg_color, tab_title, app_bg_color, accent_color } = req.body;
   const updates: string[] = [];
   const params: any[] = [];
@@ -226,7 +228,7 @@ router.get('/security', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/settings/security — toggle email-OTP 2FA for the whole tenant
-router.put('/security', checkPermission('settings:manage'), async (req: AuthRequest, res: Response) => {
+router.put('/security', checkAnyPermission('settings:manage','settings:security'), async (req: AuthRequest, res: Response) => {
   const enabled = req.body?.two_factor_enabled === true;
   try {
     await query('UPDATE tenants SET two_factor_enabled=$1 WHERE id=$2', [enabled, req.user!.tenantId]);

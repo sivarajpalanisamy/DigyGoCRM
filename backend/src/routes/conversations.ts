@@ -4,7 +4,7 @@ import { Router, Response } from 'express';
 import multer from 'multer';
 import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
-import { checkPermission, hasPermission } from '../middleware/permissions';
+import { checkPermission, checkAnyPermission, hasPermission } from '../middleware/permissions';
 import { maskPhone } from '../utils/phone';
 import { decrypt } from '../utils/crypto';
 import { emitToTenant } from '../socket';
@@ -165,7 +165,7 @@ router.post('/new', checkPermission('inbox:send'), async (req: AuthRequest, res:
 });
 
 // GET /api/conversations
-router.get('/', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+router.get('/', checkAnyPermission('inbox:view_all','inbox:send'), async (req: AuthRequest, res: Response) => {
   const { userId, tenantId, role } = req.user!;
   const { status, assigned_to, search, wa_account } = req.query as Record<string, string>;
   const isSuperAdmin = role === 'super_admin';
@@ -242,7 +242,7 @@ router.get('/media/:msgId', async (req: AuthRequest, res: Response) => {
 
 // GET /api/conversations/:id/messages
 // Supports: ?limit=50&before=<ISO timestamp> for cursor-based pagination
-router.get('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+router.get('/:id/messages', checkAnyPermission('inbox:view_all','inbox:send'), async (req: AuthRequest, res: Response) => {
   try {
     const limit  = Math.min(parseInt(req.query.limit as string) || 50, 100);
     const before = req.query.before as string | undefined;
@@ -469,7 +469,7 @@ router.post('/:id/typing', checkPermission('inbox:send'), async (req: AuthReques
 });
 
 // PATCH /api/conversations/:id/assign
-router.patch('/:id/assign', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+router.patch('/:id/assign', checkAnyPermission('inbox:assign','inbox:send'), async (req: AuthRequest, res: Response) => {
   const { assigned_to } = req.body as { assigned_to?: string | null };
   try {
     const result = await query(

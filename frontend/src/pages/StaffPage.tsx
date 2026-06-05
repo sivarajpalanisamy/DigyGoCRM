@@ -95,6 +95,7 @@ const PERM_GROUPS: PermGroup[] = [
     items: [
       { key: 'inbox:view_all', label: 'View All Conversations' },
       { key: 'inbox:send',     label: 'Send Messages' },
+      { key: 'inbox:assign',   label: 'Assign Conversations' },
     ],
   },
   {
@@ -114,7 +115,10 @@ const PERM_GROUPS: PermGroup[] = [
       { key: 'fields:manage',      label: 'Manage Fields' },
       { key: 'staff:view',         label: 'View Staff' },
       { key: 'staff:manage',       label: 'Manage Staff' },
-      { key: 'settings:manage',    label: 'Manage Settings' },
+      { key: 'settings:manage',    label: 'Manage Settings (all)' },
+      { key: 'settings:company',   label: 'Company Settings' },
+      { key: 'settings:branding',  label: 'Branding' },
+      { key: 'settings:security',  label: 'Security' },
       { key: 'calendar:view',      label: 'View Calendar' },
       { key: 'calendar:manage',    label: 'Manage Calendar' },
       { key: 'pipeline:view',      label: 'View Pipelines' },

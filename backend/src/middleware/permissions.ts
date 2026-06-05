@@ -41,6 +41,33 @@ export function checkPermission(permKey: string) {
   };
 }
 
+// Route guard that passes if the user has ANY of the given permission keys.
+// Used for granular splits with backward compatibility (e.g. a master key OR a
+// specific sub-key both grant access).
+export function checkAnyPermission(...permKeys: string[]) {
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    const user = req.user!;
+    if (SUPER_ROLES.has(user.role)) { next(); return; }
+    try {
+      for (const permKey of permKeys) {
+        const cacheKey = makeCacheKey(user.tenantId, user.userId, permKey);
+        const cached = permCache.get(cacheKey);
+        let allowed: boolean;
+        if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+          allowed = cached.allowed;
+        } else {
+          allowed = await resolvePermission(user.userId, permKey, user.tenantId);
+          permCache.set(cacheKey, { allowed, ts: Date.now() });
+        }
+        if (allowed) { next(); return; }
+      }
+      res.status(403).json({ error: 'Forbidden', required: permKeys.join(' | ') });
+    } catch {
+      res.status(500).json({ error: 'Server error checking permissions' });
+    }
+  };
+}
+
 // Resolves whether userId has permKey, scoped to tenantId when provided.
 // owner/super_admin are already bypassed in checkPermission() before this is called.
 async function resolvePermission(userId: string, permKey: string, tenantId?: string | null): Promise<boolean> {
