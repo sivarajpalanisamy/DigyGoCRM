@@ -521,6 +521,13 @@ export const useCrmStore = create<CrmState>((set) => ({
     _initInProgress = true;
 
     try {
+      // Skip the workflows fetch only when this staff member is EXPLICITLY denied
+      // automation:view (the endpoint 403s for them). When permissions aren't loaded
+      // yet, or the value is undefined, we still fetch — legit users never lose data,
+      // restricted staff just stop spamming the console with 403s once perms resolve.
+      const { permAll, permissions } = useAuthStore.getState();
+      const canViewWorkflows = permAll || permissions['automation:view'] !== false;
+
       const [leadsRes, staffRes, pipelinesRes, calRes, tagsRes, questionsRes, convsRes, notifsRes, bookingLinksRes, followUpsRes, customFieldsRes, workflowsRes, systemFieldsRes, valueTokensRes] = await Promise.all([
         api.get<any[]>('/api/leads?limit=5000').catch(safeEmpty),
         api.get<any[]>('/api/settings/staff').catch(safeEmpty),
@@ -533,7 +540,7 @@ export const useCrmStore = create<CrmState>((set) => ({
         api.get<any[]>('/api/calendar/event-types').catch(safeEmpty),
         api.get<any[]>('/api/leads/followups').catch(safeEmpty),
         api.get<any[]>('/api/fields/custom').catch(safeEmpty),
-        api.get<any[]>('/api/workflows').catch(safeEmpty),
+        canViewWorkflows ? api.get<any[]>('/api/workflows').catch(safeEmpty) : Promise.resolve([]),
         api.get<any[]>('/api/fields/system').catch(safeEmpty),
         api.get<any[]>('/api/fields/values').catch(safeEmpty),
       ]);
