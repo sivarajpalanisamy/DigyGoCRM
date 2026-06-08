@@ -125,9 +125,14 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
   try {
     const result = await query(sql, params);
-    const rows = shouldMaskPhone
-      ? result.rows.map((r: any) => ({ ...r, phone: maskPhone(r.phone) }))
-      : result.rows;
+    // Slim the payload: the list consumers (crmStore, LeadsPage) only read
+    // custom_fields.lead_quality, so drop the rest of the (potentially large, post-import)
+    // custom_fields JSONB from every row. Cuts the list response by a lot on big tenants.
+    const rows = result.rows.map((r: any) => {
+      const lq = r.custom_fields?.lead_quality ?? null;
+      const slim = { ...r, custom_fields: lq ? { lead_quality: lq } : {} };
+      return shouldMaskPhone ? { ...slim, phone: maskPhone(slim.phone) } : slim;
+    });
 
     if (after !== undefined) {
       const nextCursor = rows.length === pageSize

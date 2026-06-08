@@ -33,16 +33,29 @@ async function tryRefresh(): Promise<string | null> {
   return _refreshPromise;
 }
 
+// Hard ceiling so a slow/hung request never blocks the UI forever (e.g. a heavy
+// /api/leads pull under load). On timeout the fetch aborts and the caller's .catch
+// runs — initFromApi treats that as "keep existing data", never wiping the store.
+const REQUEST_TIMEOUT_MS = 30_000;
+
 async function request<T>(path: string, options: RequestInit = {}, _retry = true): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(_accessToken ? { Authorization: `Bearer ${_accessToken}` } : {}),
-      ...(options.headers as Record<string, string> ?? {}),
-    },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...options,
+      credentials: 'include',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(_accessToken ? { Authorization: `Bearer ${_accessToken}` } : {}),
+        ...(options.headers as Record<string, string> ?? {}),
+      },
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (res.status === 401 && _retry) {
     const newToken = await tryRefresh();

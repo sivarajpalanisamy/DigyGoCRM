@@ -4267,9 +4267,32 @@ export default function LeadsPage() {
   }, [leads, apiLeads, selectedPipelineId, search, filters, dashFilter, pipelines]);
 
   const totalCount = filteredLeads.length;
-  const leadCount = filteredLeads.filter((l) => l.stage !== 'Closed Won').length;
-  const customerCount = filteredLeads.filter((l) => l.stage === 'Closed Won').length;
+  const customerCount = useMemo(() => filteredLeads.reduce((n, l) => n + (l.stage === 'Closed Won' ? 1 : 0), 0), [filteredLeads]);
+  const leadCount = totalCount - customerCount;
+
+  // Precompute earliest incomplete follow-up time per lead ONCE, so the kanban sort
+  // comparator is O(1) instead of scanning the whole followUps array per comparison
+  // (was effectively O(N²·log N) per board render).
+  const nextFollowUpByLead = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const f of followUps) {
+      if (f.completed) continue;
+      const t = new Date(f.dueAt).getTime();
+      const prev = m.get(f.leadId);
+      if (prev === undefined || t < prev) m.set(f.leadId, t);
+    }
+    return m;
+  }, [followUps]);
   const activeFiltersCount = Object.values(filters).filter((v) => (Array.isArray(v) ? v.length > 0 : !!v)).length;
+
+  // List-view pagination — render one page of rows, not all leads at once.
+  // (Kanban columns are per-stage and already scroll independently.)
+  const LIST_PAGE_SIZE = 50;
+  const [listPage, setListPage] = useState(1);
+  useEffect(() => { setListPage(1); }, [filteredLeads.length, search, selectedPipelineId]);
+  const listTotalPages = Math.max(1, Math.ceil(filteredLeads.length / LIST_PAGE_SIZE));
+  const listSafePage = Math.min(listPage, listTotalPages);
+  const pagedListLeads = useMemo(() => filteredLeads.slice((listSafePage - 1) * LIST_PAGE_SIZE, listSafePage * LIST_PAGE_SIZE), [filteredLeads, listSafePage]);
 
   const filteredPipelines = pipelines.filter((p) =>
     p.name.toLowerCase().includes(pipelineSearch.toLowerCase())
@@ -4329,17 +4352,17 @@ export default function LeadsPage() {
 
   // Leads of one stage, sorted: overdue follow-ups first, then newest. Shared by board + mobile.
   const stageLeadsFor = (stage: string) => {
-    const now = new Date();
+    const now = Date.now();
     return filteredLeads
       .filter((l) => l.stage === stage)
       .sort((a, b) => {
-        const nextA = followUps.filter((f) => f.leadId === a.id && !f.completed).sort((x, y) => new Date(x.dueAt).getTime() - new Date(y.dueAt).getTime())[0];
-        const nextB = followUps.filter((f) => f.leadId === b.id && !f.completed).sort((x, y) => new Date(x.dueAt).getTime() - new Date(y.dueAt).getTime())[0];
-        const aOverdue = nextA && new Date(nextA.dueAt) < now;
-        const bOverdue = nextB && new Date(nextB.dueAt) < now;
+        const ta = nextFollowUpByLead.get(a.id);
+        const tb = nextFollowUpByLead.get(b.id);
+        const aOverdue = ta !== undefined && ta < now;
+        const bOverdue = tb !== undefined && tb < now;
         if (aOverdue && !bOverdue) return -1;
         if (!aOverdue && bOverdue) return 1;
-        if (aOverdue && bOverdue) return new Date(nextA!.dueAt).getTime() - new Date(nextB!.dueAt).getTime();
+        if (aOverdue && bOverdue) return ta! - tb!;
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   };
@@ -4805,7 +4828,7 @@ export default function LeadsPage() {
                   <p className="text-[13px] text-[#7a6b5c]">No leads found</p>
                 </td></tr>
               )}
-              {filteredLeads.map((lead) => {
+              {pagedListLeads.map((lead) => {
                 const isSelected = selectedIds.includes(lead.id);
                 const maskedPhone = showPhone ? lead.phone : lead.phone.replace(/\d(?=\d{4})/g, '*');
                 const maskedEmail = showPhone ? lead.email : lead.email.replace(/^(.{2})(.*)(@.*)$/, (_, a, b, c) => a + b.replace(/./g, '*') + c);
@@ -4868,6 +4891,20 @@ export default function LeadsPage() {
               })}
             </tbody>
           </table>
+          {listTotalPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-3 border-t border-black/[0.04]">
+              <p className="text-[12px] text-[#7a6b5c]">
+                Showing {filteredLeads.length === 0 ? 0 : (listSafePage - 1) * LIST_PAGE_SIZE + 1}–{Math.min(listSafePage * LIST_PAGE_SIZE, filteredLeads.length)} of {filteredLeads.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setListPage((p) => Math.max(1, p - 1))} disabled={listSafePage <= 1}
+                  className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Prev</button>
+                <span className="text-[12px] text-[#7a6b5c]">Page {listSafePage} / {listTotalPages}</span>
+                <button onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))} disabled={listSafePage >= listTotalPages}
+                  className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Next</button>
+              </div>
+            </div>
+          )}
           {selectedIds.length > 0 && (
             <div className="px-5 py-2.5 bg-blue-50 border-t border-blue-100 flex items-center gap-2">
               <Settings className="w-3.5 h-3.5 text-blue-500 shrink-0" />

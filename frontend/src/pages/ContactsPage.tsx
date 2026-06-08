@@ -352,14 +352,18 @@ export default function ContactsPage() {
   const allSources = useMemo(() => ['All', ...Array.from(new Set(leads.map((l) => l.source)))].filter(Boolean), [leads]);
   const allTags = useMemo(() => ['All', ...Array.from(new Set(leads.flatMap((l) => l.tags)))], [leads]);
 
-  const totalContacts = leads.length;
-  const activeContacts = leads.filter((l) => l.stage !== 'Closed Won').length;
-  const newThisMonth = leads.filter((l) => {
-    const created = new Date(l.createdAt);
+  // Single pass over leads (was 3 separate .filter() scans on every render).
+  const { totalContacts, activeContacts, newThisMonth, whatsappContacts } = useMemo(() => {
     const now = new Date();
-    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-  }).length;
-  const whatsappContacts = leads.filter((l) => l.source === 'WhatsApp' || l.source === 'whatsapp').length;
+    let active = 0, month = 0, wa = 0;
+    for (const l of leads) {
+      if (l.stage !== 'Closed Won') active++;
+      const c = new Date(l.createdAt);
+      if (c.getMonth() === now.getMonth() && c.getFullYear() === now.getFullYear()) month++;
+      if (l.source === 'WhatsApp' || l.source === 'whatsapp') wa++;
+    }
+    return { totalContacts: leads.length, activeContacts: active, newThisMonth: month, whatsappContacts: wa };
+  }, [leads]);
 
   const statCards = [
     { label: 'Total Contacts', value: totalContacts, icon: Users, color: 'text-primary' },
@@ -397,6 +401,15 @@ export default function ContactsPage() {
   }, [leads, search, sourceFilter, typeFilter, tagFilter, dateFilter]);
 
   const activeFiltersCount = [sourceFilter !== 'All', typeFilter !== 'All', tagFilter !== 'All', dateFilter !== 'All time'].filter(Boolean).length;
+
+  // Client-side pagination — render one page of rows instead of all (thousands of)
+  // DOM nodes at once. This is the main fix for the Contacts page being heavy.
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [search, sourceFilter, typeFilter, tagFilter, dateFilter, leads.length]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = useMemo(() => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE), [filtered, safePage]);
 
   const toggleAll = () => setSelected(selected.length === filtered.length ? [] : filtered.map((l) => l.id));
   const toggleOne = (id: string) => setSelected((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
@@ -573,8 +586,17 @@ export default function ContactsPage() {
         {/* Result count */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-black/[0.04]">
           <p className="text-[12px] text-[#7a6b5c]">
-            Showing <span className="font-semibold text-[#1c1410]">{filtered.length}</span> of {totalContacts} contacts
+            Showing <span className="font-semibold text-[#1c1410]">{filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}</span> of {filtered.length}{filtered.length !== totalContacts ? ` (filtered from ${totalContacts})` : ''} contacts
           </p>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1}
+                className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Prev</button>
+              <span className="text-[12px] text-[#7a6b5c]">Page {safePage} / {totalPages}</span>
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}
+                className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Next</button>
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
@@ -609,7 +631,7 @@ export default function ContactsPage() {
                   </td>
                 </tr>
               )}
-              {filtered.map((lead) => {
+              {paged.map((lead) => {
                 const isSelected = selected.includes(lead.id);
                 const isCustomer = lead.stage === 'Closed Won';
                 return (

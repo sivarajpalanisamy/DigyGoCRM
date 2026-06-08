@@ -177,17 +177,25 @@ interface CrmState {
   clonePipeline: (id: string) => Promise<void>;
 
   refreshPipelines: () => Promise<void>;
-  // API sync
-  initFromApi: () => Promise<void>;
+  // API sync. Pass force=true to bypass the throttle (e.g. first load / manual refresh).
+  initFromApi: (force?: boolean) => Promise<void>;
 }
 
 // Prevents concurrent initFromApi() calls from racing each other
 let _initInProgress = false;
+// Throttle: automatic triggers (navigation, 30s poll, tab focus) call initFromApi()
+// without a force flag. Skipping a full reload when one ran in the last 10s stops the
+// "every click reloads everything" lag without making data more than ~10s stale.
+let _lastInitAt = 0;
+const INIT_THROTTLE_MS = 10_000;
 
-// Catch helper: re-throw SessionExpiredError, swallow everything else
-const safeEmpty = (e: unknown): never | any[] => {
+// Catch helper: re-throw SessionExpiredError so logout still fires; on any other
+// error return null. null means "request failed" → initFromApi keeps the slice's
+// CURRENT value instead of overwriting it with [] (which caused the "0 contacts"
+// flash when the heavy /api/leads pull timed out under load).
+const keepOnError = (e: unknown): never | null => {
   if (e instanceof SessionExpiredError) throw e;
-  return [] as any[];
+  return null;
 };
 
 export const useCrmStore = create<CrmState>((set) => ({
@@ -514,11 +522,13 @@ export const useCrmStore = create<CrmState>((set) => ({
     set({ pipelines: mapped });
   },
 
-  initFromApi: async () => {
+  initFromApi: async (force = false) => {
     const { currentUser } = useAuthStore.getState();
     if (currentUser?.role === 'super_admin' && !currentUser?.tenantId) return;
     if (_initInProgress) return;
+    if (!force && Date.now() - _lastInitAt < INIT_THROTTLE_MS) return;
     _initInProgress = true;
+    _lastInitAt = Date.now();
 
     try {
       // Skip the workflows fetch only when this staff member is EXPLICITLY denied
@@ -530,20 +540,20 @@ export const useCrmStore = create<CrmState>((set) => ({
       const canViewCalendar = permAll || permissions['calendar:view'] !== false;
 
       const [leadsRes, staffRes, pipelinesRes, calRes, tagsRes, questionsRes, convsRes, notifsRes, bookingLinksRes, followUpsRes, customFieldsRes, workflowsRes, systemFieldsRes, valueTokensRes] = await Promise.all([
-        api.get<any[]>('/api/leads?limit=5000').catch(safeEmpty),
-        api.get<any[]>('/api/settings/staff').catch(safeEmpty),
-        api.get<any[]>('/api/pipelines').catch(safeEmpty),
-        canViewCalendar ? api.get<any[]>('/api/calendar').catch(safeEmpty) : Promise.resolve([]),
-        api.get<any[]>('/api/tags').catch(safeEmpty),
-        api.get<any[]>('/api/fields/questions').catch(safeEmpty),
-        api.get<any[]>('/api/conversations').catch(safeEmpty),
-        api.get<any[]>('/api/notifications').catch(safeEmpty),
-        canViewCalendar ? api.get<any[]>('/api/calendar/event-types').catch(safeEmpty) : Promise.resolve([]),
-        api.get<any[]>('/api/leads/followups').catch(safeEmpty),
-        api.get<any[]>('/api/fields/custom').catch(safeEmpty),
-        canViewWorkflows ? api.get<any[]>('/api/workflows').catch(safeEmpty) : Promise.resolve([]),
-        api.get<any[]>('/api/fields/system').catch(safeEmpty),
-        api.get<any[]>('/api/fields/values').catch(safeEmpty),
+        api.get<any[]>('/api/leads?limit=5000').catch(keepOnError),
+        api.get<any[]>('/api/settings/staff').catch(keepOnError),
+        api.get<any[]>('/api/pipelines').catch(keepOnError),
+        canViewCalendar ? api.get<any[]>('/api/calendar').catch(keepOnError) : Promise.resolve([]),
+        api.get<any[]>('/api/tags').catch(keepOnError),
+        api.get<any[]>('/api/fields/questions').catch(keepOnError),
+        api.get<any[]>('/api/conversations').catch(keepOnError),
+        api.get<any[]>('/api/notifications').catch(keepOnError),
+        canViewCalendar ? api.get<any[]>('/api/calendar/event-types').catch(keepOnError) : Promise.resolve([]),
+        api.get<any[]>('/api/leads/followups').catch(keepOnError),
+        api.get<any[]>('/api/fields/custom').catch(keepOnError),
+        canViewWorkflows ? api.get<any[]>('/api/workflows').catch(keepOnError) : Promise.resolve([]),
+        api.get<any[]>('/api/fields/system').catch(keepOnError),
+        api.get<any[]>('/api/fields/values').catch(keepOnError),
       ]);
 
       // Guarantee arrays — HTTP 200 with non-JSON body parses to {} which would crash .map()
@@ -560,6 +570,27 @@ export const useCrmStore = create<CrmState>((set) => ({
       const safeCF         = Array.isArray(customFieldsRes) ? customFieldsRes : [];
       const safeWorkflows  = Array.isArray(workflowsRes)    ? workflowsRes    : [];
       const safeSystem     = Array.isArray(systemFieldsRes) ? systemFieldsRes : [];
+
+      // A null result means that endpoint FAILED (keepOnError) — keep the slice's
+      // current value rather than wiping it. ([] from a not-permitted endpoint is a
+      // real empty and DOES update.) This is what stops leads/contacts flashing to 0.
+      const cur = useCrmStore.getState();
+      const failed = {
+        leads:       leadsRes        === null,
+        staff:       staffRes        === null,
+        pipelines:   pipelinesRes    === null,
+        cal:         calRes          === null,
+        tags:        tagsRes         === null,
+        questions:   questionsRes    === null,
+        convs:       convsRes        === null,
+        notifs:      notifsRes       === null,
+        bookings:    bookingLinksRes === null,
+        followUps:   followUpsRes    === null,
+        cf:          customFieldsRes === null,
+        workflows:   workflowsRes    === null,
+        system:      systemFieldsRes === null,
+        valueTokens: valueTokensRes  === null,
+      };
 
       // Build stageId → stageName lookup
       const stageMap: Record<string, string> = {};
@@ -725,24 +756,28 @@ export const useCrmStore = create<CrmState>((set) => ({
       }));
 
       set({
-        leads: mappedLeads,
-        staff: mappedStaff,
-        pipelines: mappedPipelines,
-        calendarEvents: mappedEvents,
-        tags: mappedTags,
-        conversations: mappedConversations,
-        notifications: mappedNotifications,
-        bookingLinks: mappedBookingLinks,
-        followUps: mappedFollowUps,
-        workflows: mappedWorkflows,
-        customFields: mappedCustomFields,
-        additionalFields: mappedAdditionalFields,
-        systemFields: safeSystem.length > 0
-          ? safeSystem.map((f) => ({ id: f.id, name: f.name, slug: f.slug, group: f.group }))
-          : SYSTEM_FIELDS_FALLBACK,
-        valueTokens: Array.isArray(valueTokensRes)
-          ? valueTokensRes.map((v: any) => ({ id: v.id, name: v.name, replace_with: v.replace_with }))
-          : [],
+        leads:           failed.leads     ? cur.leads            : mappedLeads,
+        staff:           failed.staff     ? cur.staff            : mappedStaff,
+        pipelines:       failed.pipelines ? cur.pipelines        : mappedPipelines,
+        calendarEvents:  failed.cal       ? cur.calendarEvents   : mappedEvents,
+        tags:            failed.tags      ? cur.tags             : mappedTags,
+        conversations:   failed.convs     ? cur.conversations    : mappedConversations,
+        notifications:   failed.notifs    ? cur.notifications    : mappedNotifications,
+        bookingLinks:    failed.bookings  ? cur.bookingLinks     : mappedBookingLinks,
+        followUps:       failed.followUps ? cur.followUps         : mappedFollowUps,
+        workflows:       failed.workflows ? cur.workflows        : mappedWorkflows,
+        customFields:    failed.cf        ? cur.customFields     : mappedCustomFields,
+        additionalFields: failed.questions ? cur.additionalFields : mappedAdditionalFields,
+        systemFields: failed.system
+          ? cur.systemFields
+          : (safeSystem.length > 0
+              ? safeSystem.map((f) => ({ id: f.id, name: f.name, slug: f.slug, group: f.group }))
+              : SYSTEM_FIELDS_FALLBACK),
+        valueTokens: failed.valueTokens
+          ? cur.valueTokens
+          : (Array.isArray(valueTokensRes)
+              ? valueTokensRes.map((v: any) => ({ id: v.id, name: v.name, replace_with: v.replace_with }))
+              : []),
       });
     } catch (e) {
       // SessionExpiredError: logout already triggered asynchronously — don't stomp the store
