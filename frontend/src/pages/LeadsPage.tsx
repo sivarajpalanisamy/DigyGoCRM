@@ -2254,6 +2254,15 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
   const [showCustomFields, setShowCustomFields] = useState(false);
   const [showEditFields,   setShowEditFields]   = useState(false);
   const [cfStatus, setCfStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+  // Field values live in LOCAL state — the single source of truth for this panel's
+  // "Additional Fields" display. This is deliberately NOT read from the global store:
+  // store refreshes (30s poll, apiLeads snapshot, initFromApi, socket lead:updated,
+  // object swaps for not-yet-in-store leads) used to blank lead.customFields and make
+  // the values vanish a few seconds after opening. Local state can't be wiped by any
+  // of those. We still mirror into the store for other views, but display uses `fields`.
+  const [fields, setFields] = useState<{ label: string; value: string; fieldId: string | null }[]>(
+    () => (lead.customFields as any) ?? []
+  );
 
   // Load persisted custom field values — tracks status so we can tell
   // "still loading" / "failed to load" apart from "genuinely empty".
@@ -2261,7 +2270,8 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     setCfStatus('loading');
     api.get<any[]>(`/api/leads/${lead.id}/fields`).then((rows) => {
       const customFields = rows.map((r) => ({ label: r.field_name ?? r.slug, value: r.value, fieldId: r.field_id }));
-      updateLead(lead.id, { customFields });
+      setFields(customFields);                       // local — what the panel renders
+      updateLead(lead.id, { customFields });         // mirror to store for other views
       setCfStatus('loaded');
     }).catch((e) => { console.warn('[lead fields] load failed', e); setCfStatus('error'); });
   }, [lead.id, updateLead]);
@@ -2274,6 +2284,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     api.get<any[]>(`/api/leads/${lead.id}/activities`).then((data) =>
       setLeadActivities(data.map((a) => ({ id: a.id, leadId: lead.id, type: a.type, title: a.title, detail: a.detail, timestamp: a.created_at, createdBy: a.created_by_name ?? a.created_by })))
     ).catch(() => null);
+    setFields((lead.customFields as any) ?? []); // seed from store for the (possibly new) lead, then refresh
     loadFields();
     api.get<any[]>(`/api/calls/lead/${lead.id}`).then(setLeadCalls).catch(() => null);
   }, [lead.id]);
@@ -2290,13 +2301,13 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
           createdBy: a.created_by_name ?? a.created_by,
         })))
       ).catch(() => null);
-      // Re-load Additional Field values too — an external update may have changed them,
-      // and this also restores them if anything blanked the store copy.
-      loadFields();
+      // NOTE: deliberately do NOT reload fields here. Field values are in local state and
+      // only change via the Edit Fields drawer; auto-reloading on every lead:updated was a
+      // cause of the values flickering/blanking. Edits update `fields` directly.
     };
     socket.on('lead:updated', onLeadUpdated);
     return () => { socket.off('lead:updated', onLeadUpdated); };
-  }, [lead.id, loadFields]);
+  }, [lead.id]);
 
   const assignedStaff = staff.find((s) => s.id === lead.assignedTo);
   const assignedDisplayName = assignedStaff?.name || lead.assignedName || '';
@@ -2624,7 +2635,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                     className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:text-[var(--brand-dark)] transition-colors"
                   >
                     <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showCustomFields ? 'rotate-90' : ''}`} />
-                    Additional Fields {lead.customFields && lead.customFields.length > 0 ? `(${lead.customFields.length})` : ''}
+                    Additional Fields {fields.length > 0 ? `(${fields.length})` : ''}
                   </button>
                   {canEditLead && (
                     <button
@@ -2637,8 +2648,8 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 </div>
                 {showCustomFields && (
                   <div className="mt-2 space-y-2 pl-1">
-                    {lead.customFields && lead.customFields.length > 0 ? (
-                      lead.customFields.map((f, i) => (
+                    {fields.length > 0 ? (
+                      fields.map((f, i) => (
                         <div key={i} className="flex items-start gap-3">
                           <FileText className="w-4 h-4 text-[#7a6b5c] shrink-0 mt-0.5" />
                           <span className="text-[13px] text-[#1c1410] font-medium flex-1 break-words">
@@ -3092,8 +3103,9 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
       <EditFieldsDrawer
         lead={lead}
         onClose={() => setShowEditFields(false)}
-        onSaved={(fields) => {
-          updateLead(lead.id, { customFields: fields });
+        onSaved={(saved) => {
+          setFields(saved as any);                    // local — drives the panel display
+          updateLead(lead.id, { customFields: saved }); // mirror to store
           setCfStatus('loaded');
           setShowCustomFields(true);
         }}
