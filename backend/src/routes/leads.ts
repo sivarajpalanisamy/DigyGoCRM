@@ -474,8 +474,27 @@ router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(
 
 // PATCH /api/leads/:id
 router.patch('/:id', checkPermission('leads:edit'), validate(UpdateLeadSchema), async (req: AuthRequest, res: Response) => {
-  const { tenantId, userId } = req.user!;
+  const { tenantId, userId, role } = req.user!;
   if (req.body.phone) req.body.phone = normalizePhone(req.body.phone);
+
+  // Reassigning a lead is a privileged action gated by leads:assign. Without it, a
+  // staff cannot hand off or drop a lead given to them (incl. unassigning THEMSELVES) —
+  // only the change to assigned_to is ignored; the rest of their edit still saves.
+  if (req.body.assigned_to !== undefined) {
+    const cur = await query('SELECT assigned_to FROM leads WHERE id=$1 AND tenant_id=$2', [req.params.id, tenantId]);
+    const curAssigned = cur.rows[0]?.assigned_to ?? null;
+    const newAssigned = req.body.assigned_to || null;
+    if (String(curAssigned ?? '') !== String(newAssigned ?? '')) {
+      let canAssign = role === 'super_admin';
+      if (!canAssign) {
+        const owner = await query('SELECT is_owner FROM users WHERE id=$1', [userId]);
+        canAssign = owner.rows[0]?.is_owner === true
+          || await hasPermission(userId, 'leads:assign', tenantId).catch(() => false);
+      }
+      if (!canAssign) delete req.body.assigned_to;
+    }
+  }
+
   const allowed = ['name', 'email', 'phone', 'pipeline_id', 'stage_id', 'assigned_to', 'notes', 'tags', 'status', 'deal_value'];
   const updates: string[] = [];
   const params: any[] = [];

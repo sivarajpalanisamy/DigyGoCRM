@@ -68,6 +68,7 @@ const PERM_GROUPS: PermGroup[] = [
       { label: 'Contact Groups', keys: [{ key: 'contact_groups:read', label: 'Read' }, { key: 'contact_groups:manage', label: 'Manage' }] },
       { label: 'Tags',           keys: [{ key: 'tags:view', label: 'View' }, { key: 'tags:manage', label: 'Manage' }] },
       { label: 'Follow-ups',     keys: [{ key: 'followups:view', label: 'View' }] },
+      { label: 'Assignment',     keys: [{ key: 'leads:assign', label: 'Assign / Reassign Leads' }] },
       { label: 'Export',         keys: [{ key: 'leads:export', label: 'Export Leads' }, { key: 'contacts:export', label: 'Export Contacts' }] },
     ],
   },

@@ -2183,6 +2183,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
   const currentUser = useAuthStore((s) => s.currentUser);
   const canEditLead   = usePermission('leads:edit');
   const canDeleteLead = usePermission('leads:delete');
+  const canAssign     = usePermission('leads:assign');
   const [showWaDropdown, setShowWaDropdown] = useState(false);
   const [showWaSendModal, setShowWaSendModal] = useState(false);
   const [waMessage, setWaMessage] = useState('');
@@ -2593,10 +2594,16 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
 
                 <div>
                   <label className="text-[11px] text-[#7a6b5c] mb-1 block font-medium">Assigned to</label>
-                  <select className={inputCls} value={editForm.assignedTo} onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })}>
-                    <option value="">Unassigned</option>
-                    {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                  {canAssign ? (
+                    <select className={inputCls} value={editForm.assignedTo} onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })}>
+                      <option value="">Unassigned</option>
+                      {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  ) : (
+                    <div className={cn(inputCls, 'bg-gray-50 text-[#7a6b5c] cursor-not-allowed')} title="You don't have permission to reassign leads">
+                      {staff.find((s) => s.id === editForm.assignedTo)?.name ?? 'Unassigned'}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -3263,7 +3270,7 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
 }
 
 // ─── Kanban Card ───────────────────────────────────────────────────────────────
-function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, highlighted }: { lead: Lead; onClick: () => void; onFollowUp: () => void; onNote: () => void; onAssign: () => void; showPhone: boolean; highlighted?: boolean }) {
+function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, highlighted, canAssign = true }: { lead: Lead; onClick: () => void; onFollowUp: () => void; onNote: () => void; onAssign: () => void; showPhone: boolean; highlighted?: boolean; canAssign?: boolean }) {
   const { attributes, listeners, setNodeRef: setSortableRef, transform, transition, isDragging } = useSortable({ id: lead.id });
   const cardRef = useRef<HTMLDivElement>(null);
   const stopAnd = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
@@ -3368,7 +3375,7 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
                       className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                       <CalendarPlus className="w-3 h-3 text-[#7a6b5c]" /> Book Appointment
                     </button>
-                    {!assignedCardName && (
+                    {!assignedCardName && canAssign && (
                       <button onClick={() => { setShowCardMenu(false); onAssign(); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                         <User className="w-3 h-3 text-[#7a6b5c]" /> Assign
@@ -3423,11 +3430,11 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
 
 // ─── Mobile Lead Card ───────────────────────────────────────────────────────────
 // Full-width, touch-first card used on phones. No drag — tap to open, menu to act.
-function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFollowUp, onAppointment, onAssign, onMove, selectionMode, selected, onToggleSelect, onEnterSelect }: {
+function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFollowUp, onAppointment, onAssign, onMove, selectionMode, selected, onToggleSelect, onEnterSelect, canAssign = true }: {
   lead: Lead; stages: string[]; accent: string; showPhone: boolean;
   onClick: () => void; onEdit: () => void; onFollowUp: () => void;
   onAppointment: () => void; onAssign: () => void; onMove: (stage: string) => void;
-  selectionMode?: boolean; selected?: boolean; onToggleSelect?: () => void; onEnterSelect?: () => void;
+  selectionMode?: boolean; selected?: boolean; onToggleSelect?: () => void; onEnterSelect?: () => void; canAssign?: boolean;
 }) {
   const { staff: allStaff, followUps } = useCrmStore();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -3536,7 +3543,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
                       <button onClick={act(onFollowUp)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><CheckSquare className="w-4 h-4 text-[#7a6b5c]" /> Add Follow-up</button>
                       <button onClick={act(onAppointment)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><CalendarPlus className="w-4 h-4 text-[#7a6b5c]" /> Book Appointment</button>
                       <button onClick={(e) => { e.stopPropagation(); setMoveOpen(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><ArrowLeftRight className="w-4 h-4 text-[#7a6b5c]" /> Move to stage <ChevronRight className="w-3.5 h-3.5 ml-auto text-[#b09e8d]" /></button>
-                      {!assignedName && (
+                      {!assignedName && canAssign && (
                         <button onClick={act(onAssign)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><User className="w-4 h-4 text-[#7a6b5c]" /> Assign</button>
                       )}
                     </>
@@ -3585,10 +3592,10 @@ const STAGE_ACCENT_COLORS = [
   '#f43f5e', '#06b6d4', '#84cc16', '#ec4899', '#0ea5e9',
 ];
 
-function StageColumn({ stage, leads: stageLeads, onLeadClick, onFollowUp, onNote, onAssign, showPhone, stageIndex, highlightId }: {
+function StageColumn({ stage, leads: stageLeads, onLeadClick, onFollowUp, onNote, onAssign, showPhone, stageIndex, highlightId, canAssign = true }: {
   stage: string; leads: Lead[]; onLeadClick: (l: Lead) => void;
   onFollowUp: (l: Lead) => void; onNote: (l: Lead) => void; onAssign: (l: Lead) => void;
-  showPhone: boolean; stageIndex: number; highlightId?: string | null;
+  showPhone: boolean; stageIndex: number; highlightId?: string | null; canAssign?: boolean;
 }) {
   const { setNodeRef } = useDroppable({ id: stage });
   // First stage uses the tenant's brand color; remaining stages use the distinct palette
@@ -3631,6 +3638,7 @@ function StageColumn({ stage, leads: stageLeads, onLeadClick, onFollowUp, onNote
               onFollowUp={() => onFollowUp(lead)}
               onNote={() => onNote(lead)}
               onAssign={() => onAssign(lead)}
+              canAssign={canAssign}
               showPhone={showPhone}
               highlighted={highlightId === lead.id}
             />
@@ -3971,6 +3979,7 @@ export default function LeadsPage() {
   const canCreateLead = usePermission('leads:create');
   const canEditLead   = usePermission('leads:edit');
   const canDeleteLead = usePermission('leads:delete');
+  const canAssign     = usePermission('leads:assign');
   const canExport     = usePermission('leads:export');
   const [search, setSearch] = useState('');
   const [pipelineSearch, setPipelineSearch] = useState('');
@@ -4770,6 +4779,7 @@ export default function LeadsPage() {
                   onFollowUp={() => setQuickFollowUpLead(lead)}
                   onAppointment={() => setQuickApptLead(lead)}
                   onAssign={() => setQuickAssignLead(lead)}
+                  canAssign={canAssign}
                   onMove={(s) => moveSingleLeadStage(lead.id, s)}
                   selectionMode={mobileSelectMode}
                   selected={selectedIds.includes(lead.id)}
@@ -4791,6 +4801,7 @@ export default function LeadsPage() {
                 onFollowUp={setQuickFollowUpLead}
                 onNote={setQuickNoteLead}
                 onAssign={setQuickAssignLead}
+                canAssign={canAssign}
                 showPhone={showPhone}
                 stageIndex={stageIndex}
                 highlightId={highlightId}

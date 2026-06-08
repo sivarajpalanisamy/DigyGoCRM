@@ -91,6 +91,7 @@ const MIGRATIONS = [
   'migration_089_perms_phase3_backfill.sql',
   'migration_090_perms_phase3b_backfill.sql',
   'migration_091_perf_indexes.sql',
+  'migration_092_leads_assign_perm.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
