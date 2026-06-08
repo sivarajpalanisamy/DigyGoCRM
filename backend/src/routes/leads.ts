@@ -696,6 +696,26 @@ router.post('/:id/notes', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// PATCH /api/leads/:id/notes/:noteId — edit a note's title/content
+router.patch('/:id/notes/:noteId', async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { title, content } = req.body;
+  if (content !== undefined && !String(content).trim()) { res.status(400).json({ error: 'Content cannot be empty' }); return; }
+  const updates: string[] = []; const params: any[] = [];
+  if (title !== undefined)   { params.push(title);   updates.push(`title=$${params.length}`); }
+  if (content !== undefined) { params.push(content); updates.push(`content=$${params.length}`); }
+  if (!updates.length) { res.status(400).json({ error: 'Nothing to update' }); return; }
+  params.push(req.params.noteId, req.params.id, tenantId);
+  try {
+    const r = await query(
+      `UPDATE lead_notes SET ${updates.join(',')} WHERE id=$${params.length - 2} AND lead_id=$${params.length - 1} AND tenant_id=$${params.length} RETURNING *`,
+      params
+    );
+    if (!r.rows[0]) { res.status(404).json({ error: 'Note not found' }); return; }
+    res.json(r.rows[0]);
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
 // DELETE /api/leads/:id/notes/:noteId
 router.delete('/:id/notes/:noteId', async (req: AuthRequest, res: Response) => {
   try {
@@ -754,19 +774,28 @@ router.post('/:id/followups', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// PATCH /api/leads/:id/followups/:fuId — mark complete/incomplete
+// PATCH /api/leads/:id/followups/:fuId — edit (title/description/due_at) and/or mark complete
 router.patch('/:id/followups/:fuId', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
-  const { completed } = req.body;
+  const { title, description, due_at, completed } = req.body;
+  const updates: string[] = []; const params: any[] = [];
+  if (title !== undefined)       { params.push(title);       updates.push(`title=$${params.length}`); }
+  if (description !== undefined) { params.push(description); updates.push(`description=$${params.length}`); }
+  if (due_at !== undefined)      { params.push(due_at);      updates.push(`due_at=$${params.length}`); }
+  if (completed !== undefined) {
+    params.push(completed); updates.push(`completed=$${params.length}`);
+    params.push(completed ? new Date().toISOString() : null); updates.push(`completed_at=$${params.length}`);
+  }
+  if (!updates.length) { res.status(400).json({ error: 'Nothing to update' }); return; }
+  params.push(req.params.fuId, req.params.id, tenantId);
   try {
     const result = await query(
-      `UPDATE lead_followups
-       SET completed=$1, completed_at=$2
-       WHERE id=$3 AND lead_id=$4 AND tenant_id=$5 RETURNING *`,
-      [completed, completed ? new Date().toISOString() : null, req.params.fuId, req.params.id, tenantId]
+      `UPDATE lead_followups SET ${updates.join(',')}
+       WHERE id=$${params.length - 2} AND lead_id=$${params.length - 1} AND tenant_id=$${params.length} RETURNING *`,
+      params
     );
     if (!result.rows[0]) { res.status(404).json({ error: 'Follow-up not found' }); return; }
-    if (completed) {
+    if (completed === true) {
       await query(
         `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
          VALUES ($1,$2,'followup',$3,$4)`,
@@ -774,6 +803,20 @@ router.patch('/:id/followups/:fuId', async (req: AuthRequest, res: Response) => 
       );
     }
     res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// DELETE /api/leads/:id/followups/:fuId
+router.delete('/:id/followups/:fuId', async (req: AuthRequest, res: Response) => {
+  try {
+    await query(
+      'DELETE FROM lead_followups WHERE id=$1 AND lead_id=$2 AND tenant_id=$3',
+      [req.params.fuId, req.params.id, req.user!.tenantId]
+    );
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
