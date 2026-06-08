@@ -35,6 +35,7 @@ export interface StaffMember {
   avatar: string;
   phone?: string;
   staff_id?: string;
+  has_login_pin?: boolean;
 }
 
 export interface Conversation {

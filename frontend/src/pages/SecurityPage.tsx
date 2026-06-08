@@ -25,7 +25,7 @@ export default function SecurityPage() {
     setSaving(true);
     try {
       await api.put('/api/settings/security', { two_factor_enabled: val });
-      toast.success(val ? 'Two-factor authentication enabled' : 'Two-factor authentication disabled');
+      toast.success(val ? 'Login PIN enabled' : 'Login PIN disabled');
     } catch (err: any) {
       setEnabled(!val); // revert on failure
       toast.error(err.message ?? 'Failed to update');
@@ -62,10 +62,11 @@ export default function SecurityPage() {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="font-semibold text-[#1c1410] text-[14px]">Two-Factor Authentication (Email OTP)</h2>
+                <h2 className="font-semibold text-[#1c1410] text-[14px]">Two-Factor Login PIN</h2>
                 <p className="text-[12px] text-[#7a6b5c] mt-1 max-w-md">
-                  When enabled, every team member must enter a 4-digit code emailed to them on login.
-                  They can choose to remember their device for 30 days. Requires email (SMTP) to be working.
+                  When enabled, after their password every team member enters a 4-digit PIN — either the PIN
+                  you set for them in Staff, or a one-time PIN they request by email. They can remember their
+                  device for 30 days. Requires email delivery to be working for the emailed-PIN option.
                 </p>
               </div>
             </div>
@@ -75,7 +76,7 @@ export default function SecurityPage() {
           </div>
           {enabled && (
             <div className="mt-4 pt-4 border-t border-black/5 text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-              ⚠️ 2FA is ON. Make sure email delivery is working — if codes can't be emailed, users won't be able to log in.
+              ⚠️ Login PIN is ON. Set a PIN for each staff member in Staff, or make sure email delivery works so they can request a one-time PIN. Without either, users can't log in.
             </div>
           )}
         </section>

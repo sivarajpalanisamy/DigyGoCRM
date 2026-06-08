@@ -30,4 +30,8 @@ export const config = {
     fromName: process.env.SMTP_FROM_NAME ?? 'DigyGo CRM',
     fromEmail:process.env.SMTP_FROM_EMAIL ?? '',
   },
+  resend: {
+    apiKey:   process.env.RESEND_API_KEY ?? '',
+    from:     process.env.RESEND_FROM ?? '',   // e.g. "DigyGo CRM <noreply@digygo.in>"
+  },
 };

@@ -93,6 +93,7 @@ const MIGRATIONS = [
   'migration_091_perf_indexes.sql',
   'migration_092_leads_assign_perm.sql',
   'migration_093_subscription_billing.sql',
+  'migration_094_login_pin.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.

@@ -118,13 +118,46 @@ function auditLog(
   ).catch((err) => console.error('[audit_log]', err.message));
 }
 
-// ── 2FA (email OTP) helpers ───────────────────────────────────────────────────
+// ── 2FA (login PIN) helpers ───────────────────────────────────────────────────
 const DEVICE_COOKIE = 'digygo_device';
-const OTP_TTL_MS = 10 * 60 * 1000;       // OTP valid 10 minutes
+const OTP_TTL_MS = 10 * 60 * 1000;       // emailed one-time PIN valid 10 minutes
 const OTP_MAX_ATTEMPTS = 5;
+const PIN_MAX_ATTEMPTS = 5;              // admin-set static PIN
+const PIN_LOCK_MS = 15 * 60 * 1000;     // lock the static PIN 15 min after too many tries
+const RESEND_COOLDOWN_MS = 45 * 1000;   // min gap between "Get PIN by email" requests
+const PIN_CHALLENGE_TTL = '10m';        // short-lived token proving the password step passed
 
 function generateOtp(): string {
-  return String(Math.floor(1000 + Math.random() * 9000)); // 4 digits
+  return String(crypto.randomInt(1000, 10000)); // 4 digits, cryptographically secure
+}
+
+// Short-lived signed token issued after a correct password; required to request/verify a PIN.
+// This keeps the password mandatory even though the PIN step runs as a separate request.
+function issuePinChallenge(userId: string): string {
+  return jwt.sign({ uid: userId, purpose: 'pin_challenge' }, config.jwtSecret, { expiresIn: PIN_CHALLENGE_TTL } as any);
+}
+function verifyPinChallenge(token: string): string | null {
+  try {
+    const d: any = jwt.verify(token, config.jwtSecret);
+    return d?.purpose === 'pin_challenge' && d?.uid ? String(d.uid) : null;
+  } catch { return null; }
+}
+
+// Send a freshly generated one-time PIN to the user's email (via Resend if configured, else SMTP).
+async function sendOtpEmail(user: { email: string; tenant_id: string | null }, otp: string): Promise<void> {
+  const ident = await getTenantEmailIdentity(user.tenant_id);
+  const brand = ident.fromName || 'DigyGo CRM';
+  await sendEmail({
+    to: user.email,
+    subject: `Your ${brand} login PIN: ${otp}`,
+    fromName: ident.fromName,
+    replyTo: ident.replyTo,
+    html: `<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto;text-align:center">
+             <p style="color:#5c5245;font-size:14px">Your ${brand} login PIN is:</p>
+             <p style="font-size:34px;font-weight:800;letter-spacing:8px;color:#1c1410;margin:12px 0">${otp}</p>
+             <p style="color:#9c8f84;font-size:12px">This PIN expires in 10 minutes. If you didn't try to log in, ignore this email.</p>
+           </div>`,
+  });
 }
 
 function setDeviceCookie(res: Response, token: string) {
@@ -159,7 +192,7 @@ async function hasTrustedDevice(req: Request, userId: string): Promise<boolean> 
 }
 
 // Issue the full session (refresh token + access token + branding) and return the JSON payload.
-// Shared by /login (no-2FA path) and /verify-otp.
+// Shared by /login (no-2FA path) and /verify-pin.
 async function completeLogin(res: Response, user: any): Promise<any> {
   const refreshToken = crypto.randomBytes(40).toString('hex');
   const refreshHash  = await bcrypt.hash(refreshToken, 10);
@@ -168,7 +201,8 @@ async function completeLogin(res: Response, user: any): Promise<any> {
     `UPDATE users
        SET refresh_token_hash=$1, refresh_token_prefix=$2,
            failed_login_attempts=0, locked_until=NULL, last_login_at=NOW(),
-           otp_code_hash=NULL, otp_expires_at=NULL, otp_attempts=0
+           otp_code_hash=NULL, otp_expires_at=NULL, otp_attempts=0,
+           login_pin_attempts=0, login_pin_locked_until=NULL
      WHERE id=$3`,
     [refreshHash, prefix, user.id]
   );
@@ -226,7 +260,7 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     const result = await query(
       `SELECT u.id, u.tenant_id, u.email, u.password_hash, u.name, u.role, u.avatar_url,
-              u.failed_login_attempts, u.locked_until, u.is_active,
+              u.failed_login_attempts, u.locked_until, u.is_active, u.login_pin_hash,
               t.plan AS tenant_plan, t.two_factor_enabled
        FROM users u
        LEFT JOIN tenants t ON t.id = u.tenant_id
@@ -263,33 +297,16 @@ router.post('/login', async (req: Request, res: Response) => {
       return;
     }
 
-    // Issue refresh token; store bcrypt hash + indexed prefix (#1)
-    // ── 2FA branch: if the tenant opted in and this isn't a trusted device, send an OTP ──
+    // ── 2FA branch: tenant opted in and this isn't a trusted device ──
+    // The user can complete login with EITHER the admin-set PIN OR an emailed one-time PIN.
+    // We do NOT auto-send an email here (they may use their set-PIN); the client calls
+    // /request-pin if they want the email path. We return a short-lived challenge token
+    // proving the password step passed — required by /request-pin and /verify-pin.
     if (needsTwoFactor(user) && !(await hasTrustedDevice(req, user.id))) {
-      // Password was correct — clear failed attempts, then issue an email OTP
-      const otp = generateOtp();
-      const otpHash = await bcrypt.hash(otp, 10);
-      await query(
-        `UPDATE users SET failed_login_attempts=0, locked_until=NULL,
-           otp_code_hash=$1, otp_expires_at=$2, otp_attempts=0 WHERE id=$3`,
-        [otpHash, new Date(Date.now() + OTP_TTL_MS), user.id]
-      );
-      // Resolve white-label identity for the OTP email
-      const ident = await getTenantEmailIdentity(user.tenant_id);
-      const brand = ident.fromName || 'DigyGo CRM';
-      setImmediate(() => sendEmail({
-        to: user.email,
-        subject: `Your ${brand} login code: ${otp}`,
-        fromName: ident.fromName,
-        replyTo: ident.replyTo,
-        html: `<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto;text-align:center">
-                 <p style="color:#5c5245;font-size:14px">Your ${brand} login verification code is:</p>
-                 <p style="font-size:34px;font-weight:800;letter-spacing:8px;color:#1c1410;margin:12px 0">${otp}</p>
-                 <p style="color:#9c8f84;font-size:12px">This code expires in 10 minutes. If you didn't try to log in, ignore this email.</p>
-               </div>`,
-      }).catch((e) => console.error('[2fa otp email]', e?.message)));
-
-      res.json({ otpRequired: true, email: user.email });
+      await query(`UPDATE users SET failed_login_attempts=0, locked_until=NULL WHERE id=$1`, [user.id]);
+      const challenge = issuePinChallenge(user.id);
+      const hasSetPin = !!user.login_pin_hash;
+      res.json({ pinRequired: true, email: user.email, challenge, hasSetPin });
       return;
     }
 
@@ -302,35 +319,102 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/auth/verify-otp — complete 2FA login with the 4-digit code
-router.post('/verify-otp', async (req: Request, res: Response) => {
-  const email = (req.body?.email ?? '').toString().trim().toLowerCase();
-  const otp = (req.body?.otp ?? '').toString().trim();
+// POST /api/auth/request-pin — email a fresh one-time PIN (the "Get PIN by email" button).
+// Requires a valid challenge from /login (so the password step is proven). Enforces a cooldown.
+router.post('/request-pin', async (req: Request, res: Response) => {
+  const challenge = (req.body?.challenge ?? '').toString();
+  const uid = verifyPinChallenge(challenge);
+  if (!uid) { res.status(401).json({ error: 'Session expired — please log in again' }); return; }
+  try {
+    const r = await query(
+      `SELECT id, tenant_id, email, is_active, otp_expires_at FROM users WHERE id=$1`,
+      [uid]
+    );
+    const user = r.rows[0];
+    if (!user || !user.is_active) { res.json({ sent: true }); return; } // neutral
+
+    // Cooldown: last send time = otp_expires_at - TTL
+    if (user.otp_expires_at) {
+      const lastSent = new Date(user.otp_expires_at).getTime() - OTP_TTL_MS;
+      const waitMs = lastSent + RESEND_COOLDOWN_MS - Date.now();
+      if (waitMs > 0) {
+        res.status(429).json({ error: `Please wait ${Math.ceil(waitMs / 1000)}s before requesting another PIN` });
+        return;
+      }
+    }
+
+    const otp = generateOtp();
+    const otpHash = await bcrypt.hash(otp, 10);
+    await query(
+      `UPDATE users SET otp_code_hash=$1, otp_expires_at=$2, otp_attempts=0 WHERE id=$3`,
+      [otpHash, new Date(Date.now() + OTP_TTL_MS), user.id]
+    );
+    await sendOtpEmail(user, otp).catch((e) => console.error('[request-pin email]', e?.message));
+    res.json({ sent: true });
+  } catch (err) {
+    console.error('[request-pin]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/auth/verify-pin — complete 2FA login. Accepts EITHER the admin-set PIN
+// OR a live emailed one-time PIN. Requires the challenge from /login.
+router.post('/verify-pin', async (req: Request, res: Response) => {
+  const challenge = (req.body?.challenge ?? '').toString();
+  const pin = (req.body?.pin ?? '').toString().trim();
   const rememberDevice = req.body?.rememberDevice === true;
-  if (!email || !otp) { res.status(400).json({ error: 'Email and code required' }); return; }
+  const uid = verifyPinChallenge(challenge);
+  if (!uid) { res.status(401).json({ error: 'Session expired — please log in again' }); return; }
+  if (!pin) { res.status(400).json({ error: 'PIN required' }); return; }
   try {
     const r = await query(
       `SELECT u.id, u.tenant_id, u.email, u.name, u.role, u.avatar_url, u.is_active,
+              u.login_pin_hash, u.login_pin_attempts, u.login_pin_locked_until,
               u.otp_code_hash, u.otp_expires_at, u.otp_attempts, t.plan AS tenant_plan
        FROM users u LEFT JOIN tenants t ON t.id = u.tenant_id
-       WHERE lower(u.email)=lower($1)`,
-      [email]
+       WHERE u.id=$1`,
+      [uid]
     );
     const user = r.rows[0];
-    if (!user || !user.is_active || !user.otp_code_hash) {
-      res.status(401).json({ error: 'Invalid or expired code' }); return;
+    if (!user || !user.is_active) { res.status(401).json({ error: 'Invalid session' }); return; }
+
+    const pinLocked = user.login_pin_locked_until && new Date(user.login_pin_locked_until) > new Date();
+    let ok = false;
+
+    // 1) Admin-set static PIN (if present and not locked out)
+    if (user.login_pin_hash && !pinLocked) {
+      ok = await bcrypt.compare(pin, user.login_pin_hash);
     }
-    if (user.otp_expires_at && new Date(user.otp_expires_at) < new Date()) {
-      res.status(410).json({ error: 'Code expired — please log in again' }); return;
+
+    // 2) Emailed one-time PIN (if a live code exists)
+    let triedOtp = false;
+    if (!ok && user.otp_code_hash) {
+      const expired = user.otp_expires_at && new Date(user.otp_expires_at) < new Date();
+      const tooMany = (user.otp_attempts ?? 0) >= OTP_MAX_ATTEMPTS;
+      if (!expired && !tooMany) {
+        triedOtp = true;
+        ok = await bcrypt.compare(pin, user.otp_code_hash);
+      }
     }
-    if ((user.otp_attempts ?? 0) >= OTP_MAX_ATTEMPTS) {
-      res.status(429).json({ error: 'Too many attempts — please log in again' }); return;
-    }
-    const ok = await bcrypt.compare(otp, user.otp_code_hash);
+
     if (!ok) {
-      await query(`UPDATE users SET otp_attempts=otp_attempts+1 WHERE id=$1`, [user.id]);
-      res.status(401).json({ error: 'Incorrect code' }); return;
+      // Increment whichever counters are relevant
+      if (user.login_pin_hash && !pinLocked) {
+        const attempts = (user.login_pin_attempts ?? 0) + 1;
+        const lock = attempts >= PIN_MAX_ATTEMPTS ? new Date(Date.now() + PIN_LOCK_MS) : null;
+        await query(`UPDATE users SET login_pin_attempts=$1, login_pin_locked_until=$2 WHERE id=$3`, [attempts, lock, user.id]);
+      }
+      if (triedOtp) {
+        await query(`UPDATE users SET otp_attempts=otp_attempts+1 WHERE id=$1`, [user.id]);
+      }
+      if (pinLocked && !triedOtp) {
+        const minsLeft = Math.ceil((new Date(user.login_pin_locked_until).getTime() - Date.now()) / 60000);
+        res.status(429).json({ error: `Too many attempts. Try again in ${minsLeft} min, or use "Get PIN by email".` });
+        return;
+      }
+      res.status(401).json({ error: 'Incorrect PIN' }); return;
     }
+
     // Success — optionally remember this device for 30 days
     if (rememberDevice) {
       const deviceToken = crypto.randomBytes(32).toString('hex');
@@ -341,10 +425,10 @@ router.post('/verify-otp', async (req: Request, res: Response) => {
       );
       setDeviceCookie(res, deviceToken);
     }
-    const payload = await completeLogin(res, user);
+    const payload = await completeLogin(res, user); // clears otp_* and login_pin_* counters
     res.json(payload);
   } catch (err) {
-    console.error('[verify-otp]', err);
+    console.error('[verify-pin]', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

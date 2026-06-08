@@ -35,8 +35,9 @@ interface AuthState {
   permissions: Record<string, boolean>;
   permAll: boolean;
   setToken: (token: string) => void;
-  login: (email: string, password: string) => Promise<{ ok: boolean; otpRequired?: boolean }>;
-  verifyOtp: (email: string, otp: string, rememberDevice: boolean) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; pinRequired?: boolean; challenge?: string; hasSetPin?: boolean }>;
+  requestPin: (challenge: string) => Promise<{ ok: boolean; error?: string }>;
+  verifyPin: (challenge: string, pin: string, rememberDevice: boolean) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   bootstrapFromRefresh: () => Promise<boolean>;
   impersonateTenant: (tenantId: string) => Promise<boolean>;
@@ -150,8 +151,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       if (!res.ok) return { ok: false };
       const data = await res.json();
-      // 2FA: server is asking for an emailed OTP — don't log in yet
-      if (data.otpRequired) return { ok: false, otpRequired: true };
+      // 2FA: server wants a PIN (admin-set or emailed) — don't log in yet
+      if (data.pinRequired) return { ok: false, pinRequired: true, challenge: data.challenge, hasSetPin: data.hasSetPin };
       applySession(data, set, get);
       await get().refreshPermissions();
       get().listenForPermissionUpdates();
@@ -161,22 +162,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  verifyOtp: async (email, otp, rememberDevice) => {
+  requestPin: async (challenge) => {
     try {
-      const res = await fetch(`${BASE}/api/auth/verify-otp`, {
+      const res = await fetch(`${BASE}/api/auth/request-pin`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, rememberDevice }),
+        body: JSON.stringify({ challenge }),
       });
-      if (!res.ok) return false;
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        return { ok: false, error: d.error ?? 'Could not send PIN' };
+      }
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Network error' };
+    }
+  },
+
+  verifyPin: async (challenge, pin, rememberDevice) => {
+    try {
+      const res = await fetch(`${BASE}/api/auth/verify-pin`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challenge, pin, rememberDevice }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        return { ok: false, error: d.error ?? 'Incorrect PIN' };
+      }
       const data = await res.json();
       applySession(data, set, get);
       await get().refreshPermissions();
       get().listenForPermissionUpdates();
-      return true;
+      return { ok: true };
     } catch {
-      return false;
+      return { ok: false, error: 'Network error' };
     }
   },
 

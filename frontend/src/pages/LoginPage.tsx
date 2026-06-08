@@ -15,15 +15,26 @@ export default function LoginPage() {
   const [otpStep, setOtpStep] = useState(false);
   const [otp, setOtp] = useState('');
   const [rememberDevice, setRememberDevice] = useState(true);
+  const [challenge, setChallenge] = useState('');
+  const [hasSetPin, setHasSetPin] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
-  const verifyOtp = useAuthStore((s) => s.verifyOtp);
+  const requestPin = useAuthStore((s) => s.requestPin);
+  const verifyPin = useAuthStore((s) => s.verifyPin);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { isCustomDomain, tenantName, logoUrl, brandColor, bannerUrl, loginBgColor, loaded, fetchBranding } = useBrandingStore();
 
   useEffect(() => {
     fetchBranding().catch(() => null);
   }, []);
+
+  // "Get PIN by email" resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
@@ -34,10 +45,11 @@ export default function LoginPage() {
     await new Promise((r) => setTimeout(r, 400)); // brief animation
     const result = await login(email, password);
     setLoading(false);
-    if (result.otpRequired) {
+    if (result.pinRequired) {
+      setChallenge(result.challenge ?? '');
+      setHasSetPin(!!result.hasSetPin);
       setOtpStep(true);
       setError('');
-      toast.success('Verification code sent to your email');
     } else if (result.ok) {
       toast.success('Welcome back!');
       navigate('/dashboard');
@@ -46,17 +58,28 @@ export default function LoginPage() {
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  const handleGetPin = async () => {
+    if (resendCooldown > 0 || !challenge) return;
+    const r = await requestPin(challenge);
+    if (r.ok) {
+      toast.success(`PIN sent to ${email}`);
+      setResendCooldown(45);
+    } else {
+      setError(r.error ?? 'Could not send PIN');
+    }
+  };
+
+  const handleVerifyPin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otp.trim().length !== 4) { setError('Enter the 4-digit code'); return; }
+    if (otp.trim().length !== 4) { setError('Enter your 4-digit PIN'); return; }
     setLoading(true);
-    const ok = await verifyOtp(email, otp.trim(), rememberDevice);
+    const r = await verifyPin(challenge, otp.trim(), rememberDevice);
     setLoading(false);
-    if (ok) {
+    if (r.ok) {
       toast.success('Welcome back!');
       navigate('/dashboard');
     } else {
-      setError('Incorrect or expired code');
+      setError(r.error ?? 'Incorrect PIN');
     }
   };
 
@@ -101,25 +124,29 @@ export default function LoginPage() {
           <div className="bg-white rounded-2xl p-5 border border-black/5" style={{ boxShadow: '0 8px 32px -4px rgba(0,0,0,0.06)' }}>
             {/* Heading inside card */}
             <div className="text-center mb-4">
-              <h1 className="font-headline text-xl font-bold tracking-tight text-[#1c1410]">{otpStep ? "Verify it's you" : 'Welcome back'}</h1>
+              <h1 className="font-headline text-xl font-bold tracking-tight text-[#1c1410]">{otpStep ? 'Enter your PIN' : 'Welcome back'}</h1>
               <p className="text-[#5c5245] mt-1 text-[13px] leading-relaxed">
                 {otpStep
-                  ? `Enter the 4-digit code sent to ${email}`
+                  ? 'Enter the PIN your admin gave you, or get a one-time PIN by email.'
                   : `Sign in to your ${isCustomDomain && tenantName ? tenantName : 'DigyGo CRM'} account`}
               </p>
             </div>
 
             {otpStep ? (
-              <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <form onSubmit={handleVerifyPin} className="space-y-4">
                 <input
                   inputMode="numeric"
                   autoFocus
                   maxLength={4}
                   value={otp}
                   onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
-                  placeholder="0000"
+                  placeholder="••••"
                   className="w-full text-center tracking-[0.5em] text-2xl font-bold h-[54px] rounded-xl border border-[#e8ddd4] outline-none focus:border-primary"
                 />
+                <button type="button" onClick={handleGetPin} disabled={resendCooldown > 0}
+                  className="w-full text-center text-[13px] font-semibold text-primary hover:text-[var(--brand-dark)] disabled:text-[#b09e8d] disabled:cursor-not-allowed">
+                  {resendCooldown > 0 ? `Resend PIN in ${resendCooldown}s` : 'Get PIN by email'}
+                </button>
                 <label className="flex items-center gap-2 text-[13px] text-[#5c5245] cursor-pointer">
                   <input type="checkbox" checked={rememberDevice} onChange={(e) => setRememberDevice(e.target.checked)} />
                   Remember this device for 30 days
@@ -132,7 +159,7 @@ export default function LoginPage() {
                   style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
                   {loading ? 'Verifying…' : 'Verify & Continue'}
                 </button>
-                <button type="button" onClick={() => { setOtpStep(false); setOtp(''); setError(''); }}
+                <button type="button" onClick={() => { setOtpStep(false); setOtp(''); setError(''); setChallenge(''); }}
                   className="w-full text-center text-[12px] text-[#7a6b5c] hover:text-primary">← Back to login</button>
               </form>
             ) : (

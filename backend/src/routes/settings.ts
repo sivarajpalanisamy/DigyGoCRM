@@ -242,7 +242,8 @@ router.put('/security', checkAnyPermission('settings:manage','settings:security'
 router.get('/staff', async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
-      `SELECT id, name, email, role, avatar_url, is_active, phone, staff_id, created_at
+      `SELECT id, name, email, role, avatar_url, is_active, phone, staff_id, created_at,
+              (login_pin_hash IS NOT NULL) AS has_login_pin
        FROM users WHERE tenant_id=$1 AND is_owner IS NOT TRUE ORDER BY created_at ASC`,
       [req.user!.tenantId]
     );
@@ -254,9 +255,12 @@ router.get('/staff', async (req: AuthRequest, res: Response) => {
 router.post('/staff', checkPermission('staff:manage'), checkUsage('staff'), async (req: AuthRequest, res: Response) => {
   const bcrypt = await import('bcryptjs');
   // full_access=true → all permissions granted; false → read-only custom defaults
-  const { name, email, password, full_access = true, phone } = req.body;
+  const { name, email, password, full_access = true, phone, login_pin } = req.body;
   if (!name || !email) {
     res.status(400).json({ error: 'name and email required' }); return;
+  }
+  if (login_pin !== undefined && login_pin !== '' && login_pin !== null && !/^\d{4}$/.test(String(login_pin))) {
+    res.status(400).json({ error: 'Login PIN must be 4 digits' }); return;
   }
   try {
     // Always create an invite token when an email is present, so the new staff
@@ -286,6 +290,16 @@ router.post('/staff', checkPermission('staff:manage'), checkUsage('staff'), asyn
        ON CONFLICT (user_id) DO NOTHING`,
       [user.id, req.user!.tenantId, JSON.stringify(perms)]
     );
+
+    // Optional admin-set login PIN (used at 2FA login alongside the emailed PIN)
+    if (login_pin && /^\d{4}$/.test(String(login_pin))) {
+      const pinHash = await bcrypt.hash(String(login_pin), 10);
+      await query(
+        `UPDATE users SET login_pin_hash=$1, login_pin_set_by=$2, login_pin_set_at=NOW(),
+           login_pin_attempts=0, login_pin_locked_until=NULL WHERE id=$3 AND tenant_id=$4`,
+        [pinHash, req.user!.userId, user.id, req.user!.tenantId]
+      );
+    }
 
     // Auto-send the invitation email to the new staff member
     const tenantId = req.user!.tenantId!;
@@ -320,7 +334,10 @@ router.post('/staff/:id/resend-invite', checkPermission('staff:manage'), async (
 // PATCH /api/settings/staff/:id
 router.patch('/staff/:id', checkPermission('staff:manage'), async (req: AuthRequest, res: Response) => {
   const bcrypt = await import('bcryptjs');
-  const { name, email, role, is_active, password, phone, staff_id } = req.body;
+  const { name, email, role, is_active, password, phone, staff_id, login_pin } = req.body;
+  if (login_pin !== undefined && login_pin !== '' && login_pin !== null && !/^\d{4}$/.test(String(login_pin))) {
+    res.status(400).json({ error: 'Login PIN must be 4 digits' }); return;
+  }
 
   // Prevent staff from modifying the business owner account
   try {
@@ -346,6 +363,23 @@ router.patch('/staff/:id', checkPermission('staff:manage'), async (req: AuthRequ
     const hash = await bcrypt.hash(password, 10);
     params.push(hash);   updates.push(`password_hash=$${params.length}`);
     params.push(true);   updates.push(`password_set=$${params.length}`);
+  }
+  // Login PIN: 4-digit string sets it; empty string / null clears it; undefined = no change
+  if (login_pin !== undefined) {
+    if (login_pin === '' || login_pin === null) {
+      updates.push(`login_pin_hash=NULL`);
+      updates.push(`login_pin_set_by=NULL`);
+      updates.push(`login_pin_set_at=NULL`);
+      updates.push(`login_pin_attempts=0`);
+      updates.push(`login_pin_locked_until=NULL`);
+    } else {
+      const pinHash = await bcrypt.hash(String(login_pin), 10);
+      params.push(pinHash);            updates.push(`login_pin_hash=$${params.length}`);
+      params.push(req.user!.userId);   updates.push(`login_pin_set_by=$${params.length}`);
+      updates.push(`login_pin_set_at=NOW()`);
+      updates.push(`login_pin_attempts=0`);
+      updates.push(`login_pin_locked_until=NULL`);
+    }
   }
   // Revoking access: wipe refresh tokens so the session ends immediately (#59)
   if (is_active === false) {

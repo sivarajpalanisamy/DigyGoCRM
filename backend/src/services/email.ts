@@ -31,6 +31,42 @@ function getTransporter(): nodemailer.Transporter | null {
   return _transporter;
 }
 
+// Send via the Resend.com HTTPS API (no SDK dependency). Used when RESEND_API_KEY is set.
+async function sendViaResend(opts: {
+  to: string; subject: string; html: string; text?: string; replyTo?: string; fromName?: string;
+}): Promise<{ messageId: string }> {
+  // From must be on a Resend-verified domain. Only the display name is white-labeled.
+  const configured = config.resend.from || `${config.smtp.fromName} <${config.smtp.fromEmail}>`;
+  let from = configured;
+  if (opts.fromName) {
+    const m = configured.match(/<([^>]+)>/);
+    const addr = m ? m[1] : configured;
+    from = `${opts.fromName} <${addr}>`;
+  }
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${config.resend.apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from,
+      to: [opts.to],
+      subject: opts.subject,
+      html: opts.html,
+      text: opts.text ?? opts.html.replace(/<[^>]+>/g, ''),
+      ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+    }),
+  });
+  if (!resp.ok) {
+    const detail = await resp.text().catch(() => '');
+    throw new Error(`Resend send failed (${resp.status}): ${detail.slice(0, 300)}`);
+  }
+  const data: any = await resp.json().catch(() => ({}));
+  return { messageId: data?.id ?? 'resend' };
+}
+
+export function isResendConfigured(): boolean {
+  return !!config.resend.apiKey;
+}
+
 export async function sendEmail(opts: {
   to: string;
   subject: string;
@@ -39,6 +75,10 @@ export async function sendEmail(opts: {
   replyTo?: string;     // recipient "Reply" goes here (tenant's address for white-label)
   fromName?: string;    // overrides the default From display name (tenant company name)
 }): Promise<{ messageId: string }> {
+  // Prefer Resend when configured; otherwise fall back to SMTP (existing behavior).
+  if (isResendConfigured()) {
+    return sendViaResend(opts);
+  }
   const transporter = getTransporter();
   if (!transporter) throw new Error('SMTP not configured (set SMTP_HOST, SMTP_USER, SMTP_PASS in .env)');
 

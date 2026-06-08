@@ -173,7 +173,7 @@ const buildDefaultPerms = (full_access: boolean): Record<string, boolean> => {
 interface StaffModalProps {
   initial?: StaffMember | null;
   onClose: () => void;
-  onSave: (data: { name: string; email: string; full_access: boolean; password?: string; phone?: string; staff_id?: string }) => void;
+  onSave: (data: { name: string; email: string; full_access: boolean; password?: string; phone?: string; staff_id?: string; login_pin?: string }) => void;
 }
 
 const COUNTRY_CODES = [
@@ -198,6 +198,8 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
   const [avatarUrl,     setAvatarUrl]    = useState<string | null>(null);
   const [errors,        setErrors]       = useState<Record<string, string>>({});
   const [showPassword,  setShowPassword] = useState(false);
+  const [loginPin,      setLoginPin]     = useState('');
+  const [clearPin,      setClearPin]     = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const validate = () => {
@@ -205,6 +207,7 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
     if (!firstName.trim()) e.firstName = 'Required';
     if (!lastName.trim())  e.lastName  = 'Required';
     if (!email.trim() || !email.includes('@')) e.email = 'Valid email required';
+    if (loginPin && !/^\d{4}$/.test(loginPin)) e.loginPin = 'PIN must be 4 digits';
     // Password is OPTIONAL on create — if left blank, the staff gets an invite email to set their own.
     return e;
   };
@@ -221,6 +224,7 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
       ...(password.trim() ? { password: password.trim() } : {}),
       ...(fullPhone ? { phone: fullPhone } : {}),
       ...(staffId.trim() ? { staff_id: staffId.trim() } : { staff_id: '' }),
+      ...(loginPin.trim() ? { login_pin: loginPin.trim() } : clearPin ? { login_pin: '' } : {}),
     });
   };
 
@@ -364,6 +368,40 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
                   : <><Upload className="w-3.5 h-3.5" /> Upload photo</>}
               </button>
             </div>
+          </div>
+
+          {/* Login PIN (2FA) */}
+          <div>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">
+              Login PIN <span className="text-[#b09e8d] font-normal">(optional — used at login when 2FA is on)</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                inputMode="numeric"
+                maxLength={4}
+                value={loginPin}
+                onChange={(e) => { setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setClearPin(false); }}
+                placeholder={isEdit && initial?.has_login_pin ? '•••• (PIN set — type to change)' : '4-digit PIN'}
+                className={cn(iCls(errors.loginPin), 'flex-1 tracking-[0.3em]')}
+              />
+              <button type="button"
+                onClick={() => { setLoginPin(String(Math.floor(1000 + Math.random() * 9000))); setClearPin(false); }}
+                className="px-3 py-2 rounded-xl text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors whitespace-nowrap">
+                Generate
+              </button>
+              {isEdit && initial?.has_login_pin && (
+                <button type="button"
+                  onClick={() => { setLoginPin(''); setClearPin(true); }}
+                  className="px-3 py-2 rounded-xl text-xs font-semibold text-red-500 bg-red-50 hover:bg-red-100 transition-colors whitespace-nowrap">
+                  Remove
+                </button>
+              )}
+            </div>
+            {errors.loginPin
+              ? <p className="text-[10px] text-red-500 mt-0.5">{errors.loginPin}</p>
+              : <p className="text-[10px] text-[#7a6b5c] mt-0.5">
+                  {clearPin ? 'PIN will be removed on save.' : 'Share this PIN with the staff member. They can also get a one-time PIN by email at login.'}
+                </p>}
           </div>
         </div>
 
@@ -758,6 +796,9 @@ function mapApiStaff(r: any): StaffMember {
     leadsAssigned: r.leads_assigned ?? 0,
     lastActive: r.last_active ?? r.created_at ?? new Date().toISOString(),
     avatar: r.avatar_url ?? r.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase(),
+    phone: r.phone ?? undefined,
+    staff_id: r.staff_id ?? undefined,
+    has_login_pin: r.has_login_pin ?? false,
   };
 }
 
@@ -812,16 +853,18 @@ export default function StaffPage() {
     }));
   }, [staff]);
 
-  const handleInvite = async (data: { name: string; email: string; full_access: boolean; password?: string; phone?: string }) => {
+  const handleInvite = async (data: { name: string; email: string; full_access: boolean; password?: string; phone?: string; staff_id?: string; login_pin?: string }) => {
     try {
       const res = await api.post<{ id: string; name: string; email: string; role: string }>('/api/settings/staff', {
         name: data.name, email: data.email, full_access: data.full_access, password: data.password,
         ...(data.phone ? { phone: data.phone } : {}),
+        ...(data.login_pin ? { login_pin: data.login_pin } : {}),
       });
       const initials = data.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
       const newMember: StaffMember = {
         id: res.id, name: res.name, email: res.email, role: 'staff',
         status: 'active', leadsAssigned: 0, lastActive: new Date().toISOString(), avatar: initials,
+        has_login_pin: !!data.login_pin,
       };
       setStaff((prev) => [...prev, newMember]);
       addStaff(newMember);
@@ -834,16 +877,18 @@ export default function StaffPage() {
     }
   };
 
-  const handleEdit = async (data: { name: string; email: string; full_access: boolean; password?: string; phone?: string; staff_id?: string }) => {
+  const handleEdit = async (data: { name: string; email: string; full_access: boolean; password?: string; phone?: string; staff_id?: string; login_pin?: string }) => {
     if (!editMember) return;
     const initials = data.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
-    const updates = { name: data.name, email: data.email, avatar: initials, phone: data.phone, staff_id: data.staff_id };
+    const pinUpdate = data.login_pin !== undefined ? { has_login_pin: data.login_pin !== '' } : {};
+    const updates = { name: data.name, email: data.email, avatar: initials, phone: data.phone, staff_id: data.staff_id, ...pinUpdate };
     try {
       await api.patch(`/api/settings/staff/${editMember.id}`, {
         name: data.name, email: data.email,
         ...(data.password ? { password: data.password } : {}),
         phone: data.phone ?? '',
         staff_id: data.staff_id ?? '',
+        ...(data.login_pin !== undefined ? { login_pin: data.login_pin } : {}),
       });
       setStaff((prev) => prev.map((m) => m.id === editMember.id ? { ...m, ...updates } : m));
       updateStaff(editMember.id, updates);
