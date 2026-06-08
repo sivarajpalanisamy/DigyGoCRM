@@ -469,9 +469,11 @@ export const useCrmStore = create<CrmState>((set) => ({
           }).catch(() => null);
           finalStages.push(created ? { id: created.id, name: created.name, color: created.color ?? s.color } : s);
         } else {
-          // Existing stage — patch if changed
+          // Existing stage — patch if name/color/won OR its position changed (drag-reorder).
+          // (Previously skipped a pure reorder, so the new order never persisted.)
           const old = oldStages.find((o) => o.id === s.id);
-          if (old && (old.name !== s.name || old.color !== s.color || old.is_won !== s.is_won)) {
+          const oldIdx = oldStages.findIndex((o) => o.id === s.id);
+          if (old && (old.name !== s.name || old.color !== s.color || old.is_won !== s.is_won || oldIdx !== i)) {
             await api.patch(`/api/pipelines/${id}/stages/${s.id}`, {
               name: s.name, stage_order: i, color: s.color ?? null, is_won: s.is_won ?? false,
             }).catch(() => null);
