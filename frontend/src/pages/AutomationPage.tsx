@@ -710,6 +710,8 @@ export default function AutomationPage() {
   const [noTriggerPopup, setNoTriggerPopup] = useState(false);
   const [contactPanel, setContactPanel] = useState<{ wf: WFRecord; status: SidebarFilter } | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const fetchWorkflows = () => {
     api.get<any[]>('/api/workflows')
@@ -796,6 +798,25 @@ export default function AutomationPage() {
     }
     setDeleteConfirmId(null);
     setOpenMenu(null);
+  };
+
+  const bulkDelete = async () => {
+    const ids = [...selectedRows];
+    if (!ids.length) return;
+    setBulkDeleting(true);
+    const results = await Promise.allSettled(ids.map((id) => api.delete(`/api/workflows/${id}`)));
+    const okIds = ids.filter((_, i) => results[i].status === 'fulfilled');
+    const failCount = ids.length - okIds.length;
+    if (okIds.length) {
+      const okSet = new Set(okIds);
+      setWorkflows((prev) => prev.filter((w) => !okSet.has(w.id)));
+    }
+    setSelectedRows(new Set());
+    setBulkDeleting(false);
+    setBulkDeleteConfirm(false);
+    if (failCount === 0) toast.success(`${okIds.length} workflow${okIds.length > 1 ? 's' : ''} deleted`);
+    else if (okIds.length) toast.error(`Deleted ${okIds.length}, ${failCount} failed`);
+    else toast.error('Failed to delete workflows');
   };
 
   const retryErrors = async (wf: WFRecord) => {
@@ -986,6 +1007,29 @@ export default function AutomationPage() {
         </div>
       </div>
 
+      {/* ── Bulk action bar ── */}
+      {canManageAutomation && selectedRows.size > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-3 px-4 py-2.5 rounded-xl bg-primary/5 border border-primary/20">
+          <p className="text-[13px] font-semibold text-[#1c1410]">
+            {selectedRows.size} selected
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedRows(new Set())}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[#7a6b5c] hover:bg-black/5 transition-colors"
+            >
+              Clear
+            </button>
+            <button
+              onClick={() => setBulkDeleteConfirm(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete selected ({selectedRows.size})
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Main content ── */}
       <div className="flex flex-1 min-h-0 rounded-2xl border border-black/[0.06] overflow-hidden bg-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
 
@@ -1108,6 +1152,16 @@ export default function AutomationPage() {
           />
         );
       })()}
+
+      {bulkDeleteConfirm && (
+        <ConfirmModal
+          title={`Delete ${selectedRows.size} Workflow${selectedRows.size > 1 ? 's' : ''}?`}
+          message={<>Delete <span className="font-semibold text-[#1c1410]">{selectedRows.size}</span> selected workflow{selectedRows.size > 1 ? 's' : ''}? All their execution history will be lost. This cannot be undone.</>}
+          confirmLabel={bulkDeleting ? 'Deleting…' : 'Yes, Delete'}
+          onConfirm={bulkDelete}
+          onClose={() => { if (!bulkDeleting) setBulkDeleteConfirm(false); }}
+        />
+      )}
     </div>
   );
 }
