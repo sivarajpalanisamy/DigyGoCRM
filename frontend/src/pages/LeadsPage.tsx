@@ -1609,41 +1609,54 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                       ? { label: 'Overdue', cls: 'bg-red-100 text-red-600' }
                       : { label: 'Pending', cls: 'bg-amber-100 text-amber-700' };
 
-                    const isEditingFu = editingFuId === f.id;
                     return (
-                      <div key={f.id} className={cn('p-3 rounded-xl border group', cardCls)}>
-                        {isEditingFu ? (
-                          <div className="space-y-2">
-                            <input value={editFuTitle} onChange={(e) => setEditFuTitle(e.target.value)}
-                              className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white" placeholder="Follow-up title" autoFocus />
-                            <input type="datetime-local" value={editFuDue} onChange={(e) => setEditFuDue(e.target.value)}
-                              className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] text-[#1c1410] outline-none focus:border-primary/40 bg-white" />
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => saveFuEdit(f.id)} className="px-3 py-1 rounded-lg text-[12px] font-bold text-white bg-primary hover:bg-primary/90">Save</button>
-                              <button onClick={() => setEditingFuId(null)} className="px-3 py-1 rounded-lg text-[12px] font-semibold text-[#7a6b5c] bg-white border border-black/10 hover:bg-gray-50">Cancel</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-start gap-2">
-                            <div className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', dotCls)} />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-[13px] font-semibold text-[#1c1410] truncate">{f.note || 'Follow-up'}</p>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', badge.cls)}>{badge.label}</span>
-                                  <button onClick={() => { setEditingFuId(f.id); setEditFuTitle(f.note || ''); setEditFuDue(format(new Date(f.dueAt), "yyyy-MM-dd'T'HH:mm")); }}
-                                    className="p-1 rounded text-[#7a6b5c] hover:bg-white hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => deleteFu(f.id)}
-                                    className="p-1 rounded text-[#7a6b5c] hover:bg-white hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
-                                </div>
+                      <div key={f.id} className={cn('p-3 rounded-xl border', cardCls)}>
+                        <div className="flex items-start gap-2">
+                          <div className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', dotCls)} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-[13px] font-semibold text-[#1c1410] truncate">{f.note || 'Follow-up'}</p>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', badge.cls)}>{badge.label}</span>
+                                <button onClick={() => { setEditingFuId(f.id); setEditFuTitle(f.note || ''); setEditFuDue(format(new Date(f.dueAt), "yyyy-MM-dd'T'HH:mm")); }}
+                                  className="p-1 rounded text-[#7a6b5c] hover:bg-white hover:text-primary" title="Edit follow-up"><Pencil className="w-3.5 h-3.5" /></button>
                               </div>
-                              <p className="text-[11px] text-[#7a6b5c] mt-0.5">Due: {format(new Date(f.dueAt), 'dd MMM yyyy, h:mm a')}</p>
                             </div>
+                            <p className="text-[11px] text-[#7a6b5c] mt-0.5">Due: {format(new Date(f.dueAt), 'dd MMM yyyy, h:mm a')}</p>
                           </div>
-                        )}
+                        </div>
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Follow-up modal (centered) */}
+          {editingFuId && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setEditingFuId(null)}>
+              <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                  <h3 className="font-bold text-[#1c1410]">Edit Follow-up</h3>
+                  <button onClick={() => setEditingFuId(null)} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="p-5 space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Title</label>
+                    <input value={editFuTitle} onChange={(e) => setEditFuTitle(e.target.value)} autoFocus
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40" placeholder="Follow-up title" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Follow-up date &amp; time</label>
+                    <input type="datetime-local" value={editFuDue} onChange={(e) => setEditFuDue(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100">
+                  <button onClick={() => setEditingFuId(null)} className="px-4 py-2 rounded-lg text-sm text-gray-600 bg-gray-100 hover:bg-gray-200">Cancel</button>
+                  <button onClick={() => editingFuId && saveFuEdit(editingFuId)} disabled={!editFuTitle.trim() || !editFuDue}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">Save Changes</button>
                 </div>
               </div>
             </div>
@@ -2863,36 +2876,20 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   const { Icon, bg, color } = iconForType(entry.type);
                   const isNote = entry.type === 'note' && entry.id.startsWith('note-');
                   const noteId = isNote ? entry.id.slice(5) : '';
-                  const isEditing = isNote && editingNoteId === noteId;
                   return (
-                    <div key={entry.id} className="flex gap-3 group">
+                    <div key={entry.id} className="flex gap-3">
                       <div className={cn('w-9 h-9 rounded-full flex items-center justify-center shrink-0', bg, color)}>
                         <Icon className="w-4 h-4" />
                       </div>
                       <div className="flex-1 pt-0.5 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-[13px] font-semibold text-[#1c1410]">{entry.title}</p>
-                          {isNote && canEditLead && !isEditing && (
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                              <button onClick={() => { setEditingNoteId(noteId); setEditNoteText(entry.detail ?? ''); }}
-                                className="p-1 rounded text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-primary" title="Edit note"><Pencil className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => deleteNoteEntry(noteId)}
-                                className="p-1 rounded text-[#7a6b5c] hover:bg-red-50 hover:text-red-500" title="Delete note"><Trash2 className="w-3.5 h-3.5" /></button>
-                            </div>
+                          {isNote && canEditLead && (
+                            <button onClick={() => { setEditingNoteId(noteId); setEditNoteText(entry.detail ?? ''); }}
+                              className="p-1 rounded text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-primary shrink-0" title="Edit note"><Pencil className="w-3.5 h-3.5" /></button>
                           )}
                         </div>
-                        {isEditing ? (
-                          <div className="mt-1">
-                            <textarea value={editNoteText} onChange={(e) => setEditNoteText(e.target.value)} rows={3}
-                              className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-[12px] text-[#1c1410] outline-none focus:border-primary/40 resize-none" autoFocus />
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <button onClick={() => saveNoteEdit(noteId)} className="px-3 py-1 rounded-lg text-[12px] font-bold text-white bg-primary hover:bg-primary/90">Save</button>
-                              <button onClick={() => setEditingNoteId(null)} className="px-3 py-1 rounded-lg text-[12px] font-semibold text-[#7a6b5c] bg-gray-100 hover:bg-gray-200">Cancel</button>
-                            </div>
-                          </div>
-                        ) : (
-                          entry.detail && <p className="text-[12px] text-[#7a6b5c] mt-0.5 break-words whitespace-pre-wrap">{entry.detail}</p>
-                        )}
+                        {entry.detail && <p className="text-[12px] text-[#7a6b5c] mt-0.5 break-words whitespace-pre-wrap">{entry.detail}</p>}
                         <div className="flex items-center justify-between mt-1">
                           <p className="text-[11px] text-[#b09e8d] flex items-center gap-1">
                             <Clock className="w-3 h-3" /> {timestampLabel(entry.timestamp)}
@@ -2907,6 +2904,27 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Edit Note modal (centered) */}
+        {editingNoteId && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setEditingNoteId(null)}>
+            <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h3 className="font-bold text-[#1c1410]">Edit Note</h3>
+                <button onClick={() => setEditingNoteId(null)} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4" /></button>
+              </div>
+              <div className="p-5">
+                <textarea value={editNoteText} onChange={(e) => setEditNoteText(e.target.value)} rows={6} autoFocus
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 resize-none" placeholder="Note content" />
+              </div>
+              <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100">
+                <button onClick={() => setEditingNoteId(null)} className="px-4 py-2 rounded-lg text-sm text-gray-600 bg-gray-100 hover:bg-gray-200">Cancel</button>
+                <button onClick={() => editingNoteId && saveNoteEdit(editingNoteId)} disabled={!editNoteText.trim()}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">Save Changes</button>
+              </div>
+            </div>
           </div>
         )}
 
