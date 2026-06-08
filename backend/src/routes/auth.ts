@@ -167,7 +167,7 @@ async function completeLogin(res: Response, user: any): Promise<any> {
     );
     if (brandRes.rows[0]) {
       const b = brandRes.rows[0];
-      tenantName = b.legal_name || b.name || tenantName;
+      tenantName = b.name || b.legal_name || tenantName; // business name first (legal_name is a separate billing field)
       tenantBranding = {
         name: tenantName, logoUrl: b.logo_url || null, faviconUrl: b.favicon_url || null,
         bannerUrl: b.banner_url || null, brandColor: b.brand_color || '#c2410c',
@@ -441,7 +441,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
     const user = result.rows[0];
     if (!user) { res.status(404).json({ error: 'User not found' }); return; }
 
-    let tenantName = user.legal_name || user.tenant_name || 'DigyGo CRM';
+    let tenantName = user.tenant_name || user.legal_name || 'DigyGo CRM';
     let tenantLogo = user.tenant_logo || null;
     const isSuper = user.role === 'super_admin';
     if (isSuper) { tenantName = 'DigyGo CRM'; tenantLogo = null; }
@@ -940,7 +940,7 @@ router.post('/tenants/:id/impersonate', requireAuth, requireSuperAdmin, async (r
       token,
       user: { id: target.id, email: target.email, name: target.name, role: target.role, tenantId: target.tenant_id },
       tenant: {
-        name:         tb.legal_name || tb.name || 'CRM',
+        name:         tb.name || tb.legal_name || 'CRM',
         logoUrl:      tb.logo_url || null,
         faviconUrl:   tb.favicon_url || null,
         bannerUrl:    tb.banner_url || null,
