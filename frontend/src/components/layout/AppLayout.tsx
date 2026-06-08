@@ -14,6 +14,9 @@ export function AppLayout() {
   const refreshNotifications = useCrmStore((s) => s.refreshNotifications);
   const setWaPersonalStatus = useCrmStore((s) => s.setWaPersonalStatus);
   const { refreshPermissions } = useAuthStore();
+  const currentUser = useAuthStore((s) => s.currentUser);
+  // Super admin only has the /admin page — no tenant nav, so render it full-width (no left sidebar).
+  const isSuperAdmin = currentUser?.role === 'super_admin';
   const location = useLocation();
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -81,10 +84,12 @@ export function AppLayout() {
 
   return (
     <div className="h-[100dvh] flex w-full bg-[var(--app-bg)] overflow-hidden">
-      {/* Sidebar — desktop only */}
-      <div className="hidden md:flex">
-        <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
+      {/* Sidebar — desktop only; hidden for super admin (admin page is full-width) */}
+      {!isSuperAdmin && (
+        <div className="hidden md:flex">
+          <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <AppHeader onMenuClick={() => setSidebarOpen(true)} />
@@ -96,8 +101,8 @@ export function AppLayout() {
         </main>
       </div>
 
-      {/* Bottom nav — mobile only */}
-      <MobileBottomNav />
+      {/* Bottom nav — mobile only (not for super admin) */}
+      {!isSuperAdmin && <MobileBottomNav />}
     </div>
   );
 }
