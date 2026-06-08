@@ -792,133 +792,45 @@ router.get('/:id/fields', async (req: AuthRequest, res: Response) => {
   const { tenantId } = req.user!;
   const leadId = req.params.id;
 
-  const fetchRows = () => query(
-    `SELECT lfv.*, cf.name AS field_name, cf.type AS field_type, cf.slug
-     FROM lead_field_values lfv
-     JOIN custom_fields cf ON cf.id = lfv.field_id
-     WHERE lfv.lead_id = $1 AND lfv.tenant_id = $2`,
-    [leadId, tenantId]
-  ).then(r => r.rows);
-
+  // READ-ONLY: opening a lead must never depend on slow/flaky writes (backfill) or
+  // Facebook's Graph API — those made the Additional Fields panel intermittently show
+  // "no data" (a transient failure was swallowed into an empty list). We now serve the
+  // defined field values and merge the lead's custom_fields JSONB straight through for
+  // display, with each query guarded so a hiccup degrades gracefully instead of blanking
+  // the panel. No INSERTs, no external calls, deterministic every open.
+  let rows: any[] = [];
   try {
-    let rows = await fetchRows();
-
-    // Auto-backfill from Custom Form submission (if no rows yet)
-    if (rows.length === 0) {
-      const leadRes = await query(
-        `SELECT email, phone FROM leads WHERE id=$1 AND tenant_id=$2 AND source='Custom Form'`,
-        [leadId, tenantId]
-      );
-      const lead = leadRes.rows[0];
-      if (lead) {
-        const subRes = await query(
-          `SELECT fs.data, fs.form_id FROM form_submissions fs
-           WHERE fs.tenant_id=$1
-             AND (fs.data::text ILIKE $2 OR fs.data::text ILIKE $3)
-           ORDER BY fs.submitted_at DESC LIMIT 1`,
-          [tenantId, `%${lead.email || '__none__'}%`, `%${lead.phone || '__none__'}%`]
-        );
-        const sub = subRes.rows[0];
-        if (sub?.form_id) {
-          const formRes = await query(`SELECT fields FROM custom_forms WHERE id=$1`, [sub.form_id]);
-          const formFields: Array<{ mapTo: string; label: string }> = formRes.rows[0]?.fields ?? [];
-          const data: Record<string, string> = typeof sub.data === 'string' ? JSON.parse(sub.data) : sub.data;
-          const toFill: Record<string, string> = {};
-          for (const field of formFields) {
-            if (!field.mapTo || ['first_name','last_name','name','full_name','email','phone'].includes(field.mapTo)) continue;
-            const value = data[field.label] ?? data[field.mapTo] ?? '';
-            if (value) toFill[field.mapTo] = value;
-          }
-          if (Object.keys(toFill).length > 0) {
-            await backfillCustomFields(leadId, tenantId!, toFill);
-            rows = await fetchRows();
-          }
-        }
-      }
-    }
-
-    // Auto-backfill from Meta Form (if still no rows)
-    if (rows.length === 0) {
-      try {
-        const metaLeadRes = await query(
-          `SELECT l.meta_form_id, l.source_ref FROM leads l
-           WHERE l.id=$1 AND l.tenant_id=$2 AND l.source='meta_form'
-             AND l.meta_form_id IS NOT NULL AND l.source_ref IS NOT NULL`,
-          [leadId, tenantId]
-        );
-        const metaLead = metaLeadRes.rows[0];
-        if (metaLead) {
-          const formRes = await query(
-            `SELECT mf.field_mapping, mi.access_token
-             FROM meta_forms mf
-             JOIN meta_integrations mi ON mi.tenant_id = mf.tenant_id
-             WHERE mf.form_id=$1 AND mf.tenant_id=$2 LIMIT 1`,
-            [metaLead.meta_form_id, tenantId]
-          );
-          const form = formRes.rows[0];
-          if (form?.field_mapping && form?.access_token) {
-            const token = decrypt(form.access_token);
-            const mapping: Array<{ fb_field: string; crm_field: string }> = form.field_mapping ?? [];
-            const metaData = await metaGraphGet(`/${metaLead.source_ref}?fields=field_data`, token).catch(() => null);
-            if (metaData?.field_data) {
-              const { customValues } = parseMetaFieldData(metaData.field_data, mapping);
-              if (Object.keys(customValues).length > 0) {
-                await backfillCustomFields(leadId, tenantId!, customValues);
-                rows = await fetchRows();
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error('[meta fields backfill]', e);
-      }
-    }
-
-    // Always merge leads.custom_fields JSONB — catches API trigger, imports, and any other source
-    try {
-      const leadRow = await query(
-        `SELECT custom_fields FROM leads WHERE id=$1 AND tenant_id=$2`,
-        [leadId, tenantId]
-      );
-      const jsonb: Record<string, any> = leadRow.rows[0]?.custom_fields ?? {};
-      const existingSlugs = new Set(rows.map((r: any) => r.slug));
-      const toFill: Record<string, string> = {};
-      for (const [rawKey, val] of Object.entries(jsonb)) {
-        if (!val) continue;
-        const slug = cleanFieldKey(rawKey);
-        if (slug && !RESERVED_FIELD_KEYS.has(slug) && !existingSlugs.has(slug)) toFill[slug] = String(val);
-      }
-      if (Object.keys(toFill).length > 0) {
-        await backfillCustomFields(leadId, tenantId!, toFill);
-        rows = await fetchRows();
-      }
-    } catch (e) {
-      console.error('[jsonb fields merge]', e);
-    }
-
-    // Final response: hide reserved/internal keys, and GUARANTEE any JSONB value is shown
-    // even if the backfill insert above did not land (transient error, race, etc.).
-    const finalRows = rows.filter((r: any) => !RESERVED_FIELD_KEYS.has(r.slug));
-    try {
-      const leadRow2 = await query(`SELECT custom_fields FROM leads WHERE id=$1 AND tenant_id=$2`, [leadId, tenantId]);
-      const jsonb2: Record<string, any> = leadRow2.rows[0]?.custom_fields ?? {};
-      const present = new Set(finalRows.map((r: any) => r.slug));
-      for (const [rawKey, val] of Object.entries(jsonb2)) {
-        if (val === null || val === undefined || val === '') continue;
-        const slug = cleanFieldKey(rawKey);
-        if (!slug || RESERVED_FIELD_KEYS.has(slug) || present.has(slug)) continue;
-        finalRows.push({ field_name: prettifySlug(slug), slug, value: String(val), field_id: null });
-        present.add(slug);
-      }
-    } catch (e) {
-      console.error('[jsonb direct merge]', e);
-    }
-
-    res.json(finalRows);
-  } catch (err) {
-    console.error('[GET /:id/fields]', err);
-    res.status(500).json({ error: 'Server error' });
+    rows = (await query(
+      `SELECT lfv.*, cf.name AS field_name, cf.type AS field_type, cf.slug
+       FROM lead_field_values lfv
+       JOIN custom_fields cf ON cf.id = lfv.field_id
+       WHERE lfv.lead_id = $1 AND lfv.tenant_id = $2`,
+      [leadId, tenantId]
+    )).rows;
+  } catch (e) {
+    console.error('[GET /:id/fields lfv]', e);
   }
+
+  const finalRows = rows.filter((r: any) => !RESERVED_FIELD_KEYS.has(r.slug));
+
+  // Merge display-only values from leads.custom_fields JSONB (imports, API trigger,
+  // form submissions) for any slug not already present as a defined field. No writes.
+  try {
+    const leadRow = await query(`SELECT custom_fields FROM leads WHERE id=$1 AND tenant_id=$2`, [leadId, tenantId]);
+    const jsonb: Record<string, any> = leadRow.rows[0]?.custom_fields ?? {};
+    const present = new Set(finalRows.map((r: any) => r.slug));
+    for (const [rawKey, val] of Object.entries(jsonb)) {
+      if (val === null || val === undefined || val === '') continue;
+      const slug = cleanFieldKey(rawKey);
+      if (!slug || RESERVED_FIELD_KEYS.has(slug) || present.has(slug)) continue;
+      finalRows.push({ field_name: prettifySlug(slug), slug, value: String(val), field_id: null });
+      present.add(slug);
+    }
+  } catch (e) {
+    console.error('[GET /:id/fields jsonb merge]', e);
+  }
+
+  res.json(finalRows);
 });
 
 function metaGraphGet(path: string, token: string): Promise<any> {
