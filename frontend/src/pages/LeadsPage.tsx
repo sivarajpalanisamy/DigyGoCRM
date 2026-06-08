@@ -2236,6 +2236,9 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
   const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
   const [editNote, setEditNote] = useState<{ id: string; title: string; content: string } | null>(null);
   const [editFu, setEditFu] = useState<{ id: string; title: string; notes: string; dueAt: string } | null>(null);
+  const [showTagAdd, setShowTagAdd] = useState(false);
+  const [tagAddInput, setTagAddInput] = useState('');
+  const [savingTag, setSavingTag] = useState(false);
 
   const { calendarEvents, updateLead, deleteLead, addActivity, pipelines, tags: storeTags, staff, bookingLinks, addCalendarEvent } = useCrmStore();
   const waPersonalStatus = useCrmStore((s) => s.waPersonalStatus);
@@ -2351,6 +2354,35 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     };
     addActivity(act);
     setLeadActivities((prev) => [act, ...prev]);
+  };
+
+  // Inline tag add/remove right from the detail view — no need to enter Edit mode.
+  // Optimistic update with rollback, persisted via the same PATCH as edit mode.
+  const persistTags = async (next: string[]) => {
+    const prev = lead.tags;
+    setSavingTag(true);
+    updateLead(lead.id, { tags: next });
+    try {
+      await api.patch(`/api/leads/${lead.id}`, { tags: next });
+      onLeadUpdated?.(lead.id, { pipelineId: lead.pipelineId, stage: lead.stage, stageId: lead.stageId, tags: next });
+    } catch (e: any) {
+      updateLead(lead.id, { tags: prev });
+      toast.error(e?.message ?? 'Failed to update tags');
+    } finally {
+      setSavingTag(false);
+    }
+  };
+
+  const addTagInline = (raw: string) => {
+    const t = raw.trim();
+    setTagAddInput('');
+    if (!t || lead.tags.includes(t)) return;
+    logActivity('tag_added', `Tag added: ${t}`);
+    persistTags([...lead.tags, t]);
+  };
+
+  const removeTagInline = (t: string) => {
+    persistTags(lead.tags.filter((x) => x !== t));
   };
 
   const handleCall = () => {
@@ -2528,16 +2560,61 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 </div>
               )}
 
-              {/* Tags */}
-              {lead.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {/* Tags — add/remove inline so staff can tag without entering Edit mode */}
+              <div className="pt-0.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {lead.tags.map((t) => (
                     <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-orange-50 text-[var(--brand-dark)] border border-orange-100">
                       <Tag className="w-2.5 h-2.5" />{t}
+                      {canEditLead && (
+                        <button onClick={() => removeTagInline(t)} disabled={savingTag} className="ml-0.5 hover:text-red-500 disabled:opacity-40" title="Remove tag"><X className="w-2.5 h-2.5" /></button>
+                      )}
                     </span>
                   ))}
+                  {canEditLead && !showTagAdd && (
+                    <button onClick={() => setShowTagAdd(true)} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold text-primary border border-dashed border-primary/40 hover:bg-[var(--accent-tint)] transition-colors">
+                      <Plus className="w-2.5 h-2.5" /> Add tag
+                    </button>
+                  )}
+                  {lead.tags.length === 0 && !canEditLead && (
+                    <span className="text-[12px] text-[#b09e8d] italic">No tags</span>
+                  )}
                 </div>
-              )}
+                {canEditLead && showTagAdd && (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        autoFocus
+                        value={tagAddInput}
+                        onChange={(e) => setTagAddInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); addTagInline(tagAddInput); }
+                          else if (e.key === 'Escape') { setShowTagAdd(false); setTagAddInput(''); }
+                        }}
+                        placeholder="Type a tag, press Enter"
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                      />
+                      <button onClick={() => addTagInline(tagAddInput)} disabled={!tagAddInput.trim() || savingTag} className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[12px] font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40">Add</button>
+                      <button onClick={() => { setShowTagAdd(false); setTagAddInput(''); }} className="px-2 py-1.5 rounded-lg text-[#7a6b5c] text-[12px] hover:bg-black/5">Cancel</button>
+                    </div>
+                    {/* Quick-pick from existing tenant tags */}
+                    {(() => {
+                      const suggestions = storeTags
+                        .filter((tg) => !lead.tags.includes(tg.name) && (!tagAddInput.trim() || tg.name.toLowerCase().includes(tagAddInput.trim().toLowerCase())))
+                        .slice(0, 12);
+                      return suggestions.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {suggestions.map((tg) => (
+                            <button key={tg.id} onClick={() => addTagInline(tg.name)} disabled={savingTag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-white text-[#7a6b5c] border border-black/10 hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-40">
+                              <Tag className="w-2.5 h-2.5" />{tg.name}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                )}
+              </div>
 
               {/* Additional custom fields */}
               <div>
