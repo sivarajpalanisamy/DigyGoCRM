@@ -314,6 +314,8 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
     subscription_expires_at: tenant.subscription_expires_at ? tenant.subscription_expires_at.slice(0, 10) : '',
     phone: tenant.phone ?? '',
     address: tenant.address ?? '',
+    owner_name: tenant.admin_name ?? '',
+    owner_email: tenant.admin_email ?? '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -347,6 +349,18 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
           <div>
             <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Business Name</label>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inp} />
+          </div>
+          <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 space-y-3">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Account Owner (login)</p>
+            <div>
+              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Owner Name</label>
+              <input value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} className={inp} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Owner Email <span className="font-normal text-[#7a6b5c]">(login email)</span></label>
+              <input type="email" value={form.owner_email} onChange={(e) => setForm({ ...form, owner_email: e.target.value })} className={inp} />
+              <p className="text-[10px] text-[#b09e8d] mt-1">Changing this changes how the owner signs in. Both old and new addresses are notified.</p>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

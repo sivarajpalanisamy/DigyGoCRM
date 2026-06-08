@@ -803,7 +803,7 @@ router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, 
 
 // PATCH /api/auth/tenants/:id
 router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
-  const { name, plan, subscription_status, subscription_expires_at, phone, address, brand_color, logo_url, reply_to_email } = req.body;
+  const { name, plan, subscription_status, subscription_expires_at, phone, address, brand_color, logo_url, reply_to_email, owner_name, owner_email } = req.body;
   const updates: string[] = [];
   const params: any[] = [];
   if (name !== undefined)                    { params.push(name);                    updates.push(`name=$${params.length}`); }
@@ -815,16 +815,59 @@ router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthReq
   if (brand_color !== undefined)             { params.push(brand_color || '#c2410c'); updates.push(`brand_color=$${params.length}`); }
   if (logo_url !== undefined)                { params.push(logo_url || null);         updates.push(`logo_url=$${params.length}`); }
   if (reply_to_email !== undefined)          { params.push(reply_to_email || null);   updates.push(`reply_to_email=$${params.length}`); }
-  if (!updates.length) { res.status(400).json({ error: 'No fields to update' }); return; }
-  params.push(req.params.id);
+  const hasOwnerEdit = owner_name !== undefined || owner_email !== undefined;
+  if (!updates.length && !hasOwnerEdit) { res.status(400).json({ error: 'No fields to update' }); return; }
   try {
-    await query(`UPDATE tenants SET ${updates.join(',')} WHERE id=$${params.length}`, params);
-    invalidateTenantCache(req.params.id); // immediately reflect plan/status change
-    auditLog(req.user!.userId, 'update_tenant', {
-      tenantId: req.params.id, metadata: req.body, ip: req.ip,
-    });
+    if (updates.length) {
+      const p = [...params, req.params.id];
+      await query(`UPDATE tenants SET ${updates.join(',')} WHERE id=$${p.length}`, p);
+      invalidateTenantCache(req.params.id); // immediately reflect plan/status change
+      auditLog(req.user!.userId, 'update_tenant', { tenantId: req.params.id, metadata: req.body, ip: req.ip });
+    }
+
+    // Owner identity (users table) — let super-admin fix the sub-account owner's name/email.
+    if (hasOwnerEdit) {
+      const ownerRes = await query(
+        "SELECT id, email, name FROM users WHERE tenant_id=$1 AND is_owner=TRUE AND is_active=TRUE ORDER BY created_at ASC LIMIT 1",
+        [req.params.id]
+      );
+      const owner = ownerRes.rows[0];
+      if (!owner) { res.status(404).json({ error: 'Owner user not found for this account' }); return; }
+
+      let newEmail: string = owner.email;
+      if (owner_email !== undefined && owner_email !== null && String(owner_email).trim()
+          && String(owner_email).trim().toLowerCase() !== String(owner.email).toLowerCase()) {
+        const e = String(owner_email).trim();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { res.status(400).json({ error: 'Invalid email format' }); return; }
+        const dup = await query("SELECT id FROM users WHERE LOWER(email)=LOWER($1) AND id<>$2 LIMIT 1", [e, owner.id]);
+        if (dup.rows[0]) { res.status(409).json({ error: 'That email is already in use by another account' }); return; }
+        newEmail = e;
+      }
+      const newName: string = (owner_name !== undefined && owner_name !== null && String(owner_name).trim())
+        ? String(owner_name).trim() : owner.name;
+
+      await query("UPDATE users SET email=$1, name=$2 WHERE id=$3", [newEmail, newName, owner.id]);
+
+      // Solution C: notify on login-email change (old + new address).
+      if (newEmail.toLowerCase() !== String(owner.email).toLowerCase()) {
+        const subject = 'Your DigyGo login email was changed';
+        const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#3d3128">
+          <p>The login email for your DigyGo account was updated by an administrator.</p>
+          <p><b>Previous:</b> ${owner.email}<br/><b>New:</b> ${newEmail}</p>
+          <p>You will sign in with <b>${newEmail}</b> from now on. If you did not expect this change, contact support immediately.</p></div>`;
+        setImmediate(() => sendEmail({ to: owner.email, subject, html }).catch(() => {}));
+        setImmediate(() => sendEmail({ to: newEmail, subject, html }).catch(() => {}));
+      }
+      auditLog(req.user!.userId, 'update_tenant_owner', {
+        tenantId: req.params.id, metadata: { ownerId: owner.id, oldEmail: owner.email, newEmail, newName }, ip: req.ip,
+      });
+    }
+
     res.json({ success: true });
-  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+  } catch (err: any) {
+    if (err.code === '23505') { res.status(409).json({ error: 'That email is already in use by another account' }); return; }
+    console.error(err); res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // DELETE /api/auth/tenants/:id — soft-deactivate + revoke all sessions (#54 / #55)
