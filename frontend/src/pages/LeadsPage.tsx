@@ -1943,7 +1943,10 @@ function EditFieldsDrawer({ lead, onClose, onSaved }: {
       setFieldDefs(defs ?? []);
       const map: Record<string, string> = {};
       (lead.customFields ?? []).forEach((f) => { if (f.fieldId) map[f.fieldId] = f.value; });
-      (vals ?? []).forEach((v: any) => { map[v.field_id] = v.value ?? ''; });
+      // Only key by a real field_id. JSONB-only values (imports/API/forms) come back with
+      // field_id=null; without this guard they'd all collapse into map[null] and clobber
+      // each other. They remain display-only (shown in the panel) until defined as fields.
+      (vals ?? []).forEach((v: any) => { if (v.field_id) map[v.field_id] = v.value ?? ''; });
       setValues(map);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [lead.id]);
@@ -2041,6 +2044,15 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
   (lead.customFields ?? []).forEach((f) => { existingAnswers[f.label] = f.value; });
 
   const [answers, setAnswers] = useState<Record<string, string>>(existingAnswers);
+
+  // Field values load asynchronously (and can be refreshed by the store). Merge newly
+  // arrived values in, but keep any answer the user is currently editing on top so we
+  // never overwrite in-progress typing.
+  useEffect(() => {
+    const incoming: Record<string, string> = {};
+    (lead.customFields ?? []).forEach((f) => { incoming[f.label] = f.value; });
+    setAnswers((prev) => ({ ...incoming, ...prev }));
+  }, [lead.customFields]);
 
   const saveAnswer = (fieldId: string, question: string, value: string) => {
     const next = { ...answers, [question]: value };
@@ -2275,10 +2287,13 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
           createdBy: a.created_by_name ?? a.created_by,
         })))
       ).catch(() => null);
+      // Re-load Additional Field values too — an external update may have changed them,
+      // and this also restores them if anything blanked the store copy.
+      loadFields();
     };
     socket.on('lead:updated', onLeadUpdated);
     return () => { socket.off('lead:updated', onLeadUpdated); };
-  }, [lead.id]);
+  }, [lead.id, loadFields]);
 
   const assignedStaff = staff.find((s) => s.id === lead.assignedTo);
   const assignedDisplayName = assignedStaff?.name || lead.assignedName || '';
@@ -4129,8 +4144,12 @@ export default function LeadsPage() {
     window.history.replaceState({}, ''); // clear state so back/forward don't re-trigger
     const fromStore = leads.find((l) => l.id === openId);
     if (fromStore) { setSelectedLeadId(fromStore.id); return; }
-    api.get<any>(`/api/leads/${openId}`).then((l) => {
+    Promise.all([
+      api.get<any>(`/api/leads/${openId}`),
+      api.get<any[]>(`/api/leads/${openId}/fields`).catch(() => []),
+    ]).then(([l, fieldRows]) => {
       const parts = (l.name ?? '').split(' ');
+      const customFields = (fieldRows ?? []).map((r: any) => ({ label: r.field_name ?? r.slug, value: r.value, fieldId: r.field_id }));
       setStateOpenLead({
         id: l.id,
         firstName: l.first_name ?? parts[0] ?? '',
@@ -4147,7 +4166,7 @@ export default function LeadsPage() {
         createdAt: l.created_at ?? new Date().toISOString(),
         lastActivity: l.updated_at ?? l.created_at ?? new Date().toISOString(),
         businessName: '', city: '', notes: l.notes ?? '',
-        dealValue: Number(l.deal_value ?? 0), value: 0, probability: 0, nextFollowUp: null, customFields: [],
+        dealValue: Number(l.deal_value ?? 0), value: 0, probability: 0, nextFollowUp: null, customFields,
       } as Lead);
     }).catch(() => null);
   }, [location.state]);

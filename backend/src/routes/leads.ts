@@ -870,7 +870,11 @@ router.get('/:id/fields', async (req: AuthRequest, res: Response) => {
       [leadId, tenantId]
     )).rows;
   } catch (e) {
+    // A transient failure here must NOT be swallowed into an empty 200 — that made the
+    // panel show "no fields" (a false empty) and defeated the client retry. Surface it.
     console.error('[GET /:id/fields lfv]', e);
+    res.status(500).json({ error: 'Failed to load field values' });
+    return;
   }
 
   const finalRows = rows.filter((r: any) => !RESERVED_FIELD_KEYS.has(r.slug));

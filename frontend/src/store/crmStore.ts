@@ -613,6 +613,12 @@ export const useCrmStore = create<CrmState>((set) => ({
         })),
       }));
 
+      // Preserve per-lead customFields across refreshes. The slim /api/leads list
+      // payload does NOT include custom field values (perf), so re-mapping with
+      // customFields:[] would wipe the values the open Lead panel loaded via
+      // /api/leads/:id/fields, making "Additional Fields" intermittently show
+      // "no fields". Carry forward whatever is already in the store for each lead.
+      const prevFieldsById = new Map(cur.leads.map((l) => [l.id, l.customFields]));
       const mappedLeads: Lead[] = safeLeads.map((l) => {
         const parts = (l.name ?? '').split(' ');
         const stageName = stageMap[l.stage_id] ?? l.stage_name ?? 'New Lead';
@@ -640,7 +646,7 @@ export const useCrmStore = create<CrmState>((set) => ({
           value: 0,
           probability: 0,
           nextFollowUp: null,
-          customFields: [],
+          customFields: prevFieldsById.get(l.id) ?? [],
           leadQuality: l.custom_fields?.lead_quality ?? '',
           teamMembers: l.team_members ?? [],
         } as Lead;
