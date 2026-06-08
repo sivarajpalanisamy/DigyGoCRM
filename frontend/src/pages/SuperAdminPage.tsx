@@ -340,61 +340,72 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h3 className="font-bold text-[#1c1410]">Edit Sub Account</h3>
+      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        {/* Header (fixed) */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+          <div>
+            <h3 className="font-bold text-[#1c1410]">Edit Sub Account</h3>
+            <p className="text-[11px] text-[#7a6b5c] mt-0.5">{tenant.name}</p>
+          </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4" /></button>
         </div>
-        <div className="p-5 space-y-3">
+
+        {/* Body — horizontal 2-column grid, scrolls if it overflows */}
+        <div className="px-6 py-5 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+          {/* ── Business ── */}
+          <div className="sm:col-span-2 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Business</div>
           <div>
             <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Business Name</label>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inp} />
-          </div>
-          <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 space-y-3">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Account Owner (login)</p>
-            <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Owner Name</label>
-              <input value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} className={inp} />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Owner Email <span className="font-normal text-[#7a6b5c]">(login email)</span></label>
-              <input type="email" value={form.owner_email} onChange={(e) => setForm({ ...form, owner_email: e.target.value })} className={inp} />
-              <p className="text-[10px] text-[#b09e8d] mt-1">Changing this changes how the owner signs in. Both old and new addresses are notified.</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Plan</label>
-              <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} className={inp}>
-                {['starter', 'pro', 'enterprise'].map((p) => (
-                  <option key={p} value={p}>{PLAN_LABEL[p] ?? p}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Subscription</label>
-              <select value={form.subscription_status} onChange={(e) => setForm({ ...form, subscription_status: e.target.value })} className={inp}>
-                <option value="active">Active</option>
-                <option value="expired">Expired</option>
-                <option value="suspended">Suspended</option>
-                <option value="trial">Trial</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Subscription Expires At</label>
-            <input type="date" value={form.subscription_expires_at} onChange={(e) => setForm({ ...form, subscription_expires_at: e.target.value })} className={inp} />
           </div>
           <div>
             <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Phone</label>
             <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inp} />
           </div>
+
+          {/* ── Account Owner (login) ── */}
+          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Account Owner (login)</div>
+          <div>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Owner Name</label>
+            <input value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} className={inp} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Owner Email <span className="font-normal text-[#7a6b5c]">(login)</span></label>
+            <input type="email" value={form.owner_email} onChange={(e) => setForm({ ...form, owner_email: e.target.value })} className={inp} />
+          </div>
+          <p className="sm:col-span-2 -mt-1.5 text-[10px] text-[#b09e8d]">Changing the owner email changes how they sign in — both the old and new addresses are notified.</p>
+
+          {/* ── Subscription ── */}
+          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Subscription</div>
+          <div>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Plan</label>
+            <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} className={inp}>
+              {['starter', 'pro', 'enterprise'].map((p) => (
+                <option key={p} value={p}>{PLAN_LABEL[p] ?? p}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Status</label>
+            <select value={form.subscription_status} onChange={(e) => setForm({ ...form, subscription_status: e.target.value })} className={inp}>
+              <option value="active">Active</option>
+              <option value="expired">Expired</option>
+              <option value="suspended">Suspended</option>
+              <option value="trial">Trial</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Expires At</label>
+            <input type="date" value={form.subscription_expires_at} onChange={(e) => setForm({ ...form, subscription_expires_at: e.target.value })} className={inp} />
+          </div>
           <div>
             <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Address</label>
-            <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={2} className={`${inp} resize-none`} />
+            <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inp} />
           </div>
         </div>
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-100">
+
+        {/* Footer (fixed) */}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 shrink-0">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
           <button onClick={handleSave} disabled={saving}
             className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-60">
