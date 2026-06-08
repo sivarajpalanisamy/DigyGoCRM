@@ -21,6 +21,8 @@ interface Tenant {
   is_active: boolean;
   subscription_status: string;
   subscription_expires_at: string | null;
+  billing_cycle?: string | null;
+  plan_price?: number | null;
   phone: string | null;
   address: string | null;
   created_at: string;
@@ -44,6 +46,17 @@ const PLAN_LABEL: Record<string, string> = {
   pro:        'Premium User',
   enterprise: 'Enterprise',
 };
+
+// Live subscription state for the admin list (blocked = end-of-day expiry passed or manual).
+function subState(t: { subscription_status: string; subscription_expires_at: string | null }) {
+  const exp = t.subscription_expires_at ? new Date(t.subscription_expires_at).getTime() : null;
+  const now = Date.now();
+  const blocked = t.subscription_status === 'suspended' || t.subscription_status === 'expired' || (exp !== null && now >= exp);
+  const daysLeft = exp !== null ? Math.ceil((exp - now) / 86_400_000) : null;
+  if (blocked) return { tone: 'red' as const, label: t.subscription_status === 'suspended' ? 'Suspended' : 'Blocked — expired' };
+  if (daysLeft !== null && daysLeft <= 7) return { tone: 'amber' as const, label: `Expiring in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` };
+  return { tone: 'green' as const, label: 'Active Subscription' };
+}
 
 // ── Domain Management Modal ───────────────────────────────────────────────────
 
@@ -309,7 +322,8 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
 function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({
     name: tenant.name,
-    plan: tenant.plan,
+    billing_cycle: (tenant.billing_cycle === 'yearly' ? 'yearly' : 'monthly'),
+    plan_price: tenant.plan_price != null ? String(tenant.plan_price) : '',
     subscription_status: tenant.subscription_status,
     subscription_expires_at: tenant.subscription_expires_at ? tenant.subscription_expires_at.slice(0, 10) : '',
     phone: tenant.phone ?? '',
@@ -318,12 +332,14 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
     owner_email: tenant.admin_email ?? '',
   });
   const [saving, setSaving] = useState(false);
+  const [renewing, setRenewing] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await api.patch(`/api/auth/tenants/${tenant.id}`, {
         ...form,
+        plan_price: form.plan_price === '' ? null : Number(form.plan_price),
         subscription_expires_at: form.subscription_expires_at || null,
       });
       toast.success('Account updated');
@@ -333,6 +349,21 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
       toast.error(err.message ?? 'Failed to update');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRenew = async () => {
+    setRenewing(true);
+    try {
+      const r = await api.post<any>(`/api/auth/tenants/${tenant.id}/renew`, { billing_cycle: form.billing_cycle });
+      toast.success('Subscription renewed');
+      onSaved();
+      onClose();
+      void r;
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to renew');
+    } finally {
+      setRenewing(false);
     }
   };
 
@@ -376,13 +407,18 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
           <p className="sm:col-span-2 -mt-1.5 text-[10px] text-[#b09e8d]">Changing the owner email changes how they sign in — both the old and new addresses are notified.</p>
 
           {/* ── Subscription ── */}
-          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Subscription</div>
+          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Subscription</span>
+            <button type="button" onClick={handleRenew} disabled={renewing}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-60">
+              {renewing ? 'Renewing…' : `Renew +1 ${form.billing_cycle === 'yearly' ? 'year' : 'month'}`}
+            </button>
+          </div>
           <div>
             <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Plan</label>
-            <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} className={inp}>
-              {['starter', 'pro', 'enterprise'].map((p) => (
-                <option key={p} value={p}>{PLAN_LABEL[p] ?? p}</option>
-              ))}
+            <select value={form.billing_cycle} onChange={(e) => setForm({ ...form, billing_cycle: e.target.value })} className={inp}>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
             </select>
           </div>
           <div>
@@ -395,10 +431,14 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Expires At</label>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Expires At <span className="font-normal text-[#7a6b5c]">(blank = never)</span></label>
             <input type="date" value={form.subscription_expires_at} onChange={(e) => setForm({ ...form, subscription_expires_at: e.target.value })} className={inp} />
           </div>
           <div>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Price (₹ / period)</label>
+            <input type="number" value={form.plan_price} onChange={(e) => setForm({ ...form, plan_price: e.target.value })} className={inp} placeholder="e.g. 1499" />
+          </div>
+          <div className="sm:col-span-2">
             <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Address</label>
             <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inp} />
           </div>
@@ -692,22 +732,25 @@ export default function SuperAdminPage() {
 
                     {/* Active Subscription */}
                     <td className="px-4 py-4 min-w-[150px]">
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5">
-                          {t.subscription_status === 'active'
-                            ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                            : <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
-                          <span className={cn('text-[12px] font-semibold capitalize',
-                            t.subscription_status === 'active' ? 'text-green-700' : 'text-red-500')}>
-                            {t.subscription_status === 'active' ? 'Active Subscription' : t.subscription_status}
-                          </span>
-                        </div>
-                        {t.subscription_expires_at && (
-                          <p className="text-[11px] text-[#7a6b5c] pl-5">
-                            {format(new Date(t.subscription_expires_at), 'MMM dd, yyyy hh:mm aa')}
-                          </p>
-                        )}
-                      </div>
+                      {(() => {
+                        const st = subState(t);
+                        const tone = st.tone === 'green'
+                          ? 'text-green-700' : st.tone === 'amber' ? 'text-amber-600' : 'text-red-500';
+                        return (
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5">
+                              {st.tone === 'green'
+                                ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                                : <XCircle className={cn('w-4 h-4 shrink-0', st.tone === 'amber' ? 'text-amber-500' : 'text-red-400')} />}
+                              <span className={cn('text-[12px] font-semibold', tone)}>{st.label}</span>
+                            </div>
+                            <p className="text-[11px] text-[#7a6b5c] pl-5">
+                              {t.billing_cycle ? (t.billing_cycle === 'yearly' ? 'Yearly · ' : 'Monthly · ') : ''}
+                              {t.subscription_expires_at ? format(new Date(t.subscription_expires_at), 'MMM dd, yyyy') : 'No expiry'}
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* Sub Account Details */}

@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { ChevronDown } from 'lucide-react';
 
-const PLANS = ['Starter', 'Pro', 'Enterprise'];
+const PLANS = ['Monthly', 'Yearly'];
 const SNAPSHOTS = ['Blank (Start fresh)', 'Sales Starter Pack', 'Real Estate Template', 'E-Commerce Template'];
 
 export default function CreateBusinessPage() {
@@ -48,7 +48,8 @@ export default function CreateBusinessPage() {
         adminName: `${form.firstName} ${form.lastName}`.trim(),
         email: form.email,
         password,
-        plan: form.plan.toLowerCase(),
+        plan: 'starter',
+        billing_cycle: form.plan.toLowerCase(), // 'monthly' | 'yearly'
         phone: form.phone,
         address: form.address,
       });

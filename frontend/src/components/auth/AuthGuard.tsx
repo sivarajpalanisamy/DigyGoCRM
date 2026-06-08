@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useBrandingStore } from '@/store/brandingStore';
+import { useBillingStore } from '@/store/billingStore';
+import { PaymentDuePage } from '@/pages/PaymentDuePage';
 
 export function AuthGuard() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const currentUser     = useAuthStore((s) => s.currentUser);
+  const billingBlocked  = useBillingStore((s) => s.blocked);
   const bootstrapFromRefresh = useAuthStore((s) => s.bootstrapFromRefresh);
   const fetchBranding   = useBrandingStore((s) => s.fetchBranding);
   const [checking, setChecking] = useState(!isAuthenticated);
@@ -38,6 +41,12 @@ export function AuthGuard() {
   // Without tenantId every tenant-scoped API returns 403.
   if (!isSuperAdminRoute && currentUser?.role === 'super_admin' && !currentUser?.tenantId) {
     return <Navigate to="/admin" replace />;
+  }
+
+  // Subscription expired → block the whole tenant UI behind the Payment Due screen.
+  // Super admin is never blocked (no tenant subscription).
+  if (billingBlocked && currentUser?.role !== 'super_admin') {
+    return <PaymentDuePage />;
   }
 
   return <Outlet />;

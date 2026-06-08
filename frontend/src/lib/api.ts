@@ -4,6 +4,10 @@ export class SessionExpiredError extends Error {
   constructor() { super('Session expired'); this.name = 'SessionExpiredError'; }
 }
 
+export class SubscriptionBlockedError extends Error {
+  constructor() { super('Subscription expired'); this.name = 'SubscriptionBlockedError'; }
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) { super(message); this.name = 'ApiError'; this.status = status; }
@@ -73,6 +77,15 @@ async function request<T>(path: string, options: RequestInit = {}, _retry = true
   }
 
   const data = await res.json().catch(() => ({}));
+
+  // Subscription expired → flip the global Payment Due overlay (don't logout/retry).
+  if (res.status === 402 && (data as any)?.code === 'subscription_expired') {
+    import('@/store/billingStore').then(({ useBillingStore }) => {
+      setTimeout(() => useBillingStore.getState().setBlocked(data as any), 0);
+    });
+    throw new SubscriptionBlockedError();
+  }
+
   if (!res.ok) throw new ApiError(res.status, (data as any).error ?? 'Request failed');
   return data as T;
 }

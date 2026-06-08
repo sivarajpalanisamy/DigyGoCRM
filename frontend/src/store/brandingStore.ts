@@ -183,6 +183,19 @@ export const useBrandingStore = create<BrandingState>((set) => ({
 
   // Post-login: apply the authenticated tenant's branding (any domain)
   applyTenantBranding: (d: BrandingData) => {
+    // Subscription gate: the tenant payload carries blocked + subscription fields.
+    const anyD = d as any;
+    import('./billingStore').then(({ useBillingStore }) => {
+      if (anyD?.blocked) {
+        useBillingStore.getState().setBlocked({
+          status: anyD.subscription_status, business_name: anyD.name,
+          billing_cycle: anyD.billing_cycle, expires_at: anyD.subscription_expires_at,
+          amount_due: anyD.plan_price,
+        });
+      } else {
+        useBillingStore.getState().clear();
+      }
+    });
     const brandColor = d.brandColor ?? DEFAULT_COLOR;
     const hasCustom = !!(d.logoUrl || d.tabTitle || (d.brandColor && d.brandColor !== DEFAULT_COLOR) || d.faviconUrl || d.appBgColor || d.accentColor);
     set({

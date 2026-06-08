@@ -13,26 +13,59 @@ export interface AuthRequest extends Request {
   user?: AuthPayload;
 }
 
-// ── Tenant active cache: avoids a DB hit on every authenticated request ───────
-// Entries expire in 30 s; calling invalidateTenantCache() evicts immediately.
-const tenantActiveCache = new Map<string, { active: boolean; ts: number }>();
+// ── Tenant billing/active cache: avoids a DB hit on every authenticated request ──
+// 30 s TTL; invalidateTenantCache() evicts immediately (e.g. on renewal → instant unblock).
+export interface TenantBilling {
+  active: boolean;
+  status: string | null;
+  expiresAt: Date | null;
+  graceDays: number;
+  name: string | null;
+  planPrice: number | null;
+  billingCycle: string | null;
+  ts: number;
+}
+const tenantBillingCache = new Map<string, TenantBilling>();
 const TENANT_TTL_MS = 30_000;
 
 export function invalidateTenantCache(tenantId: string): void {
-  tenantActiveCache.delete(tenantId);
+  tenantBillingCache.delete(tenantId);
 }
 
-async function checkTenantActive(tenantId: string): Promise<boolean> {
-  const cached = tenantActiveCache.get(tenantId);
-  if (cached && Date.now() - cached.ts < TENANT_TTL_MS) return cached.active;
+export async function getTenantBilling(tenantId: string): Promise<TenantBilling | null> {
+  const cached = tenantBillingCache.get(tenantId);
+  if (cached && Date.now() - cached.ts < TENANT_TTL_MS) return cached;
   try {
-    const result = await query('SELECT is_active FROM tenants WHERE id = $1', [tenantId]);
-    const active = result.rows[0]?.is_active === true;
-    tenantActiveCache.set(tenantId, { active, ts: Date.now() });
-    return active;
+    const r = await query(
+      `SELECT is_active, subscription_status, subscription_expires_at, grace_days, name, plan_price, billing_cycle
+       FROM tenants WHERE id = $1`,
+      [tenantId]
+    );
+    const row = r.rows[0];
+    if (!row) return null;
+    const info: TenantBilling = {
+      active: row.is_active === true,
+      status: row.subscription_status ?? null,
+      expiresAt: row.subscription_expires_at ? new Date(row.subscription_expires_at) : null,
+      graceDays: Number(row.grace_days ?? 0),
+      name: row.name ?? null,
+      planPrice: row.plan_price != null ? Number(row.plan_price) : null,
+      billingCycle: row.billing_cycle ?? null,
+      ts: Date.now(),
+    };
+    tenantBillingCache.set(tenantId, info);
+    return info;
   } catch {
-    return true; // fail open on DB error — don't lock out all users on transient issue
+    return null; // fail open on DB error — don't lock everyone out on a transient issue
   }
+}
+
+// Live decision: is the tenant's subscription currently blocking UI access?
+// expiresAt is stored as END-OF-DAY, so `now >= expiresAt (+grace)` = expired.
+export function isSubscriptionBlocked(info: TenantBilling): boolean {
+  if (info.status === 'suspended' || info.status === 'expired') return true;
+  if (info.expiresAt && Date.now() >= info.expiresAt.getTime() + info.graceDays * 86_400_000) return true;
+  return false;
 }
 
 // ── requireAuth ───────────────────────────────────────────────────────────────
@@ -47,18 +80,19 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as AuthPayload;
     req.user = payload;
 
-    // For tenant-scoped users, verify the tenant is still active.
-    // super_admin has tenantId=null — skip the check.
+    // Tenant-scoped users: verify the tenant is still active (hard suspend → 403).
+    // The SOFT subscription block lives in requireTenant so /api/auth/* (login/me)
+    // stays reachable. super_admin has tenantId=null → skip.
     if (payload.tenantId) {
-      checkTenantActive(payload.tenantId)
-        .then((active) => {
-          if (!active) {
+      getTenantBilling(payload.tenantId)
+        .then((info) => {
+          if (info && !info.active) {
             res.status(403).json({ error: 'Account suspended. Please contact support.' });
           } else {
-            next();
+            next(); // fail open if info is null (transient DB error)
           }
         })
-        .catch(() => next()); // fail open on transient DB error
+        .catch(() => next());
       return;
     }
 
@@ -68,13 +102,27 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
   }
 }
 
-// ── requireTenant ─────────────────────────────────────────────────────────────
-// Rejects requests from super_admin (tenantId=null) hitting tenant-scoped data
-// routes directly. During impersonation the token already carries the tenant's
-// userId/tenantId so this check is transparent to legitimate impersonation use.
-export function requireTenant(req: AuthRequest, res: Response, next: NextFunction) {
+// ── requireTenant (+ subscription gate) ────────────────────────────────────────
+// Used by the 25 tenant-DATA route files. /api/auth/*, /api/public/*, /api/webhooks/*
+// and the in-process workers do NOT use it — so login, lead ingestion and automation
+// keep running while only the staff UI is blocked behind the Payment Due screen.
+export async function requireTenant(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   if (!req.user?.tenantId) {
     res.status(403).json({ error: 'This endpoint requires a tenant context. Use impersonation to access tenant data.' });
+    return;
+  }
+  const info = await getTenantBilling(req.user.tenantId);
+  if (info && isSubscriptionBlocked(info)) {
+    res.status(402).json({
+      blocked: true,
+      code: 'subscription_expired',
+      status: info.status,
+      business_name: info.name,
+      billing_cycle: info.billingCycle,
+      expires_at: info.expiresAt ? info.expiresAt.toISOString() : null,
+      amount_due: info.planPrice,
+      grace_days: info.graceDays,
+    });
     return;
   }
   next();

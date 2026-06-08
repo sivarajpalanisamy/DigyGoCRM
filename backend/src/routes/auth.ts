@@ -8,13 +8,32 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { query, pool } from '../db';
 import { config } from '../config';
-import { requireAuth, requireSuperAdmin, AuthRequest, invalidateTenantCache } from '../middleware/auth';
+import { requireAuth, requireSuperAdmin, AuthRequest, invalidateTenantCache, getTenantBilling, isSubscriptionBlocked } from '../middleware/auth';
 import { invalidateDomainCache, setCachedDomain } from '../utils/domainCache';
 import { addAllowedOrigin, removeAllowedOrigin } from '../utils/corsOrigins';
 import { sendEmail, getTenantEmailIdentity } from '../services/email';
 
 // OS-level resolver (same as `ping`/getaddrinfo) — used as a final fallback
 const dnsLookupAll = promisify(dns.lookup) as (host: string, opts: { all: true; family: 4 }) => Promise<Array<{ address: string }>>;
+
+// ── Subscription date math (IST, end-of-day, month-end clamp) ──────────────────
+// Returns the END of the target day in IST (23:59:59.999) as a UTC instant, after
+// adding one billing period. "Paid 8 Jun (monthly)" → expires 8 Jul 23:59:59 IST,
+// so the client keeps all of 8 Jul. Clamps month-end (31 Jan +1m → 28/29 Feb).
+const IST_MS = 5.5 * 3600 * 1000;
+function endOfDayISTAfterPeriod(base: Date, cycle: 'monthly' | 'yearly'): string {
+  const ist = new Date(base.getTime() + IST_MS);
+  let y = ist.getUTCFullYear(), m = ist.getUTCMonth();
+  const day = ist.getUTCDate();
+  if (cycle === 'yearly') y += 1; else m += 1;
+  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); // last day of target month
+  const d = Math.min(day, lastDay);
+  const endIstMs = Date.UTC(y, m, d, 23, 59, 59, 999) - IST_MS;
+  return new Date(endIstMs).toISOString();
+}
+function normalizeCycle(c: any): 'monthly' | 'yearly' {
+  return String(c).toLowerCase() === 'yearly' ? 'yearly' : 'monthly';
+}
 
 // Traefik dynamic config directory — Traefik watches this and auto-provisions SSL
 const TRAEFIK_DYNAMIC_DIR = '/etc/traefik/dynamic';
@@ -178,6 +197,16 @@ async function completeLogin(res: Response, user: any): Promise<any> {
   }
   const accessToken = issueAccessToken(user.id, user.tenant_id, user.role, user.tenant_plan ?? 'starter');
   setRefreshCookie(res, refreshToken);
+  if (user.tenant_id) {
+    const bill = await getTenantBilling(user.tenant_id);
+    if (bill) {
+      tenantBranding.subscription_status = bill.status;
+      tenantBranding.subscription_expires_at = bill.expiresAt ? bill.expiresAt.toISOString() : null;
+      tenantBranding.billing_cycle = bill.billingCycle;
+      tenantBranding.plan_price = bill.planPrice;
+      tenantBranding.blocked = isSubscriptionBlocked(bill);
+    }
+  }
   return {
     token: accessToken,
     user: { id: user.id, tenantId: user.tenant_id, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatar_url },
@@ -446,6 +475,8 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
     const isSuper = user.role === 'super_admin';
     if (isSuper) { tenantName = 'DigyGo CRM'; tenantLogo = null; }
 
+    const bill = (!isSuper && user.tenant_id) ? await getTenantBilling(user.tenant_id) : null;
+
     res.json({
       id: user.id, tenantId: user.tenant_id, email: user.email,
       name: user.name, role: user.role, avatarUrl: user.avatar_url,
@@ -460,6 +491,11 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
         tabTitle:     isSuper ? null : (user.tab_title || null),
         appBgColor:   isSuper ? null : (user.app_bg_color || null),
         accentColor:  isSuper ? null : (user.accent_color || null),
+        subscription_status:     bill?.status ?? null,
+        subscription_expires_at: bill?.expiresAt ? bill.expiresAt.toISOString() : null,
+        billing_cycle:           bill?.billingCycle ?? null,
+        plan_price:              bill?.planPrice ?? null,
+        blocked:                 bill ? isSubscriptionBlocked(bill) : false,
       },
     });
   } catch (err) {
@@ -475,6 +511,8 @@ router.post('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest,
     adminName: z.string().min(1),
     password: z.string().min(4),
     plan: z.enum(['starter', 'growth', 'pro', 'enterprise']).default('starter'),
+    billing_cycle: z.enum(['monthly', 'yearly']).optional(),
+    plan_price: z.number().optional().nullable(),
     phone: z.string().optional().nullable(),
     address: z.string().optional().nullable(),
   });
@@ -483,15 +521,18 @@ router.post('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest,
     res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
     return;
   }
-  const { businessName, email, adminName, password, plan, phone = null, address = null } = parsed.data;
+  const { businessName, email, adminName, password, plan, phone = null, address = null, plan_price = null } = parsed.data;
+  const cycle = normalizeCycle(parsed.data.billing_cycle ?? 'monthly');
+  const expiresAt = endOfDayISTAfterPeriod(new Date(), cycle);
 
   const conn = await pool.connect();
   try {
     await conn.query('BEGIN');
 
     const tenantRes = await conn.query(
-      `INSERT INTO tenants (name, email, plan, phone, address) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-      [businessName, email.toLowerCase().trim(), plan, phone, address]
+      `INSERT INTO tenants (name, email, plan, phone, address, billing_cycle, subscription_started_at, subscription_expires_at, subscription_status, plan_price)
+       VALUES ($1,$2,$3,$4,$5,$6, now(), $7, 'active', $8) RETURNING id`,
+      [businessName, email.toLowerCase().trim(), plan, phone, address, cycle, expiresAt, plan_price]
     );
     const tenantId = tenantRes.rows[0].id;
 
@@ -779,7 +820,7 @@ router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, 
     const result = await query(`
       SELECT
         t.id, t.name, t.email, t.plan, t.is_active,
-        t.subscription_status, t.subscription_expires_at,
+        t.subscription_status, t.subscription_expires_at, t.billing_cycle, t.plan_price,
         t.phone, t.address, t.created_at,
         t.custom_domain, t.domain_status,
         COUNT(DISTINCT u.id) FILTER (WHERE u.is_active=TRUE) AS user_count,
@@ -803,13 +844,15 @@ router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, 
 
 // PATCH /api/auth/tenants/:id
 router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
-  const { name, plan, subscription_status, subscription_expires_at, phone, address, brand_color, logo_url, reply_to_email, owner_name, owner_email } = req.body;
+  const { name, plan, subscription_status, subscription_expires_at, billing_cycle, plan_price, phone, address, brand_color, logo_url, reply_to_email, owner_name, owner_email } = req.body;
   const updates: string[] = [];
   const params: any[] = [];
   if (name !== undefined)                    { params.push(name);                    updates.push(`name=$${params.length}`); }
   if (plan !== undefined)                    { params.push(plan);                    updates.push(`plan=$${params.length}`); }
   if (subscription_status !== undefined)     { params.push(subscription_status);     updates.push(`subscription_status=$${params.length}`); }
   if (subscription_expires_at !== undefined) { params.push(subscription_expires_at); updates.push(`subscription_expires_at=$${params.length}`); }
+  if (billing_cycle !== undefined)           { params.push(normalizeCycle(billing_cycle)); updates.push(`billing_cycle=$${params.length}`); }
+  if (plan_price !== undefined)              { params.push(plan_price);              updates.push(`plan_price=$${params.length}`); }
   if (phone !== undefined)                   { params.push(phone);                   updates.push(`phone=$${params.length}`); }
   if (address !== undefined)                 { params.push(address);                 updates.push(`address=$${params.length}`); }
   if (brand_color !== undefined)             { params.push(brand_color || '#c2410c'); updates.push(`brand_color=$${params.length}`); }
@@ -868,6 +911,31 @@ router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthReq
     if (err.code === '23505') { res.status(409).json({ error: 'That email is already in use by another account' }); return; }
     console.error(err); res.status(500).json({ error: 'Server error' });
   }
+});
+
+// POST /api/auth/tenants/:id/renew — extend subscription by one billing period.
+// Base = max(now, current expiry) so a renewal within the period extends continuously;
+// after a lapse it starts fresh from today. Sets status=active, clears the cache → instant unblock.
+router.post('/tenants/:id/renew', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const t = (await query(
+      'SELECT billing_cycle, subscription_expires_at FROM tenants WHERE id=$1',
+      [req.params.id]
+    )).rows[0];
+    if (!t) { res.status(404).json({ error: 'Account not found' }); return; }
+    const cycle = normalizeCycle(req.body.billing_cycle ?? t.billing_cycle ?? 'monthly');
+    const cur = t.subscription_expires_at ? new Date(t.subscription_expires_at).getTime() : 0;
+    const base = new Date(Math.max(Date.now(), cur));
+    const newExpiry = endOfDayISTAfterPeriod(base, cycle);
+    await query(
+      `UPDATE tenants SET subscription_expires_at=$1, subscription_status='active', billing_cycle=$2,
+              subscription_started_at=COALESCE(subscription_started_at, now()) WHERE id=$3`,
+      [newExpiry, cycle, req.params.id]
+    );
+    invalidateTenantCache(req.params.id); // instant unblock
+    auditLog(req.user!.userId, 'renew_subscription', { tenantId: req.params.id, metadata: { cycle, newExpiry }, ip: req.ip });
+    res.json({ success: true, subscription_expires_at: newExpiry, billing_cycle: cycle });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
 // DELETE /api/auth/tenants/:id — soft-deactivate + revoke all sessions (#54 / #55)
