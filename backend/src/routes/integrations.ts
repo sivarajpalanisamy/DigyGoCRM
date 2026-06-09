@@ -6,7 +6,7 @@ import { checkPermission } from '../middleware/permissions';
 import { encrypt, decrypt } from '../utils/crypto';
 import { parseMetaFieldData } from '../utils/meta';
 import { triggerWorkflows, executeNodes, enrichLead } from './workflows';
-import { sendNewLeadNotification } from '../utils/notifications';
+import { sendNewLeadNotification, sendIntegrationAlert } from '../utils/notifications';
 import { emitLeadCreated } from '../utils/leadEvents';
 import https from 'https';
 
@@ -751,7 +751,7 @@ router.post('/meta/manual-connect', checkPermission('meta_forms:create'), async 
 router.get('/meta/status', checkPermission('integrations:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
-      'SELECT token_expiry, page_ids, page_names, blocked_page_ids, created_at FROM meta_integrations WHERE tenant_id=$1',
+      'SELECT token_expiry, page_ids, page_names, blocked_page_ids, created_at, needs_reconnect, last_error, last_error_at, last_success_at FROM meta_integrations WHERE tenant_id=$1',
       [req.user!.tenantId]
     );
     if (!result.rows[0]) {
@@ -774,6 +774,10 @@ router.get('/meta/status', checkPermission('integrations:view'), async (req: Aut
       tokenExpired,
       tokenDaysLeft,
       connectedAt: row.created_at ?? null,
+      needsReconnect: row.needs_reconnect === true,
+      lastError: row.last_error ?? null,
+      lastErrorAt: row.last_error_at ?? null,
+      lastSuccessAt: row.last_success_at ?? null,
       connectedPages: pageIds.map((id) => ({ id, name: nameMap[id] ?? id })),
       blockedPages: Object.entries(blockedMap).map(([id, name]) => ({ id, name })),
     });
@@ -1899,6 +1903,36 @@ router.delete('/configs/:integrationId', checkPermission('integrations:manage'),
 });
 
 // ── Meta polling worker (backup for missed webhooks, runs every 5 min) ────────
+// Records Meta ingestion health per tenant. On auth failure (invalid/expired token) it
+// flags needs_reconnect and alerts the owner (deduped to once / 24h). On success it clears
+// the flag and stamps last_success_at. Best-effort; never throws.
+async function markMetaHealth(tenantId: string, ok: boolean, errMsg: string | null): Promise<void> {
+  try {
+    if (ok) {
+      await query(
+        `UPDATE meta_integrations SET needs_reconnect=FALSE, last_error=NULL, last_success_at=NOW() WHERE tenant_id=$1`,
+        [tenantId]
+      );
+      return;
+    }
+    const r = await query(
+      `UPDATE meta_integrations SET needs_reconnect=TRUE, last_error=$2, last_error_at=NOW()
+       WHERE tenant_id=$1 RETURNING last_alert_at`,
+      [tenantId, (errMsg ?? 'Meta API error').slice(0, 500)]
+    );
+    const lastAlert = r.rows[0]?.last_alert_at;
+    const stale = !lastAlert || (Date.now() - new Date(lastAlert).getTime() > 24 * 3600 * 1000);
+    if (stale) {
+      await query(`UPDATE meta_integrations SET last_alert_at=NOW() WHERE tenant_id=$1`, [tenantId]);
+      await sendIntegrationAlert(
+        tenantId,
+        'Facebook lead capture disconnected',
+        'We can no longer pull leads from your Facebook page — the connection/token is no longer valid. New leads are NOT being captured. Please go to Integrations → Meta and reconnect to resume lead capture.'
+      ).catch(() => {});
+    }
+  } catch (e: any) { console.error('[markMetaHealth]', e?.message); }
+}
+
 export async function pollMetaLeads(): Promise<void> {
   try {
     const formsRes = await query(
@@ -1908,9 +1942,20 @@ export async function pollMetaLeads(): Promise<void> {
        WHERE mf.is_active = TRUE`
     );
 
+    const userTokenCache = new Map<string, string>();              // tenantId -> user token
+    const pageTokenCache = new Map<string, Map<string, string>>(); // tenantId -> (pageId -> page token)
+    const tenantStatus = new Map<string, { ok: boolean; err: string | null }>();
+
     for (const mf of formsRes.rows) {
       try {
-        const token = decrypt(mf.enc_token);
+        const tid: string = mf.tenant_id;
+        let userTok = userTokenCache.get(tid);
+        if (userTok === undefined) { try { userTok = decrypt(mf.enc_token); } catch { userTok = ''; } userTokenCache.set(tid, userTok); }
+        let ptMap = pageTokenCache.get(tid);
+        if (!ptMap) { ptMap = await buildPageTokenMap(userTok).catch(() => new Map<string, string>()); pageTokenCache.set(tid, ptMap); }
+        // Leadgen (/{form}/leads) requires a PAGE token — the user token returns #190.
+        // Fall back to the user token only if no page token could be derived.
+        const token = (mf.page_id && ptMap.get(mf.page_id)) || userTok;
         // On first run use activated_at as the cursor so only leads submitted
         // AFTER the user turned Auto ON are fetched — no historical mass-import.
         // Subsequent runs use last_sync_at with a 60-second overlap for clock skew.
@@ -1923,6 +1968,17 @@ export async function pollMetaLeads(): Promise<void> {
           `/${mf.form_id}/leads?fields=id,field_data&since=${since}`,
           token
         );
+        // Surface Graph errors instead of silently swallowing them. An auth error (190 /
+        // OAuthException) means the token is dead → flag the tenant for reconnect.
+        if (leadsRes && leadsRes.error) {
+          const ge = leadsRes.error;
+          console.error(`[Meta poll] form ${mf.form_id} graph error:`, ge.message);
+          if (ge.code === 190 || ge.type === 'OAuthException') {
+            tenantStatus.set(tid, { ok: tenantStatus.get(tid)?.ok ?? false, err: ge.message });
+          }
+          continue;
+        }
+        if (tenantStatus.get(tid)?.ok !== true) tenantStatus.set(tid, { ok: true, err: tenantStatus.get(tid)?.err ?? null });
         const leads: Array<{ id: string; field_data: Array<{ name: string; values: string[] }> }> =
           leadsRes.data ?? [];
 
@@ -1980,7 +2036,13 @@ export async function pollMetaLeads(): Promise<void> {
           `UPDATE meta_forms SET leads_count=(SELECT COUNT(*) FROM leads WHERE meta_form_id=$1 AND tenant_id=$2 AND is_deleted=FALSE), last_sync_at=NOW() WHERE id=$3`,
           [mf.form_id, mf.tenant_id, mf.id]
         );
-      } catch { /* skip this form, continue with others */ }
+      } catch (e: any) { console.error('[Meta poll] form error', mf.form_id, e?.message); }
+    }
+
+    // Per-tenant health: flag reconnect on auth failure, otherwise clear + record success.
+    for (const [tid, st] of tenantStatus) {
+      if (st.err && !st.ok) await markMetaHealth(tid, false, st.err);
+      else if (st.ok) await markMetaHealth(tid, true, null);
     }
   } catch (err) { console.error('[Meta poll error]', err); }
 }

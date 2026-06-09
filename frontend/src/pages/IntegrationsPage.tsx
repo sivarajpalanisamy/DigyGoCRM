@@ -1087,10 +1087,11 @@ export default function IntegrationsPage() {
     sheets: false,
   });
   const [sheetsInfo, setSheetsInfo] = useState<{ email: string | null; configs: any[] }>({ email: null, configs: [] });
+  const [metaHealth, setMetaHealth] = useState<{ needsReconnect: boolean; lastError: string | null }>({ needsReconnect: false, lastError: null });
 
   const loadStatus = async () => {
     const [meta, waba, smtp, configs, waPersStatus, superfone, sheets] = await Promise.allSettled([
-      api.get<{ connected: boolean }>('/api/integrations/meta/status'),
+      api.get<{ connected: boolean; needsReconnect?: boolean; lastError?: string | null }>('/api/integrations/meta/status'),
       api.get<{ connected: boolean }>('/api/integrations/waba/status'),
       api.get<{ connected: boolean }>('/api/integrations/smtp/status'),
       api.get<Record<string, { is_active: boolean }>>('/api/integrations/configs'),
@@ -1108,6 +1109,10 @@ export default function IntegrationsPage() {
       superfone: superfone.status === 'fulfilled' && !!superfone.value?.connected,
       sheets:    sheets.status    === 'fulfilled' && !!sheets.value?.connected,
     });
+
+    if (meta.status === 'fulfilled' && meta.value) {
+      setMetaHealth({ needsReconnect: !!meta.value.needsReconnect, lastError: meta.value.lastError ?? null });
+    }
 
     if (sheets.status === 'fulfilled' && sheets.value) {
       setSheetsInfo({ email: sheets.value.email, configs: sheets.value.configs ?? [] });
@@ -1152,6 +1157,20 @@ export default function IntegrationsPage() {
           <p className="text-[12px] text-[#9e8e7e]">Connect your tools to DigyGo CRM</p>
         </div>
       </div>
+
+      {/* Meta disconnected banner — lead capture is broken until reconnected */}
+      {metaHealth.needsReconnect && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
+          <span className="text-red-500 text-lg leading-none mt-0.5">⚠️</span>
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold text-red-700">Facebook lead capture is disconnected</p>
+            <p className="text-[12px] text-red-600 mt-0.5">
+              We can no longer pull leads from your Facebook page — new leads are <b>not</b> being captured.
+              Reconnect Meta below to resume.{metaHealth.lastError ? ` (Meta: ${metaHealth.lastError})` : ''}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

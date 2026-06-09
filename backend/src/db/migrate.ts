@@ -94,6 +94,7 @@ const MIGRATIONS = [
   'migration_092_leads_assign_perm.sql',
   'migration_093_subscription_billing.sql',
   'migration_094_login_pin.sql',
+  'migration_095_meta_health.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.

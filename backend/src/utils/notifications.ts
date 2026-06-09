@@ -2,6 +2,44 @@ import { query } from '../db';
 import { emitToUser } from '../socket';
 import { sendEmail, isSmtpConfigured, getTenantEmailIdentity } from '../services/email';
 
+// Alert owner + integration managers when an integration (e.g. Meta) breaks.
+// In-app notification + email. Best-effort; never throws to the caller.
+export async function sendIntegrationAlert(tenantId: string, title: string, message: string): Promise<void> {
+  try {
+    const recipients = new Set<string>();
+    const ownerRow = await query(
+      `SELECT id, email FROM users WHERE tenant_id=$1::uuid AND is_owner=TRUE AND is_active=TRUE LIMIT 1`, [tenantId]);
+    if (ownerRow.rows[0]) recipients.add(ownerRow.rows[0].id);
+    const mgrs = await query(
+      `SELECT u.id FROM users u LEFT JOIN user_permissions up ON up.user_id=u.id
+       WHERE u.tenant_id=$1::uuid AND u.is_active=TRUE AND u.is_owner IS NOT TRUE
+         AND (up.permissions->>'integrations:manage')::boolean = TRUE`, [tenantId]);
+    for (const r of mgrs.rows) recipients.add(r.id);
+
+    for (const uid of recipients) {
+      const n = await query(
+        `INSERT INTO notifications (tenant_id, user_id, title, message, type)
+         VALUES ($1::uuid,$2::uuid,$3,$4,'integration') RETURNING id, created_at`,
+        [tenantId, uid, title, message]);
+      if (n.rows[0]) emitToUser(uid, 'notification:new', {
+        id: n.rows[0].id, type: 'integration', title, message, is_read: false, created_at: n.rows[0].created_at });
+    }
+    // Email the owner directly (independent of prefs — this is an outage alert)
+    if (ownerRow.rows[0]?.email) {
+      const ident = await getTenantEmailIdentity(tenantId);
+      await sendEmail({
+        to: ownerRow.rows[0].email,
+        subject: title,
+        fromName: ident.fromName,
+        replyTo: ident.replyTo,
+        html: `<div style="font-family:Arial,sans-serif;max-width:460px;margin:0 auto">
+                 <p style="color:#1c1410;font-size:15px;font-weight:700">${title}</p>
+                 <p style="color:#5c5245;font-size:14px">${message}</p></div>`,
+      }).catch(() => {});
+    }
+  } catch (e: any) { console.error('[sendIntegrationAlert]', e?.message); }
+}
+
 // Fix 9: batch-fetch prefs for a set of user IDs
 async function batchGetPrefs(
   userIds: string[],
