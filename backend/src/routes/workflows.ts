@@ -10,6 +10,7 @@ import { decrypt } from '../utils/crypto';
 import { maskPhone } from '../utils/phone';
 import { emitToTenant, emitToUser } from '../socket';
 import { emitLeadCreated } from '../utils/leadEvents';
+import { recordStageEntry } from '../utils/stageHistory';
 import { backfillCustomFields, cleanFieldKey } from '../utils/customFields';
 
 const router = Router();
@@ -548,6 +549,7 @@ export async function executeNodes(
               if (node.config.stage_id) {
                 lead.stage_id = node.config.stage_id as string;
                 lead.stage_name = stageName;
+                setImmediate(() => recordStageEntry(lead.id, tenantId, node.config.stage_id as string, lead.pipeline_id).catch(() => null));
               }
               if (node.config.stage_id) {
                 const updatedLead2 = (await query('SELECT * FROM leads WHERE id=$1', [lead.id])).rows[0];
@@ -578,6 +580,7 @@ export async function executeNodes(
               message = `Moved to ${stageName}`;
               lead.stage_id = stageId;
               lead.stage_name = stageName;
+              setImmediate(() => recordStageEntry(lead.id, tenantId, stageId, lead.pipeline_id).catch(() => null));
               // Re-fetch with JOIN so socket carries assigned_name display field
               const updatedLead = await query(
                 `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,

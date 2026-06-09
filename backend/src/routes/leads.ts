@@ -14,6 +14,7 @@ import https from 'https';
 import { emitToTenant } from '../socket';
 import { sendNewLeadNotification, sendLeadAssignedNotification, sendBulkImportNotification } from '../utils/notifications';
 import { pushLeadToSuperfone } from '../utils/superfone';
+import { recordStageEntry } from '../utils/stageHistory';
 import * as XLSX from 'xlsx';
 
 const router = Router();
@@ -437,6 +438,9 @@ router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(
     );
     let lead = result.rows[0];
 
+    // Stage timeline: record the initial stage entry
+    if (lead?.stage_id) setImmediate(() => recordStageEntry(lead.id, tenantId!, lead.stage_id, lead.pipeline_id).catch(() => null));
+
     // Set custom_fields (e.g. lead_quality) if provided at creation time
     if (req.body.custom_fields && typeof req.body.custom_fields === 'object') {
       const cfResult = await query(
@@ -580,6 +584,7 @@ router.patch('/:id', checkPermission('leads:edit'), validate(UpdateLeadSchema), 
          VALUES ($1,$2,'stage_change',$3,$4)`,
         [req.params.id, tenantId, `Stage changed to ${stageName}`, userId]
       );
+      setImmediate(() => recordStageEntry(req.params.id, tenantId!, req.body.stage_id, result.rows[0]?.pipeline_id).catch(() => null));
       setImmediate(() => triggerWorkflows('stage_changed', { ...result.rows[0], stage_name: stageName }, tenantId!, userId).catch(() => null));
     }
 
@@ -838,6 +843,36 @@ router.get('/:id/activities', async (req: AuthRequest, res: Response) => {
       [req.params.id, req.user!.tenantId]
     );
     res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/leads/:id/stage-history — ordered stage entries + per-stage duration (manager view)
+router.get('/:id/stage-history', async (req: AuthRequest, res: Response) => {
+  try {
+    const rows = (await query(
+      `SELECT stage_id, stage_name, entered_at FROM lead_stage_history
+       WHERE lead_id=$1 AND tenant_id=$2 ORDER BY entered_at ASC`,
+      [req.params.id, req.user!.tenantId]
+    )).rows;
+    const lead = (await query(
+      `SELECT created_at FROM leads WHERE id=$1 AND tenant_id=$2`,
+      [req.params.id, req.user!.tenantId]
+    )).rows[0];
+    const now = Date.now();
+    const history = rows.map((r: any, i: number) => {
+      const start = new Date(r.entered_at).getTime();
+      const end = i < rows.length - 1 ? new Date(rows[i + 1].entered_at).getTime() : now;
+      return {
+        stage_id: r.stage_id,
+        stage_name: r.stage_name,
+        entered_at: r.entered_at,
+        duration_ms: Math.max(0, end - start),
+        is_current: i === rows.length - 1,
+      };
+    });
+    res.json({ created_at: lead?.created_at ?? null, history });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }

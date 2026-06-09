@@ -2246,6 +2246,28 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
   const canEditLead   = usePermission('leads:edit');
   const canDeleteLead = usePermission('leads:delete');
   const canAssign     = usePermission('leads:assign');
+  const canManageStaff = usePermission('staff:manage');
+  const isManagerView = currentUser?.role === 'super_admin' || currentUser?.role === 'owner' || canManageStaff;
+  const [showStageTl, setShowStageTl] = useState(false);
+  const [stageTl, setStageTl] = useState<{ created_at: string | null; history: any[] } | null>(null);
+  const [stageTlLoading, setStageTlLoading] = useState(false);
+  const loadStageTl = () => {
+    if (stageTl || stageTlLoading) return;
+    setStageTlLoading(true);
+    api.get<any>(`/api/leads/${lead.id}/stage-history`)
+      .then((d) => setStageTl(d))
+      .catch(() => setStageTl({ created_at: null, history: [] }))
+      .finally(() => setStageTlLoading(false));
+  };
+  const fmtDur = (ms: number) => {
+    const mins = Math.floor(ms / 60000);
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    const remH = hrs % 24;
+    return remH > 0 && days < 3 ? `${days}d ${remH}h` : `${days} day${days !== 1 ? 's' : ''}`;
+  };
   const [showWaDropdown, setShowWaDropdown] = useState(false);
   const [showWaSendModal, setShowWaSendModal] = useState(false);
   const [waMessage, setWaMessage] = useState('');
@@ -2940,6 +2962,55 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
           </div>
         )}
 
+
+        {/* Stage Timeline — manager view only; collapsible (shows time spent in each stage) */}
+        {!editMode && isManagerView && (
+          <div className="px-5 py-4 border-t border-black/5">
+            <button
+              onClick={() => { const n = !showStageTl; setShowStageTl(n); if (n) loadStageTl(); }}
+              className="w-full flex items-center justify-between text-left"
+            >
+              <span className="text-[13px] font-bold text-[#1c1410] flex items-center gap-1.5">
+                <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showStageTl ? 'rotate-90' : ''}`} />
+                Stage Timeline
+              </span>
+              <span className="text-[11px] text-[#9e8e7e]">time in each stage</span>
+            </button>
+            {showStageTl && (
+              <div className="mt-3 pl-1">
+                {stageTlLoading ? (
+                  <p className="text-[12px] text-[#7a6b5c] italic">Loading…</p>
+                ) : !stageTl || stageTl.history.length === 0 ? (
+                  <p className="text-[12px] text-[#b09e8d] italic">No stage history yet</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {stageTl.history.map((s: any, i: number) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className={cn('w-2.5 h-2.5 rounded-full mt-1 shrink-0', s.is_current ? 'bg-primary ring-2 ring-primary/25' : 'bg-[#cbb9a8]')} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[13px] font-semibold text-[#1c1410] truncate">{s.stage_name || 'Unknown stage'}</span>
+                            <span className={cn('text-[11px] font-bold shrink-0 px-2 py-0.5 rounded-full',
+                              s.duration_ms > 7 * 864e5 ? 'bg-red-50 text-red-600' : s.duration_ms > 3 * 864e5 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')}>
+                              {fmtDur(s.duration_ms)}{s.is_current ? ' · ongoing' : ''}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-[#9e8e7e]">Entered {format(new Date(s.entered_at), 'dd MMM yyyy, h:mm a')}</span>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="pt-1.5 mt-1 border-t border-black/5 flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-[#7a6b5c]">Total in pipeline</span>
+                      <span className="text-[11px] font-bold text-[#1c1410]">
+                        {fmtDur(stageTl.history.reduce((a: number, s: any) => a + s.duration_ms, 0))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Activity Timeline */}
         {!editMode && (
