@@ -3589,15 +3589,19 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
           </div>
         )}
 
-        {/* Row 2: last FU (left) | days untouched (center) | next FU (right) */}
-        <div className="flex items-center justify-between gap-1 mt-2 pt-2 border-t border-black/[0.05]">
-          <div className="flex flex-col items-start min-w-0">
+        {/* Row 2: last FU (left) | updated at (center) | next FU (right) */}
+        <div className="flex items-stretch justify-between gap-1 mt-2 pt-2 border-t border-black/[0.05]">
+          <div className="flex flex-col items-start min-w-0 flex-1">
             <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
             <span className="text-[11px] font-bold text-[#1c1410] truncate">
               {lastFU ? fmtDate(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
             </span>
           </div>
-          <div className="flex flex-col items-end min-w-0">
+          <div className="flex flex-col items-center min-w-0 flex-1 px-1 border-x border-black/[0.05]">
+            <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Updated</span>
+            <span className="text-[11px] font-bold text-[#1c1410] truncate">{fmtDate(lead.lastActivity)}</span>
+          </div>
+          <div className="flex flex-col items-end min-w-0 flex-1">
             <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Next Follow</span>
             <span className="text-[11px] font-bold text-[#1c1410] truncate">
               {nextFU ? fmtDate(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
@@ -4922,7 +4926,7 @@ export default function LeadsPage() {
       </div>
 
       {/* ── Board ── */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden -mb-6">
       {isMobile ? (
         /* ── Mobile Board — stage tabs + single-stage list ── */
         <div className="flex flex-col flex-1 min-h-0">
@@ -4982,7 +4986,7 @@ export default function LeadsPage() {
         </div>
       ) : kanbanView ? (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="flex gap-4 overflow-x-auto overflow-y-hidden flex-1 min-h-0 pb-4 items-stretch scrollbar-hide">
+          <div className="flex gap-4 overflow-x-auto overflow-y-hidden flex-1 min-h-0 items-stretch [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-black/[0.04] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/25 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-black/35">
             {activeStages.map((stage, stageIndex) => (
               <StageColumn
                 key={stage} stage={stage}
