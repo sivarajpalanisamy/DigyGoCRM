@@ -3665,7 +3665,8 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
 
   const now = new Date();
   const leadFUs = followUps.filter((f) => f.leadId === lead.id);
-  const nextFU = leadFUs.filter((f) => !f.completed).sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0] ?? null;
+  const lastFU = leadFUs.filter((f) => new Date(f.dueAt) <= now).sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime())[0] ?? null;
+  const nextFU = leadFUs.filter((f) => !f.completed && new Date(f.dueAt) > now).sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0] ?? null;
   const created = new Date(lead.createdAt);
   const daysInPipeline = Math.max(0, Math.floor(
     (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
@@ -3679,7 +3680,12 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
     if (diff > 0) return `${ds} · ${diff}d ago`;
     return `${ds} · in ${Math.abs(diff)}d`;
   };
-  const nextOverdue = nextFU ? new Date(nextFU.dueAt) < now : false;
+  const fmtDateTime = (iso: string) => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' +
+      d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
   const ageColor = daysInPipeline <= 2 ? 'text-emerald-600' : daysInPipeline <= 7 ? 'text-amber-600' : 'text-red-500';
   const phoneShown = showPhone ? lead.phone : lead.phone.replace(/\d(?=\d{4})/g, '*');
 
@@ -3768,7 +3774,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
           </div>
         </div>
 
-        {/* Row 2 — meta line: age, assignee, next follow-up (only what exists) */}
+        {/* Row 2 — meta line: age + assignee */}
         <div className="flex items-center gap-2 flex-wrap mt-2.5 pl-[52px]">
           <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold', ageColor)}>
             <Clock className="w-3 h-3" /> {daysInPipeline}d
@@ -3779,11 +3785,30 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
               {assignedName.split(' ')[0]}
             </span>
           )}
-          {nextFU && (
-            <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold ml-auto', nextOverdue ? 'text-red-500' : 'text-[#1c1410]')}>
-              <CalendarPlus className="w-3 h-3" /> {fmtDate(nextFU.dueAt)}
-            </span>
-          )}
+        </div>
+
+        {/* Row 3 — Created/Updated (left) · Last/Next follow-up (right) — sleek, not bold */}
+        <div className="flex items-start justify-between gap-3 mt-2.5 pt-2.5 pl-[52px] border-t border-black/[0.05]">
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Created</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">{fmtDateTime(lead.createdAt)}</span>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Updated</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">{fmtDateTime(lead.lastActivity)}</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1 min-w-0 items-end text-right">
+            <div className="flex flex-col min-w-0 items-end">
+              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">{lastFU ? fmtDate(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}</span>
+            </div>
+            <div className="flex flex-col min-w-0 items-end">
+              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Next Follow</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">{nextFU ? fmtDate(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
