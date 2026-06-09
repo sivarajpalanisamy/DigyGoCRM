@@ -35,17 +35,16 @@ interface Tenant {
   custom_domain?: string | null;
 }
 
-const PLAN_BADGE: Record<string, string> = {
-  starter:    'bg-gray-100 text-gray-600',
-  pro:        'bg-green-100 text-green-700',
-  enterprise: 'bg-purple-100 text-purple-700',
+// Plans are Monthly / Yearly only (the billing cycle). The old tier field is retired.
+const CYCLE_BADGE: Record<string, string> = {
+  monthly: 'bg-blue-100 text-blue-700',
+  yearly:  'bg-green-100 text-green-700',
 };
-
-const PLAN_LABEL: Record<string, string> = {
-  starter:    'Starter',
-  pro:        'Premium User',
-  enterprise: 'Enterprise',
+const CYCLE_LABEL: Record<string, string> = {
+  monthly: 'Monthly',
+  yearly:  'Yearly',
 };
+const cycleOf = (t: { billing_cycle?: string | null }) => (t.billing_cycle === 'yearly' ? 'yearly' : 'monthly');
 
 // Live subscription state for the admin list (blocked = end-of-day expiry passed or manual).
 function subState(t: { subscription_status: string; subscription_expires_at: string | null }) {
@@ -568,7 +567,7 @@ export default function SuperAdminPage() {
       (t.admin_email ?? '').toLowerCase().includes(q) ||
       (t.admin_name ?? '').toLowerCase().includes(q) ||
       (t.phone ?? '').includes(q);
-    const matchPlan = !filterPlan || t.plan === filterPlan;
+    const matchPlan = !filterPlan || cycleOf(t) === filterPlan;
     const matchSub  = !filterSub  || t.subscription_status === filterSub;
     return matchSearch && matchPlan && matchSub;
   });
@@ -646,9 +645,8 @@ export default function SuperAdminPage() {
             <select value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)}
               className="pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 text-[12px] text-[#1c1410] outline-none bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors">
               <option value="">Filter by Plan</option>
-              <option value="starter">Starter</option>
-              <option value="pro">Pro / Premium</option>
-              <option value="enterprise">Enterprise</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
           </div>
@@ -723,8 +721,8 @@ export default function SuperAdminPage() {
                         <div className="min-w-0">
                           <p className="font-semibold text-[#1c1410] truncate">{t.name}</p>
                           {t.phone && <p className="text-[11px] text-[#7a6b5c]">{t.phone}</p>}
-                          <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide', PLAN_BADGE[t.plan] ?? 'bg-gray-100 text-gray-500')}>
-                            {t.plan?.replace('_', ' ') ?? 'starter'}
+                          <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide', CYCLE_BADGE[cycleOf(t)])}>
+                            {CYCLE_LABEL[cycleOf(t)]}
                           </span>
                         </div>
                       </div>
@@ -774,8 +772,8 @@ export default function SuperAdminPage() {
                           ? `Last Login: ${format(new Date(t.last_login_at), 'MMM dd, yyyy hh:mm aa')}`
                           : 'Never logged in'}
                       </p>
-                      <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full', PLAN_BADGE[t.plan] ?? 'bg-gray-100 text-gray-500')}>
-                        {PLAN_LABEL[t.plan] ?? t.plan}
+                      <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full', CYCLE_BADGE[cycleOf(t)])}>
+                        {CYCLE_LABEL[cycleOf(t)]}
                       </span>
                     </td>
 

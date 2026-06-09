@@ -2,37 +2,12 @@ import { Response, NextFunction } from 'express';
 import { query } from '../db';
 import { AuthRequest } from './auth';
 
-// ── Plan definitions ──────────────────────────────────────────────────────────
-
-type PlanTier = 'starter' | 'growth' | 'pro' | 'enterprise';
-
-// Numeric usage limits per plan tier
-export const PLAN_LIMITS: Record<PlanTier, Record<string, number>> = {
-  starter:    { leads: 500,   contacts: 500,   forms: 5,   workflows: 5   },
-  growth:     { leads: 5000,  contacts: 5000,  forms: 50,  workflows: 50  },
-  pro:        { leads: 10000, contacts: 10000, forms: 100, workflows: 100 },
-  enterprise: { leads: 99999, contacts: 99999, forms: 999, workflows: 999 },
-};
-
-// Feature gates per plan (features NOT in the list are blocked)
-const PLAN_FEATURES: Record<PlanTier, Set<string>> = {
-  starter:    new Set(['leads', 'contacts', 'forms', 'calendar', 'basic_workflows', 'staff_basic']),
-  growth:     new Set(['leads', 'contacts', 'forms', 'calendar', 'basic_workflows', 'staff_basic',
-                       'whatsapp', 'advanced_workflows', 'reports', 'landing_pages']),
-  pro:        new Set(['leads', 'contacts', 'forms', 'calendar', 'basic_workflows', 'staff_basic',
-                       'whatsapp', 'advanced_workflows', 'reports', 'landing_pages', 'api_access']),
-  enterprise: new Set(['*']), // all features
-};
-
-function tierOrder(plan: string): number {
-  return ['starter', 'growth', 'pro', 'enterprise'].indexOf(plan);
-}
-
-function hasFeature(plan: string, feature: string): boolean {
-  const tier = (plan ?? 'starter') as PlanTier;
-  const features = PLAN_FEATURES[tier] ?? PLAN_FEATURES.starter;
-  return features.has('*') || features.has(feature);
-}
+// ── Plan model ────────────────────────────────────────────────────────────────
+// Plans are Monthly / Yearly only (billing cycle), with UNLIMITED usage and ALL features
+// for every tenant. The old starter/growth/pro/enterprise tiers + per-tier caps and
+// feature gates have been retired. Commercial gating is handled solely by the subscription
+// payment-due block (requireTenant, UI-only). The two middlewares below are kept as
+// pass-throughs so existing route wiring (checkPlan/checkUsage) keeps working untouched.
 
 // ── Middleware: checkPlan(feature) ────────────────────────────────────────────
 // Business model: Monthly/Yearly plans only — EVERY tenant gets ALL features, no tier
