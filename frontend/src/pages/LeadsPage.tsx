@@ -3501,6 +3501,12 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
     if (diffDays > 0) return `${dateStr} (${diffDays}d ago)`;
     return `${dateStr} (in ${Math.abs(diffDays)}d)`;
   };
+  const fmtDateTime = (iso: string) => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' +
+      d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
   const daysBg = daysInPipeline <= 2 ? 'bg-emerald-50 text-emerald-700' : daysInPipeline <= 7 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600';
 
   return (<>
@@ -3589,19 +3595,23 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
           </div>
         )}
 
-        {/* Row 2: last FU (left) | updated at (center) | next FU (right) */}
-        <div className="flex items-stretch justify-between gap-1 mt-2 pt-2 border-t border-black/[0.05]">
-          <div className="flex flex-col items-start min-w-0 flex-1">
+        {/* Row 2 — 2x2: Created | Updated  /  Last Follow | Next Follow */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2 pt-2 border-t border-black/[0.05]">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Created</span>
+            <span className="text-[11px] font-bold text-[#1c1410] truncate">{fmtDateTime(lead.createdAt)}</span>
+          </div>
+          <div className="flex flex-col min-w-0 items-end text-right">
+            <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Updated</span>
+            <span className="text-[11px] font-bold text-[#1c1410] truncate">{fmtDateTime(lead.lastActivity)}</span>
+          </div>
+          <div className="flex flex-col min-w-0">
             <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
             <span className="text-[11px] font-bold text-[#1c1410] truncate">
               {lastFU ? fmtDate(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
             </span>
           </div>
-          <div className="flex flex-col items-center min-w-0 flex-1 px-1 border-x border-black/[0.05]">
-            <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Updated</span>
-            <span className="text-[11px] font-bold text-[#1c1410] truncate">{fmtDate(lead.lastActivity)}</span>
-          </div>
-          <div className="flex flex-col items-end min-w-0 flex-1">
+          <div className="flex flex-col min-w-0 items-end text-right">
             <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Next Follow</span>
             <span className="text-[11px] font-bold text-[#1c1410] truncate">
               {nextFU ? fmtDate(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
@@ -4986,7 +4996,7 @@ export default function LeadsPage() {
         </div>
       ) : kanbanView ? (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="flex gap-4 overflow-x-auto overflow-y-hidden flex-1 min-h-0 items-stretch [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-black/[0.04] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/25 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-black/35">
+          <div className="flex gap-4 overflow-x-scroll overflow-y-hidden flex-1 min-h-0 items-stretch [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-black/[0.06] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/30 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-black/45">
             {activeStages.map((stage, stageIndex) => (
               <StageColumn
                 key={stage} stage={stage}
