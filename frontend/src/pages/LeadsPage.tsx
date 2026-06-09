@@ -3595,27 +3595,31 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
           </div>
         )}
 
-        {/* Row 2 — 2x2: Created | Updated  /  Last Follow | Next Follow */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2 pt-2 border-t border-black/[0.05]">
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Created</span>
-            <span className="text-[11px] font-bold text-[#1c1410] truncate">{fmtDateTime(lead.createdAt)}</span>
+        {/* Row 2 — Created/Updated (left) · Last/Next follow-up (right) — sleek, not bold */}
+        <div className="flex items-start justify-between gap-3 mt-2 pt-2 border-t border-black/[0.05]">
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Created</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">{fmtDateTime(lead.createdAt)}</span>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Updated</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">{fmtDateTime(lead.lastActivity)}</span>
+            </div>
           </div>
-          <div className="flex flex-col min-w-0 items-end text-right">
-            <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Updated</span>
-            <span className="text-[11px] font-bold text-[#1c1410] truncate">{fmtDateTime(lead.lastActivity)}</span>
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
-            <span className="text-[11px] font-bold text-[#1c1410] truncate">
-              {lastFU ? fmtDate(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
-            </span>
-          </div>
-          <div className="flex flex-col min-w-0 items-end text-right">
-            <span className="text-[9px] font-bold text-[#9e8e7e] uppercase tracking-wide leading-none mb-0.5">Next Follow</span>
-            <span className="text-[11px] font-bold text-[#1c1410] truncate">
-              {nextFU ? fmtDate(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
-            </span>
+          <div className="flex flex-col gap-1 min-w-0 items-end text-right">
+            <div className="flex flex-col min-w-0 items-end">
+              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">
+                {lastFU ? fmtDate(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
+              </span>
+            </div>
+            <div className="flex flex-col min-w-0 items-end">
+              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Next Follow</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">
+                {nextFU ? fmtDate(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
+              </span>
+            </div>
           </div>
         </div>
 
