@@ -202,6 +202,7 @@ router.get('/followups', checkPermission('followups:view'), async (req: AuthRequ
       LEFT JOIN leads l ON l.id = f.lead_id
       LEFT JOIN users u ON u.id = f.assigned_to
       WHERE f.tenant_id = $1
+        AND l.id IS NOT NULL AND l.is_deleted = FALSE
     `;
     const params: any[] = [tenantId];
 
