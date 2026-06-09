@@ -35,64 +35,20 @@ function hasFeature(plan: string, feature: string): boolean {
 }
 
 // ── Middleware: checkPlan(feature) ────────────────────────────────────────────
-// Reads plan from JWT (req.user.plan) — no DB hit.
-export function checkPlan(feature: string) {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    const user = req.user!;
-    // super_admin has no plan restriction
-    if (user.role === 'super_admin') { next(); return; }
-
-    const plan = user.plan ?? 'starter';
-    if (hasFeature(plan, feature)) {
-      next();
-    } else {
-      res.status(402).json({
-        error: `Your current plan (${plan}) does not include this feature. Please upgrade.`,
-        feature,
-        currentPlan: plan,
-      });
-    }
-  };
+// Business model: Monthly/Yearly plans only — EVERY tenant gets ALL features, no tier
+// locks. There is no starter/growth/pro/enterprise gating. The only commercial gate is the
+// subscription payment-due block (requireTenant, UI-only) which never blocks lead capture
+// or automation. So this is a pass-through and never limits any (incl. white-label) tenant.
+export function checkPlan(_feature: string) {
+  return (_req: AuthRequest, _res: Response, next: NextFunction): void => { next(); };
 }
 
 // ── Middleware: checkUsage(resource) ─────────────────────────────────────────
-// Checks tenant_usage against PLAN_LIMITS. Uses a DB read (fast — single PK lookup).
-export function checkUsage(resource: string) {
-  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-    const user = req.user!;
-    if (user.role === 'super_admin' || !user.tenantId) { next(); return; }
-
-    const plan = (user.plan ?? 'starter') as PlanTier;
-    const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.starter;
-    const limit = limits[resource];
-    if (!limit) { next(); return; } // no limit defined for this resource
-
-    try {
-      // Upsert the usage row if missing (handles newly created tenants)
-      await query(
-        `INSERT INTO tenant_usage (tenant_id) VALUES ($1) ON CONFLICT (tenant_id) DO NOTHING`,
-        [user.tenantId]
-      );
-      const usageRes = await query(
-        `SELECT ${resource}_count AS current_count FROM tenant_usage WHERE tenant_id = $1`,
-        [user.tenantId]
-      );
-      const current = Number(usageRes.rows[0]?.current_count ?? 0);
-      if (current >= limit) {
-        res.status(402).json({
-          error: `You have reached the ${resource} limit for your plan (${plan}: ${limit} ${resource}). Please upgrade.`,
-          resource,
-          currentPlan: plan,
-          limit,
-          current,
-        });
-        return;
-      }
-      next();
-    } catch {
-      next(); // fail open — don't block on usage check error
-    }
-  };
+// No usage caps. Monthly/Yearly plans include UNLIMITED leads/contacts/forms/workflows/etc.
+// for every tenant (incl. white-label). Lead capture must never be blocked, so this is a
+// pass-through. (incrementUsage below still records counts for analytics/display only.)
+export function checkUsage(_resource: string) {
+  return async (_req: AuthRequest, _res: Response, next: NextFunction): Promise<void> => { next(); };
 }
 
 // ── Helpers to increment / decrement usage counters ──────────────────────────
