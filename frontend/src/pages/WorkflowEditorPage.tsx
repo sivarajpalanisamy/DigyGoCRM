@@ -4057,7 +4057,6 @@ function TestWorkflowModal({ workflowId, onClose, onTestStart, onTestDone }: {
   onTestDone: (results: Record<string, { status: string; message: string }>) => void;
 }) {
   const [search, setSearch] = useState('');
-  const [phoneInput, setPhoneInput] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [selected, setSelected] = useState<{ id: string; name: string; phone?: string; email?: string } | null>(null);
   const [searching, setSearching] = useState(false);
@@ -4078,17 +4077,14 @@ function TestWorkflowModal({ workflowId, onClose, onTestStart, onTestDone }: {
   }, [search]);
 
   const runTest = async () => {
-    const phone = selected?.phone || phoneInput.trim();
     const leadId = selected?.id;
-    if (!phone && !leadId) { toast.error('Select a contact or enter a phone number'); return; }
+    if (!leadId) { toast.error('Select a contact from your CRM to test'); return; }
     setRunning(true);
     setDone(null);
     onTestStart();
     try {
       const res = await api.post<any>(`/api/workflows/${workflowId}/test`, {
-        lead_id: leadId || undefined,
-        phone: !leadId ? phone : undefined,
-        name: !leadId ? phone : undefined,
+        lead_id: leadId,
       });
       onTestDone(res.nodeResults ?? {});
       setDone({ success: true, message: res.message ?? 'Test completed successfully' });
@@ -4168,26 +4164,6 @@ function TestWorkflowModal({ workflowId, onClose, onTestStart, onTestDone }: {
             )}
           </div>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-[11px] font-semibold text-[#9a8a7a]">OR</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
-          {/* Phone input */}
-          <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Enter Phone Number</label>
-            <input
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-primary/40 placeholder:text-gray-400 bg-white"
-              placeholder="+91 98765 43210"
-              value={phoneInput}
-              onChange={(e) => { setPhoneInput(e.target.value); setSelected(null); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') runTest(); }}
-            />
-            <p className="text-[11px] text-[#9a8a7a] mt-1">If the number exists in CRM it will be used; otherwise a test contact is created.</p>
-          </div>
-
           {/* Result */}
           {done && (
             <div className={cn('flex items-start gap-2.5 px-4 py-3 rounded-xl text-[12px] font-medium', done.success ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200')}>
@@ -4204,7 +4180,7 @@ function TestWorkflowModal({ workflowId, onClose, onTestStart, onTestDone }: {
           <button onClick={onClose} className="px-5 py-2 rounded-xl border border-gray-200 text-[13px] font-semibold text-[#1c1410] hover:bg-gray-50 transition-colors">Close</button>
           <button
             onClick={runTest}
-            disabled={running || (!selected && !phoneInput.trim())}
+            disabled={running || !selected}
             className="px-6 py-2 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             style={{ background: 'linear-gradient(135deg,var(--brand-dark) 0%,var(--brand) 55%,var(--brand-light) 100%)' }}
           >
