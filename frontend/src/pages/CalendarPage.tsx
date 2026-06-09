@@ -1180,7 +1180,7 @@ export default function CalendarPage() {
       {showNewEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }}
           onClick={(e) => { if (e.target === e.currentTarget) { setShowNewEvent(false); setLeadSearch(''); setShowLeadDrop(false); } }}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-black/[0.05] flex items-center justify-between">
               <h3 className="font-headline font-semibold text-[16px] text-[#1c1410]">New Event</h3>
               <button onClick={() => { setShowNewEvent(false); setLeadSearch(''); setShowLeadDrop(false); }} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]"><X className="w-4 h-4" /></button>

@@ -645,7 +645,7 @@ export default function ContactGroupPage() {
       {/* ── CREATE GROUP MODAL ── */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
               <div>
                 <h3 className="font-headline font-bold text-[16px] text-[#1c1410]">

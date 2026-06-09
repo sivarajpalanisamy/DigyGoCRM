@@ -51,7 +51,7 @@ function RuleModal({ onClose, onSave, staffList }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-card rounded-2xl border border-black/5 w-full max-w-md shadow-2xl">
+      <div className="bg-card rounded-2xl border border-black/5 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
           <h3 className="font-headline font-bold text-[#1c1410]">Add Assignment Rule</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--accent-tint)]"><X className="w-4 h-4" /></button>

@@ -241,7 +241,7 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-[#f9f5f0] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden">
+      <div className="bg-[#f9f5f0] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 bg-white border-b border-[#ede6dd]">

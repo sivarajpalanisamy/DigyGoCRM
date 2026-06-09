@@ -538,7 +538,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
       {/* Share Link Modal */}
       {shareLinkForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-2xl border border-black/5 w-full max-w-md shadow-2xl">
+          <div className="bg-white rounded-2xl border border-black/5 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
               <div>
                 <h3 className="font-headline font-bold text-[#1c1410]">Share "{shareLinkForm.name}"</h3>
