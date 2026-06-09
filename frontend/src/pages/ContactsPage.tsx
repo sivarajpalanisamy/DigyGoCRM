@@ -49,7 +49,7 @@ const SOURCE_COLORS: Record<string, string> = {
 };
 
 const TYPE_OPTIONS = ['All', 'Lead', 'Customer'] as const;
-const DATE_OPTIONS = ['All time', 'Today', 'This week', 'This month', 'Last 30 days'] as const;
+const DATE_OPTIONS = ['All time', 'Today', 'This week', 'This month', 'Last 30 days', 'Custom range'] as const;
 
 // ─── Contact Detail Modal ──────────────────────────────────────────────────────
 function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
@@ -343,6 +343,8 @@ export default function ContactsPage() {
   const [typeFilter, setTypeFilter] = useState<typeof TYPE_OPTIONS[number]>('All');
   const [tagFilter, setTagFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState<typeof DATE_OPTIONS[number]>('All time');
+  const [customFrom, setCustomFrom] = useState('');  // yyyy-MM-dd
+  const [customTo, setCustomTo] = useState('');      // yyyy-MM-dd
   const [showFilters, setShowFilters] = useState(false);
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const selectedContact = leads.find((l) => l.id === selectedContactId) ?? null;
@@ -395,10 +397,14 @@ export default function ContactsPage() {
           const d30 = new Date(now); d30.setDate(now.getDate() - 30);
           if (created < d30) return false;
         }
+        if (dateFilter === 'Custom range') {
+          if (customFrom) { const from = new Date(customFrom + 'T00:00:00'); if (created < from) return false; }
+          if (customTo)   { const to   = new Date(customTo   + 'T23:59:59.999'); if (created > to) return false; }
+        }
       }
       return true;
     });
-  }, [leads, search, sourceFilter, typeFilter, tagFilter, dateFilter]);
+  }, [leads, search, sourceFilter, typeFilter, tagFilter, dateFilter, customFrom, customTo]);
 
   const activeFiltersCount = [sourceFilter !== 'All', typeFilter !== 'All', tagFilter !== 'All', dateFilter !== 'All time'].filter(Boolean).length;
 
@@ -406,7 +412,7 @@ export default function ContactsPage() {
   // DOM nodes at once. This is the main fix for the Contacts page being heavy.
   const PAGE_SIZE = 50;
   const [page, setPage] = useState(1);
-  useEffect(() => { setPage(1); }, [search, sourceFilter, typeFilter, tagFilter, dateFilter, leads.length]);
+  useEffect(() => { setPage(1); }, [search, sourceFilter, typeFilter, tagFilter, dateFilter, customFrom, customTo, leads.length]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paged = useMemo(() => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE), [filtered, safePage]);
@@ -414,7 +420,7 @@ export default function ContactsPage() {
   const toggleAll = () => setSelected(selected.length === filtered.length ? [] : filtered.map((l) => l.id));
   const toggleOne = (id: string) => setSelected((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
-  const clearFilters = () => { setSourceFilter('All'); setTypeFilter('All'); setTagFilter('All'); setDateFilter('All time'); };
+  const clearFilters = () => { setSourceFilter('All'); setTypeFilter('All'); setTagFilter('All'); setDateFilter('All time'); setCustomFrom(''); setCustomTo(''); };
 
   const bulkDelete = async () => {
     let failed = 0;
@@ -553,6 +559,19 @@ export default function ContactsPage() {
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9a8a7a] pointer-events-none" />
           </div>
+          {dateFilter === 'Custom range' && (
+            <div className="flex items-center gap-1.5">
+              <input type="date" value={customFrom} max={customTo || undefined}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="h-8 px-2 text-[12px] rounded-lg border border-black/10 bg-white text-[#1c1410] outline-none focus:border-primary/40"
+                style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} title="From date" />
+              <span className="text-[12px] text-[#9a8a7a]">→</span>
+              <input type="date" value={customTo} min={customFrom || undefined}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="h-8 px-2 text-[12px] rounded-lg border border-black/10 bg-white text-[#1c1410] outline-none focus:border-primary/40"
+                style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} title="To date" />
+            </div>
+          )}
           {activeFiltersCount > 0 && (
             <button onClick={clearFilters} className="text-[12px] text-red-500 font-semibold hover:underline">Clear all</button>
           )}
