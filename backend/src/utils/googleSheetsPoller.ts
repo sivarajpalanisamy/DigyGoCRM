@@ -6,6 +6,7 @@ import { sendNewLeadNotification } from './notifications';
 import { emitToTenant } from '../socket';
 import { fetchPublicUrl, csvUrl, parseCsv, rowKey } from '../routes/google_sheets';
 import { backfillCustomFields } from './customFields';
+import { normalizePhone } from './phone';
 
 async function processConfig(config: any): Promise<void> {
   let allRows: string[][];
@@ -47,7 +48,10 @@ async function processConfig(config: any): Promise<void> {
     if (!row || row.every((c) => !c)) continue;
 
     const name   = getCell(row, 'name');
-    const phone  = getCell(row, 'phone');
+    // Normalize the phone defensively — clean cells pass through unchanged, dirty cells
+    // (label prefixes like "p:", spaces, STD/00/missing country code) are cleaned to E.164.
+    const rawPhone = getCell(row, 'phone');
+    const phone  = rawPhone ? normalizePhone(rawPhone) : '';
     const email  = getCell(row, 'email');
     const source = getCell(row, 'source') || `Google Sheets: ${config.spreadsheet_name ?? config.spreadsheet_id}`;
 
