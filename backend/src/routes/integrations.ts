@@ -649,6 +649,9 @@ router.get('/meta/callback', async (req: Request, res: Response) => {
       });
       totalForms += count;
     }
+    // Reconnect pulls NOTHING: bump the poll floor to now so the self-heal window can't sweep a
+    // pre-reconnect backlog (the cause of the flood). Missed leads come via the Import button.
+    await query(`UPDATE meta_forms SET activated_at = NOW() WHERE tenant_id=$1 AND is_active=TRUE`, [tenantId]).catch(() => null);
     console.log('[META CONNECT] success — pages:', newPageIds, '| blocked:', blockedPages.map(p => p.name), '| forms synced:', totalForms);
 
     const blockedParam = blockedPages.length > 0 ? `&needs_token=${blockedPages.length}` : '';
@@ -744,6 +747,8 @@ router.post('/meta/manual-connect', checkPermission('meta_forms:create'), async 
         syncErrors.push(page.name);
       });
     }
+    // Reconnect pulls NOTHING: bump the poll floor to now so the self-heal window can't sweep a backlog.
+    await query(`UPDATE meta_forms SET activated_at = NOW() WHERE tenant_id=$1 AND is_active=TRUE`, [tenantId]).catch(() => null);
     res.json({
       success: true,
       pages: mergedIds.map((id) => ({ id, name: mergedNames[id] ?? id })),
@@ -1919,7 +1924,7 @@ router.delete('/configs/:integrationId', checkPermission('integrations:manage'),
 // missed lead. Surfaces the first Graph error (e.g. #190) so token failures are detected.
 async function fetchLeadsSince(formId: string, token: string, since: number): Promise<{ leads: any[]; error: any }> {
   const out: any[] = [];
-  let path = `/${formId}/leads?fields=id,field_data&since=${since}&limit=100`;
+  let path = `/${formId}/leads?fields=id,created_time,field_data&since=${since}&limit=100`;
   for (let i = 0; i < 50; i++) { // safety cap: 50 pages
     const r = await graphGet(path, token);
     if (r && r.error) return { leads: out, error: r.error };
@@ -1985,11 +1990,14 @@ export async function pollMetaLeads(): Promise<void> {
         // Leadgen (/{form}/leads) requires a PAGE token — the user token returns #190.
         // Fall back to the user token only if no page token could be derived.
         const token = (mf.page_id && ptMap.get(mf.page_id)) || userTok;
-        // SELF-HEALING window: re-scan a fixed lookback every run (NOT a sliding last_sync
-        // cursor — that permanently stranded leads missed in a window). Dedup-by-leadgen_id
-        // below makes re-scanning safe, so any lead the webhook missed or a restart skipped
-        // is recovered within the next poll. Never go before the form was activated.
-        const LOOKBACK_S = 72 * 3600; // 3 days
+        // SELF-HEALING window: re-scan a SHORT fixed lookback every run as a safety net for
+        // leads the (now page-token) webhook missed. Kept short so recovering from an outage can
+        // never dump a large backlog at once — the old 72h window reached back to form activation
+        // and flooded the CRM on reconnect. Dedup-by-leadgen_id makes re-scanning safe. Long
+        // outages are recovered via the explicit Import button. `activated_at` is bumped to NOW()
+        // on connect/reconnect/activation, so a reconnect pulls nothing.
+        const LOOKBACK_S = 2 * 3600;  // 2h self-heal net (was 72h — caused the reconnect flood)
+        const FRESH_S    = 2 * 3600;  // only replay automations for leads this fresh; older = silent recover
         const activatedFloor = Math.floor(new Date(mf.activated_at ?? mf.created_at ?? Date.now()).getTime() / 1000);
         const since = Math.max(Math.floor(Date.now() / 1000) - LOOKBACK_S, activatedFloor);
 
@@ -2003,7 +2011,7 @@ export async function pollMetaLeads(): Promise<void> {
           continue;
         }
         if (tenantStatus.get(tid)?.ok !== true) tenantStatus.set(tid, { ok: true, err: tenantStatus.get(tid)?.err ?? null });
-        const leads: Array<{ id: string; field_data: Array<{ name: string; values: string[] }> }> = leadsArr;
+        const leads: Array<{ id: string; created_time?: string; field_data: Array<{ name: string; values: string[] }> }> = leadsArr;
 
         const mapping: Array<{ fb_field: string; crm_field: string }> = mf.field_mapping ?? [];
         let insertedCount = 0;
@@ -2034,11 +2042,13 @@ export async function pollMetaLeads(): Promise<void> {
 
           if (existing.rows[0]) continue;
 
-          // 4. Insert
+          // 4. Insert — preserve the original Meta submission time (created_at + meta_created_at)
+          //    so dates are correct and we can age-gate automations.
+          const metaCreatedIso = leadEntry.created_time ? parseMetaTimestamp(leadEntry.created_time) : null;
           const newLead = await query(
-            `INSERT INTO leads (tenant_id, name, email, phone, source, source_ref, meta_form_id, pipeline_id, stage_id)
-             VALUES ($1,$2,$3,$4,'meta_form',$5,$6,$7,$8) RETURNING *`,
-            [mf.tenant_id, name, email, phone, leadgenId, mf.form_id, mf.pipeline_id ?? null, mf.stage_id ?? null]
+            `INSERT INTO leads (tenant_id, name, email, phone, source, source_ref, meta_form_id, pipeline_id, stage_id, created_at, meta_created_at)
+             VALUES ($1,$2,$3,$4,'meta_form',$5,$6,$7,$8, COALESCE($9::timestamptz, NOW()), $9::timestamptz) RETURNING *`,
+            [mf.tenant_id, name, email, phone, leadgenId, mf.form_id, mf.pipeline_id ?? null, mf.stage_id ?? null, metaCreatedIso]
           );
           insertedCount++;
 
@@ -2048,10 +2058,18 @@ export async function pollMetaLeads(): Promise<void> {
             await storeCustomValues(leadId, mf.tenant_id, customValues);
           }
           if (newLeadRow) {
-            const pollCtx = { ...newLeadRow, form_id: mf.form_id };
+            // Replay automations ONLY for genuinely-fresh leads. Older leads recovered by the
+            // self-heal window are inserted silently — never an assign/route/webhook blast on a backlog.
+            const ageMs  = metaCreatedIso ? (Date.now() - new Date(metaCreatedIso).getTime()) : 0;
+            const isFresh = ageMs <= FRESH_S * 1000;
             sendNewLeadNotification(mf.tenant_id, newLeadRow, null).catch(() => null);
-            setImmediate(() => triggerWorkflows('lead_created', pollCtx, mf.tenant_id, 'poll').catch(() => null));
-            setImmediate(() => triggerWorkflows('meta_form',    pollCtx, mf.tenant_id, 'poll').catch(() => null));
+            if (isFresh) {
+              const pollCtx = { ...newLeadRow, form_id: mf.form_id };
+              setImmediate(() => triggerWorkflows('lead_created', pollCtx, mf.tenant_id, 'poll').catch(() => null));
+              setImmediate(() => triggerWorkflows('meta_form',    pollCtx, mf.tenant_id, 'poll').catch(() => null));
+            } else {
+              console.log(`[Meta poll] recovered old lead ${leadgenId} (age ~${Math.round(ageMs/3600000)}h) — inserted, automations suppressed`);
+            }
           }
         }
 
