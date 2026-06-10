@@ -23,6 +23,7 @@ export interface TenantBilling {
   name: string | null;
   planPrice: number | null;
   billingCycle: string | null;
+  superfoneEnabled: boolean;
   ts: number;
 }
 const tenantBillingCache = new Map<string, TenantBilling>();
@@ -37,7 +38,7 @@ export async function getTenantBilling(tenantId: string): Promise<TenantBilling 
   if (cached && Date.now() - cached.ts < TENANT_TTL_MS) return cached;
   try {
     const r = await query(
-      `SELECT is_active, subscription_status, subscription_expires_at, grace_days, name, plan_price, billing_cycle
+      `SELECT is_active, subscription_status, subscription_expires_at, grace_days, name, plan_price, billing_cycle, superfone_enabled
        FROM tenants WHERE id = $1`,
       [tenantId]
     );
@@ -51,6 +52,7 @@ export async function getTenantBilling(tenantId: string): Promise<TenantBilling 
       name: row.name ?? null,
       planPrice: row.plan_price != null ? Number(row.plan_price) : null,
       billingCycle: row.billing_cycle ?? null,
+      superfoneEnabled: row.superfone_enabled === true,
       ts: Date.now(),
     };
     tenantBillingCache.set(tenantId, info);
@@ -66,6 +68,20 @@ export function isSubscriptionBlocked(info: TenantBilling): boolean {
   if (info.status === 'suspended' || info.status === 'expired') return true;
   if (info.expiresAt && Date.now() >= info.expiresAt.getTime() + info.graceDays * 86_400_000) return true;
   return false;
+}
+
+// ── Superfone/Calls feature gate (per-tenant, default off; DigyGo enables) ──────
+export async function isSuperfoneEnabled(tenantId: string | null | undefined): Promise<boolean> {
+  if (!tenantId) return false;
+  const info = await getTenantBilling(tenantId);
+  return !!info?.superfoneEnabled;
+}
+
+export async function requireSuperfone(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  if (req.user?.role === 'super_admin') { next(); return; }
+  const tid = req.user?.tenantId;
+  if (tid && await isSuperfoneEnabled(tid)) { next(); return; }
+  res.status(403).json({ error: 'Superfone / Calls is not enabled for this account.', feature: 'superfone' });
 }
 
 // ── requireAuth ───────────────────────────────────────────────────────────────

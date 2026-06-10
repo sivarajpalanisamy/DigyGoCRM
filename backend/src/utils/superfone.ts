@@ -17,9 +17,11 @@ export async function pushLeadToSuperfone(
 ): Promise<void> {
   try {
     const result = await query(
-      `SELECT api_key_enc, superfone_endpoint_url
-       FROM superfone_settings
-       WHERE tenant_id=$1::uuid AND is_connected=TRUE AND superfone_endpoint_url IS NOT NULL`,
+      `SELECT s.api_key_enc, s.superfone_endpoint_url
+       FROM superfone_settings s
+       JOIN tenants t ON t.id = s.tenant_id
+       WHERE s.tenant_id=$1::uuid AND s.is_connected=TRUE AND s.superfone_endpoint_url IS NOT NULL
+         AND t.superfone_enabled=TRUE`,
       [tenantId]
     );
     if (!result.rows[0]) return;

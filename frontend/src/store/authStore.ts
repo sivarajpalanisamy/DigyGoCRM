@@ -108,6 +108,7 @@ function applySession(data: any, set: any, _get: any) {
   if (data.tenant) {
     useCompanyStore.getState().setCompanyName(data.tenant.name ?? 'DigyGo CRM');
     useCompanyStore.getState().setLogo(data.tenant.logoUrl ?? null);
+    useCompanyStore.getState().setSuperfoneEnabled(role === 'super_admin' ? true : !!data.tenant.superfone_enabled);
     if (role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(data.tenant);
   }
 }
@@ -217,6 +218,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (data.tenant) {
         useCompanyStore.getState().setCompanyName(data.tenant.name ?? 'DigyGo CRM');
         useCompanyStore.getState().setLogo(data.tenant.logoUrl ?? null);
+        useCompanyStore.getState().setSuperfoneEnabled(!!data.tenant.superfone_enabled);
         useBrandingStore.getState().applyTenantBranding(data.tenant);
       }
       get().refreshPermissions();
@@ -285,6 +287,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isImpersonating: impersonating,
         permAll: role === 'super_admin' || role === 'owner',
       });
+      useCompanyStore.getState().setSuperfoneEnabled(role === 'super_admin' ? true : !!stored.tenant?.superfone_enabled);
       if (stored.tenant) {
         useCompanyStore.getState().setCompanyName(stored.tenant.name ?? 'DigyGo CRM');
         useCompanyStore.getState().setLogo(stored.tenant.logoUrl ?? null);
@@ -296,6 +299,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         api.get<{ tenant?: any }>('/api/auth/me')
           .then((me) => { if (me?.tenant) {
             useBrandingStore.getState().applyTenantBranding(me.tenant);
+            useCompanyStore.getState().setSuperfoneEnabled(!!me.tenant.superfone_enabled);
             saveSession(stored.token, stored.user, me.tenant);
           }})
           .catch(() => {});

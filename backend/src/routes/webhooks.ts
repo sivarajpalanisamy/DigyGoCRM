@@ -353,10 +353,12 @@ router.post('/superfone/:tenantId', async (req: Request, res: Response) => {
   res.status(200).json({ received: true });
 
   try {
-    // Verify this tenant has Superfone connected and the number matches
+    // Verify Superfone is connected AND the feature flag is on for this tenant.
+    // (Flag off → do not ingest calls.)
     const settingsResult = await query(
-      `SELECT superfone_number FROM superfone_settings
-       WHERE tenant_id=$1::uuid AND is_connected=TRUE`,
+      `SELECT s.superfone_number FROM superfone_settings s
+       JOIN tenants t ON t.id = s.tenant_id
+       WHERE s.tenant_id=$1::uuid AND s.is_connected=TRUE AND t.superfone_enabled=TRUE`,
       [tenantId]
     );
     if (!settingsResult.rows[0]) return;

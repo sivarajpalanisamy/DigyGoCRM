@@ -7,6 +7,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useBrandingStore } from '@/store/brandingStore';
+import { useCompanyStore } from '@/store/companyStore';
 
 interface NavItem {
   label: string;
@@ -19,6 +20,8 @@ interface NavItem {
   anyOf?: string[];
   /** Only owner/super_admin can see this */
   ownerOnly?: boolean;
+  /** Gated behind a per-tenant feature flag (hidden when the flag is off, even for owner) */
+  feature?: 'superfone';
 }
 
 const navItems: NavItem[] = [
@@ -35,7 +38,7 @@ const navItems: NavItem[] = [
   { label: 'Automation',      icon: Zap,               path: '/automation',      permKey: 'automation:view' },
   { label: 'Calendar',        icon: CalendarDays,       path: '/calendar',        permKey: 'calendar:view' },
   { label: 'Inbox',           icon: Inbox,              path: '/inbox',           permKey: 'inbox:view_all' },
-  { label: 'Calls',           icon: Phone,              path: '/calls',           anyOf: ['calls:view_all', 'calls:view_own'] },
+  { label: 'Calls',           icon: Phone,              path: '/calls',           anyOf: ['calls:view_all', 'calls:view_own'], feature: 'superfone' },
   { label: 'Fields',          icon: SlidersHorizontal,  path: '/fields',          permKey: 'fields:view' },
   { label: 'Staff',           icon: UserCog,            path: '/staff',           permKey: 'staff:view' },
   { label: 'Settings',        icon: Settings,           path: '/settings',        permKey: 'settings:manage' },
@@ -48,9 +51,12 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const { branded, tenantName, logoUrl } = useBrandingStore();
   const permissions = useAuthStore((s) => s.permissions);
   const permAll = useAuthStore((s) => s.permAll);
+  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
   const visibleNavItems = navItems.filter((item) => {
+    // Feature flag wins over everything (even owner) — Calls hidden if Superfone is off.
+    if (item.feature === 'superfone' && !superfoneEnabled) return false;
     if (item.ownerOnly) return isSuperAdmin || permAll;
     if (isSuperAdmin || permAll) return true;
     if (item.anyOf) return item.anyOf.some((k) => permissions[k] === true);

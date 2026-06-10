@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { useCompanyStore } from "@/store/companyStore";
 
 import DashboardPage from "./pages/DashboardPage";
 import LeadGenerationPage from "./pages/LeadGenerationPage";
@@ -51,6 +52,12 @@ import CallsPage from "./pages/CallsPage";
 
 const queryClient = new QueryClient();
 
+// Calls is gated by the per-tenant Superfone feature flag.
+const CallsRoute = () => {
+  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
+  return superfoneEnabled ? <CallsPage /> : <Navigate to="/dashboard" replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -95,7 +102,7 @@ const App = () => (
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/calendar/edit/:id" element={<CalendarEditPage />} />
 
-            <Route path="/calls" element={<CallsPage />} />
+            <Route path="/calls" element={<CallsRoute />} />
             <Route path="/inbox" element={<InboxPage />} />
             <Route path="/inbox/overview" element={<InboxOverviewPage />} />
             <Route path="/fields" element={<FieldsPage />} />

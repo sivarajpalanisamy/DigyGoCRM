@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useCrmStore, LeadActivity } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
+import { useCompanyStore } from '@/store/companyStore';
 import { usePermission } from '@/hooks/usePermission';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
@@ -1341,6 +1342,7 @@ function DeleteLeadModal({ lead, onClose, onDeleted }: { lead: Lead; onClose: ()
 function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   const { updateLead, deleteLead, moveLeadStage, pipelines, calendarEvents, addNote, updateNote, deleteNote, addFollowUp, addCalendarEvent, bookingLinks } = useCrmStore();
   const currentUser = useAuthStore((s) => s.currentUser);
+  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   type Tab = 'opportunity' | 'additional' | 'followup' | 'notes' | 'appointments' | 'calls';
   const [activeTab, setActiveTab] = useState<Tab>('opportunity');
@@ -1381,8 +1383,8 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
     api.get<any[]>(`/api/leads/${lead.id}/followups`).then((data) =>
       setLeadFollowUps(data.map((f) => ({ id: f.id, leadId: lead.id, dueAt: f.due_at, note: f.title, description: f.description, completed: f.completed, assignedTo: f.assigned_to, createdAt: f.created_at })))
     ).catch(() => null);
-    api.get<any[]>(`/api/calls/lead/${lead.id}`).then(setLeadCalls).catch(() => null);
-  }, [lead.id]);
+    if (superfoneEnabled) api.get<any[]>(`/api/calls/lead/${lead.id}`).then(setLeadCalls).catch(() => null);
+  }, [lead.id, superfoneEnabled]);
   const leadEvents = calendarEvents?.filter((e) => e.leadName === `${lead.firstName} ${lead.lastName}`) ?? [];
 
   const handleUpdate = async () => {
@@ -1428,7 +1430,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
     { key: 'opportunity', label: 'Opportunity' },
     { key: 'additional', label: 'Additional Info' },
     { key: 'followup', label: 'Follow-up' },
-    { key: 'calls', label: leadCalls.length > 0 ? `Calls (${leadCalls.length})` : 'Calls' },
+    ...(superfoneEnabled ? [{ key: 'calls' as Tab, label: leadCalls.length > 0 ? `Calls (${leadCalls.length})` : 'Calls' }] : []),
   ];
 
   const field = (label: string, child: React.ReactNode, required = false) => (
@@ -2236,6 +2238,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
   onClose: () => void;
   onLeadUpdated?: (id: string, updates: { pipelineId: string; stage: string; stageId: string | undefined; tags: string[] }) => void;
 }) {
+  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
   const [editMode, setEditMode] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showFuModal, setShowFuModal] = useState(false);

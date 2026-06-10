@@ -11,12 +11,13 @@ export const RECORDINGS_DIR = process.env.RECORDINGS_DIR ?? '/var/www/digygocrm/
  */
 export async function processRecordingDownloads(): Promise<void> {
   const pending = await query(`
-    SELECT id, tenant_id, cdr_id, recording_url
-    FROM call_logs
-    WHERE recording_url IS NOT NULL
-      AND recording_downloaded = FALSE
-      AND created_at > NOW() - INTERVAL '28 days'
-    ORDER BY created_at DESC
+    SELECT cl.id, cl.tenant_id, cl.cdr_id, cl.recording_url
+    FROM call_logs cl
+    JOIN tenants t ON t.id = cl.tenant_id AND t.superfone_enabled = TRUE
+    WHERE cl.recording_url IS NOT NULL
+      AND cl.recording_downloaded = FALSE
+      AND cl.created_at > NOW() - INTERVAL '28 days'
+    ORDER BY cl.created_at DESC
     LIMIT 10
   `);
 

@@ -239,7 +239,10 @@ async function completeLogin(res: Response, user: any): Promise<any> {
       tenantBranding.billing_cycle = bill.billingCycle;
       tenantBranding.plan_price = bill.planPrice;
       tenantBranding.blocked = isSubscriptionBlocked(bill);
+      tenantBranding.superfone_enabled = bill.superfoneEnabled;
     }
+  } else {
+    tenantBranding.superfone_enabled = true; // super-admin (no tenant) — not gated
   }
   return {
     token: accessToken,
@@ -511,6 +514,7 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
         billing_cycle:           bill?.billingCycle ?? null,
         plan_price:              bill?.planPrice ?? null,
         blocked:                 bill ? isSubscriptionBlocked(bill) : false,
+        superfone_enabled:       isSuper ? true : (bill?.superfoneEnabled ?? false),
       },
     });
   } catch (err) {
@@ -837,7 +841,7 @@ router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, 
         t.id, t.name, t.email, t.plan, t.is_active,
         t.subscription_status, t.subscription_expires_at, t.billing_cycle, t.plan_price,
         t.phone, t.address, t.created_at,
-        t.custom_domain, t.domain_status,
+        t.custom_domain, t.domain_status, t.superfone_enabled,
         COUNT(DISTINCT u.id) FILTER (WHERE u.is_active=TRUE) AS user_count,
         COUNT(DISTINCT l.id) AS lead_count,
         (SELECT au.name  FROM users au WHERE au.tenant_id=t.id AND au.role='owner' AND au.is_active=TRUE LIMIT 1) AS admin_name,
@@ -859,7 +863,7 @@ router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, 
 
 // PATCH /api/auth/tenants/:id
 router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
-  const { name, plan, subscription_status, subscription_expires_at, billing_cycle, plan_price, phone, address, brand_color, logo_url, reply_to_email, owner_name, owner_email } = req.body;
+  const { name, plan, subscription_status, subscription_expires_at, billing_cycle, plan_price, phone, address, brand_color, logo_url, reply_to_email, owner_name, owner_email, superfone_enabled } = req.body;
   const updates: string[] = [];
   const params: any[] = [];
   if (name !== undefined)                    { params.push(name);                    updates.push(`name=$${params.length}`); }
@@ -873,6 +877,7 @@ router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthReq
   if (brand_color !== undefined)             { params.push(brand_color || '#c2410c'); updates.push(`brand_color=$${params.length}`); }
   if (logo_url !== undefined)                { params.push(logo_url || null);         updates.push(`logo_url=$${params.length}`); }
   if (reply_to_email !== undefined)          { params.push(reply_to_email || null);   updates.push(`reply_to_email=$${params.length}`); }
+  if (superfone_enabled !== undefined)       { params.push(superfone_enabled === true); updates.push(`superfone_enabled=$${params.length}`); }
   const hasOwnerEdit = owner_name !== undefined || owner_email !== undefined;
   if (!updates.length && !hasOwnerEdit) { res.status(400).json({ error: 'No fields to update' }); return; }
   try {
@@ -988,7 +993,7 @@ router.post('/tenants/:id/impersonate', requireAuth, requireSuperAdmin, async (r
     const tenantRes = await query(
       `SELECT t.is_active, t.plan, t.name, t.logo_url, t.favicon_url, t.banner_url,
               t.brand_color, t.login_bg_color, t.tab_title, t.app_bg_color, t.accent_color,
-              cs.legal_name
+              t.superfone_enabled, cs.legal_name
        FROM tenants t LEFT JOIN company_settings cs ON cs.tenant_id = t.id
        WHERE t.id=$1`,
       [req.params.id]
@@ -1032,6 +1037,7 @@ router.post('/tenants/:id/impersonate', requireAuth, requireSuperAdmin, async (r
         tabTitle:     tb.tab_title || null,
         appBgColor:   tb.app_bg_color || null,
         accentColor:  tb.accent_color || null,
+        superfone_enabled: tb.superfone_enabled === true,
       },
     });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }

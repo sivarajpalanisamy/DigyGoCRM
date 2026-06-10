@@ -2,13 +2,14 @@ import { Router, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { query } from '../db';
-import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
+import { requireAuth, requireTenant, requireSuperfone, AuthRequest } from '../middleware/auth';
 import { checkPermission, hasPermission } from '../middleware/permissions';
 import { RECORDINGS_DIR } from '../utils/recordingDownloader';
 
 const router = Router();
 router.use(requireAuth);
 router.use(requireTenant);
+router.use(requireSuperfone); // Calls module gated by the per-tenant Superfone flag
 
 // GET /api/calls — all calls for tenant with filters + pagination
 router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
