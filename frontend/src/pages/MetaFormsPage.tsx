@@ -29,6 +29,10 @@ interface MetaStatus {
   tokenExpired?: boolean;
   tokenDaysLeft?: number | null;
   connectedAt?: string | null;
+  needsReconnect?: boolean;
+  lastError?: string | null;
+  lastErrorAt?: string | null;
+  lastSuccessAt?: string | null;
   connectedPages?: Array<{ id: string; name: string }>;
   blockedPages?: Array<{ id: string; name: string }>;
 }
@@ -1361,6 +1365,23 @@ export default function MetaFormsPage() {
             >Reconnect</button>
           </div>
         )}
+        {/* Connection unhealthy (token invalid / #190 / rate-limited) but not flagged expired */}
+        {status?.needsReconnect && !status?.tokenExpired && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-3">
+            <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-bold text-red-800">Lead capture disconnected — new leads are NOT being captured</p>
+              <p className="text-[11px] text-red-700 mt-0.5">
+                {status.lastError ? `Meta error: ${status.lastError}. ` : ''}Reconnect your Facebook account to resume.
+                {status.lastSuccessAt ? ` Last successful sync: ${new Date(status.lastSuccessAt).toLocaleString()}.` : ''}
+              </p>
+            </div>
+            <button
+              onClick={() => closeDetailPage()}
+              className="text-[11px] font-semibold text-red-700 underline shrink-0"
+            >Reconnect</button>
+          </div>
+        )}
         {!status?.tokenExpired && status?.tokenDaysLeft !== null && status?.tokenDaysLeft !== undefined && status.tokenDaysLeft <= 7 && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
@@ -1793,9 +1814,19 @@ export default function MetaFormsPage() {
               <div className="flex items-start justify-between">
                 <PageProfilePic pageId={page.id} pageName={page.name} />
                 <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <Check className="w-2.5 h-2.5" /> Connected
-                  </span>
+                  {status?.needsReconnect ? (
+                    <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200" title={status.lastError ?? 'Reconnect to resume lead capture'}>
+                      <AlertTriangle className="w-2.5 h-2.5" /> Needs Reconnect
+                    </span>
+                  ) : status?.tokenExpired ? (
+                    <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200">
+                      <AlertTriangle className="w-2.5 h-2.5" /> Token Expired
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <Check className="w-2.5 h-2.5" /> Connected
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setDisconnectPageTarget({ id: page.id, name: page.name }); }}
