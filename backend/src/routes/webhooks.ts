@@ -342,26 +342,28 @@ async function processWhatsAppMessage(payload: any) {
 }
 
 // ── Superfone Webhook ─────────────────────────────────────────────────────────
-// POST /api/webhooks/superfone/:tenantId
-// No auth required — Superfone POSTs directly, tenant identified by URL param.
+// No auth — Superfone POSTs call CDRs directly. Two entry points are defined below:
+//   - POST /superfone           platform-wide; give THIS to Superfone. The client is
+//     resolved from the Superfone business number in the payload, so one URL serves all.
+//   - POST /superfone/:tenantId explicit per-account (backward compatible).
 
-router.post('/superfone/:tenantId', async (req: Request, res: Response) => {
-  const { tenantId } = req.params;
-  const payload = req.body as Record<string, any>;
+// The destination/virtual Superfone number can arrive under different field names.
+function extractSuperfoneNumber(payload: Record<string, any>): string | null {
+  const candidates = [
+    payload.superfone_number, payload.did, payload.did_number, payload.business_number,
+    payload.virtual_number, payload.to, payload.to_number, payload.called_number, payload.destination,
+  ];
+  const v = candidates.find((x) => x != null && String(x).trim() !== '');
+  return v != null ? String(v) : null;
+}
 
-  // Respond immediately so Superfone doesn't retry
-  res.status(200).json({ received: true });
+// Last 10 digits — tolerant match across +91 / 0-prefix / spacing differences.
+function last10Digits(s: string | null | undefined): string {
+  return String(s ?? '').replace(/\D/g, '').slice(-10);
+}
 
-  try {
-    // Verify Superfone is connected AND the feature flag is on for this tenant.
-    // (Flag off → do not ingest calls.)
-    const settingsResult = await query(
-      `SELECT s.superfone_number FROM superfone_settings s
-       JOIN tenants t ON t.id = s.tenant_id
-       WHERE s.tenant_id=$1::uuid AND s.is_connected=TRUE AND t.superfone_enabled=TRUE`,
-      [tenantId]
-    );
-    if (!settingsResult.rows[0]) return;
+// Core ingestion — shared by both routes. tenantId is already resolved and authorized.
+async function ingestSuperfoneCall(tenantId: string, payload: Record<string, any>): Promise<void> {
 
     const {
       cdr_id, cdr_phone, cdr_call_type, cdr_disposition,
@@ -482,6 +484,51 @@ router.post('/superfone/:tenantId', async (req: Request, res: Response) => {
       }
     }
 
+}
+
+// ── Routes ───────────────────────────────────────────────────────────────────
+
+// Platform-wide endpoint — GIVE THIS ONE TO SUPERFONE.
+// One URL for the whole white-label platform: the client is resolved from the
+// Superfone business number carried in each call's payload.
+router.post('/superfone', async (req: Request, res: Response) => {
+  const payload = req.body as Record<string, any>;
+  res.status(200).json({ received: true }); // ack immediately so Superfone doesn't retry
+  try {
+    const num = extractSuperfoneNumber(payload);
+    if (!num) { console.warn('[superfone webhook] payload has no business number — cannot route'); return; }
+    const tail = last10Digits(num);
+    if (tail.length < 7) { console.warn('[superfone webhook] business number too short:', num); return; }
+    // Resolve the owning tenant by its registered Superfone number (connected + enabled only).
+    const match = await query(
+      `SELECT s.tenant_id FROM superfone_settings s
+       JOIN tenants t ON t.id = s.tenant_id
+       WHERE s.is_connected=TRUE AND t.superfone_enabled=TRUE
+         AND RIGHT(regexp_replace(s.superfone_number, '\\D', '', 'g'), 10) = $1
+       LIMIT 1`,
+      [tail]
+    );
+    if (!match.rows[0]) { console.warn('[superfone webhook] no enabled tenant for number', num); return; }
+    await ingestSuperfoneCall(match.rows[0].tenant_id, payload);
+  } catch (err: any) {
+    console.error('[superfone webhook]', err.message);
+  }
+});
+
+// Explicit per-account endpoint (backward compatible) — tenant identified in the URL.
+router.post('/superfone/:tenantId', async (req: Request, res: Response) => {
+  const { tenantId } = req.params;
+  const payload = req.body as Record<string, any>;
+  res.status(200).json({ received: true });
+  try {
+    const ok = await query(
+      `SELECT 1 FROM superfone_settings s
+       JOIN tenants t ON t.id = s.tenant_id
+       WHERE s.tenant_id=$1::uuid AND s.is_connected=TRUE AND t.superfone_enabled=TRUE`,
+      [tenantId]
+    );
+    if (!ok.rows[0]) return;
+    await ingestSuperfoneCall(tenantId, payload);
   } catch (err: any) {
     console.error('[superfone webhook]', err.message);
   }
