@@ -3,6 +3,7 @@ import { ArrowLeft, X, RefreshCw, Check, Mail, ExternalLink, Unplug, Eye, EyeOff
 import { getSocket } from '@/lib/socket';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
+import { useCompanyStore } from '@/store/companyStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -1022,15 +1023,37 @@ interface IntegCardProps {
   onConfigure?: () => void;
   onDisconnect: () => Promise<void>;
   configureLabel?: string;
+  locked?: boolean;
+  lockedNote?: string;
 }
 
-function IntegCard({ icon, name, tagline, connected, onConnect, onConfigure, onDisconnect, configureLabel = 'Configure' }: IntegCardProps) {
+function IntegCard({ icon, name, tagline, connected, onConnect, onConfigure, onDisconnect, configureLabel = 'Configure', locked = false, lockedNote }: IntegCardProps) {
   const [disconnecting, setDisconnecting] = useState(false);
 
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try { await onDisconnect(); } finally { setDisconnecting(false); }
   };
+
+  if (locked) {
+    return (
+      <div className="bg-white rounded-2xl border border-black/5 p-5 flex flex-col gap-4 opacity-70">
+        <div className="flex items-start justify-between gap-2">
+          <div className="grayscale">{icon}</div>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#f3efe9] text-[#9e8e7e] text-[11px] font-medium">
+            Not enabled
+          </span>
+        </div>
+        <div className="flex-1">
+          <p className="text-[14px] font-bold text-[#1c1410]">{name}</p>
+          <p className="text-[12px] text-[#9e8e7e] mt-0.5 leading-relaxed">{lockedNote ?? tagline}</p>
+        </div>
+        <Button variant="outline" size="sm" className="flex-1" disabled>
+          Contact DigyGo to enable
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-black/5 p-5 flex flex-col gap-4 hover:shadow-sm transition-all duration-200">
@@ -1077,6 +1100,7 @@ export default function IntegrationsPage() {
   const [modal, setModal] = useState<ModalType | null>(null);
   const { waPersonalStatus, waPersonalPhone, setWaPersonalStatus } = useCrmStore();
   const { currentUser } = useAuthStore();
+  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
   const [status, setStatus] = useState({
     meta: false,
     waba: false,
@@ -1315,6 +1339,8 @@ export default function IntegrationsPage() {
           onConnect={() => setModal('superfone')}
           onConfigure={() => setModal('superfone')}
           onDisconnect={() => disconnect('superfone', '/api/integrations/superfone/disconnect')}
+          locked={!superfoneEnabled}
+          lockedNote="Calls & Superfone are not active on your account. Contact DigyGo to enable this add-on."
         />
 
         <IntegCard

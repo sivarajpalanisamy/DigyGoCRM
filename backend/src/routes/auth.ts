@@ -12,6 +12,7 @@ import { requireAuth, requireSuperAdmin, AuthRequest, invalidateTenantCache, get
 import { invalidateDomainCache, setCachedDomain } from '../utils/domainCache';
 import { addAllowedOrigin, removeAllowedOrigin } from '../utils/corsOrigins';
 import { sendEmail, getTenantEmailIdentity } from '../services/email';
+import { emitToTenant } from '../socket';
 
 // OS-level resolver (same as `ping`/getaddrinfo) — used as a final fallback
 const dnsLookupAll = promisify(dns.lookup) as (host: string, opts: { all: true; family: 4 }) => Promise<Array<{ address: string }>>;
@@ -885,6 +886,10 @@ router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthReq
       const p = [...params, req.params.id];
       await query(`UPDATE tenants SET ${updates.join(',')} WHERE id=$${p.length}`, p);
       invalidateTenantCache(req.params.id); // immediately reflect plan/status change
+      // Live-propagate the Superfone/Calls flag so the client's nav + pages react without re-login.
+      if (superfone_enabled !== undefined) {
+        emitToTenant(req.params.id, 'tenant:superfone', { enabled: superfone_enabled === true });
+      }
       auditLog(req.user!.userId, 'update_tenant', { tenantId: req.params.id, metadata: req.body, ip: req.ip });
     }
 

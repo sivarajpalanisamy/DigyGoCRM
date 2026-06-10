@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { query } from '../db';
-import { requireAuth, AuthRequest } from '../middleware/auth';
+import { requireAuth, requireSuperfone, AuthRequest } from '../middleware/auth';
 import { checkPermission } from '../middleware/permissions';
 import { encrypt, decrypt } from '../utils/crypto';
 import { parseMetaFieldData } from '../utils/meta';
@@ -2062,7 +2062,7 @@ export async function pollMetaLeads(): Promise<void> {
 // ── Superfone Integration ─────────────────────────────────────────────────────
 
 // POST /api/integrations/superfone/connect
-router.post('/superfone/connect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+router.post('/superfone/connect', requireSuperfone, checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
   const { api_key, superfone_endpoint_url, superfone_number } = req.body as {
     api_key?: string; superfone_endpoint_url?: string; superfone_number?: string;
   };
@@ -2092,7 +2092,7 @@ router.post('/superfone/connect', checkPermission('integrations:manage'), async 
 });
 
 // GET /api/integrations/superfone/status
-router.get('/superfone/status', checkPermission('integrations:view'), async (req: AuthRequest, res: Response) => {
+router.get('/superfone/status', requireSuperfone, checkPermission('integrations:view'), async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       'SELECT is_connected, superfone_number, connected_at FROM superfone_settings WHERE tenant_id=$1::uuid',
@@ -2112,7 +2112,7 @@ router.get('/superfone/status', checkPermission('integrations:view'), async (req
 });
 
 // DELETE /api/integrations/superfone/disconnect
-router.delete('/superfone/disconnect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+router.delete('/superfone/disconnect', requireSuperfone, checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
   try {
     await query(
       `UPDATE superfone_settings SET is_connected=FALSE, updated_at=NOW() WHERE tenant_id=$1::uuid`,

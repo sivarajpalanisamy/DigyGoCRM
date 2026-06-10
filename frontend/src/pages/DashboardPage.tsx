@@ -3,6 +3,7 @@ import {
   Users, AlertTriangle, Clock, Target, CheckCircle, Star, PhoneOff, Phone,
 } from 'lucide-react';
 import { useCrmStore } from '@/store/crmStore';
+import { useCompanyStore } from '@/store/companyStore';
 import { useUserLevel } from '@/hooks/useUserLevel';
 import { api } from '@/lib/api';
 import {
@@ -234,6 +235,7 @@ function PipelineFunnelVisual({ funnels }: { funnels: Analytics['pipeline_funnel
 function ManagementDashboard({ analytics, lineData }: {
   analytics: Analytics; lineData: any[];
 }) {
+  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
   const accountability = analytics.staff_accountability ?? [];
   const totalAssigned  = accountability.reduce((s, a) => s + a.assigned, 0);
   const totalContacted = accountability.reduce((s, a) => s + a.contacted, 0);
@@ -282,12 +284,14 @@ function ManagementDashboard({ analytics, lineData }: {
           sub={bestConvSrc ? `${bestConvSrc.conv_pct}% conv · ${bestConvSrc.total} leads` : analytics.best_source ? `${analytics.best_source.count} leads` : 'No data yet'}
           icon={Star}
         />
-        <StatCard
-          label="Calls"
-          value={analytics.calls_total ?? 0}
-          sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
-          icon={Phone}
-        />
+        {superfoneEnabled && (
+          <StatCard
+            label="Calls"
+            value={analytics.calls_total ?? 0}
+            sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
+            icon={Phone}
+          />
+        )}
       </div>
 
       {/* ── 2. Business Growth Trend (full width) ────────────────────────────── */}
@@ -430,6 +434,7 @@ function ManagementDashboard({ analytics, lineData }: {
 
 // ── Sales Manager Dashboard — operational team oversight, staff+lead names OK ─
 function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineData: any[] }) {
+  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
   const navigate   = useNavigate();
   const rangeLabel = analytics.range_label ?? 'This Period';
   const accountability = analytics.staff_accountability ?? [];
@@ -466,13 +471,15 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
           icon={Users} accent
           onClick={() => navigate('/leads')}
         />
-        <StatCard
-          label="Calls"
-          value={analytics.calls_total ?? 0}
-          sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
-          icon={Phone}
-          onClick={() => navigate('/calls')}
-        />
+        {superfoneEnabled && (
+          <StatCard
+            label="Calls"
+            value={analytics.calls_total ?? 0}
+            sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
+            icon={Phone}
+            onClick={() => navigate('/calls')}
+          />
+        )}
       </div>
 
       {/* ── 2. Staff Performance + Untouched by Staff ─────────────────────────── */}
@@ -633,6 +640,7 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
 // ── Staff Dashboard — personal task view, individual lead names appropriate ────
 function StaffDashboard({ analytics }: { analytics: Analytics }) {
   const navigate = useNavigate();
+  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
   const todayDue = analytics.today_followups.filter((f) => isToday(new Date(f.due_at)));
 
   return (
@@ -663,13 +671,15 @@ function StaffDashboard({ analytics }: { analytics: Analytics }) {
           icon={Target}
           onClick={() => navigate('/leads?filter=converted')}
         />
-        <StatCard
-          label="Calls"
-          value={analytics.calls_total ?? 0}
-          sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
-          icon={Phone}
-          onClick={() => navigate('/calls')}
-        />
+        {superfoneEnabled && (
+          <StatCard
+            label="Calls"
+            value={analytics.calls_total ?? 0}
+            sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
+            icon={Phone}
+            onClick={() => navigate('/calls')}
+          />
+        )}
       </div>
 
       {/* ── Today's tasks + My Numbers ─────────────────────────────────────────── */}

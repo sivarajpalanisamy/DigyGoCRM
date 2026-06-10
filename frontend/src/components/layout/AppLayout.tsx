@@ -5,6 +5,7 @@ import { AppHeader } from './AppHeader';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
+import { useCompanyStore } from '@/store/companyStore';
 import { getSocket } from '@/lib/socket';
 
 export function AppLayout() {
@@ -41,13 +42,19 @@ export function AppLayout() {
     const waStatusHandler = (data: { status: string; phone?: string | null }) => {
       setWaPersonalStatus(data.status as any, data.phone);
     };
+    // DigyGo flipped the Superfone/Calls flag — reflect it live (nav + /calls guard react instantly).
+    const superfoneHandler = (data: { enabled: boolean }) => {
+      useCompanyStore.getState().setSuperfoneEnabled(!!data.enabled);
+    };
     socket.on('notification:new', handler);
     socket.on('connect', reconnectHandler);
     socket.on('wa:status', waStatusHandler);
+    socket.on('tenant:superfone', superfoneHandler);
     return () => {
       socket.off('notification:new', handler);
       socket.off('connect', reconnectHandler);
       socket.off('wa:status', waStatusHandler);
+      socket.off('tenant:superfone', superfoneHandler);
     };
   }, [addNotification, refreshNotifications, setWaPersonalStatus]);
 
