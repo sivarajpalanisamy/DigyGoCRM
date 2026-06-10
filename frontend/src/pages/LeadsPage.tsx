@@ -251,6 +251,8 @@ const emptyFilters = {
   opportunityValue: [] as string[],
   initialCallDate: '',
   createdOn: '',
+  createdFrom: '',   // yyyy-MM-dd, used when createdOn === 'Custom'
+  createdTo: '',     // yyyy-MM-dd, used when createdOn === 'Custom'
   updatedOn: '',
   calendar: '',
   followUp: '',
@@ -541,6 +543,18 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
                       </button>
                     );
                   })}
+                  {/* Custom date range picker for the Created filter */}
+                  {s.key === 'createdOn' && filters.createdOn === 'Custom' && (
+                    <div className="flex items-center gap-1.5 px-2.5 pt-2">
+                      <input type="date" value={filters.createdFrom} max={filters.createdTo || undefined}
+                        onChange={(e) => onChange({ ...filters, createdFrom: e.target.value })}
+                        className="flex-1 min-w-0 h-8 px-2 text-[11px] rounded-lg border border-black/10 bg-white outline-none focus:border-primary/40" title="From date" />
+                      <span className="text-[11px] text-[#9a8a7a] shrink-0">→</span>
+                      <input type="date" value={filters.createdTo} min={filters.createdFrom || undefined}
+                        onChange={(e) => onChange({ ...filters, createdTo: e.target.value })}
+                        className="flex-1 min-w-0 h-8 px-2 text-[11px] rounded-lg border border-black/10 bg-white outline-none focus:border-primary/40" title="To date" />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -4210,7 +4224,10 @@ function buildLeadsParams(
     if (stageId) p.set('stage', stageId);
   }
   if (filters.tags.length === 1) p.set('tag', filters.tags[0]);
-  if (filters.createdOn) {
+  if (filters.createdOn === 'Custom') {
+    if (filters.createdFrom) p.set('date_from', new Date(filters.createdFrom + 'T00:00:00').toISOString());
+    if (filters.createdTo)   p.set('date_to',   new Date(filters.createdTo + 'T23:59:59.999').toISOString());
+  } else if (filters.createdOn) {
     const { date_from, date_to } = dateRangeToIso(filters.createdOn);
     if (date_from) p.set('date_from', date_from);
     if (date_to)   p.set('date_to',   date_to);
