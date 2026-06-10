@@ -26,16 +26,16 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard',       icon: LayoutDashboard,   path: '/dashboard' },
-  { label: 'Reports',         icon: BarChart2,          path: '/reports' },
-  {
-    label: 'Lead Generation', icon: Database,           path: '/lead-generation',
-    anyOf: ['meta_forms:read', 'custom_forms:read', 'landing_pages:read', 'whatsapp_setup:read'],
-  },
   {
     label: 'Lead Management', icon: Users,              path: '/leads',
     anyOf: ['leads:view_all', 'leads:view_own', 'contacts:read'],
   },
+  {
+    label: 'Lead Generation', icon: Database,           path: '/lead-generation',
+    anyOf: ['meta_forms:read', 'custom_forms:read', 'landing_pages:read', 'whatsapp_setup:read'],
+  },
   { label: 'Automation',      icon: Zap,               path: '/automation',      permKey: 'automation:view' },
+  { label: 'Reports',         icon: BarChart2,          path: '/reports' },
   { label: 'Calendar',        icon: CalendarDays,       path: '/calendar',        permKey: 'calendar:view' },
   { label: 'Inbox',           icon: Inbox,              path: '/inbox',           permKey: 'inbox:view_all' },
   { label: 'Calls',           icon: Phone,              path: '/calls',           anyOf: ['calls:view_all', 'calls:view_own'], feature: 'superfone' },
