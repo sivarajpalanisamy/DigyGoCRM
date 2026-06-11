@@ -855,6 +855,8 @@ export async function executeNodes(
             if (vQuality.rows[0]?.lq !== quality) {
               status = 'failed'; message = `change_lead_quality: value not set correctly after update`;
             } else {
+              // Keep the in-memory context fresh for downstream nodes (webhook/if_else/etc.)
+              lead.custom_fields = { ...(lead.custom_fields ?? {}), lead_quality: quality };
               message = `Quality: ${quality}`;
             }
           } else {
@@ -919,6 +921,11 @@ export async function executeNodes(
             }
             for (const [field, val] of Object.entries(fieldValuePairs)) {
               (lead as any)[field] = val;
+            }
+            // Sync custom fields + lead_quality back onto the in-memory lead too, so any
+            // downstream node (webhook, email, notify, later if_else) sees the updated value.
+            if (Object.keys(jsonbMerge).length > 0) {
+              lead.custom_fields = { ...(lead.custom_fields ?? {}), ...jsonbMerge };
             }
             // Resolve human-readable names for ID fields that were updated
             if (fieldValuePairs.pipeline_id) {
