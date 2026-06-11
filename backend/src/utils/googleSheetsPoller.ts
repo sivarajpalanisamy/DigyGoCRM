@@ -78,10 +78,19 @@ async function processConfig(config: any): Promise<void> {
     try {
       let existingLead: any = null;
       if (phone) {
-        const ex = await query(
-          'SELECT * FROM leads WHERE tenant_id=$1 AND phone=$2 AND is_deleted=FALSE LIMIT 1',
-          [tenantId, phone]
-        );
+        // Match by last-10 digits, not exact string — a lead stored as "9876543210" and one
+        // normalized to "+919876543210" are the SAME person. Exact-match dedup created dups.
+        const digits = phone.replace(/[^0-9]/g, '');
+        const ex = digits.length >= 10
+          ? await query(
+              `SELECT * FROM leads WHERE tenant_id=$1 AND is_deleted=FALSE
+                 AND right(regexp_replace(phone,'[^0-9]','','g'),10)=$2 LIMIT 1`,
+              [tenantId, digits.slice(-10)]
+            )
+          : await query(
+              'SELECT * FROM leads WHERE tenant_id=$1 AND phone=$2 AND is_deleted=FALSE LIMIT 1',
+              [tenantId, phone]
+            );
         existingLead = ex.rows[0] ?? null;
       }
       if (!existingLead && email) {
