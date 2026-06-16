@@ -3703,13 +3703,13 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
             <div className="flex flex-col min-w-0 items-end">
               <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
               <span className="text-[11px] font-medium text-[#5c5245] truncate">
-                {lastFU ? fmtDate(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
+                {lastFU ? fmtDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
               </span>
             </div>
             <div className="flex flex-col min-w-0 items-end">
               <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Next Follow</span>
               <span className="text-[11px] font-medium text-[#5c5245] truncate">
-                {nextFU ? fmtDate(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
+                {nextFU ? fmtDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
               </span>
             </div>
           </div>
@@ -3894,11 +3894,11 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
           <div className="flex flex-col gap-1 min-w-0 items-end text-right">
             <div className="flex flex-col min-w-0 items-end">
               <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">{lastFU ? fmtDate(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">{lastFU ? fmtDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}</span>
             </div>
             <div className="flex flex-col min-w-0 items-end">
               <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Next Follow</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">{nextFU ? fmtDate(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">{nextFU ? fmtDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}</span>
             </div>
           </div>
         </div>
