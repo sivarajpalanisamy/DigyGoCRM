@@ -45,22 +45,6 @@ function WhatsAppIcon() {
   );
 }
 
-function RazorpayIcon() {
-  return (
-    <div className="w-12 h-12 rounded-2xl bg-[#3395FF] flex items-center justify-center shrink-0">
-      <span className="text-white font-extrabold text-[13px] tracking-tight">RZP</span>
-    </div>
-  );
-}
-
-function N8nIcon() {
-  return (
-    <div className="w-12 h-12 rounded-2xl bg-[#EA4B71] flex items-center justify-center shrink-0">
-      <span className="text-white font-extrabold text-[13px] tracking-tight">n8n</span>
-    </div>
-  );
-}
-
 function EmailIcon() {
   return (
     <div className="w-12 h-12 rounded-2xl bg-[#6366f1] flex items-center justify-center shrink-0">
@@ -269,95 +253,6 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   );
 }
 
-// ── Razorpay modal ─────────────────────────────────────────────────────────────
-
-function RazorpayModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [keyId, setKeyId] = useState('');
-  const [keySecret, setKeySecret] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [showSecret, setShowSecret] = useState(false);
-
-  const handleSave = async () => {
-    if (!keyId.trim() || !keySecret.trim()) { toast.error('Key ID and Key Secret are required'); return; }
-    setSaving(true);
-    try {
-      await api.post('/api/integrations/configs/razorpay', { api_key: keyId.trim(), webhook_url: keySecret.trim() });
-      toast.success('Razorpay connected!');
-      onSaved();
-    } catch (err: any) {
-      toast.error(err.message ?? 'Failed to connect Razorpay');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal title="Connect Razorpay" onClose={onClose} footer={
-      <>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? <><RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />Connecting…</> : <><Check className="w-3.5 h-3.5 mr-1.5" />Connect</>}
-        </Button>
-      </>
-    }>
-      <p className="text-[12px] text-[#7a6b5c]">Find your API keys in Razorpay Dashboard → Settings → API Keys.</p>
-      <div>
-        <label className={labelCls}>Key ID *</label>
-        <Input value={keyId} onChange={(e) => setKeyId(e.target.value)} placeholder="rzp_live_xxxxxxxxxx" />
-      </div>
-      <div>
-        <label className={labelCls}>Key Secret *</label>
-        <div className="relative">
-          <Input value={keySecret} onChange={(e) => setKeySecret(e.target.value)}
-            type={showSecret ? 'text' : 'password'} placeholder="••••••••••••••••" className="pr-9" />
-          <button type="button" onClick={() => setShowSecret((s) => !s)}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9e8e7e] hover:text-[#1c1410]">
-            {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-// ── n8n modal ──────────────────────────────────────────────────────────────────
-
-function N8nModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [webhookUrl, setWebhookUrl] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!webhookUrl.trim()) { toast.error('Webhook URL is required'); return; }
-    setSaving(true);
-    try {
-      await api.post('/api/integrations/configs/n8n', { webhook_url: webhookUrl.trim() });
-      toast.success('n8n connected!');
-      onSaved();
-    } catch (err: any) {
-      toast.error(err.message ?? 'Failed to connect n8n');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal title="Connect n8n" onClose={onClose} footer={
-      <>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? <><RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />Connecting…</> : <><Check className="w-3.5 h-3.5 mr-1.5" />Connect</>}
-        </Button>
-      </>
-    }>
-      <p className="text-[12px] text-[#7a6b5c]">Create a Webhook node in n8n, copy the Test/Production URL, and paste it here.</p>
-      <div>
-        <label className={labelCls}>n8n Webhook URL *</label>
-        <Input value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)}
-          placeholder="https://your-n8n.app/webhook/xxx" type="url" />
-      </div>
-    </Modal>
-  );
-}
 
 // ── WhatsApp Personal icon ──────────────────────────────────────────────────────
 
@@ -1012,7 +907,7 @@ function SuperfoneModal({ onClose, onSaved, tenantId }: { onClose: () => void; o
   );
 }
 
-type ModalType = 'waba' | 'smtp' | 'razorpay' | 'n8n' | 'wa_personal' | 'superfone' | 'google_sheets';
+type ModalType = 'waba' | 'smtp' | 'wa_personal' | 'superfone' | 'google_sheets';
 
 interface IntegCardProps {
   icon: React.ReactNode;
@@ -1105,8 +1000,6 @@ export default function IntegrationsPage() {
     meta: false,
     waba: false,
     smtp: false,
-    razorpay: false,
-    n8n: false,
     superfone: false,
     sheets: false,
   });
@@ -1128,8 +1021,6 @@ export default function IntegrationsPage() {
       meta:      meta.status      === 'fulfilled' && !!meta.value?.connected,
       waba:      waba.status      === 'fulfilled' && !!waba.value?.connected,
       smtp:      smtp.status      === 'fulfilled' && !!smtp.value?.connected,
-      razorpay:  configs.status   === 'fulfilled' && !!configs.value?.razorpay?.is_active,
-      n8n:       configs.status   === 'fulfilled' && !!configs.value?.n8n?.is_active,
       superfone: superfone.status === 'fulfilled' && !!superfone.value?.connected,
       sheets:    sheets.status    === 'fulfilled' && !!sheets.value?.connected,
     });
@@ -1312,26 +1203,6 @@ export default function IntegrationsPage() {
         />
 
         <IntegCard
-          icon={<RazorpayIcon />}
-          name="Razorpay"
-          tagline="Track payments and link transactions to lead deals inside your CRM pipeline."
-          connected={status.razorpay}
-          onConnect={() => setModal('razorpay')}
-          onConfigure={() => setModal('razorpay')}
-          onDisconnect={() => disconnect('razorpay', '/api/integrations/configs/razorpay')}
-        />
-
-        <IntegCard
-          icon={<N8nIcon />}
-          name="n8n"
-          tagline="Trigger n8n workflows from CRM automation. Connect your n8n webhook to get started."
-          connected={status.n8n}
-          onConnect={() => setModal('n8n')}
-          onConfigure={() => setModal('n8n')}
-          onDisconnect={() => disconnect('n8n', '/api/integrations/configs/n8n')}
-        />
-
-        <IntegCard
           icon={<SuperfoneIcon />}
           name="Superfone"
           tagline="Log inbound and outbound calls, play recordings, and trigger automations on missed or answered calls."
@@ -1358,8 +1229,6 @@ export default function IntegrationsPage() {
       {/* Modals */}
       {modal === 'waba'        && <WabaModal       onClose={() => setModal(null)} onSaved={() => onSaved('waba')}     />}
       {modal === 'smtp'        && <SmtpModal       onClose={() => setModal(null)} onSaved={() => onSaved('smtp')}     />}
-      {modal === 'razorpay'    && <RazorpayModal   onClose={() => setModal(null)} onSaved={() => onSaved('razorpay')} />}
-      {modal === 'n8n'         && <N8nModal        onClose={() => setModal(null)} onSaved={() => onSaved('n8n')}      />}
       {modal === 'wa_personal' && <WaPersonalModal onClose={() => setModal(null)} onConnected={() => { setWaPersonalStatus('connected'); loadStatus(); }} />}
       {modal === 'superfone'   && <SuperfoneModal  onClose={() => setModal(null)} onSaved={() => onSaved('superfone')} tenantId={currentUser?.tenantId ?? ''} />}
       {modal === 'google_sheets' && (
