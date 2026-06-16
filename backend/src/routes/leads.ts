@@ -389,12 +389,14 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 
 // POST /api/leads
 router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(CreateLeadSchema), async (req: AuthRequest, res: Response) => {
-  const { tenantId, userId } = req.user!;
+  const { tenantId, userId, role } = req.user!;
   const { name, email, pipeline_id, stage_id, notes, tags } = req.body;
   const source: string = 'Manual';
   const phone = req.body.phone ? normalizePhone(req.body.phone) : req.body.phone;
 
-  const explicitAssignee = (req.body.assigned_to as string | null) ?? null;
+  // `|| null` (not `?? null`) so an empty-string assignee from the form becomes
+  // NULL rather than being inserted into a UUID column.
+  const explicitAssignee = (req.body.assigned_to as string | null) || null;
 
   try {
     // Validate assigned_to belongs to the same tenant (#51)
@@ -406,6 +408,29 @@ router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(
       if (!userCheck.rows[0]) {
         res.status(400).json({ error: 'assigned_to user not found in your organization' }); return;
       }
+    }
+
+    // Auto-assign the new lead to its creator when no assignee was chosen AND the
+    // creator cannot view all leads. Without this, a restricted (only_assigned /
+    // no view_all) staff member's own lead is saved unassigned and immediately
+    // disappears from their list, while admins still see it. Mirrors the viewAll
+    // resolution used by GET /api/leads. Owners/super_admin/view-all staff keep the
+    // ability to deliberately create unassigned leads.
+    let assignee = explicitAssignee;
+    if (!assignee) {
+      let creatorViewAll = false;
+      if (role === 'super_admin') {
+        creatorViewAll = true;
+      } else {
+        const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1 AND ($2::uuid IS NULL OR tenant_id=$2::uuid)', [userId, tenantId])).rows[0]?.is_owner === true;
+        if (isOwner) {
+          creatorViewAll = true;
+        } else {
+          const onlyAssigned = await hasPermission(userId, 'leads:only_assigned', tenantId).catch(() => true);
+          creatorViewAll = onlyAssigned ? false : await hasPermission(userId, 'leads:view_all', tenantId).catch(() => false);
+        }
+      }
+      if (!creatorViewAll) assignee = userId;
     }
 
     // Phone uniqueness check
@@ -434,7 +459,7 @@ router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(
     const result = await query(
       `INSERT INTO leads (tenant_id, name, email, phone, source, pipeline_id, stage_id, assigned_to, notes, tags)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [tenantId, name, email, phone, source, pipeline_id, stage_id, explicitAssignee, notes, tags ?? []]
+      [tenantId, name, email, phone, source, pipeline_id, stage_id, assignee, notes, tags ?? []]
     );
     let lead = result.rows[0];
 

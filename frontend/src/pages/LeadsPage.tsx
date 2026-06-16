@@ -119,7 +119,11 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
         pipelineId: form.pipelineId, stage: form.stage,
         source: form.source, dealValue: form.dealValue,
         tags: form.tags, score: 0, notes: [],
-        assignedTo: form.assignedTo,
+        // Use the assignee the backend actually set (it auto-assigns to the creator
+        // when none is chosen and the creator can't view all leads) so the new lead
+        // shows under the right owner immediately, not as unassigned until refresh.
+        assignedTo: created.assigned_to ?? form.assignedTo,
+        assignedName: created.assigned_name ?? '',
         leadQuality: form.leadQuality || undefined,
         createdAt: created.created_at ?? now, lastActivity: created.created_at ?? now,
       });
