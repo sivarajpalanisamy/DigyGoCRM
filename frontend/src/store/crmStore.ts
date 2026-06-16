@@ -179,6 +179,10 @@ interface CrmState {
   refreshPipelines: () => Promise<void>;
   // API sync. Pass force=true to bypass the throttle (e.g. first load / manual refresh).
   initFromApi: (force?: boolean) => Promise<void>;
+  // Wipe all tenant-scoped data to empty defaults. Used when the tenant context
+  // changes (super-admin impersonation enter/exit) so one tenant's data never
+  // lingers under another's view.
+  resetCrm: () => void;
 }
 
 // Prevents concurrent initFromApi() calls from racing each other
@@ -522,6 +526,19 @@ export const useCrmStore = create<CrmState>((set) => ({
       stages: (p.stages ?? []).map((s: any) => ({ id: s.id, name: s.name, color: s.color ?? '#94a3b8', is_won: s.is_won ?? false })),
     }));
     set({ pipelines: mapped });
+  },
+
+  resetCrm: () => {
+    // Reset the throttle clock so the next initFromApi(true) is never skipped.
+    _lastInitAt = 0;
+    set({
+      wfRecords: [], wfFolders: [], pipelines: [], leads: [], conversations: [],
+      workflows: [], notifications: [], calendarEvents: [], staff: [], tags: [],
+      opportunities: [], notes: [], followUps: [], customFields: [], bookingLinks: [],
+      availabilitySlots: [], quickReplies: [], activities: [], additionalFields: [],
+      systemFields: SYSTEM_FIELDS_FALLBACK, valueTokens: [],
+      waPersonalStatus: 'disconnected', waPersonalPhone: null,
+    });
   },
 
   initFromApi: async (force = false) => {

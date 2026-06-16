@@ -223,6 +223,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       get().refreshPermissions();
       get().listenForPermissionUpdates();
+      // Clear the previous tenant's cached data and force-load this tenant's data
+      // BEFORE the caller navigates. Without this the dashboard showed the prior
+      // white-label's data because the navigation-triggered refetch is throttled.
+      try {
+        const { useCrmStore } = await import('./crmStore');
+        useCrmStore.getState().resetCrm();
+        await useCrmStore.getState().initFromApi(true);
+      } catch {}
       return true;
     } catch {
       _ceoToken = null;
@@ -246,6 +254,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useCompanyStore.getState().setCompanyName('DigyGo CRM');
       useCompanyStore.getState().setLogo(null);
       useBrandingStore.getState().resetBranding();
+      // Drop the impersonated tenant's data so it can't leak into the next session.
+      try { const { useCrmStore } = await import('./crmStore'); useCrmStore.getState().resetCrm(); } catch {}
       get().refreshPermissions();
       return;
     }
@@ -265,6 +275,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useCompanyStore.getState().setCompanyName('DigyGo CRM');
       useCompanyStore.getState().setLogo(null);
       useBrandingStore.getState().resetBranding();
+      try { const { useCrmStore } = await import('./crmStore'); useCrmStore.getState().resetCrm(); } catch {}
       get().refreshPermissions();
     } catch {
       get().logout();
