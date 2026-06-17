@@ -93,6 +93,15 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
   const [staffSearch, setStaffSearch] = useState('');
   const [tagDropOpen, setTagDropOpen] = useState(false);
 
+  // Build assignable list: owner (current user if owner) + all staff
+  const assignableStaff = (() => {
+    const list = [...staff];
+    if (currentUser && !list.some((s: any) => s.id === currentUser.id)) {
+      list.unshift({ id: currentUser.id, name: currentUser.name } as any);
+    }
+    return list;
+  })();
+
   const selectedPipeline = pipelines.find((p) => p.id === form.pipelineId);
 
   const handleSave = async () => {
@@ -220,7 +229,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                 {form.assignedTo.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-1.5">
                     {form.assignedTo.map((id) => {
-                      const s = staff.find((x: any) => x.id === id);
+                      const s = assignableStaff.find((x: any) => x.id === id);
                       return (
                         <span key={id} className="text-[11px] font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md flex items-center gap-1">
                           {s?.name ?? 'Unknown'}
@@ -242,7 +251,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setStaffDropOpen(false)} />
                   <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                    {staff
+                    {assignableStaff
                       .filter((s: any) => s.name.toLowerCase().includes(staffSearch.toLowerCase()))
                       .map((s: any) => {
                         const selected = form.assignedTo.includes(s.id);
@@ -261,7 +270,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                         );
                       })
                     }
-                    {staff.filter((s: any) => s.name.toLowerCase().includes(staffSearch.toLowerCase())).length === 0 && (
+                    {assignableStaff.filter((s: any) => s.name.toLowerCase().includes(staffSearch.toLowerCase())).length === 0 && (
                       <p className="px-3.5 py-2 text-[12px] text-[#b09e8d]">No staff found</p>
                     )}
                   </div>
