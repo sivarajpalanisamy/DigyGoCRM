@@ -66,10 +66,10 @@ const FILTER_PRESETS = [
 ];
 
 // ── Compact horizontal Stat Card ──────────────────────────────────────────────
-function StatCard({ label, value, sub, icon: Icon, accent = false, warn = false, danger = false, onClick }: {
+function StatCard({ label, value, sub, icon: Icon, accent = false, warn = false, danger = false, smallValue = false, onClick }: {
   label: string; value: string | number; sub?: string;
   icon: React.ElementType; accent?: boolean; warn?: boolean; danger?: boolean;
-  onClick?: () => void;
+  smallValue?: boolean; onClick?: () => void;
 }) {
   const clickClass = onClick ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-150' : '';
 
@@ -84,7 +84,7 @@ function StatCard({ label, value, sub, icon: Icon, accent = false, warn = false,
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[11px] opacity-75 truncate">{label}</p>
-        <h3 className="font-headline text-[22px] font-bold leading-tight tracking-tight">{value}</h3>
+        <h3 className={`font-headline font-bold leading-tight tracking-tight ${smallValue ? 'text-[14px] truncate' : 'text-[22px]'}`}>{value}</h3>
         {sub && <p className="text-[10px] opacity-65 truncate mt-0.5">{sub}</p>}
       </div>
     </div>
@@ -100,7 +100,7 @@ function StatCard({ label, value, sub, icon: Icon, accent = false, warn = false,
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[11px] text-red-400 truncate">{label}</p>
-        <h3 className="font-headline text-[22px] font-bold text-red-600 leading-tight tracking-tight">{value}</h3>
+        <h3 className={`font-headline font-bold text-red-600 leading-tight tracking-tight ${smallValue ? 'text-[14px] truncate' : 'text-[22px]'}`}>{value}</h3>
         {sub && <p className="text-[10px] text-red-400 truncate mt-0.5">{sub}</p>}
       </div>
     </div>
@@ -116,7 +116,7 @@ function StatCard({ label, value, sub, icon: Icon, accent = false, warn = false,
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[11px] text-[#7a6b5c] truncate">{label}</p>
-        <h3 className="font-headline text-[22px] font-bold text-[#1c1410] leading-tight tracking-tight">{value}</h3>
+        <h3 className={`font-headline font-bold text-[#1c1410] leading-tight tracking-tight ${smallValue ? 'text-[14px] truncate' : 'text-[22px]'}`}>{value}</h3>
         {sub && <p className="text-[10px] text-[#9a8a7a] truncate mt-0.5">{sub}</p>}
       </div>
     </div>
@@ -283,6 +283,7 @@ function ManagementDashboard({ analytics, lineData }: {
           value={bestConvSrc ? sourceLabel(bestConvSrc.source) : analytics.best_source ? sourceLabel(analytics.best_source.source) : 'N/A'}
           sub={bestConvSrc ? `${bestConvSrc.conv_pct}% conv · ${bestConvSrc.total} leads` : analytics.best_source ? `${analytics.best_source.count} leads` : 'No data yet'}
           icon={Star}
+          smallValue
         />
         {superfoneEnabled && (
           <StatCard
