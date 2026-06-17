@@ -3619,8 +3619,8 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
       className={cn(
         'group bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-150 cursor-grab active:cursor-grabbing',
         highlighted ? 'border-primary ring-2 ring-primary/30 bg-primary/[0.02]'
-          : fuUrgency === 'overdue' ? 'border-l-[3px] border-l-red-500 border-t-gray-100 border-r-gray-100 border-b-gray-100 bg-red-50/30'
-          : fuUrgency === 'today' ? 'border-l-[3px] border-l-amber-500 border-t-gray-100 border-r-gray-100 border-b-gray-100 bg-amber-50/30'
+          : fuUrgency === 'overdue' ? 'border-l-[3px] border-l-red-500 border-t-gray-100 border-r-gray-100 border-b-gray-100'
+          : fuUrgency === 'today' ? 'border-l-[3px] border-l-amber-500 border-t-gray-100 border-r-gray-100 border-b-gray-100'
           : 'border-gray-100',
       )}
       onClick={onClick}
@@ -3816,8 +3816,6 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
       onPointerMove={cancelLongPress}
       className={cn('relative rounded-2xl border shadow-sm active:bg-[#fcfaf8] transition-colors',
         selected ? 'border-primary ring-2 ring-primary/30'
-          : fuUrgency === 'overdue' ? 'border-black/[0.06] bg-red-50/30'
-          : fuUrgency === 'today' ? 'border-black/[0.06] bg-amber-50/30'
           : 'border-black/[0.06] bg-white')}
     >
       {/* accent edge */}
