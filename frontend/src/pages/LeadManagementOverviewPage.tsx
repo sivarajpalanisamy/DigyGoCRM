@@ -9,6 +9,7 @@ import { Pipeline, PipelineStage } from '@/data/mockData';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from '@dnd-kit/core';
@@ -381,6 +382,7 @@ export default function LeadManagementOverviewPage() {
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [editPipeline, setEditPipeline] = useState<Pipeline | null>(null);
+  const [deletePipelineTarget, setDeletePipelineTarget] = useState<Pipeline | null>(null);
   const permissions = useAuthStore((s) => s.permissions);
   const permAll = useAuthStore((s) => s.permAll);
   const canManage = permAll || permissions['pipeline:manage'] === true;
@@ -447,13 +449,7 @@ export default function LeadManagementOverviewPage() {
               onView={() => navigate(`/leads?pipeline=${p.id}`)}
               onEdit={() => setEditPipeline(p)}
               onClone={() => { clonePipeline(p.id); toast.success('Pipeline cloned'); }}
-              onDelete={() => {
-                if (window.confirm(`Delete "${p.name}"? This cannot be undone.`)) {
-                  deletePipeline(p.id)
-                    .then(() => toast.success('Pipeline deleted'))
-                    .catch(() => toast.error('Failed to delete pipeline'));
-                }
-              }}
+              onDelete={() => setDeletePipelineTarget(p)}
             />
           ))}
         </div>
@@ -485,6 +481,20 @@ export default function LeadManagementOverviewPage() {
 
       {showCreate && <PipelineModal onClose={() => setShowCreate(false)} />}
       {editPipeline && <PipelineModal pipeline={editPipeline} onClose={() => setEditPipeline(null)} />}
+
+      {deletePipelineTarget && (
+        <ConfirmDeleteModal
+          title="Delete Pipeline?"
+          message={<>Delete <span className="font-semibold text-[#1c1410]">"{deletePipelineTarget.name}"</span>? All leads in this pipeline will lose their stage assignment. This cannot be undone.</>}
+          confirmLabel="Yes, Delete"
+          onConfirm={async () => {
+            await deletePipeline(deletePipelineTarget.id);
+            toast.success('Pipeline deleted');
+            setDeletePipelineTarget(null);
+          }}
+          onClose={() => setDeletePipelineTarget(null)}
+        />
+      )}
     </div>
   );
 }

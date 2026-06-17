@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { format } from 'date-fns';
-import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 
 export type { WFFolder, WFNode, WFRecord } from '@/types/workflow';
 
@@ -1143,7 +1143,7 @@ export default function AutomationPage() {
       {deleteConfirmId && (() => {
         const wf = workflows.find((w) => w.id === deleteConfirmId);
         return (
-          <ConfirmModal
+          <ConfirmDeleteModal
             title="Delete Workflow?"
             message={<>Delete <span className="font-semibold text-[#1c1410]">"{wf?.name}"</span>? All execution history will be lost. This cannot be undone.</>}
             confirmLabel="Yes, Delete"
@@ -1154,7 +1154,7 @@ export default function AutomationPage() {
       })()}
 
       {bulkDeleteConfirm && (
-        <ConfirmModal
+        <ConfirmDeleteModal
           title={`Delete ${selectedRows.size} Workflow${selectedRows.size > 1 ? 's' : ''}?`}
           message={<>Delete <span className="font-semibold text-[#1c1410]">{selectedRows.size}</span> selected workflow{selectedRows.size > 1 ? 's' : ''}? All their execution history will be lost. This cannot be undone.</>}
           confirmLabel={bulkDeleting ? 'Deleting…' : 'Yes, Delete'}

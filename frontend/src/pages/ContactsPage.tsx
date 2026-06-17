@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Lead } from '@/data/mockData';
-import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 
 function getSourceLabel(lead: { source: string; meta_form_name?: string }) {
   const s = lead.source ?? '';
@@ -830,7 +830,7 @@ export default function ContactsPage() {
     )}
 
     {showBulkDeleteConfirm && (
-      <ConfirmModal
+      <ConfirmDeleteModal
         title={`Delete ${selected.length} contact${selected.length !== 1 ? 's' : ''}?`}
         message="This will permanently remove them from the CRM. This cannot be undone."
         confirmLabel="Yes, Delete"
@@ -842,7 +842,7 @@ export default function ContactsPage() {
     {deleteTargetId && (() => {
       const lead = leads.find((l) => l.id === deleteTargetId);
       return lead ? (
-        <ConfirmModal
+        <ConfirmDeleteModal
           title="Delete Contact?"
           message={<><span className="font-semibold text-[#1c1410]">{lead.firstName} {lead.lastName}</span> will be permanently removed from the CRM. This cannot be undone.</>}
           confirmLabel="Yes, Delete"

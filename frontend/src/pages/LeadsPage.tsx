@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import { ExportModal } from '@/components/ui/ExportModal';
 import { cn, copyToClipboard } from '@/lib/utils';
 import { brandHex } from '@/lib/brand';
@@ -4964,7 +4965,7 @@ export default function LeadsPage() {
               </button>
             )}
             {showBulkDeleteConfirm && (
-              <ConfirmModal
+              <ConfirmDeleteModal
                 title={`Delete ${selectedIds.length} contact${selectedIds.length !== 1 ? 's' : ''}?`}
                 message="This will permanently remove them from the CRM. This cannot be undone."
                 confirmLabel="Yes, Delete"

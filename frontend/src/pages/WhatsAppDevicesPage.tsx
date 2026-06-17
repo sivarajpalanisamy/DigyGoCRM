@@ -9,6 +9,7 @@ import { getSocket } from '@/lib/socket';
 import { useCrmStore } from '@/store/crmStore';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 
 type Device = {
   session_id: string;
@@ -37,6 +38,7 @@ export default function WhatsAppDevicesPage() {
   const [assignDevice, setAssignDevice] = useState<Device | null>(null);
   const [assignIds, setAssignIds] = useState<string[]>([]);
   const [qrDevice, setQrDevice] = useState<Device | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<Device | null>(null);
 
   const loadDevices = async () => {
     try {
@@ -78,10 +80,10 @@ export default function WhatsAppDevicesPage() {
   };
 
   const removeDevice = async (d: Device) => {
-    if (!confirm(`Remove "${d.session_name}"? This will disconnect and delete all session data.`)) return;
     try {
       await api.delete(`/api/whatsapp-personal/sessions/${d.session_id}`);
       toast.success('Device removed');
+      setRemoveTarget(null);
       loadDevices();
     } catch { toast.error('Failed to remove device'); }
   };
@@ -174,7 +176,7 @@ export default function WhatsAppDevicesPage() {
               onRename={() => { setMenuOpen(null); setRenameDevice(d); setRenameName(d.session_name); }}
               onAssignStaff={() => { setMenuOpen(null); setAssignDevice(d); setAssignIds(d.assigned_staff.map((s) => s.id)); }}
               onDisconnect={() => { setMenuOpen(null); disconnectDevice(d); }}
-              onRemove={() => { setMenuOpen(null); removeDevice(d); }}
+              onRemove={() => { setMenuOpen(null); setRemoveTarget(d); }}
               onViewAnalytics={() => { setMenuOpen(null); navigate('/settings/integrations/wa-personal'); }}
             />
           ))}
@@ -250,6 +252,16 @@ export default function WhatsAppDevicesPage() {
           device={qrDevice}
           onClose={() => { setQrDevice(null); loadDevices(); }}
           onConnected={() => { setQrDevice(null); loadDevices(); }}
+        />
+      )}
+
+      {removeTarget && (
+        <ConfirmDeleteModal
+          title="Remove Device?"
+          message={<>Remove <span className="font-semibold text-[#1c1410]">"{removeTarget.session_name}"</span>? This will disconnect and delete all session data. This cannot be undone.</>}
+          confirmLabel="Yes, Remove"
+          onConfirm={() => removeDevice(removeTarget)}
+          onClose={() => setRemoveTarget(null)}
         />
       )}
     </div>
