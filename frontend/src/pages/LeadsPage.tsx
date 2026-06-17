@@ -2406,6 +2406,19 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
   const canAssign     = usePermission('leads:assign');
   const canManageStaff = usePermission('staff:manage');
   const isManagerView = currentUser?.role === 'super_admin' || currentUser?.role === 'owner' || canManageStaff;
+  const [editTeamDropOpen, setEditTeamDropOpen] = useState(false);
+  const [editTeamSearch, setEditTeamSearch] = useState('');
+  const [editTagDropOpen, setEditTagDropOpen] = useState(false);
+
+  // Include owner in assignable staff list
+  const allStaffForPanel = (() => {
+    const list = [...staff];
+    if (currentUser && !list.some((s: any) => s.id === currentUser.id)) {
+      list.unshift({ id: currentUser.id, name: currentUser.name } as any);
+    }
+    return list;
+  })();
+
   const [showStageTl, setShowStageTl] = useState(false);
   const [stageTl, setStageTl] = useState<{ created_at: string | null; history: any[] } | null>(null);
   const [stageTlLoading, setStageTlLoading] = useState(false);
@@ -2742,7 +2755,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   <Users className="w-4 h-4 text-[#7a6b5c] shrink-0 mt-0.5" />
                   <div className="flex flex-wrap gap-1">
                     {(lead.teamMembers ?? []).map((id) => {
-                      const m = staff.find((s) => s.id === id);
+                      const m = allStaffForPanel.find((s) => s.id === id);
                       return m ? (
                         <span key={id} className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium">{m.name}</span>
                       ) : null;
@@ -2928,7 +2941,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   {canAssign ? (
                     <select className={inputCls} value={editForm.assignedTo} onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })}>
                       <option value="">Unassigned</option>
-                      {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      {allStaffForPanel.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   ) : (
                     <div className={cn(inputCls, 'bg-gray-50 text-[#7a6b5c] cursor-not-allowed')} title="You don't have permission to reassign leads">
@@ -2948,42 +2961,61 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   </select>
                 </div>
 
-                {/* Team Members */}
-                <div>
+                {/* Team Members — multi-select with chips */}
+                <div className="relative">
                   <label className="text-[11px] text-[#7a6b5c] mb-1.5 block font-medium">Team Members</label>
                   {editForm.teamMembers.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {editForm.teamMembers.map((id) => {
-                        const m = staff.find((s) => s.id === id);
-                        return m ? (
+                        const m = allStaffForPanel.find((s) => s.id === id);
+                        return (
                           <span key={id} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                            {m.name}
+                            {m?.name ?? 'Unknown'}
                             <button type="button" onClick={() => setEditForm({ ...editForm, teamMembers: editForm.teamMembers.filter((x) => x !== id) })}><X className="w-3 h-3" /></button>
                           </span>
-                        ) : null;
+                        );
                       })}
                     </div>
                   )}
-                  <select
-                    className={inputCls}
-                    value=""
-                    onChange={(e) => {
-                      const id = e.target.value;
-                      if (id && !editForm.teamMembers.includes(id)) {
-                        setEditForm({ ...editForm, teamMembers: [...editForm.teamMembers, id] });
-                      }
-                    }}
+                  <div
+                    className={`${inputCls} cursor-text`}
+                    onClick={() => setEditTeamDropOpen(true)}
                   >
-                    <option value="">Add team member...</option>
-                    {staff
-                      .filter((s) => s.id !== editForm.assignedTo && !editForm.teamMembers.includes(s.id))
-                      .map((s) => <option key={s.id} value={s.id}>{s.name}</option>)
-                    }
-                  </select>
+                    <input
+                      className="w-full text-[12px] outline-none bg-transparent placeholder:text-gray-400"
+                      placeholder="Search staff..."
+                      value={editTeamSearch}
+                      onChange={(e) => { setEditTeamSearch(e.target.value); setEditTeamDropOpen(true); }}
+                      onFocus={() => setEditTeamDropOpen(true)}
+                    />
+                  </div>
+                  {editTeamDropOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setEditTeamDropOpen(false)} />
+                      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        {allStaffForPanel
+                          .filter((s) => s.id !== editForm.assignedTo && !editForm.teamMembers.includes(s.id) && s.name.toLowerCase().includes(editTeamSearch.toLowerCase()))
+                          .map((s) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              className="w-full text-left px-3.5 py-2 text-[12px] hover:bg-gray-50 transition-colors text-[#1c1410]"
+                              onClick={() => { setEditForm({ ...editForm, teamMembers: [...editForm.teamMembers, s.id] }); setEditTeamSearch(''); }}
+                            >
+                              {s.name}
+                            </button>
+                          ))
+                        }
+                        {allStaffForPanel.filter((s) => s.id !== editForm.assignedTo && !editForm.teamMembers.includes(s.id) && s.name.toLowerCase().includes(editTeamSearch.toLowerCase())).length === 0 && (
+                          <p className="px-3.5 py-2 text-[11px] text-[#b09e8d]">No staff available</p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {/* Tags */}
-                <div>
+                {/* Tags — chips + dropdown */}
+                <div className="relative">
                   <label className="text-[11px] text-[#7a6b5c] mb-1.5 block font-medium">Tags</label>
                   {editForm.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
@@ -2995,23 +3027,65 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                       ))}
                     </div>
                   )}
-                  <div className="flex gap-2">
+                  <div
+                    className={`${inputCls} cursor-text`}
+                    onClick={() => setEditTagDropOpen(true)}
+                  >
                     <input
-                      className="flex-1 border border-dashed border-gray-300 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] outline-none focus:border-primary/40 bg-[var(--app-bg)] placeholder:text-gray-400"
-                      placeholder="Add tag..."
+                      className="w-full text-[12px] outline-none bg-transparent placeholder:text-gray-400"
+                      placeholder="Search or type a tag..."
                       value={editForm.tagInput}
-                      onChange={(e) => setEditForm({ ...editForm, tagInput: e.target.value })}
+                      onChange={(e) => { setEditForm({ ...editForm, tagInput: e.target.value }); setEditTagDropOpen(true); }}
+                      onFocus={() => setEditTagDropOpen(true)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           const v = editForm.tagInput.trim();
                           if (v && !editForm.tags.includes(v)) setEditForm({ ...editForm, tags: [...editForm.tags, v], tagInput: '' });
                         }
                       }}
-                      list="tag-edit-sugg"
                     />
-                    <datalist id="tag-edit-sugg">{storeTags.map((t) => <option key={t.id} value={t.name} />)}</datalist>
-                    <button onClick={() => { const v = editForm.tagInput.trim(); if (v && !editForm.tags.includes(v)) setEditForm({ ...editForm, tags: [...editForm.tags, v], tagInput: '' }); }} className="px-3 py-2 rounded-lg bg-primary/10 text-primary text-[12px] font-semibold hover:bg-primary/20 transition-colors">Add</button>
                   </div>
+                  {editTagDropOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setEditTagDropOpen(false)} />
+                      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        {storeTags
+                          .filter((t) => t.name.toLowerCase().includes(editForm.tagInput.toLowerCase()))
+                          .map((t) => {
+                            const selected = editForm.tags.includes(t.name);
+                            return (
+                              <button
+                                key={t.id}
+                                type="button"
+                                className={`w-full text-left px-3.5 py-2 text-[12px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
+                                onClick={() => {
+                                  setEditForm({ ...editForm, tags: selected ? editForm.tags.filter((x) => x !== t.name) : [...editForm.tags, t.name], tagInput: '' });
+                                }}
+                              >
+                                <span className="flex items-center gap-2">
+                                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color || '#ea580c' }} />
+                                  {t.name}
+                                </span>
+                                {selected && <span className="text-primary">✓</span>}
+                              </button>
+                            );
+                          })
+                        }
+                        {editForm.tagInput.trim() && !storeTags.some((t) => t.name.toLowerCase() === editForm.tagInput.trim().toLowerCase()) && (
+                          <button
+                            type="button"
+                            className="w-full text-left px-3.5 py-2 text-[12px] text-primary hover:bg-gray-50 transition-colors"
+                            onClick={() => { setEditForm({ ...editForm, tags: [...editForm.tags, editForm.tagInput.trim()], tagInput: '' }); }}
+                          >
+                            + Create "{editForm.tagInput.trim()}"
+                          </button>
+                        )}
+                        {storeTags.filter((t) => t.name.toLowerCase().includes(editForm.tagInput.toLowerCase())).length === 0 && !editForm.tagInput.trim() && (
+                          <p className="px-3.5 py-2 text-[11px] text-[#b09e8d]">No tags available</p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
