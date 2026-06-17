@@ -2844,10 +2844,13 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                     {fields.length > 0 ? (
                       fields.map((f, i) => (
                         <div key={i} className="flex items-start gap-3">
-                          <FileText className="w-4 h-4 text-[#7a6b5c] shrink-0 mt-0.5" />
-                          <span className="text-[13px] text-[#1c1410] font-medium flex-1 break-words">
-                            <span className="text-[#7a6b5c]">{f.label}:</span> {f.value}
-                          </span>
+                          <FileText className="w-4 h-4 text-[#7a6b5c] shrink-0 mt-1" />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[12px] text-[#7a6b5c]">{f.label}:</span>
+                            <span className="ml-1.5 text-[13px] font-semibold text-[#1c1410] bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md inline-block break-words mt-0.5">
+                              {f.value}
+                            </span>
+                          </div>
                         </div>
                       ))
                     ) : cfStatus === 'loading' ? (
