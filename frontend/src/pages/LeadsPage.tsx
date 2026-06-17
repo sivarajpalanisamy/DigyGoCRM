@@ -439,6 +439,10 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
   const [expanded, setExpanded] = useState<string>('assignedTo');
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
+  const [draft, setDraft] = useState<FilterState>(filters);
+
+  // Sync draft when parent filters change externally (e.g. chip removal)
+  useEffect(() => { setDraft(filters); }, [filters]);
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -451,14 +455,18 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
   }, [onClose, anchorRef]);
 
   const toggleArr = (k: keyof FilterState, v: string) => {
-    const a = filters[k] as string[];
-    onChange({ ...filters, [k]: a.includes(v) ? a.filter((x) => x !== v) : [...a, v] });
+    setDraft((d) => {
+      const a = d[k] as string[];
+      return { ...d, [k]: a.includes(v) ? a.filter((x) => x !== v) : [...a, v] };
+    });
   };
   const setRadio = (k: keyof FilterState, v: string) => {
-    onChange({ ...filters, [k]: (filters[k] as string) === v ? '' : v });
+    setDraft((d) => ({ ...d, [k]: (d[k] as string) === v ? '' : v }));
   };
-  const clearAll = () => onChange({ ...emptyFilters });
-  const total = Object.values(filters).reduce<number>((n, v) => n + (Array.isArray(v) ? v.length : v ? 1 : 0), 0);
+  const clearAll = () => setDraft({ ...emptyFilters });
+  const applyFilters = () => { onChange(draft); onClose(); };
+  const total = Object.values(draft).reduce<number>((n, v) => n + (Array.isArray(v) ? v.length : v ? 1 : 0), 0);
+  const hasChanges = JSON.stringify(draft) !== JSON.stringify(filters);
 
   const sections: { key: keyof FilterState; label: string; type: 'multi' | 'single'; options: { value: string; label: string }[] }[] = [
     { key: 'assignedTo', label: 'Assignee', type: 'multi', options: [{ value: 'none', label: 'Unassigned' }, ...staff.map((s) => ({ value: s.id, label: s.name }))] },
@@ -474,7 +482,7 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
   const q = search.toLowerCase();
   const matching = sections.map((s) => ({ ...s, options: q ? s.options.filter((o) => o.label.toLowerCase().includes(q) || s.label.toLowerCase().includes(q)) : s.options })).filter((s) => !q || s.options.length > 0);
 
-  const countFor = (key: string) => { const v = (filters as any)[key]; return Array.isArray(v) ? v.length : (v ? 1 : 0); };
+  const countFor = (key: string) => { const v = (draft as any)[key]; return Array.isArray(v) ? v.length : (v ? 1 : 0); };
 
   const node = (
     <>
@@ -527,7 +535,7 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
                 <div className="px-3 pb-2 pt-0.5 space-y-0.5 max-h-52 overflow-y-auto">
                   {s.options.length === 0 && <p className="text-[11px] text-[#b09e8d] py-2 italic px-2">No options</p>}
                   {s.options.map((o) => {
-                    const isOn = s.type === 'multi' ? (filters[s.key] as string[]).includes(o.value) : (filters[s.key] as string) === o.value;
+                    const isOn = s.type === 'multi' ? (draft[s.key] as string[]).includes(o.value) : (draft[s.key] as string) === o.value;
                     return (
                       <button
                         key={o.value}
@@ -549,14 +557,14 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
                     );
                   })}
                   {/* Custom date range picker for the Created filter */}
-                  {s.key === 'createdOn' && filters.createdOn === 'Custom' && (
+                  {s.key === 'createdOn' && draft.createdOn === 'Custom' && (
                     <div className="flex items-center gap-1.5 px-2.5 pt-2">
-                      <input type="date" value={filters.createdFrom} max={filters.createdTo || undefined}
-                        onChange={(e) => onChange({ ...filters, createdFrom: e.target.value })}
+                      <input type="date" value={draft.createdFrom} max={draft.createdTo || undefined}
+                        onChange={(e) => setDraft((d) => ({ ...d, createdFrom: e.target.value }))}
                         className="flex-1 min-w-0 h-8 px-2 text-[11px] rounded-lg border border-black/10 bg-white outline-none focus:border-primary/40" title="From date" />
                       <span className="text-[11px] text-[#9a8a7a] shrink-0">→</span>
-                      <input type="date" value={filters.createdTo} min={filters.createdFrom || undefined}
-                        onChange={(e) => onChange({ ...filters, createdTo: e.target.value })}
+                      <input type="date" value={draft.createdTo} min={draft.createdFrom || undefined}
+                        onChange={(e) => setDraft((d) => ({ ...d, createdTo: e.target.value }))}
                         className="flex-1 min-w-0 h-8 px-2 text-[11px] rounded-lg border border-black/10 bg-white outline-none focus:border-primary/40" title="To date" />
                     </div>
                   )}
@@ -568,15 +576,18 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
         {matching.length === 0 && <p className="text-[12px] text-[#b09e8d] text-center py-6">No filters match "{search}"</p>}
       </div>
 
-      {isMobile ? (
-        <div className="px-4 py-3 border-t border-black/5 shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-          <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-primary text-white text-[13px] font-bold active:scale-95">Done</button>
-        </div>
-      ) : (
-        <div className="px-4 py-2 border-t border-black/5 bg-[var(--app-bg)] shrink-0 text-center">
-          <p className="text-[10px] text-[#7a6b5c]">Instant apply · <kbd className="text-[9px] bg-white border border-black/10 rounded px-1">Esc</kbd> to close</p>
-        </div>
-      )}
+      <div className={cn('px-4 border-t border-black/5 shrink-0 flex items-center gap-2',
+        isMobile ? 'py-3' : 'py-2.5')}
+        style={isMobile ? { paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' } : undefined}
+      >
+        <button onClick={applyFilters}
+          className={cn('flex-1 py-2 rounded-xl text-[13px] font-bold transition-colors',
+            hasChanges ? 'bg-primary text-white active:scale-95' : 'bg-primary/60 text-white/80')}
+        >Apply{total > 0 ? ` (${total})` : ''}</button>
+        {total > 0 && (
+          <button onClick={clearAll} className="px-3 py-2 rounded-xl text-[12px] font-semibold text-red-500 hover:bg-red-50 transition-colors">Clear</button>
+        )}
+      </div>
     </div>
     </>
   );
