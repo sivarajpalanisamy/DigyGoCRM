@@ -865,7 +865,7 @@ router.get('/tenants/dashboard', requireAuth, requireSuperAdmin, async (_req: Au
         LEFT JOIN pipeline_stages ps ON ps.id=l.stage_id
         LEFT JOIN pipelines p ON p.tenant_id=t.id
         LEFT JOIN custom_forms cf ON cf.tenant_id=t.id
-        LEFT JOIN workflows w ON w.tenant_id=t.id AND w.is_active=TRUE
+        LEFT JOIN workflows w ON w.tenant_id=t.id AND w.status='active'
         WHERE t.is_active=TRUE
         GROUP BY t.id
         ORDER BY lead_count DESC
