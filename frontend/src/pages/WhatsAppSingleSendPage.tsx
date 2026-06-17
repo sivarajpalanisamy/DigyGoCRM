@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Send, Search, MessageSquare, Paperclip, X, Check, Loader2, QrCode,
+  Send, Search, MessageSquare, Paperclip, X, Check, Loader2, QrCode, Image,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 type Device = { session_id: string; session_name: string; status: string; phone_number: string | null };
-type WaTemplate = { id: string; name: string; message: string; file_name?: string | null; file_path?: string | null };
+type WaTemplate = { id: string; name: string; message: string; file_name?: string | null; file_path?: string | null; file_type?: string | null };
 type ContactResult = { id: string; name: string; phone: string; type: 'lead' | 'contact' };
 
 export default function WhatsAppSingleSendPage() {
@@ -247,6 +247,37 @@ export default function WhatsAppSingleSendPage() {
           </select>
         </div>
 
+        {/* Template attachment preview */}
+        {templateId && (() => {
+          const tpl = templates.find((t) => t.id === templateId);
+          if (!tpl?.file_path) return null;
+          const isImage = tpl.file_type?.startsWith('image/');
+          return (
+            <div className="px-5 pb-4">
+              <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <span className="text-purple-500">📎</span> Attachment
+              </label>
+              <div className="flex items-center gap-3 border border-black/10 rounded-lg p-3 bg-[#faf8f6]">
+                {isImage ? (
+                  <img
+                    src={`/api/wa-personal-templates/${tpl.id}/file`}
+                    alt={tpl.file_name ?? 'attachment'}
+                    className="w-20 h-20 object-cover rounded-lg border border-black/10"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center">
+                    <Paperclip className="w-5 h-5 text-blue-500" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-[#1c1410] truncate">{tpl.file_name}</p>
+                  <p className="text-[11px] text-[#9e8e7e]">Will be sent with the message</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Message area */}
         <div className="px-5 pb-5">
           <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-1.5 flex items-center gap-1">
@@ -260,7 +291,9 @@ export default function WhatsAppSingleSendPage() {
               onChange={(e) => setMessage(e.target.value)}
             />
           </div>
-          <p className="text-[11px] text-[#9e8e7e] mt-1.5">{message.length} characters</p>
+          <p className="text-[11px] text-[#9e8e7e] mt-1.5">
+            {message.length} characters — Use *bold*, _italic_, ~strikethrough~ for WhatsApp formatting
+          </p>
         </div>
 
         {/* Footer */}

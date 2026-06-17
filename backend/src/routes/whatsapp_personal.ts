@@ -281,8 +281,13 @@ router.post('/send', checkPermission('inbox:send'), async (req: AuthRequest, res
 
     if (!targetPhone) { res.status(400).json({ error: 'phone or lead_id required' }); return; }
 
+    // Convert markdown bold/italic to WhatsApp format: **text** → *text*, __text__ → _text_
+    let msgText = message.trim()
+      .replace(/\*\*(.+?)\*\*/g, '*$1*')
+      .replace(/__(.+?)__/g, '_$1_');
+
     // Interpolate variables if we have lead context
-    const finalMessage = leadCtx ? interpolate(message.trim(), leadCtx) : message.trim();
+    const finalMessage = leadCtx ? interpolate(msgText, leadCtx) : msgText;
 
     const jid = toJID(targetPhone);
 
@@ -296,7 +301,7 @@ router.post('/send', checkPermission('inbox:send'), async (req: AuthRequest, res
       );
       const tpl = tplRes.rows[0];
       if (tpl?.file_path) {
-        const absPath = path.resolve(__dirname, '../../', tpl.file_path);
+        const absPath = path.resolve(process.cwd(), tpl.file_path);
         if (fs.existsSync(absPath)) {
           const buffer = fs.readFileSync(absPath);
           const mime = tpl.file_type || 'application/octet-stream';
