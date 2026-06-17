@@ -813,7 +813,11 @@ export default function CustomFormDetailPage() {
                           </div>
                           <select
                             value={field.mapTo}
-                            onChange={(e) => updateField(field.id, { mapTo: e.target.value })}
+                            onChange={(e) => {
+                              const mapTo = e.target.value;
+                              const autoRequired = mapTo === 'email' || mapTo === 'phone';
+                              updateField(field.id, { mapTo, ...(autoRequired ? { required: true } : {}) });
+                            }}
                             className="text-[11px] border border-emerald-200 rounded-lg px-2 py-1 bg-emerald-50 text-emerald-800 outline-none focus:border-emerald-400 font-medium max-w-[200px]"
                           >
                             <option value="">— Not mapped —</option>
@@ -832,10 +836,17 @@ export default function CustomFormDetailPage() {
                           </select>
                         </div>
 
-                        {/* Required toggle */}
+                        {/* Required toggle — locked ON for email/phone mapped fields */}
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <Switch checked={field.required} onCheckedChange={(v) => updateField(field.id, { required: v })} />
+                          <Switch
+                            checked={field.required}
+                            onCheckedChange={(v) => updateField(field.id, { required: v })}
+                            disabled={field.mapTo === 'email' || field.mapTo === 'phone'}
+                          />
                           <span className="text-[11px] font-medium text-[#7a6b5c]">Required</span>
+                          {(field.mapTo === 'email' || field.mapTo === 'phone') && (
+                            <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Auto</span>
+                          )}
                         </div>
                       </div>
                     </div>

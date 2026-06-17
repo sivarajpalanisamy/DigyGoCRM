@@ -130,6 +130,28 @@ router.post('/forms/:slug/submit', async (req: Request, res: Response) => {
       return;
     }
 
+    // Validate email format
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({ error: 'Please enter a valid email address' });
+        return;
+      }
+    }
+
+    // Normalize phone: strip +91, 91, 0 prefix → must be exactly 10 digits
+    if (phone) {
+      let cleaned = phone.replace(/[\s\-()]/g, '');
+      if (cleaned.startsWith('+91')) cleaned = cleaned.slice(3);
+      else if (cleaned.startsWith('91') && cleaned.length > 10) cleaned = cleaned.slice(2);
+      else if (cleaned.startsWith('0')) cleaned = cleaned.slice(1);
+      if (!/^\d{10}$/.test(cleaned)) {
+        res.status(400).json({ error: 'Please enter a valid 10-digit phone number' });
+        return;
+      }
+      phone = cleaned; // store normalized 10-digit number
+    }
+
     // Duplicate check — scoped to the form's pipeline (matches per-pipeline uniqueness)
     const dupRows: Array<{ id: string }> = [];
     const pipelineId = form.pipeline_id ?? null;

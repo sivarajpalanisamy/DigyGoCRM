@@ -209,11 +209,19 @@ router.get('/:id/embed', checkPermission('custom_forms:read'), async (req: AuthR
 
     const publicUrl = process.env.PUBLIC_URL ?? process.env.VITE_PUBLIC_URL ?? 'http://localhost:5173';
     const shareLink = `${publicUrl}/f/${form.slug}`;
-    res.json({
-      shareLink,
-      iframeCode: `<iframe src="${shareLink}" width="100%" height="600" frameborder="0"></iframe>`,
-      scriptCode: `<script src="${publicUrl}/embed.js" data-form="${form.slug}"></script>`,
-    });
+    const iframeCode = `<iframe src="${shareLink}" width="100%" height="700" frameborder="0" style="border:none;border-radius:16px;max-width:480px;margin:0 auto;display:block;"></iframe>`;
+    const scriptCode = `<div id="dgform-${form.slug}"></div>
+<script>
+(function(){
+  var d=document,s="${shareLink}",c=d.getElementById("dgform-${form.slug}");
+  if(!c)return;
+  var f=d.createElement("iframe");
+  f.src=s;f.width="100%";f.height="700";f.frameBorder="0";
+  f.style.cssText="border:none;border-radius:16px;max-width:480px;display:block;margin:0 auto;";
+  c.appendChild(f);
+})();
+</script>`;
+    res.json({ shareLink, iframeCode, scriptCode });
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 

@@ -36,6 +36,7 @@ export default function PublicFormPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [thankYou, setThankYou] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const apiBase = import.meta.env.VITE_API_URL ?? '';
 
@@ -50,21 +51,65 @@ export default function PublicFormPage() {
       .finally(() => setLoading(false));
   }, [slug]);
 
+  const normalizePhone = (raw: string) => {
+    let cleaned = raw.replace(/[\s\-()]/g, '');
+    if (cleaned.startsWith('+91')) cleaned = cleaned.slice(3);
+    else if (cleaned.startsWith('91') && cleaned.length > 10) cleaned = cleaned.slice(2);
+    else if (cleaned.startsWith('0')) cleaned = cleaned.slice(1);
+    return cleaned;
+  };
+
+  const validate = (): boolean => {
+    if (!form) return false;
+    const errs: Record<string, string> = {};
+    for (const field of form.fields) {
+      const val = (values[field.label] ?? '').trim();
+      if (field.required && !val) {
+        errs[field.label] = `${field.label} is required`;
+        continue;
+      }
+      if (val && (field.mapTo === 'email' || field.type === 'email')) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+          errs[field.label] = 'Please enter a valid email address';
+        }
+      }
+      if (val && (field.mapTo === 'phone' || field.type === 'phone')) {
+        const digits = normalizePhone(val);
+        if (!/^\d{10}$/.test(digits)) {
+          errs[field.label] = 'Please enter a valid 10-digit phone number';
+        }
+      }
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form) return;
+    if (!validate()) return;
     if (form.declaration_enabled && !agreed) {
       alert('Please accept the declaration to continue.');
       return;
     }
+
+    // Normalize phone values before submission
+    const submitData = { ...values };
+    for (const field of form.fields) {
+      if ((field.mapTo === 'phone' || field.type === 'phone') && submitData[field.label]) {
+        submitData[field.label] = normalizePhone(submitData[field.label]);
+      }
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch(`${apiBase}/api/public/forms/${slug}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: values }),
+        body: JSON.stringify({ data: submitData }),
       });
       const json = await res.json();
+      if (!res.ok) { alert(json.error ?? 'Submission failed'); return; }
       setThankYou(json.message ?? form.thank_you_message ?? 'Thank you!');
       setSubmitted(true);
       if (json.redirectUrl) {
@@ -126,7 +171,8 @@ export default function PublicFormPage() {
           {form.fields.map((field) => {
             const key = field.label;
             const val = values[key] ?? '';
-            const set = (v: string) => setValues((prev) => ({ ...prev, [key]: v }));
+            const err = errors[key];
+            const set = (v: string) => { setValues((prev) => ({ ...prev, [key]: v })); setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; }); };
 
             return (
               <div key={field.id ?? field.label}>
@@ -141,7 +187,7 @@ export default function PublicFormPage() {
                     placeholder={field.placeholder}
                     required={field.required}
                     rows={3}
-                    className="w-full px-3 py-2.5 rounded-xl border border-black/10 bg-white/70 text-[13px] outline-none focus:border-orange-400 resize-none"
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-white/70 text-[13px] outline-none focus:border-orange-400 resize-none ${err ? 'border-red-400' : 'border-black/10'}`}
                     style={{ color: textColor }}
                   />
                 ) : field.type === 'dropdown' ? (
@@ -217,10 +263,11 @@ export default function PublicFormPage() {
                     onChange={(e) => set(e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className="w-full px-3 py-2.5 rounded-xl border border-black/10 bg-white/70 text-[13px] outline-none focus:border-orange-400"
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-white/70 text-[13px] outline-none focus:border-orange-400 ${err ? 'border-red-400' : 'border-black/10'}`}
                     style={{ color: textColor }}
                   />
                 )}
+                {err && <p className="text-[11px] text-red-500 mt-1">{err}</p>}
               </div>
             );
           })}
