@@ -458,10 +458,11 @@ router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(
       }
     }
 
+    const teamMembers: string[] = Array.isArray(req.body.team_members) ? req.body.team_members : [];
     const result = await query(
-      `INSERT INTO leads (tenant_id, name, email, phone, source, pipeline_id, stage_id, assigned_to, notes, tags)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [tenantId, name, email, phone, source, pipeline_id, stage_id, assignee, notes, tags ?? []]
+      `INSERT INTO leads (tenant_id, name, email, phone, source, pipeline_id, stage_id, assigned_to, notes, tags, team_members)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::uuid[]) RETURNING *`,
+      [tenantId, name, email, phone, source, pipeline_id, stage_id, assignee, notes, tags ?? [], teamMembers.length > 0 ? teamMembers : null]
     );
     let lead = result.rows[0];
 

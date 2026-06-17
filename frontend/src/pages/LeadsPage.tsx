@@ -79,7 +79,7 @@ const TAG_COLORS: Record<string, string> = {
 
 // ─── Add Lead Modal ────────────────────────────────────────────────────────────
 function AddLeadModal({ onClose }: { onClose: () => void }) {
-  const { addLead, pipelines, leads, staff } = useCrmStore();
+  const { addLead, pipelines, leads, staff, tags: storeTags } = useCrmStore();
   const currentUser = useAuthStore((s) => s.currentUser);
   const now = new Date().toISOString();
   const [saving, setSaving] = useState(false);
@@ -87,8 +87,11 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
     firstName: '', lastName: '', email: '', phone: '+91 ',
     city: '', pipelineId: pipelines[0]?.id ?? '', stage: pipelines[0]?.stages[0]?.name ?? '',
     tags: [] as string[], tagInput: '', dealValue: 0, source: 'Manual',
-    assignedTo: '', leadQuality: '',
+    assignedTo: [] as string[], leadQuality: '',
   });
+  const [staffDropOpen, setStaffDropOpen] = useState(false);
+  const [staffSearch, setStaffSearch] = useState('');
+  const [tagDropOpen, setTagDropOpen] = useState(false);
 
   const selectedPipeline = pipelines.find((p) => p.id === form.pipelineId);
 
@@ -109,7 +112,8 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
         source: form.source,
         pipeline_id: form.pipelineId || undefined,
         stage_id: stageId || undefined,
-        assigned_to: form.assignedTo || undefined,
+        assigned_to: form.assignedTo[0] || undefined,
+        team_members: form.assignedTo.length > 0 ? form.assignedTo : undefined,
         tags: form.tags,
         custom_fields: form.leadQuality ? { lead_quality: form.leadQuality } : undefined,
       });
@@ -123,7 +127,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
         // Use the assignee the backend actually set (it auto-assigns to the creator
         // when none is chosen and the creator can't view all leads) so the new lead
         // shows under the right owner immediately, not as unassigned until refresh.
-        assignedTo: created.assigned_to ?? form.assignedTo,
+        assignedTo: created.assigned_to ?? form.assignedTo[0] ?? '',
         assignedName: created.assigned_name ?? '',
         leadQuality: form.leadQuality || undefined,
         createdAt: created.created_at ?? now, lastActivity: created.created_at ?? now,
@@ -206,33 +210,138 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
               {lbl('Lead Value')}
               <input className={inputCls} type="number" placeholder="0" value={form.dealValue || ''} onChange={(e) => setForm({ ...form, dealValue: Number(e.target.value) })} />
             </div>
-            <div className="sm:col-span-2">
+            {/* Assign To — multi-select chips */}
+            <div className="sm:col-span-2 relative">
               {lbl('Assign To')}
-              <select className={inputCls} value={form.assignedTo} onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}>
-                <option value="">Unassigned</option>
-                {staff.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <div
+                className="bg-[#faf8f6] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all cursor-text"
+                onClick={() => setStaffDropOpen(true)}
+              >
+                {form.assignedTo.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-1.5">
+                    {form.assignedTo.map((id) => {
+                      const s = staff.find((x: any) => x.id === id);
+                      return (
+                        <span key={id} className="text-[11px] font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          {s?.name ?? 'Unknown'}
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setForm({ ...form, assignedTo: form.assignedTo.filter((x) => x !== id) }); }} className="hover:text-red-500">×</button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <input
+                  className="w-full text-[13px] outline-none bg-transparent placeholder:text-[#b09e8d]"
+                  placeholder={form.assignedTo.length === 0 ? 'Search staff…' : ''}
+                  value={staffSearch}
+                  onChange={(e) => { setStaffSearch(e.target.value); setStaffDropOpen(true); }}
+                  onFocus={() => setStaffDropOpen(true)}
+                />
+              </div>
+              {staffDropOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setStaffDropOpen(false)} />
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    {staff
+                      .filter((s: any) => s.name.toLowerCase().includes(staffSearch.toLowerCase()))
+                      .map((s: any) => {
+                        const selected = form.assignedTo.includes(s.id);
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            className={`w-full text-left px-3.5 py-2 text-[13px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
+                            onClick={() => {
+                              setForm({ ...form, assignedTo: selected ? form.assignedTo.filter((x) => x !== s.id) : [...form.assignedTo, s.id] });
+                            }}
+                          >
+                            {s.name}
+                            {selected && <span className="text-primary">✓</span>}
+                          </button>
+                        );
+                      })
+                    }
+                    {staff.filter((s: any) => s.name.toLowerCase().includes(staffSearch.toLowerCase())).length === 0 && (
+                      <p className="px-3.5 py-2 text-[12px] text-[#b09e8d]">No staff found</p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
-            <div className="sm:col-span-2">
+
+            {/* Tags — chips + dropdown */}
+            <div className="sm:col-span-2 relative">
               {lbl('Tags')}
-              <div className="bg-[#faf8f6] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all">
+              <div
+                className="bg-[#faf8f6] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all cursor-text"
+                onClick={() => setTagDropOpen(true)}
+              >
                 {form.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-1.5">
                     {form.tags.map((t) => (
                       <span key={t} className="text-[11px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-md flex items-center gap-1">
-                        {t}<button onClick={() => setForm({ ...form, tags: form.tags.filter((x) => x !== t) })} className="hover:text-red-500">×</button>
+                        {t}<button type="button" onClick={(e) => { e.stopPropagation(); setForm({ ...form, tags: form.tags.filter((x) => x !== t) }); }} className="hover:text-red-500">×</button>
                       </span>
                     ))}
                   </div>
                 )}
                 <input
                   className="w-full text-[13px] outline-none bg-transparent placeholder:text-[#b09e8d]"
-                  placeholder="Type a tag and press Enter"
+                  placeholder={form.tags.length === 0 ? 'Search or type a tag…' : ''}
                   value={form.tagInput}
-                  onChange={(e) => setForm({ ...form, tagInput: e.target.value })}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && form.tagInput.trim()) { e.preventDefault(); setForm({ ...form, tags: [...form.tags, form.tagInput.trim()], tagInput: '' }); }}}
+                  onChange={(e) => { setForm({ ...form, tagInput: e.target.value }); setTagDropOpen(true); }}
+                  onFocus={() => setTagDropOpen(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && form.tagInput.trim()) {
+                      e.preventDefault();
+                      if (!form.tags.includes(form.tagInput.trim())) {
+                        setForm({ ...form, tags: [...form.tags, form.tagInput.trim()], tagInput: '' });
+                      }
+                    }
+                  }}
                 />
               </div>
+              {tagDropOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setTagDropOpen(false)} />
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    {storeTags
+                      .filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase()))
+                      .map((t) => {
+                        const selected = form.tags.includes(t.name);
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            className={`w-full text-left px-3.5 py-2 text-[13px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
+                            onClick={() => {
+                              setForm({ ...form, tags: selected ? form.tags.filter((x) => x !== t.name) : [...form.tags, t.name], tagInput: '' });
+                            }}
+                          >
+                            <span className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color || '#ea580c' }} />
+                              {t.name}
+                            </span>
+                            {selected && <span className="text-primary">✓</span>}
+                          </button>
+                        );
+                      })
+                    }
+                    {form.tagInput.trim() && !storeTags.some((t) => t.name.toLowerCase() === form.tagInput.trim().toLowerCase()) && (
+                      <button
+                        type="button"
+                        className="w-full text-left px-3.5 py-2 text-[13px] text-primary hover:bg-gray-50 transition-colors"
+                        onClick={() => { setForm({ ...form, tags: [...form.tags, form.tagInput.trim()], tagInput: '' }); }}
+                      >
+                        + Create "{form.tagInput.trim()}"
+                      </button>
+                    )}
+                    {storeTags.filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase())).length === 0 && !form.tagInput.trim() && (
+                      <p className="px-3.5 py-2 text-[12px] text-[#b09e8d]">No tags available</p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
