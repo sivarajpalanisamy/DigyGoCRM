@@ -4276,7 +4276,7 @@ function buildLeadsParams(
 ): URLSearchParams {
   const p = new URLSearchParams();
   p.set('after', cursor);          // triggers cursor-mode response
-  p.set('limit', '50');
+  p.set('limit', '2000');
   if (pipelineId) p.set('pipeline_id', pipelineId);
   if (search)     p.set('search', search);
   // Single-selection filters map directly to API (including 'none' for unassigned)
