@@ -379,7 +379,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
         {/* Header (fixed) */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div>
-            <h3 className="font-bold text-[#1c1410]">Edit Sub Account</h3>
+            <h3 className="font-bold text-[#1c1410]">Edit Business</h3>
             <p className="text-[11px] text-[#7a6b5c] mt-0.5">{tenant.name}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4" /></button>
@@ -662,7 +662,7 @@ export default function SuperAdminPage() {
         <div className="px-5 pt-4 pb-2 border-b border-gray-100">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-1 h-4 rounded-full bg-primary" />
-            <h2 className="font-headline font-bold text-[#1c1410] text-[15px]">White Label Sub Accounts List</h2>
+            <h2 className="font-headline font-bold text-[#1c1410] text-[15px]">Business Accounts</h2>
           </div>
           <p className="text-[12px] text-[#7a6b5c]">You have total <span className="font-semibold text-[#1c1410]">{filtered.length}</span></p>
         </div>
@@ -730,7 +730,7 @@ export default function SuperAdminPage() {
             <table className="w-full min-w-[900px] text-[13px]">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {['#', 'Sub Account Name', 'Active Subscription', 'Sub Account Details', 'Info', ''].map((h) => (
+                  {['#', 'Business Name', 'Active Subscription', 'Owner Details', 'Info', ''].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] whitespace-nowrap bg-[#faf8f6]">{h}</th>
                   ))}
                 </tr>
@@ -741,7 +741,7 @@ export default function SuperAdminPage() {
                     {/* # */}
                     <td className="px-4 py-4 text-[#7a6b5c] text-[12px] w-10">{idx + 1}</td>
 
-                    {/* Sub Account Name */}
+                    {/* Business Name */}
                     <td className="px-4 py-4 min-w-[160px]">
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center text-[11px] font-bold text-gray-400 shrink-0">
@@ -780,7 +780,7 @@ export default function SuperAdminPage() {
                       })()}
                     </td>
 
-                    {/* Sub Account Details */}
+                    {/* Owner Details */}
                     <td className="px-4 py-4 min-w-[180px]">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-500 shrink-0">

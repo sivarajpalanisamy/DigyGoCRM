@@ -177,15 +177,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           )}
         </div>
 
-        {/* Desktop: DigyGo logo for super admin (the left sidebar that held it is hidden on /admin).
-            The PNG is a 1080x1080 square with lots of padding, so we render it 2x the header
-            height inside an overflow-hidden box (centered) to crop the whitespace — same trick
-            the sidebar uses — so the wordmark fills the bar instead of looking tiny. */}
-        {currentUser?.role === 'super_admin' && (
-          <div className="hidden md:flex items-center justify-center shrink-0 mr-2 h-16 w-40 overflow-hidden">
-            <img src="/digygo-logo.png" alt="DigyGo" className="h-32 max-w-none object-contain" />
-          </div>
-        )}
+        {/* Super admin logo removed — sidebar already shows the logo */}
 
         {/* Tab nav — desktop only in full, scrollable on mobile */}
         <div className="flex-1 flex items-center overflow-x-auto scrollbar-hide">

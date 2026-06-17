@@ -76,7 +76,7 @@ export default function CreateBusinessPage() {
 
       {/* Page title */}
       <div className="mb-6">
-        <h2 className="font-headline font-bold text-[22px] text-[#1c1410]">Create Sub Account</h2>
+        <h2 className="font-headline font-bold text-[22px] text-[#1c1410]">Create New Business</h2>
         <p className="text-[13px] text-[#7a6b5c] mt-1">Fill in the details to create a new business account.</p>
       </div>
 
@@ -86,7 +86,7 @@ export default function CreateBusinessPage() {
 
           {/* ── LEFT: Seller Info ── */}
           <div className="p-8 lg:border-r border-black/[0.06] space-y-5">
-            <h3 className="font-bold text-[18px] text-[#1c1410] mb-6">Seller Info</h3>
+            <h3 className="font-bold text-[18px] text-[#1c1410] mb-6">Owner Info</h3>
 
             {/* First + Last Name */}
             <div className="grid grid-cols-2 gap-4">
@@ -231,7 +231,7 @@ export default function CreateBusinessPage() {
                 className="px-8 py-3 rounded text-white text-[13px] font-bold uppercase tracking-wider transition-all disabled:opacity-60 hover:opacity-90 active:scale-[0.98]"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
               >
-                {loading ? 'Creating…' : 'Create Sub Account'}
+                {loading ? 'Creating…' : 'Create Business'}
               </button>
             </div>
           </div>
