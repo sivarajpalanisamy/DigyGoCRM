@@ -731,20 +731,17 @@ export default function CustomFormDetailPage() {
                   const Icon = FIELD_ICONS[field.type] ?? Type;
                   const mappedName = allCrmFields.find((f) => f.slug === field.mapTo)?.name;
                   return (
-                    <div key={field.id} className="flex items-start gap-3 px-5 py-4">
-                      {/* Drag handle */}
-                      <button className="mt-1.5 shrink-0 cursor-grab text-[#b09e8d] hover:text-[#7a6b5c] transition-colors">
-                        <GripVertical className="w-4 h-4" />
-                      </button>
+                    <div key={field.id} className="px-5 py-4">
+                      {/* Top row: drag handle, icon, label, placeholder, required toggle, delete */}
+                      <div className="flex items-center gap-2.5">
+                        <button className="shrink-0 cursor-grab text-[#b09e8d] hover:text-[#7a6b5c] transition-colors">
+                          <GripVertical className="w-4 h-4" />
+                        </button>
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Icon className="w-3.5 h-3.5 text-primary" />
+                        </div>
 
-                      {/* Type icon */}
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <Icon className="w-3.5 h-3.5 text-primary" />
-                      </div>
-
-                      <div className="flex-1 space-y-2 min-w-0">
-                        {/* Label + Placeholder row */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="flex-1 grid grid-cols-2 gap-3 min-w-0">
                           <div>
                             <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-1">Label</label>
                             <Input value={field.label} onChange={(e) => updateField(field.id, { label: e.target.value })}
@@ -757,91 +754,90 @@ export default function CustomFormDetailPage() {
                           </div>
                         </div>
 
-                        {/* Options (for dropdown / radio / multi-select) */}
-                        {(field.type === 'dropdown' || field.type === 'radio' || field.type === 'multiselect') && (
-                          <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-1.5">
-                              Options
-                              <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] normal-case font-semibold">
-                                {field.type === 'dropdown' ? 'Select' : field.type === 'radio' ? 'Radio' : 'Multi-select'}
-                              </span>
-                            </label>
-                            <div className="space-y-1.5">
-                              {(field.options ?? ['']).map((opt, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                  <span className="text-[11px] text-[#b09e8d] w-4 shrink-0 text-right">{idx + 1}.</span>
-                                  <input
-                                    value={opt}
-                                    onChange={(e) => {
-                                      const next = [...(field.options ?? [''])];
-                                      next[idx] = e.target.value;
-                                      updateField(field.id, { options: next });
-                                    }}
-                                    placeholder={`Option ${idx + 1}`}
-                                    className="flex-1 border border-black/8 rounded-lg px-2.5 py-1.5 text-[12px] bg-[var(--app-bg)] outline-none focus:border-primary/40"
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      const next = (field.options ?? ['']).filter((_, i) => i !== idx);
-                                      updateField(field.id, { options: next.length ? next : [''] });
-                                    }}
-                                    className="p-1 rounded hover:bg-red-50 text-[#c4b09e] hover:text-red-500 transition-colors"
-                                  ><X className="w-3 h-3" /></button>
-                                </div>
-                              ))}
-                              <button
-                                onClick={() => updateField(field.id, { options: [...(field.options ?? ['']), ''] })}
-                                className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:bg-primary/5 px-2 py-1 rounded-lg transition-colors"
-                              >
-                                <Plus className="w-3 h-3" /> Add option
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Mapping badge + Required */}
-                        <div className="flex items-center justify-between">
-                          {/* Mapping */}
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-4 h-4 rounded bg-emerald-50 flex items-center justify-center shrink-0">
-                              <svg className="w-2.5 h-2.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                              </svg>
-                            </div>
-                            <select
-                              value={field.mapTo}
-                              onChange={(e) => updateField(field.id, { mapTo: e.target.value })}
-                              className="text-[11px] border border-emerald-200 rounded-lg px-2 py-1 bg-emerald-50 text-emerald-800 outline-none focus:border-emerald-400 font-medium"
-                            >
-                              <option value="">— Not mapped —</option>
-                              <optgroup label="Standard Fields">
-                                {STANDARD_CRM_FIELDS.map((f) => (
-                                  <option key={f.slug} value={f.slug}>{f.name}</option>
-                                ))}
-                              </optgroup>
-                              {customFields.length > 0 && (
-                                <optgroup label="Custom Fields">
-                                  {customFields.map((cf) => (
-                                    <option key={cf.slug} value={cf.slug}>{cf.name}</option>
-                                  ))}
-                                </optgroup>
-                              )}
-                            </select>
-                          </div>
-
-                          {/* Required toggle */}
-                          <div className="flex items-center gap-1.5">
-                            <Switch checked={field.required} onCheckedChange={(v) => updateField(field.id, { required: v })} />
-                            <span className="text-[11px] text-[#7a6b5c]">Required</span>
-                          </div>
-                        </div>
+                        <button onClick={() => removeField(field.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-[#b09e8d] hover:text-red-500 transition-colors shrink-0">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
 
-                      {/* Delete */}
-                      <button onClick={() => removeField(field.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-[#b09e8d] hover:text-red-500 transition-colors mt-0.5 shrink-0">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Options (for dropdown / radio / multi-select) */}
+                      {(field.type === 'dropdown' || field.type === 'radio' || field.type === 'multiselect') && (
+                        <div className="mt-2.5 ml-[54px]">
+                          <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-1.5">
+                            Options
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] normal-case font-semibold">
+                              {field.type === 'dropdown' ? 'Select' : field.type === 'radio' ? 'Radio' : 'Multi-select'}
+                            </span>
+                          </label>
+                          <div className="space-y-1.5">
+                            {(field.options ?? ['']).map((opt, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className="text-[11px] text-[#b09e8d] w-4 shrink-0 text-right">{idx + 1}.</span>
+                                <input
+                                  value={opt}
+                                  onChange={(e) => {
+                                    const next = [...(field.options ?? [''])];
+                                    next[idx] = e.target.value;
+                                    updateField(field.id, { options: next });
+                                  }}
+                                  placeholder={`Option ${idx + 1}`}
+                                  className="flex-1 border border-black/8 rounded-lg px-2.5 py-1.5 text-[12px] bg-[var(--app-bg)] outline-none focus:border-primary/40"
+                                />
+                                <button
+                                  onClick={() => {
+                                    const next = (field.options ?? ['']).filter((_, i) => i !== idx);
+                                    updateField(field.id, { options: next.length ? next : [''] });
+                                  }}
+                                  className="p-1 rounded hover:bg-red-50 text-[#c4b09e] hover:text-red-500 transition-colors"
+                                ><X className="w-3 h-3" /></button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => updateField(field.id, { options: [...(field.options ?? ['']), ''] })}
+                              className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:bg-primary/5 px-2 py-1 rounded-lg transition-colors"
+                            >
+                              <Plus className="w-3 h-3" /> Add option
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Bottom row: CRM mapping + Required toggle */}
+                      <div className="mt-2.5 ml-[54px] flex items-center gap-4">
+                        {/* Mapping */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="w-4 h-4 rounded bg-emerald-50 flex items-center justify-center shrink-0">
+                            <svg className="w-2.5 h-2.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                          </div>
+                          <select
+                            value={field.mapTo}
+                            onChange={(e) => updateField(field.id, { mapTo: e.target.value })}
+                            className="text-[11px] border border-emerald-200 rounded-lg px-2 py-1 bg-emerald-50 text-emerald-800 outline-none focus:border-emerald-400 font-medium max-w-[200px]"
+                          >
+                            <option value="">— Not mapped —</option>
+                            <optgroup label="Standard Fields">
+                              {STANDARD_CRM_FIELDS.map((f) => (
+                                <option key={f.slug} value={f.slug}>{f.name}</option>
+                              ))}
+                            </optgroup>
+                            {customFields.length > 0 && (
+                              <optgroup label="Custom Fields">
+                                {customFields.map((cf) => (
+                                  <option key={cf.slug} value={cf.slug}>{cf.name}</option>
+                                ))}
+                              </optgroup>
+                            )}
+                          </select>
+                        </div>
+
+                        {/* Required toggle */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Switch checked={field.required} onCheckedChange={(v) => updateField(field.id, { required: v })} />
+                          <span className="text-[11px] font-medium text-[#7a6b5c]">Required</span>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
