@@ -2847,7 +2847,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                           <FileText className="w-4 h-4 text-[#7a6b5c] shrink-0 mt-1" />
                           <div className="flex-1 min-w-0">
                             <span className="text-[12px] text-[#7a6b5c]">{f.label}:</span>
-                            <span className="ml-1.5 text-[13px] font-semibold text-[#1c1410] bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md inline-block break-words mt-0.5">
+                            <span className="ml-1.5 text-[12px] font-semibold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded-md inline-block break-words mt-0.5">
                               {f.value}
                             </span>
                           </div>
