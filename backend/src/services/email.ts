@@ -90,7 +90,15 @@ export function invalidateTenantSmtpCache(tenantId: string) {
 
 // ── Email credits ──────────────────────────────────────────────────────────────
 
-/** Check and decrement email credits. Returns true if allowed to send. -1 = unlimited. */
+/** Increment emails_sent counter only (no credit deduction). Used when tenant has own SMTP. */
+function trackEmailSent(tenantId: string) {
+  query(
+    'UPDATE tenant_usage SET emails_sent = emails_sent + 1, updated_at = NOW() WHERE tenant_id=$1::uuid',
+    [tenantId]
+  ).catch(() => {});
+}
+
+/** Check and decrement email credits. Returns true if allowed to send. -1 = unlimited. Used only for global SMTP/Resend. */
 async function consumeEmailCredit(tenantId: string): Promise<boolean> {
   try {
     const r = await query('SELECT email_credits FROM tenants WHERE id=$1::uuid', [tenantId]);
@@ -182,12 +190,11 @@ export async function sendEmail(opts: {
 
   // 1. If tenantId provided, try tenant-specific SMTP config first
   if (opts.tenantId) {
-    // Check email credits
-    const allowed = await consumeEmailCredit(opts.tenantId);
-    if (!allowed) throw new Error('Email credits exhausted. Contact your administrator to purchase more credits.');
-
     const tenantCfg = await getTenantSmtpConfig(opts.tenantId);
     if (tenantCfg) {
+      // Tenant's own SMTP — no credit deduction (they pay for their own server).
+      // Just increment the sent counter for analytics.
+      trackEmailSent(opts.tenantId);
       const transporter = getTenantTransporter(opts.tenantId, tenantCfg);
       const displayName = opts.fromName || tenantCfg.from_name || config.smtp.fromName;
       const fromEmail = tenantCfg.from_email || tenantCfg.user;
@@ -203,7 +210,9 @@ export async function sendEmail(opts: {
       });
       return { messageId: info.messageId };
     }
-    // No tenant SMTP config — fall through to global methods
+    // No tenant SMTP config — fall through to global methods (credits apply)
+    const allowed = await consumeEmailCredit(opts.tenantId);
+    if (!allowed) throw new Error('Email credits exhausted. Contact your administrator to purchase more credits.');
   }
 
   // 2. Prefer Resend when configured; otherwise fall back to SMTP (existing behavior).
