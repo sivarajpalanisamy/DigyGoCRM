@@ -379,7 +379,7 @@ function WhatsAppPersonalIcon() {
 
 // ── WhatsApp Personal QR Modal ─────────────────────────────────────────────────
 
-function WaPersonalModal({ onClose, onConnected, sessionId }: { onClose: () => void; onConnected: () => void; sessionId?: string | null }) {
+function WaPersonalModal({ onClose, onConnected, sessionId: initialSessionId }: { onClose: () => void; onConnected: () => void; sessionId?: string | null }) {
   const [qr, setQr] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(60);
   const [starting, setStarting] = useState(false);
@@ -389,6 +389,9 @@ function WaPersonalModal({ onClose, onConnected, sessionId }: { onClose: () => v
   const countRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastQrRef = useRef<string | null>(null);
+  // Track the actual session ID (may be created by this modal)
+  const sessionIdRef = useRef<string | null>(initialSessionId ?? null);
+  const connectedRef = useRef(false);
 
   const clearTimers = () => {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -398,14 +401,22 @@ function WaPersonalModal({ onClose, onConnected, sessionId }: { onClose: () => v
 
   const onQrReceived = (qrData: string) => {
     setQr(qrData);
-    // Only reset the countdown when the QR ACTUALLY changes. The 1.5s poll returns
-    // the same QR repeatedly; resetting on every receipt made the timer bounce 59↔60.
     if (qrData !== lastQrRef.current) {
       lastQrRef.current = qrData;
       setCountdown(60);
       setTimedOut(false);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     }
+  };
+
+  // Cleanup: delete the session if user closes without connecting
+  const handleClose = async () => {
+    clearTimers();
+    if (!connectedRef.current && sessionIdRef.current) {
+      // User closed without scanning — remove the orphan session
+      try { await api.delete(`/api/whatsapp-personal/sessions/${sessionIdRef.current}`); } catch {}
+    }
+    onClose();
   };
 
   const startSession = async () => {
@@ -415,22 +426,22 @@ function WaPersonalModal({ onClose, onConnected, sessionId }: { onClose: () => v
     lastQrRef.current = null;
     setTimedOut(false);
     try {
-      const connectUrl = sessionId
-        ? `/api/whatsapp-personal/sessions/${sessionId}/connect`
-        : '/api/whatsapp-personal/connect';
-      await api.post(connectUrl, {});
+      let sid = sessionIdRef.current;
+      // If no session yet, create one first
+      if (!sid) {
+        const { session_id } = await api.post<{ session_id: string }>('/api/whatsapp-personal/sessions', { name: 'New Device' });
+        sid = session_id;
+        sessionIdRef.current = sid;
+      }
+
+      await api.post(`/api/whatsapp-personal/sessions/${sid}/connect`, {});
       setCountdown(60);
 
-      // 60-second timeout — WhatsApp can take up to 30s on first connect
       timeoutRef.current = setTimeout(() => setTimedOut(true), 60_000);
 
-      // Poll as fallback (socket delivers instantly, this catches any miss)
-      const qrUrl = sessionId
-        ? `/api/whatsapp-personal/sessions/${sessionId}/qr`
-        : '/api/whatsapp-personal/qr';
       pollRef.current = setInterval(async () => {
         try {
-          const data = await api.get<{ qr: string | null }>(qrUrl);
+          const data = await api.get<{ qr: string | null }>(`/api/whatsapp-personal/sessions/${sid}/qr`);
           if (data.qr) onQrReceived(data.qr);
         } catch {}
       }, 1500);
@@ -447,14 +458,16 @@ function WaPersonalModal({ onClose, onConnected, sessionId }: { onClose: () => v
 
   useEffect(() => {
     const socket = getSocket();
+    const sid = sessionIdRef.current;
 
     const qrHandler = (data: { qr: string; sessionId?: string }) => {
-      if (sessionId && data.sessionId && data.sessionId !== sessionId) return;
+      if (sessionIdRef.current && data.sessionId && data.sessionId !== sessionIdRef.current) return;
       if (data.qr) onQrReceived(data.qr);
     };
     const statusHandler = (data: { status: string; phone?: string; sessionId?: string }) => {
-      if (sessionId && data.sessionId && data.sessionId !== sessionId) return;
+      if (sessionIdRef.current && data.sessionId && data.sessionId !== sessionIdRef.current) return;
       if (data.status === 'connected') {
+        connectedRef.current = true;
         setConnected(true);
         setQr(null);
         clearTimers();
@@ -475,8 +488,8 @@ function WaPersonalModal({ onClose, onConnected, sessionId }: { onClose: () => v
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
       <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
         <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
-          <p className="text-[15px] font-bold text-[#1c1410]">Connect WhatsApp (Personal)</p>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]"><X size={15} /></button>
+          <p className="text-[15px] font-bold text-[#1c1410]">{initialSessionId ? 'Connect WhatsApp Device' : 'Add New WhatsApp Device'}</p>
+          <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]"><X size={15} /></button>
         </div>
 
         <div className="p-6 flex flex-col items-center gap-4">
@@ -1135,6 +1148,8 @@ export default function IntegrationsPage() {
   const [metaHealth, setMetaHealth] = useState<{ needsReconnect: boolean; lastError: string | null }>({ needsReconnect: false, lastError: null });
   const [waSessions, setWaSessions] = useState<{ session_id: string; session_name: string; status: string; phone_number: string | null; connected_at: string | null }[]>([]);
   const [waQrSessionId, setWaQrSessionId] = useState<string | null>(null);
+  const [editingWaSession, setEditingWaSession] = useState<string | null>(null);
+  const [editingWaName, setEditingWaName] = useState('');
 
   const loadWaSessions = async () => {
     try {
@@ -1142,13 +1157,9 @@ export default function IntegrationsPage() {
       if (Array.isArray(sessions)) setWaSessions(sessions);
     } catch {}
   };
-  const addWaSession = async () => {
-    try {
-      const { session_id } = await api.post<{ session_id: string }>('/api/whatsapp-personal/sessions', { name: `WhatsApp ${waSessions.length + 1}` });
-      await loadWaSessions();
-      setWaQrSessionId(session_id);
-      setModal('wa_personal');
-    } catch (err: any) { toast.error(err.message ?? 'Failed to create session'); }
+  const addWaSession = () => {
+    setWaQrSessionId(null); // no session yet — modal will create one
+    setModal('wa_personal');
   };
 
   const loadStatus = async () => {
@@ -1299,7 +1310,37 @@ export default function IntegrationsPage() {
                 <div key={s.session_id} className="flex items-center gap-2 bg-[var(--app-bg)] rounded-xl border border-black/5 px-3 py-2">
                   <div className={cn('w-2 h-2 rounded-full shrink-0', s.status === 'connected' ? 'bg-emerald-500' : s.status === 'connecting' ? 'bg-amber-400 animate-pulse' : 'bg-gray-300')} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-[#1c1410] truncate">{s.session_name}</p>
+                    {editingWaSession === s.session_id ? (
+                      <form className="flex items-center gap-1" onSubmit={async (e) => {
+                        e.preventDefault();
+                        const trimmed = editingWaName.trim();
+                        if (!trimmed) { setEditingWaSession(null); return; }
+                        try {
+                          await api.patch(`/api/whatsapp-personal/sessions/${s.session_id}`, { name: trimmed });
+                          await loadWaSessions();
+                          toast.success('Renamed');
+                        } catch { toast.error('Failed to rename'); }
+                        setEditingWaSession(null);
+                      }}>
+                        <input
+                          autoFocus
+                          className="text-[12px] font-semibold text-[#1c1410] bg-white border border-black/10 rounded px-1.5 py-0.5 w-full outline-none focus:border-[#128C7E]"
+                          value={editingWaName}
+                          onChange={(e) => setEditingWaName(e.target.value)}
+                          onBlur={() => setEditingWaSession(null)}
+                          onKeyDown={(e) => { if (e.key === 'Escape') setEditingWaSession(null); }}
+                        />
+                      </form>
+                    ) : (
+                      <p
+                        className="text-[12px] font-semibold text-[#1c1410] truncate cursor-pointer hover:text-[#128C7E] group flex items-center gap-1"
+                        onClick={() => { setEditingWaSession(s.session_id); setEditingWaName(s.session_name); }}
+                        title="Click to rename"
+                      >
+                        {s.session_name}
+                        <Pencil className="w-2.5 h-2.5 text-[#9e8e7e] opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </p>
+                    )}
                     <p className="text-[10px] text-[#9e8e7e]">{s.phone_number || (s.status === 'connecting' ? 'Connecting...' : 'Disconnected')}</p>
                   </div>
                   {s.status === 'connected' ? (
@@ -1322,13 +1363,13 @@ export default function IntegrationsPage() {
                   )}
                   <button
                     className="text-[#9e8e7e] hover:text-red-500 transition-colors p-0.5 shrink-0"
-                    title="Remove session"
+                    title="Remove device"
                     onClick={async () => {
                       try {
                         await api.delete(`/api/whatsapp-personal/sessions/${s.session_id}`);
                         await loadWaSessions();
                         loadStatus();
-                        toast.success('Session removed');
+                        toast.success('Device removed');
                       } catch { toast.error('Failed'); }
                     }}
                   >
@@ -1344,7 +1385,7 @@ export default function IntegrationsPage() {
               className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold text-white bg-[#128C7E] rounded-lg px-3 py-1.5 hover:bg-[#0f7a6d] transition-colors"
               onClick={addWaSession}
             >
-              <Plus className="w-3.5 h-3.5" />Add WhatsApp Session
+              <Plus className="w-3.5 h-3.5" />Add New WhatsApp Device
             </button>
             <button
               className="flex items-center justify-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] border border-black/10 rounded-lg px-3 py-1.5 hover:bg-[var(--accent-tint)] hover:text-[var(--brand-dark)] transition-colors"
@@ -1392,7 +1433,7 @@ export default function IntegrationsPage() {
       {/* Modals */}
       {modal === 'waba'        && <WabaModal       onClose={() => setModal(null)} onSaved={() => onSaved('waba')}     />}
       {modal === 'smtp'        && <SmtpModal       onClose={() => setModal(null)} onSaved={() => onSaved('smtp')}     />}
-      {modal === 'wa_personal' && <WaPersonalModal sessionId={waQrSessionId} onClose={() => { setModal(null); setWaQrSessionId(null); }} onConnected={() => { loadWaSessions(); loadStatus(); }} />}
+      {modal === 'wa_personal' && <WaPersonalModal sessionId={waQrSessionId} onClose={() => { setModal(null); setWaQrSessionId(null); loadWaSessions(); }} onConnected={() => { loadWaSessions(); loadStatus(); }} />}
       {modal === 'superfone'   && <SuperfoneModal  onClose={() => setModal(null)} onSaved={() => onSaved('superfone')} tenantId={currentUser?.tenantId ?? ''} />}
       {modal === 'google_sheets' && (
         <GoogleSheetsModal
