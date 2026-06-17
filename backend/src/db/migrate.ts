@@ -101,6 +101,7 @@ const MIGRATIONS = [
   'migration_099_phone_unique_per_pipeline.sql',
   'migration_100_email_unique_per_pipeline.sql',
   'migration_101_email_credits.sql',
+  'migration_102_wa_multi_session.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.

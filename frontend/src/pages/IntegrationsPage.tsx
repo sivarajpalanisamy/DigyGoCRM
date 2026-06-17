@@ -379,7 +379,7 @@ function WhatsAppPersonalIcon() {
 
 // ── WhatsApp Personal QR Modal ─────────────────────────────────────────────────
 
-function WaPersonalModal({ onClose, onConnected }: { onClose: () => void; onConnected: () => void }) {
+function WaPersonalModal({ onClose, onConnected, sessionId }: { onClose: () => void; onConnected: () => void; sessionId?: string | null }) {
   const [qr, setQr] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(60);
   const [starting, setStarting] = useState(false);
@@ -415,16 +415,22 @@ function WaPersonalModal({ onClose, onConnected }: { onClose: () => void; onConn
     lastQrRef.current = null;
     setTimedOut(false);
     try {
-      await api.post('/api/whatsapp-personal/connect', {});
+      const connectUrl = sessionId
+        ? `/api/whatsapp-personal/sessions/${sessionId}/connect`
+        : '/api/whatsapp-personal/connect';
+      await api.post(connectUrl, {});
       setCountdown(60);
 
       // 60-second timeout — WhatsApp can take up to 30s on first connect
       timeoutRef.current = setTimeout(() => setTimedOut(true), 60_000);
 
       // Poll as fallback (socket delivers instantly, this catches any miss)
+      const qrUrl = sessionId
+        ? `/api/whatsapp-personal/sessions/${sessionId}/qr`
+        : '/api/whatsapp-personal/qr';
       pollRef.current = setInterval(async () => {
         try {
-          const data = await api.get<{ qr: string | null }>('/api/whatsapp-personal/qr');
+          const data = await api.get<{ qr: string | null }>(qrUrl);
           if (data.qr) onQrReceived(data.qr);
         } catch {}
       }, 1500);
@@ -442,10 +448,12 @@ function WaPersonalModal({ onClose, onConnected }: { onClose: () => void; onConn
   useEffect(() => {
     const socket = getSocket();
 
-    const qrHandler = (data: { qr: string }) => {
+    const qrHandler = (data: { qr: string; sessionId?: string }) => {
+      if (sessionId && data.sessionId && data.sessionId !== sessionId) return;
       if (data.qr) onQrReceived(data.qr);
     };
-    const statusHandler = (data: { status: string; phone?: string }) => {
+    const statusHandler = (data: { status: string; phone?: string; sessionId?: string }) => {
+      if (sessionId && data.sessionId && data.sessionId !== sessionId) return;
       if (data.status === 'connected') {
         setConnected(true);
         setQr(null);
@@ -1125,6 +1133,23 @@ export default function IntegrationsPage() {
   });
   const [sheetsInfo, setSheetsInfo] = useState<{ email: string | null; configs: any[] }>({ email: null, configs: [] });
   const [metaHealth, setMetaHealth] = useState<{ needsReconnect: boolean; lastError: string | null }>({ needsReconnect: false, lastError: null });
+  const [waSessions, setWaSessions] = useState<{ session_id: string; session_name: string; status: string; phone_number: string | null; connected_at: string | null }[]>([]);
+  const [waQrSessionId, setWaQrSessionId] = useState<string | null>(null);
+
+  const loadWaSessions = async () => {
+    try {
+      const sessions = await api.get<any[]>('/api/whatsapp-personal/sessions');
+      if (Array.isArray(sessions)) setWaSessions(sessions);
+    } catch {}
+  };
+  const addWaSession = async () => {
+    try {
+      const { session_id } = await api.post<{ session_id: string }>('/api/whatsapp-personal/sessions', { name: `WhatsApp ${waSessions.length + 1}` });
+      await loadWaSessions();
+      setWaQrSessionId(session_id);
+      setModal('wa_personal');
+    } catch (err: any) { toast.error(err.message ?? 'Failed to create session'); }
+  };
 
   const loadStatus = async () => {
     const [meta, waba, smtp, configs, waPersStatus, superfone, sheets] = await Promise.allSettled([
@@ -1156,6 +1181,8 @@ export default function IntegrationsPage() {
     if (waPersStatus.status === 'fulfilled') {
       setWaPersonalStatus(waPersStatus.value.status as any, waPersStatus.value.phone);
     }
+
+    loadWaSessions();
   };
 
 
@@ -1242,67 +1269,83 @@ export default function IntegrationsPage() {
           onDisconnect={() => disconnect('waba', '/api/integrations/waba/disconnect')}
         />
 
-        {/* WhatsApp Personal (QR) */}
+        {/* WhatsApp Personal (QR) — Multi-session */}
         <div className="bg-white rounded-2xl border border-black/5 p-5 flex flex-col gap-4 hover:shadow-sm transition-all duration-200">
           <div className="flex items-start justify-between gap-2">
             <WhatsAppPersonalIcon />
             <span className={cn(
               'inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full',
-              waPersonalStatus === 'connected' ? 'bg-emerald-50 text-emerald-600'
-              : waPersonalStatus === 'connecting' ? 'bg-amber-50 text-amber-600'
+              waSessions.some((s) => s.status === 'connected') ? 'bg-emerald-50 text-emerald-600'
+              : waSessions.some((s) => s.status === 'connecting') ? 'bg-amber-50 text-amber-600'
               : 'bg-[#f5f0eb] text-[#9e8e7e]'
             )}>
-              {waPersonalStatus === 'connected' && <><Check className="w-2.5 h-2.5" />Connected</>}
-              {waPersonalStatus === 'connecting' && <><RefreshCw className="w-2.5 h-2.5 animate-spin" />Connecting…</>}
-              {waPersonalStatus === 'disconnected' && 'Not connected'}
+              {waSessions.filter((s) => s.status === 'connected').length > 0
+                ? <><Check className="w-2.5 h-2.5" />{waSessions.filter((s) => s.status === 'connected').length} connected</>
+                : waSessions.some((s) => s.status === 'connecting') ? <><RefreshCw className="w-2.5 h-2.5 animate-spin" />Connecting…</>
+                : 'Not connected'}
             </span>
           </div>
           <div className="flex-1">
             <p className="text-[14px] font-bold text-[#1c1410]">WhatsApp Personal (QR)</p>
             <p className="text-[12px] text-[#9e8e7e] mt-0.5 leading-relaxed">
-              Link any WhatsApp number via QR scan. Send messages to any contact without WABA approval.
+              Link multiple WhatsApp numbers via QR scan. Send messages to any contact without WABA approval.
             </p>
-            {waPersonalStatus === 'connected' && waPersonalPhone && (
-              <p className="text-[11px] text-emerald-600 font-semibold mt-1">
-                <Wifi className="w-3 h-3 inline mr-1" />{waPersonalPhone}
-              </p>
-            )}
           </div>
+
+          {/* Session list */}
+          {waSessions.length > 0 && (
+            <div className="space-y-2">
+              {waSessions.map((s) => (
+                <div key={s.session_id} className="flex items-center gap-2 bg-[var(--app-bg)] rounded-xl border border-black/5 px-3 py-2">
+                  <div className={cn('w-2 h-2 rounded-full shrink-0', s.status === 'connected' ? 'bg-emerald-500' : s.status === 'connecting' ? 'bg-amber-400 animate-pulse' : 'bg-gray-300')} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-[#1c1410] truncate">{s.session_name}</p>
+                    <p className="text-[10px] text-[#9e8e7e]">{s.phone_number || (s.status === 'connecting' ? 'Connecting...' : 'Disconnected')}</p>
+                  </div>
+                  {s.status === 'connected' ? (
+                    <button
+                      className="text-[10px] font-semibold text-red-500 hover:underline shrink-0"
+                      onClick={async () => {
+                        try {
+                          await api.post(`/api/whatsapp-personal/sessions/${s.session_id}/disconnect`, {});
+                          await loadWaSessions();
+                          loadStatus();
+                          toast.success('Disconnected');
+                        } catch { toast.error('Failed'); }
+                      }}
+                    >Disconnect</button>
+                  ) : (
+                    <button
+                      className="text-[10px] font-semibold text-[#128C7E] hover:underline shrink-0"
+                      onClick={() => { setWaQrSessionId(s.session_id); setModal('wa_personal'); }}
+                    >Connect</button>
+                  )}
+                  <button
+                    className="text-[#9e8e7e] hover:text-red-500 transition-colors p-0.5 shrink-0"
+                    title="Remove session"
+                    onClick={async () => {
+                      try {
+                        await api.delete(`/api/whatsapp-personal/sessions/${s.session_id}`);
+                        await loadWaSessions();
+                        loadStatus();
+                        toast.success('Session removed');
+                      } catch { toast.error('Failed'); }
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex gap-2">
-            {waPersonalStatus === 'connected' ? (
-              <button
-                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold text-red-600 border border-red-100 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors"
-                onClick={async () => {
-                  try {
-                    await api.delete('/api/whatsapp-personal/disconnect');
-                    setWaPersonalStatus('disconnected', null);
-                    toast.success('WhatsApp Personal disconnected');
-                  } catch { toast.error('Failed to disconnect'); }
-                }}
-              >
-                <WifiOff className="w-3.5 h-3.5" />Disconnect
-              </button>
-            ) : waPersonalStatus === 'connecting' ? (
-              <button
-                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold text-white bg-[#128C7E] rounded-lg px-3 py-1.5 hover:bg-[#0f7a6d] transition-colors"
-                onClick={async () => {
-                  try {
-                    await api.delete('/api/whatsapp-personal/disconnect');
-                    setWaPersonalStatus('disconnected', null);
-                  } catch {}
-                  setModal('wa_personal');
-                }}
-              >
-                <QrCode className="w-3.5 h-3.5" />Re-scan QR
-              </button>
-            ) : (
-              <button
-                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold text-white bg-[#128C7E] rounded-lg px-3 py-1.5 hover:bg-[#0f7a6d] transition-colors"
-                onClick={() => setModal('wa_personal')}
-              >
-                <QrCode className="w-3.5 h-3.5" />Connect via QR
-              </button>
-            )}
+            <button
+              className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold text-white bg-[#128C7E] rounded-lg px-3 py-1.5 hover:bg-[#0f7a6d] transition-colors"
+              onClick={addWaSession}
+            >
+              <Plus className="w-3.5 h-3.5" />Add WhatsApp Session
+            </button>
             <button
               className="flex items-center justify-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] border border-black/10 rounded-lg px-3 py-1.5 hover:bg-[var(--accent-tint)] hover:text-[var(--brand-dark)] transition-colors"
               onClick={() => navigate('/settings/integrations/wa-personal')}
@@ -1349,7 +1392,7 @@ export default function IntegrationsPage() {
       {/* Modals */}
       {modal === 'waba'        && <WabaModal       onClose={() => setModal(null)} onSaved={() => onSaved('waba')}     />}
       {modal === 'smtp'        && <SmtpModal       onClose={() => setModal(null)} onSaved={() => onSaved('smtp')}     />}
-      {modal === 'wa_personal' && <WaPersonalModal onClose={() => setModal(null)} onConnected={() => { setWaPersonalStatus('connected'); loadStatus(); }} />}
+      {modal === 'wa_personal' && <WaPersonalModal sessionId={waQrSessionId} onClose={() => { setModal(null); setWaQrSessionId(null); }} onConnected={() => { loadWaSessions(); loadStatus(); }} />}
       {modal === 'superfone'   && <SuperfoneModal  onClose={() => setModal(null)} onSaved={() => onSaved('superfone')} tenantId={currentUser?.tenantId ?? ''} />}
       {modal === 'google_sheets' && (
         <GoogleSheetsModal

@@ -3,8 +3,9 @@ import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission } from '../middleware/permissions';
 import {
-  startSession, stopSession, destroySession,
-  getQR, getStatus, sendText,
+  startSession, stopSession, destroySession, deleteSession,
+  getQR, getStatus, sendText, listSessions, createSession, renameSession,
+  getFirstConnectedSessionId,
 } from '../services/whatsapp/sessionManager';
 import { toJID } from '../services/whatsapp/phoneUtils';
 import { emitToTenant } from '../socket';
@@ -13,46 +14,160 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireTenant);
 
-// GET /api/whatsapp-personal/status
-router.get('/status', async (req: AuthRequest, res: Response) => {
+// ── Multi-session endpoints ─────────────────────────────────────────────────
+
+// GET /api/whatsapp-personal/sessions — list all sessions for this tenant
+router.get('/sessions', async (req: AuthRequest, res: Response) => {
   try {
-    const status = await getStatus(req.user!.tenantId!);
-    res.json(status);
+    const sessions = await listSessions(req.user!.tenantId!);
+    res.json(sessions);
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-// GET /api/whatsapp-personal/qr — poll for latest QR (returns null if already connected)
-router.get('/qr', async (req: AuthRequest, res: Response) => {
-  const qr = getQR(req.user!.tenantId!);
-  res.json({ qr });
+// POST /api/whatsapp-personal/sessions — create a new session
+router.post('/sessions', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  const { name } = req.body as { name?: string };
+  try {
+    const sessionId = await createSession(req.user!.tenantId!, name);
+    res.status(201).json({ session_id: sessionId });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message ?? 'Failed to create session' });
+  }
 });
 
-// POST /api/whatsapp-personal/connect — initiate QR session
-router.post('/connect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
-  const tenantId = req.user!.tenantId!;
+// PATCH /api/whatsapp-personal/sessions/:sessionId — rename session
+router.patch('/sessions/:sessionId', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  const { name } = req.body as { name?: string };
+  if (!name?.trim()) { res.status(400).json({ error: 'name required' }); return; }
   try {
-    // Always destroy first — wipes stale auth files so Baileys generates a fresh QR
-    // instead of trying to silently reconnect from a previous incomplete session.
-    await destroySession(tenantId).catch(() => null);
-    await new Promise<void>((r) => setTimeout(r, 300)); // let Node.js close file handles
-    await startSession(tenantId);
+    await renameSession(req.user!.tenantId!, req.params.sessionId, name.trim());
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// DELETE /api/whatsapp-personal/sessions/:sessionId — destroy session + files + DB
+router.delete('/sessions/:sessionId', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  try {
+    await deleteSession(req.user!.tenantId!, req.params.sessionId);
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// POST /api/whatsapp-personal/sessions/:sessionId/connect — start QR for session
+router.post('/sessions/:sessionId/connect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId!;
+  const { sessionId } = req.params;
+  try {
+    await destroySession(tenantId, sessionId).catch(() => null);
+    await new Promise<void>((r) => setTimeout(r, 300));
+    await startSession(tenantId, sessionId);
     res.json({ success: true, message: 'Session starting — scan the QR code' });
   } catch (err: any) {
     res.status(500).json({ error: err.message ?? 'Failed to start session' });
   }
 });
 
-// DELETE /api/whatsapp-personal/disconnect
-router.delete('/disconnect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+// POST /api/whatsapp-personal/sessions/:sessionId/disconnect — stop session
+router.post('/sessions/:sessionId/disconnect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
   try {
-    await destroySession(req.user!.tenantId!);
+    await destroySession(req.user!.tenantId!, req.params.sessionId);
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// GET /api/whatsapp-personal/sessions/:sessionId/qr
+router.get('/sessions/:sessionId/qr', async (req: AuthRequest, res: Response) => {
+  const qr = getQR(req.user!.tenantId!, req.params.sessionId);
+  res.json({ qr });
+});
+
+// GET /api/whatsapp-personal/sessions/:sessionId/status
+router.get('/sessions/:sessionId/status', async (req: AuthRequest, res: Response) => {
+  try {
+    const status = await getStatus(req.user!.tenantId!, req.params.sessionId);
+    res.json(status);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Legacy endpoints (backward compatible) ──────────────────────────────────
+
+// GET /api/whatsapp-personal/status — returns first session status
+router.get('/status', async (req: AuthRequest, res: Response) => {
+  try {
+    const tenantId = req.user!.tenantId!;
+    const sessionId = getFirstConnectedSessionId(tenantId);
+    if (sessionId) {
+      const status = await getStatus(tenantId, sessionId);
+      res.json(status);
+    } else {
+      // Check DB for any session
+      const dbRow = await query(
+        'SELECT session_id, status, phone_number FROM wa_personal_sessions WHERE tenant_id=$1::uuid LIMIT 1',
+        [tenantId],
+      );
+      if (dbRow.rows[0]) {
+        res.json({ status: dbRow.rows[0].status, phone: dbRow.rows[0].phone_number });
+      } else {
+        res.json({ status: 'disconnected', phone: null });
+      }
+    }
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// GET /api/whatsapp-personal/qr — legacy: returns QR for first session
+router.get('/qr', async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId!;
+  // Find any pending QR for this tenant
+  const sessions = await listSessions(tenantId).catch(() => []);
+  for (const s of sessions) {
+    const qr = getQR(tenantId, s.session_id);
+    if (qr) { res.json({ qr }); return; }
+  }
+  res.json({ qr: null });
+});
+
+// POST /api/whatsapp-personal/connect — legacy: connect first/only session
+router.post('/connect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId!;
+  try {
+    // Find existing session or create one
+    const existing = await query(
+      'SELECT session_id FROM wa_personal_sessions WHERE tenant_id=$1::uuid LIMIT 1',
+      [tenantId],
+    );
+    let sessionId: string;
+    if (existing.rows[0]) {
+      sessionId = existing.rows[0].session_id;
+    } else {
+      sessionId = await createSession(tenantId, 'Default');
+    }
+    await destroySession(tenantId, sessionId).catch(() => null);
+    await new Promise<void>((r) => setTimeout(r, 300));
+    await startSession(tenantId, sessionId);
+    res.json({ success: true, message: 'Session starting — scan the QR code' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message ?? 'Failed to start session' });
+  }
+});
+
+// DELETE /api/whatsapp-personal/disconnect — legacy: disconnect first session
+router.delete('/disconnect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId!;
+  try {
+    const existing = await query(
+      'SELECT session_id FROM wa_personal_sessions WHERE tenant_id=$1::uuid LIMIT 1',
+      [tenantId],
+    );
+    if (existing.rows[0]) {
+      await destroySession(tenantId, existing.rows[0].session_id);
+    }
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
 // POST /api/whatsapp-personal/send — send message to a lead/number
 router.post('/send', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
-  const { lead_id, phone, message } = req.body as { lead_id?: string; phone?: string; message: string };
+  const { lead_id, phone, message, session_id } = req.body as { lead_id?: string; phone?: string; message: string; session_id?: string };
   const { tenantId, userId } = req.user!;
 
   if (!message?.trim()) { res.status(400).json({ error: 'message required' }); return; }
@@ -76,7 +191,7 @@ router.post('/send', checkPermission('inbox:send'), async (req: AuthRequest, res
     if (!targetPhone) { res.status(400).json({ error: 'phone or lead_id required' }); return; }
 
     const jid = toJID(targetPhone);
-    await sendText(tenantId!, jid, message.trim());
+    await sendText(tenantId!, jid, message.trim(), session_id);
 
     // Find or create conversation
     let convId: string;
@@ -109,7 +224,6 @@ router.post('/send', checkPermission('inbox:send'), async (req: AuthRequest, res
       [message.trim().slice(0, 200), convId],
     );
 
-    // Log in lead activity
     if (leadId) {
       await query(
         `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
@@ -125,7 +239,7 @@ router.post('/send', checkPermission('inbox:send'), async (req: AuthRequest, res
   }
 });
 
-// GET /api/whatsapp-personal/stats — sent/received counts + 7-day trend + session history
+// GET /api/whatsapp-personal/stats
 router.get('/stats', async (req: AuthRequest, res: Response) => {
   try {
     const [todayRes, monthRes, weekRes, sessionRes] = await Promise.all([
@@ -364,7 +478,7 @@ router.get('/logs', async (req: AuthRequest, res: Response) => {
   } catch (err: any) { res.status(500).json({ error: err.message ?? 'Server error' }); }
 });
 
-// GET /api/whatsapp-personal/settings — tenant WA personal settings
+// GET /api/whatsapp-personal/settings
 router.get('/settings', async (req: AuthRequest, res: Response) => {
   try {
     const res2 = await query(
@@ -375,7 +489,7 @@ router.get('/settings', async (req: AuthRequest, res: Response) => {
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-// PATCH /api/whatsapp-personal/settings — update WA personal settings
+// PATCH /api/whatsapp-personal/settings
 router.patch('/settings', async (req: AuthRequest, res: Response) => {
   const { wa_auto_create_lead } = req.body as { wa_auto_create_lead?: boolean };
   try {

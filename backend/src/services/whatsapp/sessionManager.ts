@@ -20,6 +20,12 @@ const WA_SESSIONS_DIR = process.env.WA_SESSIONS_DIR
 const WA_MEDIA_DIR = process.env.WA_MEDIA_DIR
   || path.join(process.cwd(), 'wa_media');
 
+// ── Session key helpers ─────────────────────────────────────────────────────
+// Multi-session: all Maps are keyed by "tenantId::sessionId"
+function skey(tenantId: string, sessionId: string): string {
+  return `${tenantId}::${sessionId}`;
+}
+
 // Background queue for historical media downloads — drains at 1 item/sec to avoid overload
 interface MediaQueueItem { tenantId: string; msg: any; msgId: string; }
 const mediaDownloadQueue: MediaQueueItem[] = [];
@@ -38,6 +44,7 @@ function drainMediaQueue() {
 }
 
 // In-memory state — source of truth (more reliable than DB after restarts)
+// Keys are "tenantId::sessionId"
 const sessions          = new Map<string, ReturnType<typeof makeWASocket>>();
 const connectedSessions = new Set<string>();
 const pendingQRs        = new Map<string, string>();
@@ -47,11 +54,11 @@ const intentionallyStopped = new Set<string>();
 // WA contacts cache (phone book contacts from the connected device)
 const waContactsCache = new Map<string, { id: string; name: string; phone: string }[]>();
 
-// LID → real phone mapping (multi-device WhatsApp sends @lid JIDs instead of phone JIDs)
-const lidToPhone = new Map<string, string>(); // key: "86256281202697" → value: "918072256598"
+// LID -> real phone mapping (multi-device WhatsApp sends @lid JIDs instead of phone JIDs)
+const lidToPhone = new Map<string, string>(); // key: "86256281202697" -> value: "918072256598"
 
 /**
- * Persist a LID→phone mapping to DB and memory, then merge any LID-based
+ * Persist a LID->phone mapping to DB and memory, then merge any LID-based
  * anonymous conversation into the real phone conversation.
  */
 async function storeLidMapping(tenantId: string, lidDigits: string, phoneDigits: string): Promise<void> {
@@ -64,8 +71,6 @@ async function storeLidMapping(tenantId: string, lidDigits: string, phoneDigits:
   ).catch(() => null);
 
   // Find any LID-based anonymous conversation (phone = lidDigits) and merge it
-  // into the real phone conversation so messages appear under the correct contact.
-  // ── Fix anonymous LID conversations (lead_id IS NULL) ──────────────────────
   try {
     const lidConv = await query(
       `SELECT id FROM conversations
@@ -76,7 +81,6 @@ async function storeLidMapping(tenantId: string, lidDigits: string, phoneDigits:
     );
     if (lidConv.rows[0]) {
       const lidConvId = lidConv.rows[0].id;
-      // Find the real phone conversation
       const realConv = await query(
         `SELECT id FROM conversations
          WHERE tenant_id=$1::uuid AND channel='personal_wa'
@@ -98,12 +102,12 @@ async function storeLidMapping(tenantId: string, lidDigits: string, phoneDigits:
           [realConvId],
         );
         await query(`DELETE FROM conversations WHERE id=$1`, [lidConvId]);
-        console.log(`[WA] Merged LID conv ${lidConvId} → real conv ${realConvId} (${phoneDigits})`);
+        console.log(`[WA] Merged LID conv ${lidConvId} -> real conv ${realConvId} (${phoneDigits})`);
         emitToTenant(tenantId, 'conversation:deleted', { id: lidConvId });
         emitToTenant(tenantId, 'conversation:updated', { id: realConvId });
       } else {
         await query(`UPDATE conversations SET phone=$1 WHERE id=$2`, [phoneDigits, lidConvId]);
-        console.log(`[WA] Updated LID conv phone: ${lidDigits} → ${phoneDigits}`);
+        console.log(`[WA] Updated LID conv phone: ${lidDigits} -> ${phoneDigits}`);
         emitToTenant(tenantId, 'conversation:updated', { id: lidConvId, phone: `+${phoneDigits}` });
       }
     }
@@ -111,9 +115,7 @@ async function storeLidMapping(tenantId: string, lidDigits: string, phoneDigits:
     console.error('[WA] LID merge error:', e);
   }
 
-  // ── Fix leads auto-created with LID digits as phone (lead_id IS NOT NULL case) ─
-  // Happens when a @lid message arrived before the mapping was known and auto-lead creation
-  // was enabled. The lead's phone is stored as the LID, not the real phone.
+  // Fix leads auto-created with LID digits as phone
   try {
     const lidLeads = await query(
       `UPDATE leads
@@ -126,7 +128,7 @@ async function storeLidMapping(tenantId: string, lidDigits: string, phoneDigits:
       [phoneDigits, lidDigits, tenantId],
     );
     for (const lead of lidLeads.rows) {
-      console.log(`[WA] Fixed LID lead ${lead.id}: phone ${lidDigits} → ${phoneDigits}`);
+      console.log(`[WA] Fixed LID lead ${lead.id}: phone ${lidDigits} -> ${phoneDigits}`);
       emitToTenant(tenantId, 'lead:updated', { id: lead.id, phone: `+${phoneDigits}`, name: lead.name });
       const conv = await query(
         `SELECT id FROM conversations
@@ -144,8 +146,6 @@ async function storeLidMapping(tenantId: string, lidDigits: string, phoneDigits:
 
 /**
  * Query WA servers for LIDs of a batch of phone numbers.
- * Uses executeUSyncQuery with both contact + LID protocols (duck-typed, no internal imports).
- * Returns Map<phoneDigits, lidDigits>.
  */
 async function lookupLidForPhonesBatch(sock: any, phones: string[]): Promise<Map<string, string>> {
   const phoneToLid = new Map<string, string>();
@@ -159,7 +159,6 @@ async function lookupLidForPhonesBatch(sock: any, phones: string[]): Promise<Map
         {
           name: 'contact',
           getQueryElement: () => ({ tag: 'contact', attrs: {} }),
-          // Phone number must be in content so WA servers can identify the user
           getUserElement: (u: any) => ({ tag: 'contact', attrs: {}, content: u.phone }),
         },
         {
@@ -205,7 +204,6 @@ async function lookupLidForPhonesBatch(sock: any, phones: string[]): Promise<Map
 
 /**
  * Query WA servers for the LID of every known conversation phone in this tenant.
- * Runs once 5s after session connects.
  */
 async function resolveLidsForTenant(tenantId: string, sock: ReturnType<typeof makeWASocket>): Promise<void> {
   const rows = await query(
@@ -224,8 +222,6 @@ async function resolveLidsForTenant(tenantId: string, sock: ReturnType<typeof ma
     .map(r => r.phone as string)
     .filter(p => p && !alreadyMappedPhones.has(p));
 
-  // Run storeLidMapping for all pre-loaded mappings to fix any stale leads/conversations
-  // whose phone is still the LID digits (e.g. auto-created before the mapping was known).
   const allMappings = await query(
     `SELECT lid_digits, phone_digits FROM wa_lid_phone_map WHERE tenant_id=$1::uuid`,
     [tenantId],
@@ -234,9 +230,6 @@ async function resolveLidsForTenant(tenantId: string, sock: ReturnType<typeof ma
     await storeLidMapping(tenantId, lid_digits, phone_digits);
   }
 
-  // Subscribe to presence for any conversation whose phone looks like an unresolved LID
-  // (15 digits, not a known real phone). This prompts WA to fire contacts.upsert with
-  // the real phone JID, which storeLidMapping will then use to fix the conversation.
   try {
     const knownPhoneSet = new Set(allMappings.rows.map((r: any) => r.phone_digits as string));
     const unresolvedRes = await query(
@@ -266,7 +259,7 @@ async function resolveLidsForTenant(tenantId: string, sock: ReturnType<typeof ma
 
   const phoneToLid = await lookupLidForPhonesBatch(sock as any, phones);
   for (const [phone, lidDigits] of phoneToLid) {
-    console.log(`[WA] USync resolved: ${phone} → lid=${lidDigits}`);
+    console.log(`[WA] USync resolved: ${phone} -> lid=${lidDigits}`);
     await storeLidMapping(tenantId, lidDigits, phone);
   }
   if (!phoneToLid.size) {
@@ -276,26 +269,30 @@ async function resolveLidsForTenant(tenantId: string, sock: ReturnType<typeof ma
 
 const MAX_RETRIES = 5;
 
-function sessionDir(tenantId: string): string {
+function sessionDir(tenantId: string, sessionId: string): string {
+  return path.join(WA_SESSIONS_DIR, `${tenantId}_${sessionId}`);
+}
+
+// Legacy session dir (pre-multi-session) — used for migration/restore
+function legacySessionDir(tenantId: string): string {
   return path.join(WA_SESSIONS_DIR, tenantId);
 }
 
-async function upsertSessionStatus(tenantId: string, status: string, phoneNumber?: string | null) {
+async function upsertSessionStatus(tenantId: string, sessionId: string, status: string, phoneNumber?: string | null) {
   await query(
-    `INSERT INTO wa_personal_sessions (tenant_id, status, phone_number, connected_at, updated_at)
-     VALUES ($1::uuid, $2, $3, $4, NOW())
-     ON CONFLICT (tenant_id) DO UPDATE
-       SET status=$2, phone_number=COALESCE($3, wa_personal_sessions.phone_number),
-           connected_at=CASE WHEN $2='connected' THEN NOW() ELSE wa_personal_sessions.connected_at END,
+    `INSERT INTO wa_personal_sessions (session_id, tenant_id, status, phone_number, connected_at, updated_at)
+     VALUES ($1::uuid, $2::uuid, $3, $4, $5, NOW())
+     ON CONFLICT (session_id) DO UPDATE
+       SET status=$3, phone_number=COALESCE($4, wa_personal_sessions.phone_number),
+           connected_at=CASE WHEN $3='connected' THEN NOW() ELSE wa_personal_sessions.connected_at END,
            updated_at=NOW()`,
-    [tenantId, status, phoneNumber ?? null, status === 'connected' ? new Date() : null],
+    [sessionId, tenantId, status, phoneNumber ?? null, status === 'connected' ? new Date() : null],
   );
-  emitToTenant(tenantId, 'wa:status', { status, phone: phoneNumber ?? null });
+  emitToTenant(tenantId, 'wa:status', { sessionId, status, phone: phoneNumber ?? null });
 }
 
 /**
  * Downloads a Baileys media message and stores it to disk.
- * Updates messages.media_url and emits message:updated.
  */
 async function downloadAndStoreMedia(tenantId: string, msg: any, msgId: string): Promise<void> {
   const m = msg.message;
@@ -328,7 +325,6 @@ async function downloadAndStoreMedia(tenantId: string, msg: any, msgId: string):
   if (!mediaKey) return;
 
   try {
-    // downloadMediaMessage can work without an active socket using the encrypted keys in the message
     const buffer = await downloadMediaMessage(
       { message: { [mediaKey]: inner[mediaKey] }, key: msg.key } as any,
       'buffer',
@@ -354,18 +350,19 @@ async function downloadAndStoreMedia(tenantId: string, msg: any, msgId: string):
   }
 }
 
-export async function startSession(tenantId: string): Promise<void> {
-  await stopSession(tenantId, false);
-  pendingQRs.delete(tenantId);
+export async function startSession(tenantId: string, sessionId: string): Promise<void> {
+  const key = skey(tenantId, sessionId);
+  await stopSession(tenantId, sessionId, false);
+  pendingQRs.delete(key);
 
-  const authDir = sessionDir(tenantId);
+  const authDir = sessionDir(tenantId, sessionId);
   fs.mkdirSync(authDir, { recursive: true });
 
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
 
-  await upsertSessionStatus(tenantId, 'connecting');
+  await upsertSessionStatus(tenantId, sessionId, 'connecting');
 
-  console.log(`[WA] Starting session for tenant ${tenantId.slice(0, 8)}… auth dir has ${fs.readdirSync(authDir).length} files`);
+  console.log(`[WA] Starting session ${sessionId.slice(0, 8)} for tenant ${tenantId.slice(0, 8)}... auth dir has ${fs.readdirSync(authDir).length} files`);
 
   const sock = makeWASocket({
     auth: state,
@@ -384,41 +381,40 @@ export async function startSession(tenantId: string): Promise<void> {
     } as any,
   });
 
-  sessions.set(tenantId, sock);
+  sessions.set(key, sock);
 
   // ── Connection lifecycle ──────────────────────────────────────────────────
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log(`[WA] QR generated for tenant ${tenantId.slice(0, 8)}`);
+      console.log(`[WA] QR generated for session ${sessionId.slice(0, 8)} tenant ${tenantId.slice(0, 8)}`);
       try {
         const qrBase64 = await qrcode.toDataURL(qr);
-        pendingQRs.set(tenantId, qrBase64);
-        emitToTenant(tenantId, 'wa:qr', { qr: qrBase64 });
+        pendingQRs.set(key, qrBase64);
+        emitToTenant(tenantId, 'wa:qr', { sessionId, qr: qrBase64 });
       } catch { /* ignore */ }
     }
 
     if (connection === 'open') {
-      retryCount.delete(tenantId);
-      connectedSessions.add(tenantId);
-      pendingQRs.delete(tenantId);
+      retryCount.delete(key);
+      connectedSessions.add(key);
+      pendingQRs.delete(key);
       const jid   = sock.user?.id ? jidNormalizedUser(sock.user.id) : null;
       const phone = jid ? jid.split('@')[0] : null;
-      console.log(`[WA] Connected for tenant ${tenantId.slice(0, 8)}: ${phone ?? 'unknown'}`);
-      await upsertSessionStatus(tenantId, 'connected', phone ? `+${phone}` : null);
+      console.log(`[WA] Connected session ${sessionId.slice(0, 8)} for tenant ${tenantId.slice(0, 8)}: ${phone ?? 'unknown'}`);
+      await upsertSessionStatus(tenantId, sessionId, 'connected', phone ? `+${phone}` : null);
 
       // Record session start in history
       if (phone) {
         await query(
-          `INSERT INTO wa_session_history (tenant_id, phone, connected_at)
-           VALUES ($1::uuid, $2, NOW())`,
-          [tenantId, phone],
+          `INSERT INTO wa_session_history (tenant_id, session_id, phone, connected_at)
+           VALUES ($1::uuid, $2::uuid, $3, NOW())`,
+          [tenantId, sessionId, phone],
         ).catch(() => null);
       }
 
-      // Pre-load persisted LID → phone mappings for this tenant so @lid messages
-      // arriving immediately after connect can be resolved without waiting for contacts.upsert
+      // Pre-load persisted LID -> phone mappings
       try {
         const lidRows = await query(
           `SELECT lid_digits, phone_digits FROM wa_lid_phone_map WHERE tenant_id=$1::uuid`,
@@ -432,13 +428,9 @@ export async function startSession(tenantId: string): Promise<void> {
         }
       } catch { /* non-critical */ }
 
-      // 5s after connect: query WA servers for LID of every known conversation phone.
-      // This resolves multi-device contacts (@lid JIDs) to their real phone numbers,
-      // stores the mapping in DB, and merges any duplicate LID-based conversations.
       setTimeout(() => resolveLidsForTenant(tenantId, sock).catch(() => null), 5_000);
 
-      // Wait 60s for history sync to finish, then backfill phones on anonymous conversations
-      // whose messages now have remote_jid filled in by the ON CONFLICT UPDATE
+      // Wait 60s for history sync, then backfill phones on anonymous conversations
       setTimeout(async () => {
         try {
           const upd = await query(
@@ -460,7 +452,6 @@ export async function startSession(tenantId: string): Promise<void> {
           const count = upd.rowCount ?? 0;
           if (count > 0) {
             console.log(`[WA] Post-connect backfill: fixed ${count} anonymous conversation(s) with phone`);
-            // Re-emit those conversations so frontend refreshes names
             const fixed = await query(
               `SELECT c.id, '+' || c.phone AS lead_phone, c.last_message, c.last_message_at,
                       c.status, c.unread_count, c.assigned_to
@@ -483,40 +474,40 @@ export async function startSession(tenantId: string): Promise<void> {
     }
 
     if (connection === 'close') {
-      connectedSessions.delete(tenantId);
+      connectedSessions.delete(key);
       const code      = (lastDisconnect?.error as any)?.output?.statusCode;
       const loggedOut = code === DisconnectReason.loggedOut || code === 401;
-      console.log(`[WA] Connection closed for tenant ${tenantId.slice(0, 8)}: code=${code ?? 'none'}, loggedOut=${loggedOut}`);
+      console.log(`[WA] Connection closed for session ${sessionId.slice(0, 8)} tenant ${tenantId.slice(0, 8)}: code=${code ?? 'none'}, loggedOut=${loggedOut}`);
 
       // Record session end in history
       const sessionPhoneOnDisconnect = sock.user?.id ? jidNormalizedUser(sock.user.id).split('@')[0] : null;
       if (sessionPhoneOnDisconnect) {
-        const reason = loggedOut ? 'logged_out' : (intentionallyStopped.has(tenantId) ? 'stopped' : 'error');
+        const reason = loggedOut ? 'logged_out' : (intentionallyStopped.has(key) ? 'stopped' : 'error');
         await query(
           `UPDATE wa_session_history SET disconnected_at=NOW(), disconnect_reason=$1
-           WHERE tenant_id=$2::uuid AND phone=$3 AND disconnected_at IS NULL`,
-          [reason, tenantId, sessionPhoneOnDisconnect],
+           WHERE tenant_id=$2::uuid AND session_id=$3::uuid AND phone=$4 AND disconnected_at IS NULL`,
+          [reason, tenantId, sessionId, sessionPhoneOnDisconnect],
         ).catch(() => null);
       }
 
-      if (intentionallyStopped.has(tenantId)) return;
+      if (intentionallyStopped.has(key)) return;
 
       if (loggedOut) {
-        retryCount.delete(tenantId);
-        sessions.delete(tenantId);
-        try { fs.rmSync(sessionDir(tenantId), { recursive: true, force: true }); } catch {}
-        await upsertSessionStatus(tenantId, 'disconnected');
+        retryCount.delete(key);
+        sessions.delete(key);
+        try { fs.rmSync(sessionDir(tenantId, sessionId), { recursive: true, force: true }); } catch {}
+        await upsertSessionStatus(tenantId, sessionId, 'disconnected');
       } else {
-        const current = (retryCount.get(tenantId) ?? 0) + 1;
+        const current = (retryCount.get(key) ?? 0) + 1;
         if (current >= MAX_RETRIES) {
-          retryCount.delete(tenantId);
-          sessions.delete(tenantId);
-          try { fs.rmSync(sessionDir(tenantId), { recursive: true, force: true }); } catch {}
-          await upsertSessionStatus(tenantId, 'disconnected');
+          retryCount.delete(key);
+          sessions.delete(key);
+          try { fs.rmSync(sessionDir(tenantId, sessionId), { recursive: true, force: true }); } catch {}
+          await upsertSessionStatus(tenantId, sessionId, 'disconnected');
         } else {
-          retryCount.set(tenantId, current);
-          await upsertSessionStatus(tenantId, 'connecting');
-          setTimeout(() => startSession(tenantId).catch(() => null), 3000);
+          retryCount.set(key, current);
+          await upsertSessionStatus(tenantId, sessionId, 'connecting');
+          setTimeout(() => startSession(tenantId, sessionId).catch(() => null), 3000);
         }
       }
     }
@@ -526,19 +517,17 @@ export async function startSession(tenantId: string): Promise<void> {
 
   // ── Incoming / history messages ───────────────────────────────────────────
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    const historical = type === 'append'; // history sync from WA servers
+    const historical = type === 'append';
     if (type !== 'notify' && type !== 'append') return;
     const sessionPhone = sock.user?.id ? jidNormalizedUser(sock.user.id).split('@')[0] : null;
 
     console.log(`[WA] messages.upsert type=${type} count=${messages.length} session=${sessionPhone}`);
     for (let msg of messages) {
-      // Resolve @lid JIDs to real phone JIDs using our contacts map
       const remoteJid = msg.key?.remoteJid ?? '';
       if (remoteJid.endsWith('@lid')) {
         const lidDigits = remoteJid.split('@')[0];
         let realPhone = lidToPhone.get(lidDigits);
 
-        // In-memory miss — fall back to persisted DB mapping
         if (!realPhone) {
           try {
             const dbRow = await query(
@@ -548,18 +537,16 @@ export async function startSession(tenantId: string): Promise<void> {
             if (dbRow.rows[0]?.phone_digits) {
               realPhone = dbRow.rows[0].phone_digits;
               lidToPhone.set(lidDigits, realPhone!);
-              console.log(`[WA] LID resolved from DB: ${remoteJid} → ${realPhone}@s.whatsapp.net`);
+              console.log(`[WA] LID resolved from DB: ${remoteJid} -> ${realPhone}@s.whatsapp.net`);
             }
           } catch { /* non-critical */ }
         }
 
         if (realPhone) {
           msg = { ...msg, key: { ...msg.key, remoteJid: `${realPhone}@s.whatsapp.net` } };
-          console.log(`[WA] LID resolved: ${remoteJid} → ${realPhone}@s.whatsapp.net`);
+          console.log(`[WA] LID resolved: ${remoteJid} -> ${realPhone}@s.whatsapp.net`);
         } else {
-          console.log(`[WA] LID not resolved: ${remoteJid} — requesting contact info from WA`);
-          // assertSessions + presenceSubscribe prompt WA to fire contacts.upsert with the
-          // real phone JID, which storeLidMapping then uses to fix the conversation.
+          console.log(`[WA] LID not resolved: ${remoteJid} -- requesting contact info from WA`);
           sock.assertSessions([remoteJid], true).catch(() => null);
           sock.presenceSubscribe(remoteJid).catch(() => null);
         }
@@ -571,18 +558,16 @@ export async function startSession(tenantId: string): Promise<void> {
       });
       if (result?.hasMedia) {
         if (historical) {
-          // Queue historical media — drain at 1/sec to avoid burst overload
           mediaDownloadQueue.push({ tenantId, msg, msgId: result.msgId });
           drainMediaQueue();
         } else {
-          // Real-time media — download immediately in background
           downloadAndStoreMedia(tenantId, msg, result.msgId).catch(() => null);
         }
       }
     }
   });
 
-  // ── Delivery / read receipts for messages WE sent ─────────────────────────
+  // ── Delivery / read receipts ──────────────────────────────────────────────
   sock.ev.on('message-receipt.update', async (receipts) => {
     for (const receipt of receipts) {
       const wamid = receipt.key?.id;
@@ -608,13 +593,12 @@ export async function startSession(tenantId: string): Promise<void> {
     }
   });
 
-  // ── Message revocation ("Delete for everyone") ───────────────────────────
+  // ── Message revocation ────────────────────────────────────────────────────
   sock.ev.on('messages.update', async (updates) => {
     for (const update of updates) {
       const wamid = update.key?.id;
       if (!wamid) continue;
 
-      // protocolMessage.type 5 = MESSAGE_REVOKE
       const proto = (update.update as any)?.message?.protocolMessage;
       if (proto?.type !== 5) continue;
 
@@ -636,35 +620,26 @@ export async function startSession(tenantId: string): Promise<void> {
   });
 
   // ── Contact name sync ─────────────────────────────────────────────────────
-  // When WA pushes the phone-book contact list, update any lead whose name
-  // looks like a raw phone number (i.e. was never resolved to a real name).
   sock.ev.on('contacts.upsert', async (contacts) => {
     const cached: { id: string; name: string; phone: string }[] = waContactsCache.get(tenantId) ?? [];
     for (const contact of contacts) {
       const digits = contact.id?.split('@')[0];
       if (!digits) continue;
 
-      // Log any contact that has a @lid JID or a lid field — helps debug mapping issues
       const rawLid = (contact as any).lid;
       if (contact.id?.endsWith('@lid') || rawLid) {
         console.log(`[WA] contacts.upsert entry: id=${contact.id} lid=${rawLid ?? 'none'} name=${contact.name ?? ''}`);
       }
 
-      // Build LID → phone mapping for multi-device contacts
       const lidDigits = rawLid?.split('@')[0];
       if (lidDigits && digits && !lidToPhone.has(lidDigits)) {
         await storeLidMapping(tenantId, lidDigits, digits);
       }
-      // Also handle the case where contact.id is itself a @lid JID and the real phone
-      // was delivered via a different field (e.g. contact.notify contains the phone)
       if (!lidDigits && contact.id?.endsWith('@lid')) {
-        // Check if we have any known phone that resolves to this LID via USync
-        // (handled on next resolveLidsForTenant run — nothing more to do here)
         console.log(`[WA] contacts.upsert: @lid contact with no phone JID yet: ${contact.id}`);
       }
 
       if (contact.name) {
-        // Update or add to in-memory cache
         const idx = cached.findIndex((c) => c.id === contact.id);
         const entry = { id: contact.id, name: contact.name, phone: digits };
         if (idx >= 0) cached[idx] = entry; else cached.push(entry);
@@ -686,46 +661,110 @@ export async function startSession(tenantId: string): Promise<void> {
   });
 }
 
-export async function stopSession(tenantId: string, updateDb = true): Promise<void> {
-  intentionallyStopped.add(tenantId);
-  setTimeout(() => intentionallyStopped.delete(tenantId), 3000);
+export async function stopSession(tenantId: string, sessionId: string, updateDb = true): Promise<void> {
+  const key = skey(tenantId, sessionId);
+  intentionallyStopped.add(key);
+  setTimeout(() => intentionallyStopped.delete(key), 3000);
 
-  const sock = sessions.get(tenantId);
+  const sock = sessions.get(key);
   if (sock) {
     try { sock.end(undefined as any); } catch {}
-    sessions.delete(tenantId);
+    sessions.delete(key);
   }
-  connectedSessions.delete(tenantId);
+  connectedSessions.delete(key);
   if (updateDb) {
-    await upsertSessionStatus(tenantId, 'disconnected').catch(() => null);
+    await upsertSessionStatus(tenantId, sessionId, 'disconnected').catch(() => null);
   }
 }
 
-export async function destroySession(tenantId: string): Promise<void> {
-  retryCount.delete(tenantId);
-  await stopSession(tenantId, true);
-  try { fs.rmSync(sessionDir(tenantId), { recursive: true, force: true }); } catch {}
-  pendingQRs.delete(tenantId);
+export async function destroySession(tenantId: string, sessionId: string): Promise<void> {
+  const key = skey(tenantId, sessionId);
+  retryCount.delete(key);
+  await stopSession(tenantId, sessionId, true);
+  try { fs.rmSync(sessionDir(tenantId, sessionId), { recursive: true, force: true }); } catch {}
+  pendingQRs.delete(key);
 }
 
-export function getSession(tenantId: string): ReturnType<typeof makeWASocket> | null {
-  return sessions.get(tenantId) ?? null;
+/** Get a specific session socket, or the first connected session for the tenant */
+export function getSession(tenantId: string, sessionId?: string): ReturnType<typeof makeWASocket> | null {
+  if (sessionId) {
+    return sessions.get(skey(tenantId, sessionId)) ?? null;
+  }
+  // Find the first connected session for this tenant
+  for (const [k, sock] of sessions) {
+    if (k.startsWith(`${tenantId}::`) && connectedSessions.has(k)) return sock;
+  }
+  // Fall back to any session for this tenant
+  for (const [k, sock] of sessions) {
+    if (k.startsWith(`${tenantId}::`)) return sock;
+  }
+  return null;
 }
 
-export function getQR(tenantId: string): string | null {
-  return pendingQRs.get(tenantId) ?? null;
+/** Get the session ID of the first connected session for the tenant */
+export function getFirstConnectedSessionId(tenantId: string): string | null {
+  for (const k of connectedSessions) {
+    if (k.startsWith(`${tenantId}::`)) return k.split('::')[1];
+  }
+  return null;
 }
 
-export async function getStatus(tenantId: string): Promise<{ status: string; phone: string | null }> {
+export function getQR(tenantId: string, sessionId: string): string | null {
+  return pendingQRs.get(skey(tenantId, sessionId)) ?? null;
+}
+
+export async function getStatus(tenantId: string, sessionId: string): Promise<{ status: string; phone: string | null }> {
+  const key = skey(tenantId, sessionId);
   const res = await query(
-    'SELECT phone_number FROM wa_personal_sessions WHERE tenant_id=$1::uuid',
-    [tenantId],
+    'SELECT phone_number FROM wa_personal_sessions WHERE session_id=$1::uuid',
+    [sessionId],
   );
   const phone = res.rows[0]?.phone_number ?? null;
 
-  if (connectedSessions.has(tenantId)) return { status: 'connected', phone };
-  if (sessions.has(tenantId))          return { status: 'connecting', phone: null };
+  if (connectedSessions.has(key)) return { status: 'connected', phone };
+  if (sessions.has(key))          return { status: 'connecting', phone: null };
   return { status: 'disconnected', phone };
+}
+
+/** List all sessions for a tenant */
+export async function listSessions(tenantId: string): Promise<{ session_id: string; session_name: string; status: string; phone_number: string | null; connected_at: string | null }[]> {
+  const res = await query(
+    `SELECT session_id, COALESCE(session_name, 'Default') AS session_name, status, phone_number, connected_at
+     FROM wa_personal_sessions WHERE tenant_id=$1::uuid ORDER BY connected_at ASC NULLS LAST`,
+    [tenantId],
+  );
+  // Override DB status with in-memory truth
+  return res.rows.map((r: any) => {
+    const key = skey(tenantId, r.session_id);
+    let status = r.status;
+    if (connectedSessions.has(key)) status = 'connected';
+    else if (sessions.has(key)) status = 'connecting';
+    return { ...r, status };
+  });
+}
+
+/** Create a new session record in DB (does not start the WA connection) */
+export async function createSession(tenantId: string, name?: string): Promise<string> {
+  const res = await query(
+    `INSERT INTO wa_personal_sessions (session_id, tenant_id, status, session_name)
+     VALUES (gen_random_uuid(), $1::uuid, 'disconnected', $2) RETURNING session_id`,
+    [tenantId, name || 'WhatsApp Session'],
+  );
+  return res.rows[0].session_id;
+}
+
+/** Delete a session record from DB and clean up files */
+export async function deleteSession(tenantId: string, sessionId: string): Promise<void> {
+  await destroySession(tenantId, sessionId);
+  await query('DELETE FROM wa_personal_sessions WHERE session_id=$1::uuid AND tenant_id=$2::uuid', [sessionId, tenantId]);
+}
+
+/** Rename a session */
+export async function renameSession(tenantId: string, sessionId: string, name: string): Promise<void> {
+  await query(
+    'UPDATE wa_personal_sessions SET session_name=$1 WHERE session_id=$2::uuid AND tenant_id=$3::uuid',
+    [name, sessionId, tenantId],
+  );
 }
 
 /** Returns WA phone-book contacts cached from contacts.upsert events. */
@@ -737,11 +776,48 @@ export function getWAContacts(tenantId: string): { id: string; name: string; pho
 export async function restoreAllSessions(): Promise<void> {
   if (!fs.existsSync(WA_SESSIONS_DIR)) return;
 
-  for (const tenantId of fs.readdirSync(WA_SESSIONS_DIR)) {
-    const dir = path.join(WA_SESSIONS_DIR, tenantId);
+  for (const dirName of fs.readdirSync(WA_SESSIONS_DIR)) {
+    const dir = path.join(WA_SESSIONS_DIR, dirName);
     if (!fs.statSync(dir).isDirectory()) continue;
     if (fs.readdirSync(dir).length === 0) continue;
-    startSession(tenantId).catch(() => null);
+
+    if (dirName.includes('_')) {
+      // New format: tenantId_sessionId
+      const [tenantId, sessionId] = dirName.split('_');
+      if (tenantId && sessionId) {
+        startSession(tenantId, sessionId).catch(() => null);
+      }
+    } else {
+      // Legacy format: tenantId only — look up session_id from DB, or migrate
+      const tenantId = dirName;
+      try {
+        const existing = await query(
+          'SELECT session_id FROM wa_personal_sessions WHERE tenant_id=$1::uuid LIMIT 1',
+          [tenantId],
+        );
+        let sessionId: string;
+        if (existing.rows[0]) {
+          sessionId = existing.rows[0].session_id;
+        } else {
+          // Create a session record for this legacy session
+          const ins = await query(
+            `INSERT INTO wa_personal_sessions (session_id, tenant_id, status, session_name)
+             VALUES (gen_random_uuid(), $1::uuid, 'disconnected', 'Default') RETURNING session_id`,
+            [tenantId],
+          );
+          sessionId = ins.rows[0].session_id;
+        }
+        // Move legacy dir to new format
+        const newDir = sessionDir(tenantId, sessionId);
+        if (!fs.existsSync(newDir)) {
+          fs.renameSync(dir, newDir);
+          console.log(`[WA] Migrated legacy session dir: ${dirName} -> ${tenantId}_${sessionId}`);
+        }
+        startSession(tenantId, sessionId).catch(() => null);
+      } catch (e) {
+        console.error(`[WA] Failed to restore legacy session ${tenantId}:`, e);
+      }
+    }
   }
 }
 
@@ -749,14 +825,31 @@ export async function restoreAllSessions(): Promise<void> {
  * Sends a text message via Personal WhatsApp.
  * Returns the WA message ID (wamid) so callers can store it for receipt tracking.
  */
-export async function sendText(tenantId: string, jid: string, text: string): Promise<string | null> {
-  const sock = sessions.get(tenantId);
-  if (!sock || !connectedSessions.has(tenantId)) {
+export async function sendText(tenantId: string, jid: string, text: string, sessionId?: string): Promise<string | null> {
+  const key = sessionId ? skey(tenantId, sessionId) : null;
+  let sock: ReturnType<typeof makeWASocket> | null = null;
+  let actualKey: string | null = null;
+
+  if (key && sessions.has(key) && connectedSessions.has(key)) {
+    sock = sessions.get(key)!;
+    actualKey = key;
+  } else {
+    // Find first connected session for tenant
+    for (const [k, s] of sessions) {
+      if (k.startsWith(`${tenantId}::`) && connectedSessions.has(k)) {
+        sock = s;
+        actualKey = k;
+        break;
+      }
+    }
+  }
+
+  if (!sock || !actualKey || !connectedSessions.has(actualKey)) {
     throw new Error('WhatsApp Personal session not connected');
   }
   const sessionPhone = sock.user?.id ? jidNormalizedUser(sock.user.id).split('@')[0] : null;
 
-  // Pre-populate LID mapping for this recipient so their replies are routed correctly
+  // Pre-populate LID mapping
   const recipientDigits = jid.split('@')[0];
   if (recipientDigits && !jid.endsWith('@lid') && ![...lidToPhone.values()].includes(recipientDigits)) {
     lookupLidForPhonesBatch(sock as any, [recipientDigits]).then(async (map) => {
@@ -768,8 +861,6 @@ export async function sendText(tenantId: string, jid: string, text: string): Pro
     }).catch(() => null);
   }
 
-  // Baileys auto-generates link previews (thumbnail + title + description) for any URL in the text
-  // as long as link-preview-js is installed — no extra option needed.
   const result = await sock.sendMessage(jid, { text });
   const wamid  = result?.key?.id ?? null;
 
@@ -816,7 +907,6 @@ function extractVideoThumbnail(buffer: Buffer): string | null {
 
 /**
  * Sends a media file via Personal WhatsApp.
- * Returns the WA message ID (wamid).
  */
 export async function sendMedia(
   tenantId: string,
@@ -825,9 +915,26 @@ export async function sendMedia(
   mimetype: string,
   fileName: string,
   caption?: string,
+  sessionId?: string,
 ): Promise<string | null> {
-  const sock = sessions.get(tenantId);
-  if (!sock || !connectedSessions.has(tenantId)) {
+  const key = sessionId ? skey(tenantId, sessionId) : null;
+  let sock: ReturnType<typeof makeWASocket> | null = null;
+  let actualKey: string | null = null;
+
+  if (key && sessions.has(key) && connectedSessions.has(key)) {
+    sock = sessions.get(key)!;
+    actualKey = key;
+  } else {
+    for (const [k, s] of sessions) {
+      if (k.startsWith(`${tenantId}::`) && connectedSessions.has(k)) {
+        sock = s;
+        actualKey = k;
+        break;
+      }
+    }
+  }
+
+  if (!sock || !actualKey || !connectedSessions.has(actualKey)) {
     throw new Error('WhatsApp Personal session not connected');
   }
 
