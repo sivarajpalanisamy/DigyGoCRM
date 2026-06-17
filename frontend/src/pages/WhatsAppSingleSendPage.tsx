@@ -115,6 +115,7 @@ export default function WhatsAppSingleSendPage() {
         message: message.trim(),
         session_id: deviceId || undefined,
         lead_id: receiverLeadId || undefined,
+        template_id: templateId || undefined,
       });
       setSent(true);
       toast.success(`Message sent to ${receiverName || phone}`);

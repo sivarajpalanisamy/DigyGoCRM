@@ -4,11 +4,14 @@ import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission } from '../middleware/permissions';
 import {
   startSession, stopSession, destroySession, deleteSession,
-  getQR, getStatus, sendText, listSessions, createSession, renameSession,
+  getQR, getStatus, sendText, sendMedia, listSessions, createSession, renameSession,
   getFirstConnectedSessionId,
 } from '../services/whatsapp/sessionManager';
 import { toJID } from '../services/whatsapp/phoneUtils';
 import { emitToTenant } from '../socket';
+import { interpolate, LeadContext } from './workflows';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const router = Router();
 router.use(requireAuth);
@@ -237,7 +240,9 @@ router.delete('/disconnect', checkPermission('integrations:manage'), async (req:
 
 // POST /api/whatsapp-personal/send — send message to a lead/number
 router.post('/send', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
-  const { lead_id, phone, message, session_id } = req.body as { lead_id?: string; phone?: string; message: string; session_id?: string };
+  const { lead_id, phone, message, session_id, template_id } = req.body as {
+    lead_id?: string; phone?: string; message: string; session_id?: string; template_id?: string;
+  };
   const { tenantId, userId } = req.user!;
 
   if (!message?.trim()) { res.status(400).json({ error: 'message required' }); return; }
@@ -246,22 +251,64 @@ router.post('/send', checkPermission('inbox:send'), async (req: AuthRequest, res
     let targetPhone = phone;
     let leadId = lead_id ?? null;
     let leadName = '';
+    let leadCtx: LeadContext | null = null;
 
     if (lead_id) {
       const leadRes = await query(
-        `SELECT id, name, phone FROM leads
-         WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE`,
+        `SELECT l.id, l.name, l.email, l.phone, l.source, l.status, l.custom_fields,
+                l.assigned_to, l.created_at,
+                ps.name AS stage_name, p.name AS pipeline_name,
+                u.name AS assigned_staff_name
+         FROM leads l
+         LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
+         LEFT JOIN pipelines p ON p.id = l.pipeline_id
+         LEFT JOIN users u ON u.id = l.assigned_to
+         WHERE l.id=$1::uuid AND l.tenant_id=$2::uuid AND l.is_deleted=FALSE`,
         [lead_id, tenantId],
       );
       if (!leadRes.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }
-      targetPhone = leadRes.rows[0].phone;
-      leadName = leadRes.rows[0].name;
+      const row = leadRes.rows[0];
+      targetPhone = row.phone;
+      leadName = row.name;
+      leadCtx = {
+        id: row.id, name: row.name ?? '', email: row.email, phone: row.phone,
+        stage_name: row.stage_name, pipeline_name: row.pipeline_name,
+        assigned_staff_name: row.assigned_staff_name, assigned_staff_id: row.assigned_to,
+        source: row.source, status: row.status,
+        custom_fields: row.custom_fields ?? {}, created_at: row.created_at,
+      };
     }
 
     if (!targetPhone) { res.status(400).json({ error: 'phone or lead_id required' }); return; }
 
+    // Interpolate variables if we have lead context
+    const finalMessage = leadCtx ? interpolate(message.trim(), leadCtx) : message.trim();
+
     const jid = toJID(targetPhone);
-    await sendText(tenantId!, jid, message.trim(), session_id);
+
+    // Check for template attachment
+    let hasAttachment = false;
+    let wamid: string | null = null;
+    if (template_id) {
+      const tplRes = await query(
+        `SELECT file_path, file_type, file_name FROM wa_personal_templates WHERE id=$1::uuid AND tenant_id=$2::uuid`,
+        [template_id, tenantId],
+      );
+      const tpl = tplRes.rows[0];
+      if (tpl?.file_path) {
+        const absPath = path.resolve(__dirname, '../../', tpl.file_path);
+        if (fs.existsSync(absPath)) {
+          const buffer = fs.readFileSync(absPath);
+          const mime = tpl.file_type || 'application/octet-stream';
+          wamid = await sendMedia(tenantId!, jid, buffer, mime, tpl.file_name || 'attachment', finalMessage, session_id);
+          hasAttachment = true;
+        }
+      }
+    }
+
+    if (!hasAttachment) {
+      wamid = await sendText(tenantId!, jid, finalMessage, session_id);
+    }
 
     // Find or create conversation
     let convId: string;
@@ -284,21 +331,23 @@ router.post('/send', checkPermission('inbox:send'), async (req: AuthRequest, res
     }
 
     const msgRes = await query(
-      `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, status, sent_by, created_at)
-       VALUES ($1, $2::uuid, $3, 'agent', $4, FALSE, 'sent', 'manual', NOW()) RETURNING *`,
-      [convId, tenantId, leadId, message.trim()],
+      `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, created_at)
+       VALUES ($1, $2::uuid, $3, 'agent', $4, FALSE, $5, 'sent', 'manual', NOW())
+       ON CONFLICT (wamid) WHERE wamid IS NOT NULL DO UPDATE SET body = EXCLUDED.body
+       RETURNING *`,
+      [convId, tenantId, leadId, finalMessage, wamid],
     );
 
     await query(
       `UPDATE conversations SET last_message=$1, last_message_at=NOW() WHERE id=$2`,
-      [message.trim().slice(0, 200), convId],
+      [finalMessage.slice(0, 200), convId],
     );
 
     if (leadId) {
       await query(
         `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
          VALUES ($1::uuid, $2::uuid, 'whatsapp', 'WhatsApp sent (Personal)', $3, $4::uuid)`,
-        [leadId, tenantId, message.trim().slice(0, 255), userId],
+        [leadId, tenantId, finalMessage.slice(0, 255), userId],
       ).catch(() => null);
     }
 
