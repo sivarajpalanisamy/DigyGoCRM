@@ -2295,6 +2295,8 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
           <select className={selectCls} value={(cfg.notifType as string) ?? 'in_app'} onChange={sel('notifType')}>
             <option value="in_app">In App (Bell notification)</option>
             <option value="email">Email</option>
+            <option value="whatsapp_personal">WhatsApp</option>
+            <option value="whatsapp_official">WhatsApp Official</option>
           </select>
         </FieldRow>
         <FieldRow label="Send To">
@@ -2351,6 +2353,44 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
             />
             <VarHints onInsert={(v) => onUpdate({ config: { ...cfg, emailBody: ((cfg.emailBody as string) ?? '') + v } })} />
           </div>
+        </>)}
+
+        {/* WhatsApp Personal notification fields */}
+        {(cfg.notifType as string) === 'whatsapp_personal' && (<>
+          <div className="bg-teal-50 border border-teal-200 rounded-xl p-3">
+            <p className="text-xs text-teal-700"><strong>WhatsApp Personal:</strong> Sends a message via your connected personal WhatsApp session (QR scan). Staff must have a phone number in their profile.</p>
+          </div>
+          <FieldRow label="Message" required>
+            <div>
+              <textarea
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card outline-none resize-none min-h-[100px]"
+                rows={4}
+                placeholder="Hi, a new lead {first_name} has been assigned to you. Phone: {phone}"
+                value={(cfg.waMessage as string) ?? ''}
+                onChange={sel('waMessage')}
+              />
+              <VarHints onInsert={(v) => onUpdate({ config: { ...cfg, waMessage: ((cfg.waMessage as string) ?? '') + v } })} />
+            </div>
+          </FieldRow>
+        </>)}
+
+        {/* WhatsApp Official (WABA) notification fields */}
+        {(cfg.notifType as string) === 'whatsapp_official' && (<>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <p className="text-xs text-blue-700"><strong>WhatsApp Official (Cloud API):</strong> Sends a text message via your connected WABA number. Staff must have a phone number in their profile.</p>
+          </div>
+          <FieldRow label="Message" required>
+            <div>
+              <textarea
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card outline-none resize-none min-h-[100px]"
+                rows={4}
+                placeholder="New lead alert: {first_name} {last_name} — {phone}"
+                value={(cfg.waMessage as string) ?? ''}
+                onChange={sel('waMessage')}
+              />
+              <VarHints onInsert={(v) => onUpdate({ config: { ...cfg, waMessage: ((cfg.waMessage as string) ?? '') + v } })} />
+            </div>
+          </FieldRow>
         </>)}
       </>)}
 
@@ -5179,6 +5219,8 @@ export default function WorkflowEditorPage() {
                         <div className="text-[12px] text-[#4a3c30] leading-relaxed">
                           {(selectedNode.config.notifType as string) === 'email'
                             ? (<><strong>Subject:</strong> {(selectedNode.config.emailSubject as string) || '(no subject)'}<br/>{(selectedNode.config.emailBody as string) || 'No content yet.'}</>)
+                            : ((selectedNode.config.notifType as string) === 'whatsapp_personal' || (selectedNode.config.notifType as string) === 'whatsapp_official')
+                            ? (selectedNode.config.waMessage as string) || 'No message yet.'
                             : (selectedNode.config.message as string) || 'No message yet.'}
                         </div>
                       )}

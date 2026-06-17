@@ -1134,6 +1134,90 @@ export async function executeNodes(
             break;
           }
 
+          // ── WhatsApp Personal notification ────────────────────────────────────
+          if (notifType === 'whatsapp_personal') {
+            const waMsg = interpolate((node.config.waMessage ?? '') as string, lead, valueTokens);
+            if (!waMsg) { status = 'skipped'; message = 'internal_notify(wa_personal): no message configured'; break; }
+
+            const { sendText, getSession } = await import('../services/whatsapp/sessionManager');
+            const { toJID } = await import('../services/whatsapp/phoneUtils');
+            if (!getSession(tenantId)) {
+              status = 'failed'; message = 'internal_notify(wa_personal): WhatsApp Personal session not connected'; break;
+            }
+            // Fetch recipient phone numbers
+            const phonesRes = await query(
+              `SELECT id, phone FROM users WHERE id = ANY($1::uuid[]) AND phone IS NOT NULL AND phone != ''`,
+              [recipientIds]
+            );
+            const recipients = phonesRes.rows as { id: string; phone: string }[];
+            if (recipients.length === 0) {
+              status = 'skipped'; message = `internal_notify(wa_personal): no staff phone numbers found for ${recipientIds.length} recipient(s)`; break;
+            }
+            let waFailed = 0;
+            for (const r of recipients) {
+              try {
+                const jid = toJID(r.phone);
+                await sendText(tenantId, jid, waMsg);
+              } catch (e: any) {
+                console.error(`internal_notify(wa_personal) failed for ${r.phone}:`, e.message);
+                waFailed++;
+              }
+            }
+            if (waFailed > 0 && waFailed === recipients.length) {
+              status = 'failed'; message = `internal_notify(wa_personal): all ${waFailed} messages failed`;
+            } else if (waFailed > 0) {
+              message = `WA Personal sent to ${recipients.length - waFailed}/${recipients.length} staff (${waFailed} failed)`;
+            } else {
+              message = `WA Personal sent to ${recipients.length} staff member(s)`;
+            }
+            break;
+          }
+
+          // ── WhatsApp Official (WABA) notification ─────────────────────────────
+          if (notifType === 'whatsapp_official') {
+            const waMsg = interpolate((node.config.waMessage ?? '') as string, lead, valueTokens);
+            if (!waMsg) { status = 'skipped'; message = 'internal_notify(waba): no message configured'; break; }
+
+            const wabaRes = await query(
+              `SELECT phone_number_id, access_token FROM waba_integrations
+               WHERE tenant_id=$1 AND is_active=TRUE LIMIT 1`,
+              [tenantId]
+            );
+            if (!wabaRes.rows[0]) {
+              status = 'failed'; message = 'internal_notify(waba): WABA integration not configured or inactive'; break;
+            }
+            const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
+            const waToken = decrypt(encToken);
+
+            // Fetch recipient phone numbers
+            const phonesRes = await query(
+              `SELECT id, phone FROM users WHERE id = ANY($1::uuid[]) AND phone IS NOT NULL AND phone != ''`,
+              [recipientIds]
+            );
+            const recipients = phonesRes.rows as { id: string; phone: string }[];
+            if (recipients.length === 0) {
+              status = 'skipped'; message = `internal_notify(waba): no staff phone numbers found for ${recipientIds.length} recipient(s)`; break;
+            }
+            let waFailed = 0;
+            for (const r of recipients) {
+              try {
+                const resp = await sendWAText(phone_number_id, waToken, r.phone, waMsg);
+                if (resp?.error) throw new Error(`${resp.error.code}: ${resp.error.message}`);
+              } catch (e: any) {
+                console.error(`internal_notify(waba) failed for ${r.phone}:`, e.message);
+                waFailed++;
+              }
+            }
+            if (waFailed > 0 && waFailed === recipients.length) {
+              status = 'failed'; message = `internal_notify(waba): all ${waFailed} messages failed`;
+            } else if (waFailed > 0) {
+              message = `WABA sent to ${recipients.length - waFailed}/${recipients.length} staff (${waFailed} failed)`;
+            } else {
+              message = `WABA sent to ${recipients.length} staff member(s)`;
+            }
+            break;
+          }
+
           // ── In-app notification (default) ─────────────────────────────────────
           let notifFailed = 0;
           for (const uid of recipientIds) {
