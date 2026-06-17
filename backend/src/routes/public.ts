@@ -130,20 +130,31 @@ router.post('/forms/:slug/submit', async (req: Request, res: Response) => {
       return;
     }
 
-    // Duplicate check — look up by email OR phone (not requiring both)
+    // Duplicate check — scoped to the form's pipeline (matches per-pipeline uniqueness)
     const dupRows: Array<{ id: string }> = [];
+    const pipelineId = form.pipeline_id ?? null;
     if (email) {
-      const r = await query(
-        `SELECT id FROM leads WHERE LOWER(email)=$1 AND tenant_id=$2 AND is_deleted=FALSE LIMIT 1`,
-        [email, form.tenant_id]
-      );
+      const r = pipelineId
+        ? await query(
+            `SELECT id FROM leads WHERE LOWER(email)=$1 AND tenant_id=$2 AND pipeline_id=$3 AND is_deleted=FALSE LIMIT 1`,
+            [email, form.tenant_id, pipelineId]
+          )
+        : await query(
+            `SELECT id FROM leads WHERE LOWER(email)=$1 AND tenant_id=$2 AND is_deleted=FALSE LIMIT 1`,
+            [email, form.tenant_id]
+          );
       if (r.rows[0]) dupRows.push(r.rows[0]);
     }
     if (!dupRows.length && phone) {
-      const r = await query(
-        `SELECT id FROM leads WHERE phone=$1 AND tenant_id=$2 AND is_deleted=FALSE LIMIT 1`,
-        [phone, form.tenant_id]
-      );
+      const r = pipelineId
+        ? await query(
+            `SELECT id FROM leads WHERE phone=$1 AND tenant_id=$2 AND pipeline_id=$3 AND is_deleted=FALSE LIMIT 1`,
+            [phone, form.tenant_id, pipelineId]
+          )
+        : await query(
+            `SELECT id FROM leads WHERE phone=$1 AND tenant_id=$2 AND is_deleted=FALSE LIMIT 1`,
+            [phone, form.tenant_id]
+          );
       if (r.rows[0]) dupRows.push(r.rows[0]);
     }
 
