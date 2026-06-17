@@ -79,7 +79,7 @@ const TAG_COLORS: Record<string, string> = {
 
 // ─── Add Lead Modal ────────────────────────────────────────────────────────────
 function AddLeadModal({ onClose }: { onClose: () => void }) {
-  const { addLead, pipelines, leads } = useCrmStore();
+  const { addLead, pipelines, leads, staff } = useCrmStore();
   const currentUser = useAuthStore((s) => s.currentUser);
   const now = new Date().toISOString();
   const [saving, setSaving] = useState(false);
@@ -205,6 +205,13 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
             <div>
               {lbl('Lead Value')}
               <input className={inputCls} type="number" placeholder="0" value={form.dealValue || ''} onChange={(e) => setForm({ ...form, dealValue: Number(e.target.value) })} />
+            </div>
+            <div className="sm:col-span-2">
+              {lbl('Assign To')}
+              <select className={inputCls} value={form.assignedTo} onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}>
+                <option value="">Unassigned</option>
+                {staff.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
             </div>
             <div className="sm:col-span-2">
               {lbl('Tags')}
