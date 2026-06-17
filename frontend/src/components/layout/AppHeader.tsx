@@ -32,6 +32,7 @@ const sectionNavs: Record<string, { label: string; path: string }[]> = {
     { label: 'Workflows', path: '/automation/workflows' },
     { label: 'Templates', path: '/automation/templates' },
     { label: 'WhatsApp Devices', path: '/automation/devices' },
+    { label: 'Single Send', path: '/automation/wa-send' },
     { label: 'Uploads', path: '/automation/pincode-routing' },
   ],
   '/calendar': [

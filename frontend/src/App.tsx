@@ -49,6 +49,7 @@ import PublicBookingPage from "./pages/PublicBookingPage";
 import NotFound from "./pages/NotFound";
 import PincodeRoutingPage from "./pages/PincodeRoutingPage";
 import WhatsAppDevicesPage from "./pages/WhatsAppDevicesPage";
+import WhatsAppSingleSendPage from "./pages/WhatsAppSingleSendPage";
 import ReportsPage from "./pages/ReportsPage";
 import CallsPage from "./pages/CallsPage";
 
@@ -100,6 +101,7 @@ const App = () => (
             <Route path="/automation/workflows" element={<AutomationPage />} />
             <Route path="/automation/templates" element={<AutomationTemplatesPage />} />
             <Route path="/automation/devices" element={<WhatsAppDevicesPage />} />
+            <Route path="/automation/wa-send" element={<WhatsAppSingleSendPage />} />
 
             {/* Calendar */}
             <Route path="/calendar" element={<CalendarPage />} />
