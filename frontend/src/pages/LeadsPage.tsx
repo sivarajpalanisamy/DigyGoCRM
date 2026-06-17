@@ -5184,7 +5184,7 @@ export default function LeadsPage() {
                     className="w-4 h-4 accent-primary"
                   />
                 </th>
-                {[['Opportunity', '130px'], ['Contact Name', '150px'], ['Contact Email', '210px'], ['Contact Phone', '160px'], ['Pipeline', '170px'], ['Stage', '110px'], ['Quality', '100px'], ['Created', '150px'], ['Updated', '150px']].map(([col]) => (
+                {[['Lead Name', '180px'], ['Contact Email', '210px'], ['Contact Phone', '160px'], ['Pipeline', '170px'], ['Stage', '110px'], ['Quality', '100px'], ['Created', '150px'], ['Updated', '150px']].map(([col]) => (
                   <th key={col} className="px-3 py-3 text-left">
                     <button className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] hover:text-[#1c1410] transition-colors">
                       {col} <ArrowUpDown className="w-3 h-3 opacity-50" />
@@ -5195,7 +5195,7 @@ export default function LeadsPage() {
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {filteredLeads.length === 0 && (
-                <tr><td colSpan={10} className="py-16 text-center">
+                <tr><td colSpan={9} className="py-16 text-center">
                   <User className="w-8 h-8 text-[#c4b09e] mx-auto mb-2" />
                   <p className="text-[13px] text-[#7a6b5c]">No leads found</p>
                 </td></tr>
@@ -5215,15 +5215,10 @@ export default function LeadsPage() {
                       />
                     </td>
                     <td className="px-3 py-3">
-                      <button onClick={() => setSelectedLeadId(lead.id)} className="text-primary font-semibold hover:underline text-[13px]">
-                        {lead.firstName} {lead.lastName}
-                      </button>
-                    </td>
-                    <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand))' }}>{initials}</div>
-                        <button onClick={() => setSelectedLeadId(lead.id)} className="text-primary font-semibold hover:underline text-[13px] truncate max-w-[90px]">
-                          {lead.firstName}
+                        <button onClick={() => setSelectedLeadId(lead.id)} className="text-primary font-semibold hover:underline text-[13px] truncate max-w-[140px]">
+                          {lead.firstName} {lead.lastName}
                         </button>
                       </div>
                     </td>
