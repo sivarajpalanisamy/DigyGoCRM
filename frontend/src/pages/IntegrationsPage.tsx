@@ -1327,18 +1327,20 @@ export default function IntegrationsPage() {
                           className="text-[12px] font-semibold text-[#1c1410] bg-white border border-black/10 rounded px-1.5 py-0.5 w-full outline-none focus:border-[#128C7E]"
                           value={editingWaName}
                           onChange={(e) => setEditingWaName(e.target.value)}
-                          onBlur={() => setEditingWaSession(null)}
+                          onBlur={(e) => { (e.target.closest('form') as HTMLFormElement)?.requestSubmit(); }}
                           onKeyDown={(e) => { if (e.key === 'Escape') setEditingWaSession(null); }}
                         />
                       </form>
                     ) : (
-                      <p
-                        className="text-[12px] font-semibold text-[#1c1410] truncate cursor-pointer hover:text-[#128C7E] group flex items-center gap-1"
-                        onClick={() => { setEditingWaSession(s.session_id); setEditingWaName(s.session_name); }}
-                        title="Click to rename"
-                      >
+                      <p className="text-[12px] font-semibold text-[#1c1410] truncate flex items-center gap-1">
                         {s.session_name}
-                        <Pencil className="w-2.5 h-2.5 text-[#9e8e7e] opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <button
+                          className="text-[#9e8e7e] hover:text-[#128C7E] transition-colors p-0.5 shrink-0"
+                          title="Rename device"
+                          onClick={() => { setEditingWaSession(s.session_id); setEditingWaName(s.session_name); }}
+                        >
+                          <Pencil className="w-2.5 h-2.5" />
+                        </button>
                       </p>
                     )}
                     <p className="text-[10px] text-[#9e8e7e]">{s.phone_number || (s.status === 'connecting' ? 'Connecting...' : 'Disconnected')}</p>
