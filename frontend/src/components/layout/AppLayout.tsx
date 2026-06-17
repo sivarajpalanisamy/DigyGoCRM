@@ -91,12 +91,10 @@ export function AppLayout() {
 
   return (
     <div className="h-[100dvh] flex w-full bg-[var(--app-bg)] overflow-hidden">
-      {/* Sidebar — desktop only; hidden for super admin (admin page is full-width) */}
-      {!isSuperAdmin && (
-        <div className="hidden md:flex">
-          <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        </div>
-      )}
+      {/* Sidebar — desktop only */}
+      <div className="hidden md:flex">
+        <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <AppHeader onMenuClick={() => setSidebarOpen(true)} />
