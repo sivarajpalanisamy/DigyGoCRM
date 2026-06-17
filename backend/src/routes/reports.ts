@@ -340,6 +340,7 @@ router.get('/pipeline-analytics', requireManagerOrOwner, async (req: AuthRequest
       kpiRes, stagesRes, sourcesRes, flowRes, winLossRes,
       qualityRes, staffRes, fuSummaryRes, overdueRes,
       staleCountRes, staleListRes, autoRes, tagsRes,
+      agingRes, callsRes,
     ] = await Promise.all([
 
       // 1. KPI
@@ -519,6 +520,38 @@ router.get('/pipeline-analytics', requireManagerOrOwner, async (req: AuthRequest
         WHERE t.tenant_id=$1
         GROUP BY t.id,t.name,t.color ORDER BY total DESC LIMIT 10
       `, p),
+
+      // 14. Lead aging (active leads grouped by days since creation)
+      query(`
+        SELECT
+          CASE
+            WHEN EXTRACT(EPOCH FROM (NOW()-l.created_at))/86400 <= 2 THEN '0-2d'
+            WHEN EXTRACT(EPOCH FROM (NOW()-l.created_at))/86400 <= 7 THEN '3-7d'
+            WHEN EXTRACT(EPOCH FROM (NOW()-l.created_at))/86400 <= 14 THEN '8-14d'
+            WHEN EXTRACT(EPOCH FROM (NOW()-l.created_at))/86400 <= 30 THEN '15-30d'
+            ELSE '30d+'
+          END AS bucket,
+          COUNT(*)::int AS count
+        FROM leads l
+        LEFT JOIN pipeline_stages ps ON ps.id=l.stage_id
+        WHERE l.tenant_id=$1 AND l.pipeline_id=$2::uuid AND l.is_deleted=FALSE
+          AND COALESCE(ps.is_won,FALSE)=FALSE
+          AND l.created_at>=$3 AND l.created_at<=$4
+        GROUP BY 1
+        ORDER BY MIN(EXTRACT(EPOCH FROM (NOW()-l.created_at))/86400) ASC
+      `, p),
+
+      // 15. Call analytics (direction x outcome breakdown)
+      query(`
+        SELECT cl.direction, cl.outcome,
+          COUNT(*)::int AS count,
+          COALESCE(ROUND(AVG(cl.duration_seconds)),0)::int AS avg_duration,
+          COALESCE(SUM(cl.duration_seconds),0)::int AS total_duration
+        FROM call_logs cl
+        JOIN leads l ON l.id=cl.lead_id AND l.tenant_id=$1 AND l.pipeline_id=$2::uuid AND l.is_deleted=FALSE
+        WHERE cl.tenant_id=$1 AND cl.started_at>=$3 AND cl.started_at<=$4
+        GROUP BY cl.direction,cl.outcome
+      `, p),
     ]);
 
     res.json({
@@ -539,6 +572,8 @@ router.get('/pipeline-analytics', requireManagerOrOwner, async (req: AuthRequest
       },
       automation: autoRes.rows,
       tags:       tagsRes.rows,
+      aging:      agingRes.rows,
+      calls:      callsRes.rows,
     });
   } catch (err) {
     console.error('[reports:pipeline-analytics]', err);

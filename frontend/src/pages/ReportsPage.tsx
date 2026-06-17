@@ -6,7 +6,7 @@ import {
 import {
   ComposedChart, Bar, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  Line, LabelList,
+  Line, LabelList, BarChart,
 } from 'recharts';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -39,6 +39,8 @@ interface PipelineData {
   stale:     StaleShape;
   automation: { id: string; name: string; total: number; completed: number; failed: number; leads_enrolled: number }[];
   tags:      { name: string; color: string; total: number; won: number; conv_pct: number }[];
+  aging:     { bucket: string; count: number }[];
+  calls:     { direction: string; outcome: string; count: number; avg_duration: number; total_duration: number }[];
 }
 
 interface StaffData {
@@ -599,6 +601,227 @@ function StaffLeaderboard({ staff }: { staff: StaffRow[] }) {
   );
 }
 
+// Tag Intelligence — bars with color dots, lead count, won, conv%
+function TagIntelligence({ tags }: { tags: PipelineData['tags'] }) {
+  if (!tags.length) return <EmptyState text="No tags used in this pipeline" />;
+  const maxTotal = Math.max(...tags.map((t) => t.total), 1);
+  return (
+    <div className="flex flex-col gap-3">
+      {tags.map((tag, i) => (
+        <div key={i} className="flex items-center gap-2.5">
+          <span className="w-3 h-3 rounded-full shrink-0" style={{ background: tag.color || SOURCE_COLORS[i % SOURCE_COLORS.length] }} />
+          <span className="text-[12px] font-semibold text-[#1c1410] w-28 shrink-0 truncate">{tag.name}</span>
+          <div className="flex-1 bg-[#f4efe9] rounded-full h-5 overflow-hidden">
+            <div className="h-full rounded-full flex items-center justify-end pr-2 transition-all"
+              style={{ width: `${Math.max(Math.round((tag.total / maxTotal) * 100), 3)}%`, background: tag.color || SOURCE_COLORS[i % SOURCE_COLORS.length] }}>
+              {tag.total > 0 && <span className="text-[10px] font-bold text-white">{tag.total}</span>}
+            </div>
+          </div>
+          <div className="shrink-0 text-right w-20">
+            <span className="text-[11px] font-bold text-emerald-600">{tag.won} won</span>
+            <span className="text-[10px] text-[#9a8a7a] ml-1">({tag.conv_pct}%)</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Automation Effectiveness — workflow execution table
+function AutomationEffectiveness({ workflows }: { workflows: PipelineData['automation'] }) {
+  if (!workflows.length) return <EmptyState text="No automation activity in this period" />;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[12px]">
+        <thead>
+          <tr className="text-[10px] text-[#9a8a7a] uppercase font-semibold border-b border-black/5">
+            <th className="text-left py-2 px-2">Workflow</th>
+            <th className="text-right py-2 px-2">Runs</th>
+            <th className="text-right py-2 px-2">Done</th>
+            <th className="text-right py-2 px-2">Failed</th>
+            <th className="text-right py-2 px-2">Leads</th>
+            <th className="py-2 px-2 w-24">Success</th>
+          </tr>
+        </thead>
+        <tbody>
+          {workflows.map((w, i) => {
+            const successPct = w.total > 0 ? Math.round((w.completed / w.total) * 100) : 0;
+            return (
+              <tr key={i} className="border-b border-black/[0.03] hover:bg-[var(--app-bg)]">
+                <td className="py-2 px-2 font-semibold text-[#1c1410] truncate max-w-[200px]">{w.name}</td>
+                <td className="text-right px-2 font-bold text-[#1c1410]">{w.total}</td>
+                <td className="text-right px-2 text-emerald-600 font-bold">{w.completed}</td>
+                <td className="text-right px-2 text-red-500 font-bold">{w.failed || 0}</td>
+                <td className="text-right px-2 text-[#1c1410]">{w.leads_enrolled}</td>
+                <td className="px-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-[#f0ece8] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${successPct}%`, background: successPct >= 80 ? '#10b981' : successPct >= 50 ? '#f59e0b' : '#ef4444' }} />
+                    </div>
+                    <span className="text-[10px] font-semibold w-8 text-right" style={{ color: successPct >= 80 ? '#10b981' : successPct >= 50 ? '#f59e0b' : '#ef4444' }}>{successPct}%</span>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// Lead Quality — stacked bar + legend
+function LeadQualityChart({ quality }: { quality: PipelineData['quality'] }) {
+  if (!quality.length) return <EmptyState text="No quality data" />;
+  const total = quality.reduce((s, q) => s + q.count, 0);
+  const qualityColors: Record<string, string> = {
+    hot: '#ef4444', warm: '#f59e0b', cold: '#3b82f6', unqualified: '#9ca3af', unknown: '#d1d5db',
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex h-8 rounded-xl overflow-hidden gap-0.5">
+        {quality.map((q, i) => {
+          const pct = total > 0 ? (q.count / total) * 100 : 0;
+          if (pct === 0) return null;
+          return (
+            <div key={i} className="h-full flex items-center justify-center transition-all"
+              style={{ width: `${pct}%`, background: qualityColors[q.quality?.toLowerCase()] || SOURCE_COLORS[i % SOURCE_COLORS.length], minWidth: pct > 0 ? 24 : 0 }}>
+              {pct > 8 && <span className="text-[10px] font-bold text-white">{q.count}</span>}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap gap-3">
+        {quality.map((q, i) => {
+          const pct = total > 0 ? Math.round((q.count / total) * 100) : 0;
+          const color = qualityColors[q.quality?.toLowerCase()] || SOURCE_COLORS[i % SOURCE_COLORS.length];
+          return (
+            <div key={i} className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+              <span className="text-[11px] font-semibold text-[#1c1410] capitalize">{q.quality || 'Unknown'}</span>
+              <span className="text-[10px] text-[#9a8a7a]">{q.count} ({pct}%)</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Lead Aging — horizontal bars by days-in-pipeline buckets
+function LeadAgingChart({ aging }: { aging: PipelineData['aging'] }) {
+  if (!aging?.length) return <EmptyState text="No active leads" />;
+  const maxCount = Math.max(...aging.map((a) => a.count), 1);
+  const bucketColors: Record<string, string> = {
+    '0-2d': '#10b981', '3-7d': '#3b82f6', '8-14d': '#f59e0b', '15-30d': '#f97316', '30d+': '#ef4444',
+  };
+  const total = aging.reduce((s, a) => s + a.count, 0);
+  return (
+    <div>
+      <div className="flex flex-col gap-2.5">
+        {aging.map((a, i) => {
+          const barW = Math.max(Math.round((a.count / maxCount) * 100), a.count > 0 ? 3 : 0);
+          const color = bucketColors[a.bucket] || STAGE_COLORS[i % STAGE_COLORS.length];
+          const pct = total > 0 ? Math.round((a.count / total) * 100) : 0;
+          return (
+            <div key={i} className="flex items-center gap-3">
+              <span className="text-[11px] font-semibold text-[#4a3a2a] w-14 shrink-0">{a.bucket}</span>
+              <div className="flex-1 bg-[#f4efe9] rounded-full h-6 overflow-hidden">
+                <div className="h-full rounded-full flex items-center justify-end pr-2 transition-all"
+                  style={{ width: `${barW}%`, background: color }}>
+                  {barW > 12 && <span className="text-[10px] font-bold text-white">{a.count}</span>}
+                </div>
+              </div>
+              {barW <= 12 && <span className="text-[11px] font-bold text-[#1c1410] w-6 text-right">{a.count}</span>}
+              <span className="text-[10px] text-[#9a8a7a] w-8 text-right shrink-0">{pct}%</span>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-[#c0b0a0] mt-2 pt-2 border-t border-black/[0.04]">
+        Active leads only (excludes won) · Grouped by days since creation
+      </p>
+    </div>
+  );
+}
+
+// Call Analytics — KPI cards + direction breakdown
+function CallAnalytics({ calls }: { calls: PipelineData['calls'] }) {
+  if (!calls?.length) return <EmptyState text="No call data in this period" />;
+  const totalCalls = calls.reduce((s, c) => s + c.count, 0);
+  const answered = calls.filter((c) => c.outcome === 'ANSWERED').reduce((s, c) => s + c.count, 0);
+  const missed = calls.filter((c) => c.outcome === 'MISSED').reduce((s, c) => s + c.count, 0);
+  const inbound = calls.filter((c) => c.direction === 'INBOUND').reduce((s, c) => s + c.count, 0);
+  const outbound = calls.filter((c) => c.direction === 'OUTBOUND').reduce((s, c) => s + c.count, 0);
+  const answeredCalls = calls.filter((c) => c.outcome === 'ANSWERED');
+  const avgDur = answeredCalls.length > 0
+    ? Math.round(answeredCalls.reduce((s, c) => s + c.avg_duration * c.count, 0) / Math.max(answered, 1))
+    : 0;
+  const answerRate = totalCalls > 0 ? Math.round((answered / totalCalls) * 100) : 0;
+  const fmtDur = (secs: number) => secs >= 60 ? `${Math.floor(secs / 60)}m ${secs % 60}s` : `${secs}s`;
+
+  return (
+    <div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div className="rounded-xl bg-[#f4efe9] px-3 py-2.5 text-center">
+          <p className="text-[18px] font-bold text-[#1c1410]">{totalCalls}</p>
+          <p className="text-[10px] text-[#9a8a7a]">Total Calls</p>
+        </div>
+        <div className="rounded-xl bg-emerald-50 px-3 py-2.5 text-center">
+          <p className="text-[18px] font-bold text-emerald-700">{answered}</p>
+          <p className="text-[10px] text-emerald-600">Answered ({answerRate}%)</p>
+        </div>
+        <div className="rounded-xl bg-red-50 px-3 py-2.5 text-center">
+          <p className="text-[18px] font-bold text-red-600">{missed}</p>
+          <p className="text-[10px] text-red-500">Missed</p>
+        </div>
+        <div className="rounded-xl bg-blue-50 px-3 py-2.5 text-center">
+          <p className="text-[18px] font-bold text-blue-700">{fmtDur(avgDur)}</p>
+          <p className="text-[10px] text-blue-500">Avg Duration</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-[#9a8a7a] w-16 shrink-0">Inbound</span>
+          <div className="flex-1 bg-[#f4efe9] rounded-full h-5 overflow-hidden">
+            <div className="h-full bg-blue-400 rounded-full flex items-center justify-end pr-2"
+              style={{ width: `${totalCalls > 0 ? Math.max((inbound / totalCalls) * 100, inbound > 0 ? 8 : 0) : 0}%` }}>
+              {inbound > 0 && <span className="text-[10px] font-bold text-white">{inbound}</span>}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-[#9a8a7a] w-16 shrink-0">Outbound</span>
+          <div className="flex-1 bg-[#f4efe9] rounded-full h-5 overflow-hidden">
+            <div className="h-full bg-violet-400 rounded-full flex items-center justify-end pr-2"
+              style={{ width: `${totalCalls > 0 ? Math.max((outbound / totalCalls) * 100, outbound > 0 ? 8 : 0) : 0}%` }}>
+              {outbound > 0 && <span className="text-[10px] font-bold text-white">{outbound}</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Lead Inflow — daily bar chart
+function LeadInflowChart({ data }: { data: { day: string; count: number }[] }) {
+  if (!data.length) return <EmptyState text="No lead inflow data" />;
+  return (
+    <ResponsiveContainer width="100%" height={180}>
+      <BarChart data={data} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe5" vertical={false} />
+        <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#9a8a7a' }} axisLine={false} tickLine={false} interval={Math.max(0, Math.floor(data.length / 8))} />
+        <YAxis tick={{ fontSize: 9, fill: '#9a8a7a' }} axisLine={false} tickLine={false} allowDecimals={false} />
+        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #f0ebe5', fontSize: 12 }} />
+        <Bar dataKey="count" name="Leads" fill="#bfdbfe" radius={[3, 3, 0, 0]} maxBarSize={24}>
+          <LabelList dataKey="count" position="top" style={{ fontSize: 9, fill: '#1c1410', fontWeight: 700 }} />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
 // Overdue list
 function OverdueList({ items }: { items: OverdueRow[] }) {
   if (!items.length) return (
@@ -790,6 +1013,36 @@ function OwnerReport() {
             <StaffLeaderboard staff={data.staff} />
           </Card>
 
+          {/* Lead Aging + Lead Quality */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card title="Lead Aging" sub="How long open leads have been sitting">
+              <LeadAgingChart aging={data.aging} />
+            </Card>
+            <Card title="Lead Quality Breakdown" sub="Hot / Warm / Cold / Unqualified split">
+              <LeadQualityChart quality={data.quality} />
+            </Card>
+          </div>
+
+          {/* Tag Intelligence + Call Analytics */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card title="Tag Intelligence" sub="Conversion performance by tag">
+              <TagIntelligence tags={data.tags} />
+            </Card>
+            <Card title="Call Analytics" sub="Call volume, direction and outcomes">
+              <CallAnalytics calls={data.calls} />
+            </Card>
+          </div>
+
+          {/* Lead Inflow */}
+          <Card title="Daily Lead Inflow" sub="New leads created per day">
+            <LeadInflowChart data={data.lead_flow} />
+          </Card>
+
+          {/* Automation Effectiveness */}
+          <Card title="Automation Effectiveness" sub="Workflow execution success rates">
+            <AutomationEffectiveness workflows={data.automation} />
+          </Card>
+
           {/* Stale + Overdue */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card title="Idle Leads" sub="No activity in 7+ days">
@@ -888,6 +1141,36 @@ function ManagerReport() {
           {/* Staff Leaderboard */}
           <Card title="Staff Leaderboard" sub="Team performance ranked by conversion — click headers to sort">
             <StaffLeaderboard staff={data.staff} />
+          </Card>
+
+          {/* Lead Aging + Lead Quality */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card title="Lead Aging" sub="How long open leads have been sitting">
+              <LeadAgingChart aging={data.aging} />
+            </Card>
+            <Card title="Lead Quality Breakdown" sub="Hot / Warm / Cold / Unqualified split">
+              <LeadQualityChart quality={data.quality} />
+            </Card>
+          </div>
+
+          {/* Tag Intelligence + Call Analytics */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card title="Tag Intelligence" sub="Conversion performance by tag">
+              <TagIntelligence tags={data.tags} />
+            </Card>
+            <Card title="Call Analytics" sub="Call volume, direction and outcomes">
+              <CallAnalytics calls={data.calls} />
+            </Card>
+          </div>
+
+          {/* Lead Inflow */}
+          <Card title="Daily Lead Inflow" sub="New leads created per day">
+            <LeadInflowChart data={data.lead_flow} />
+          </Card>
+
+          {/* Automation Effectiveness */}
+          <Card title="Automation Effectiveness" sub="Workflow execution success rates">
+            <AutomationEffectiveness workflows={data.automation} />
           </Card>
 
           {/* Follow-up Summary */}
