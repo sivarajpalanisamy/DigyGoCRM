@@ -109,6 +109,7 @@ async function sendInviteEmail(to: string, token: string, tenantId: string) {
       subject: `You've been invited to ${brand}`,
       fromName,
       replyTo,
+      tenantId,
       html: `<p>You've been invited to join your team on <strong>${brand}</strong>.</p>
              <p><a href="${link}">Click here to set your password and get started</a></p>
              <p>This link expires in 48 hours.</p>`,

@@ -6,7 +6,7 @@ import { checkPermission, hasPermission } from '../middleware/permissions';
 import { triggerWorkflows } from './workflows';
 import { sendNewLeadNotification } from '../utils/notifications';
 import { emitLeadCreated } from '../utils/leadEvents';
-import { sendEmail, isSmtpConfigured, getTenantEmailIdentity } from '../services/email';
+import { sendEmail, getTenantEmailIdentity } from '../services/email';
 
 const router = Router();
 
@@ -397,7 +397,7 @@ router.post('/public/book', publicBookingLimiter, async (req: Request, res: Resp
     setImmediate(async () => {
       try {
         // ── Booking confirmation email to guest ───────────────────────────────
-        if (guest_email && isSmtpConfigured()) {
+        if (guest_email) {
           const dateLabel = new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', {
             weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
           });
@@ -411,6 +411,7 @@ router.post('/public/book', publicBookingLimiter, async (req: Request, res: Resp
             subject: `Booking Confirmed: ${et.name}`,
             fromName: bookingIdent.fromName,
             replyTo: bookingIdent.replyTo,
+            tenantId: et.tenant_id,
             html: `
 <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #ece5de">
   <div style="background:linear-gradient(135deg,#c2410c,#ea580c,#f97316);padding:32px 28px">

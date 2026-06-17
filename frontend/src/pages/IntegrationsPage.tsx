@@ -166,10 +166,32 @@ function WabaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
 // ── SMTP modal ─────────────────────────────────────────────────────────────────
 
 function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [form, setForm] = useState({ host: '', port: '587', user: '', password: '', from_email: '', secure: false });
+  const [form, setForm] = useState({
+    host: '', port: '587', user: '', password: '', from_email: '', from_name: '',
+    encryption: 'tls' as 'tls' | 'ssl' | 'none', enabled: true,
+  });
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [testTo, setTestTo] = useState('');
   const set = (k: string, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Load existing config
+  useEffect(() => {
+    api.get<any>('/api/integrations/smtp/status').then((data) => {
+      if (data.host) {
+        setForm({
+          host: data.host || '', port: String(data.port || 587),
+          user: data.user || '', password: '',
+          from_email: data.from_email || '', from_name: data.from_name || '',
+          encryption: data.encryption || 'tls', enabled: data.enabled !== false,
+        });
+      }
+      setLoaded(true);
+    }).catch(() => setLoaded(true));
+  }, []);
 
   const handleSave = async () => {
     if (!form.host.trim() || !form.user.trim() || !form.password.trim()) {
@@ -180,13 +202,15 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
     try {
       await api.post('/api/integrations/smtp/setup', {
         host: form.host.trim(),
-        port: parseInt(form.port) || 587,
-        secure: form.secure,
+        port: parseInt(form.port) || (form.encryption === 'ssl' ? 465 : 587),
+        secure: form.encryption === 'ssl',
         user: form.user.trim(),
         password: form.password,
         from_email: form.from_email.trim() || form.user.trim(),
+        from_name: form.from_name.trim(),
+        encryption: form.encryption,
       });
-      toast.success('Email (SMTP) connected!');
+      toast.success('SMTP configuration saved!');
       onSaved();
     } catch (err: any) {
       toast.error(err.message ?? 'Failed to save SMTP settings');
@@ -195,32 +219,76 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
     }
   };
 
+  const handleTest = async () => {
+    setTesting(true);
+    try {
+      const r = await api.post<any>('/api/integrations/smtp/test');
+      if (r.success) toast.success(r.message || 'SMTP connection verified!');
+      else toast.error(r.error || 'Connection test failed');
+    } catch (err: any) { toast.error(err.message ?? 'Test failed'); }
+    finally { setTesting(false); }
+  };
+
+  const handleSendTest = async () => {
+    setSendingTest(true);
+    try {
+      const r = await api.post<any>('/api/integrations/smtp/send-test', { to: testTo.trim() || undefined });
+      if (r.success) toast.success(r.message || 'Test email sent!');
+      else toast.error(r.error || 'Failed to send test email');
+    } catch (err: any) { toast.error(err.message ?? 'Send failed'); }
+    finally { setSendingTest(false); }
+  };
+
+  const handleToggle = async () => {
+    const newVal = !form.enabled;
+    try {
+      await api.put('/api/integrations/smtp/toggle', { enabled: newVal });
+      set('enabled', newVal);
+      toast.success(newVal ? 'Email configuration enabled' : 'Email configuration disabled');
+    } catch { toast.error('Failed to toggle'); }
+  };
+
+  if (!loaded) return (
+    <Modal title="Email Configuration" onClose={onClose} footer={null}>
+      <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-primary" /></div>
+    </Modal>
+  );
+
   return (
-    <Modal title="Configure Email (SMTP)" onClose={onClose} footer={
+    <Modal title="Email Configuration" onClose={onClose} footer={
       <>
         <Button variant="outline" onClick={onClose}>Cancel</Button>
         <Button onClick={handleSave} disabled={saving}>
-          {saving ? <><RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</> : <><Check className="w-3.5 h-3.5 mr-1.5" />Save</>}
+          {saving ? <><RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</> : <><Check className="w-3.5 h-3.5 mr-1.5" />Save Configuration</>}
         </Button>
       </>
     }>
-      <p className="text-[12px] text-[#7a6b5c]">Used for sending automated emails from workflows. For Gmail, use an App Password with 2FA enabled.</p>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2 sm:col-span-1">
-          <label className={labelCls}>SMTP Host *</label>
-          <Input value={form.host} onChange={(e) => set('host', e.target.value)} placeholder="smtp.gmail.com" />
-        </div>
-        <div>
-          <label className={labelCls}>Port</label>
-          <Input value={form.port} onChange={(e) => set('port', e.target.value)} placeholder="587" type="number" />
-        </div>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mb-1">
+        <p className="text-[12px] text-blue-700">
+          <strong>Note:</strong> Make sure your SMTP settings are correct. Test the configuration and send a test email before enabling.
+        </p>
       </div>
+
       <div>
-        <label className={labelCls}>Username / Email *</label>
-        <Input value={form.user} onChange={(e) => set('user', e.target.value)} placeholder="you@gmail.com" type="email" />
+        <label className={labelCls}>Email Provider</label>
+        <select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white outline-none focus:border-primary/50"
+          value="smtp" disabled>
+          <option value="smtp">SMTP</option>
+        </select>
       </div>
+
       <div>
-        <label className={labelCls}>Password / App Password *</label>
+        <label className={labelCls}>SMTP Host *</label>
+        <Input value={form.host} onChange={(e) => set('host', e.target.value)} placeholder="mail.yourcompany.com" />
+      </div>
+
+      <div>
+        <label className={labelCls}>SMTP Username *</label>
+        <Input value={form.user} onChange={(e) => set('user', e.target.value)} placeholder="you@yourcompany.com" type="email" />
+      </div>
+
+      <div>
+        <label className={labelCls}>SMTP Password *</label>
         <div className="relative">
           <Input
             value={form.password}
@@ -235,20 +303,65 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           </button>
         </div>
       </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>SMTP Port</label>
+          <Input value={form.port} onChange={(e) => set('port', e.target.value)} placeholder="587" type="number" />
+        </div>
+        <div>
+          <label className={labelCls}>SMTP Encryption</label>
+          <select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white outline-none focus:border-primary/50"
+            value={form.encryption}
+            onChange={(e) => {
+              const enc = e.target.value as 'tls' | 'ssl' | 'none';
+              setForm((f) => ({ ...f, encryption: enc, port: enc === 'ssl' ? '465' : enc === 'tls' ? '587' : f.port }));
+            }}>
+            <option value="tls">TLS</option>
+            <option value="ssl">SSL</option>
+            <option value="none">None</option>
+          </select>
+          <p className="text-[10px] text-[#b09e8d] mt-1">Select TLS or SSL if your SMTP provider requires encryption. Choose None for no encryption.</p>
+        </div>
+      </div>
+
       <div>
-        <label className={labelCls}>From Email (optional)</label>
+        <label className={labelCls}>From Address</label>
         <Input value={form.from_email} onChange={(e) => set('from_email', e.target.value)} placeholder="noreply@yourcompany.com" type="email" />
         <p className="text-[10px] text-[#b09e8d] mt-1">Defaults to username if left blank</p>
       </div>
-      <label className="flex items-center gap-2 cursor-pointer select-none">
-        <div
-          onClick={() => set('secure', !form.secure)}
-          className={cn('w-9 h-5 rounded-full transition-colors relative shrink-0', form.secure ? 'bg-primary' : 'bg-[#d4c9bc]')}
-        >
-          <div className={cn('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', form.secure ? 'translate-x-4' : 'translate-x-0.5')} />
+
+      <div>
+        <label className={labelCls}>From Name</label>
+        <Input value={form.from_name} onChange={(e) => set('from_name', e.target.value)} placeholder="Your Company Name" />
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2 pt-1">
+        <button onClick={handleTest} disabled={testing}
+          className="px-4 py-2 rounded-lg text-[13px] font-semibold text-white bg-[#3b82f6] hover:bg-[#2563eb] transition-colors disabled:opacity-60">
+          {testing ? 'Testing…' : 'Test Configuration'}
+        </button>
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+          <Input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="recipient@email.com" className="text-sm flex-1" />
+          <button onClick={handleSendTest} disabled={sendingTest}
+            className="px-4 py-2 rounded-lg text-[13px] font-semibold text-white bg-[#7c3aed] hover:bg-[#6d28d9] transition-colors disabled:opacity-60 whitespace-nowrap">
+            {sendingTest ? 'Sending…' : 'Send Test Email'}
+          </button>
         </div>
-        <span className="text-[12px] text-[#5c5245] font-medium">Use TLS/SSL (port 465)</span>
-      </label>
+      </div>
+
+      {/* Enable/Disable toggle */}
+      <div className="flex items-center justify-between pt-3 mt-2 border-t border-gray-100">
+        <div>
+          <p className="text-[13px] font-semibold text-[#1c1410]">Enable Email Configuration</p>
+          <p className="text-[11px] text-[#7a6b5c]">Toggle to enable or disable your custom email config</p>
+        </div>
+        <div onClick={handleToggle}
+          className={cn('w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer', form.enabled ? 'bg-primary' : 'bg-[#d4c9bc]')}>
+          <div className={cn('absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform', form.enabled ? 'translate-x-5' : 'translate-x-0.5')} />
+        </div>
+      </div>
     </Modal>
   );
 }

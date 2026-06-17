@@ -1842,28 +1842,109 @@ router.get('/smtp/status', checkPermission('integrations:view'), async (req: Aut
       'SELECT config_json, is_active FROM integration_configs WHERE tenant_id=$1 AND integration_id=$2',
       [req.user!.tenantId, 'smtp']
     );
-    if (!result.rows[0] || !result.rows[0].is_active) { res.json({ connected: false }); return; }
+    if (!result.rows[0]) { res.json({ connected: false, enabled: false }); return; }
     const cfg = result.rows[0].config_json ?? {};
-    res.json({ connected: true, host: cfg.host, port: cfg.port, secure: cfg.secure, user: cfg.user, from_email: cfg.from_email });
+    const isActive = result.rows[0].is_active;
+    // Return config (minus password) + credits info
+    const cred = await query('SELECT email_credits FROM tenants WHERE id=$1::uuid', [req.user!.tenantId]);
+    const usage = await query('SELECT emails_sent FROM tenant_usage WHERE tenant_id=$1::uuid', [req.user!.tenantId]);
+    res.json({
+      connected: isActive && !!cfg.host,
+      enabled: isActive,
+      host: cfg.host, port: cfg.port, secure: cfg.secure, user: cfg.user,
+      from_email: cfg.from_email, from_name: cfg.from_name,
+      encryption: cfg.encryption || (cfg.secure ? 'ssl' : 'tls'),
+      email_credits: cred.rows[0]?.email_credits ?? -1,
+      emails_sent: usage.rows[0]?.emails_sent ?? 0,
+    });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
 // POST /api/integrations/smtp/setup
 router.post('/smtp/setup', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
-  const { host, port, secure, user, password, from_email } = req.body as {
-    host?: string; port?: number; secure?: boolean; user?: string; password?: string; from_email?: string;
+  const { host, port, secure, user, password, from_email, from_name, encryption } = req.body as {
+    host?: string; port?: number; secure?: boolean; user?: string; password?: string;
+    from_email?: string; from_name?: string; encryption?: string;
   };
   if (!host || !user || !password) { res.status(400).json({ error: 'host, user and password are required' }); return; }
   const encryptedPassword = encrypt(password);
-  const config = { host, port: port ?? 587, secure: secure ?? false, user, password: encryptedPassword, from_email: from_email || user };
+  const smtpConfig = {
+    host, port: port ?? (encryption === 'ssl' ? 465 : 587),
+    secure: encryption === 'ssl' ? true : secure ?? false,
+    user, password: encryptedPassword,
+    from_email: from_email || user,
+    from_name: from_name || '',
+    encryption: encryption || (secure ? 'ssl' : 'tls'),
+  };
   try {
     await query(
       `INSERT INTO integration_configs (tenant_id, integration_id, config_json, is_active)
        VALUES ($1,'smtp',$2,TRUE)
        ON CONFLICT (tenant_id, integration_id) DO UPDATE SET config_json=$2, is_active=TRUE, updated_at=NOW()`,
-      [req.user!.tenantId, JSON.stringify(config)]
+      [req.user!.tenantId, JSON.stringify(smtpConfig)]
     );
+    // Flush cached transporter so next send picks up new config
+    const { invalidateTenantSmtpCache } = require('../services/email');
+    invalidateTenantSmtpCache(req.user!.tenantId);
     res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// POST /api/integrations/smtp/test — verify SMTP connection (no email sent)
+router.post('/smtp/test', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { testTenantSmtp } = require('../services/email');
+    const result = await testTenantSmtp(req.user!.tenantId);
+    if (result.success) {
+      res.json({ success: true, message: 'SMTP connection verified successfully!' });
+    } else {
+      res.json({ success: false, error: result.error });
+    }
+  } catch (e: any) { res.status(500).json({ error: e.message ?? 'Server error' }); }
+});
+
+// POST /api/integrations/smtp/send-test — send a real test email
+router.post('/smtp/send-test', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  const { to } = req.body as { to?: string };
+  let recipient = to?.trim();
+  if (!recipient) {
+    // Fall back to current user's email
+    const u = await query('SELECT email FROM users WHERE id=$1::uuid', [req.user!.userId]);
+    recipient = u.rows[0]?.email;
+  }
+  if (!recipient) { res.status(400).json({ error: 'No recipient email' }); return; }
+  try {
+    const { sendEmail, getTenantEmailIdentity } = require('../services/email');
+    const ident = await getTenantEmailIdentity(req.user!.tenantId);
+    const brand = ident.fromName || 'DigyGo CRM';
+    await sendEmail({
+      to: recipient,
+      subject: `Test Email from ${brand}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
+        <h2 style="color:#1c1410;margin:0 0 12px">Email Configuration Verified!</h2>
+        <p style="color:#5c5245;font-size:14px">This is a test email from your <strong>${brand}</strong> CRM.</p>
+        <p style="color:#5c5245;font-size:14px">If you received this, your SMTP settings are working correctly.</p>
+        <p style="color:#9c8f84;font-size:12px;margin-top:20px">Sent at ${new Date().toLocaleString('en-IN')}</p>
+      </div>`,
+      fromName: ident.fromName,
+      replyTo: ident.replyTo,
+      tenantId: req.user!.tenantId,
+    });
+    res.json({ success: true, message: `Test email sent to ${recipient}` });
+  } catch (e: any) {
+    res.json({ success: false, error: e.message ?? 'Failed to send test email' });
+  }
+});
+
+// PUT /api/integrations/smtp/toggle — enable or disable SMTP without deleting config
+router.put('/smtp/toggle', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  const { enabled } = req.body as { enabled?: boolean };
+  try {
+    await query(
+      'UPDATE integration_configs SET is_active=$1, updated_at=NOW() WHERE tenant_id=$2 AND integration_id=$3',
+      [enabled !== false, req.user!.tenantId, 'smtp']
+    );
+    res.json({ success: true, enabled: enabled !== false });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -1871,6 +1952,8 @@ router.post('/smtp/setup', checkPermission('integrations:manage'), async (req: A
 router.delete('/smtp/disconnect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
   try {
     await query('UPDATE integration_configs SET is_active=FALSE WHERE tenant_id=$1 AND integration_id=$2', [req.user!.tenantId, 'smtp']);
+    const { invalidateTenantSmtpCache } = require('../services/email');
+    invalidateTenantSmtpCache(req.user!.tenantId);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });

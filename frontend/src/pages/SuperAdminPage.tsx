@@ -34,6 +34,7 @@ interface Tenant {
   domain_status?: string | null;
   custom_domain?: string | null;
   superfone_enabled?: boolean;
+  email_credits?: number;
 }
 
 // Plans are Monthly / Yearly only (the billing cycle). The old tier field is retired.
@@ -331,6 +332,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
     owner_name: tenant.admin_name ?? '',
     owner_email: tenant.admin_email ?? '',
     superfone_enabled: !!tenant.superfone_enabled,
+    email_credits: tenant.email_credits != null ? String(tenant.email_credits) : '-1',
   });
   const [saving, setSaving] = useState(false);
   const [renewing, setRenewing] = useState(false);
@@ -341,6 +343,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
       await api.patch(`/api/auth/tenants/${tenant.id}`, {
         ...form,
         plan_price: form.plan_price === '' ? null : Number(form.plan_price),
+        email_credits: form.email_credits === '' || form.email_credits === '-1' ? -1 : Number(form.email_credits),
         subscription_expires_at: form.subscription_expires_at || null,
       });
       toast.success('Account updated');
@@ -450,6 +453,19 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
                 onChange={(e) => setForm({ ...form, superfone_enabled: e.target.checked })} />
             </label>
           </div>
+
+          {/* Email Credits */}
+          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Email Credits</div>
+          <div>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Credits <span className="font-normal text-[#7a6b5c]">(-1 = Unlimited)</span></label>
+            <input type="number" value={form.email_credits} onChange={(e) => setForm({ ...form, email_credits: e.target.value })} className={inp} placeholder="-1" />
+          </div>
+          <div className="flex items-end pb-1">
+            <p className="text-[11px] text-[#7a6b5c]">
+              {form.email_credits === '-1' ? 'Unlimited emails' : Number(form.email_credits) === 0 ? 'No credits — sending blocked' : `${form.email_credits} emails remaining`}
+            </p>
+          </div>
+
           <div className="sm:col-span-2">
             <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Address</label>
             <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inp} />

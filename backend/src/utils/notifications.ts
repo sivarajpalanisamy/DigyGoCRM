@@ -1,6 +1,6 @@
 import { query } from '../db';
 import { emitToUser } from '../socket';
-import { sendEmail, isSmtpConfigured, getTenantEmailIdentity } from '../services/email';
+import { sendEmail, getTenantEmailIdentity } from '../services/email';
 
 // Alert owner + integration managers when an integration (e.g. Meta) breaks.
 // In-app notification + email. Best-effort; never throws to the caller.
@@ -32,6 +32,7 @@ export async function sendIntegrationAlert(tenantId: string, title: string, mess
         subject: title,
         fromName: ident.fromName,
         replyTo: ident.replyTo,
+        tenantId,
         html: `<div style="font-family:Arial,sans-serif;max-width:460px;margin:0 auto">
                  <p style="color:#1c1410;font-size:15px;font-weight:700">${title}</p>
                  <p style="color:#5c5245;font-size:14px">${message}</p></div>`,
@@ -77,7 +78,7 @@ async function emailNotificationRecipients(
 ): Promise<void> {
   try {
     const emailIds = userIds.filter((id) => prefsMap.get(id)?.[type]?.email === true);
-    if (emailIds.length === 0 || !isSmtpConfigured()) return;
+    if (emailIds.length === 0) return;
     const rows = (await query(
       `SELECT email FROM users WHERE id = ANY($1::uuid[]) AND email IS NOT NULL AND email <> ''`,
       [emailIds],
@@ -91,7 +92,7 @@ async function emailNotificationRecipients(
       <p style="color:#9c8f84;font-size:12px">— ${brand}</p>
     </div>`;
     for (const r of rows) {
-      sendEmail({ to: r.email, subject: title, html, fromName: ident.fromName, replyTo: ident.replyTo })
+      sendEmail({ to: r.email, subject: title, html, fromName: ident.fromName, replyTo: ident.replyTo, tenantId })
         .catch((e) => console.error('[notif email]', type, e?.message));
     }
   } catch (e) {

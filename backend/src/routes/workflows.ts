@@ -5,7 +5,7 @@ import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission, hasPermission } from '../middleware/permissions';
 import { checkPlan, checkUsage, incrementUsage } from '../middleware/plan';
-import { sendEmail, isSmtpConfigured, getTenantEmailIdentity } from '../services/email';
+import { sendEmail, getTenantEmailIdentity } from '../services/email';
 import { decrypt } from '../utils/crypto';
 import { maskPhone } from '../utils/phone';
 import { emitToTenant, emitToUser } from '../socket';
@@ -1268,8 +1268,6 @@ export async function executeNodes(
 
           if (!toEmail) {
             status = 'skipped'; message = 'send_email: no recipient email address';
-          } else if (!isSmtpConfigured()) {
-            status = 'skipped'; message = 'send_email: SMTP not configured (set SMTP_HOST, SMTP_USER, SMTP_PASS in .env)';
           } else {
             // White-label: action's own replyTo/fromName win, else fall back to tenant identity
             const tIdent = await getTenantEmailIdentity(tenantId);
@@ -1282,6 +1280,7 @@ export async function executeNodes(
               text:    body,
               replyTo,
               fromName,
+              tenantId,
             });
             message = `Email sent to ${toEmail} (${messageId})`;
           }

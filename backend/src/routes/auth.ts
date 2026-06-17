@@ -153,6 +153,7 @@ async function sendOtpEmail(user: { email: string; tenant_id: string | null }, o
     subject: `Your ${brand} login PIN: ${otp}`,
     fromName: ident.fromName,
     replyTo: ident.replyTo,
+    tenantId: user.tenant_id || undefined,
     html: `<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto;text-align:center">
              <p style="color:#5c5245;font-size:14px">Your ${brand} login PIN is:</p>
              <p style="font-size:34px;font-weight:800;letter-spacing:8px;color:#1c1410;margin:12px 0">${otp}</p>
@@ -786,6 +787,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
       subject: `Reset your ${brand} password`,
       fromName: brand !== 'DigyGo CRM' ? brand : undefined,
       replyTo,
+      tenantId: user.tenant_id || undefined,
       html: `<p>We received a request to reset your <strong>${brand}</strong> password.</p>
              <p><a href="${link}">Click here to set a new password</a></p>
              <p>This link expires in 1 hour. If you didn't request this, you can ignore this email.</p>`,
@@ -947,7 +949,7 @@ router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, 
         t.id, t.name, t.email, t.plan, t.is_active,
         t.subscription_status, t.subscription_expires_at, t.billing_cycle, t.plan_price,
         t.phone, t.address, t.created_at,
-        t.custom_domain, t.domain_status, t.superfone_enabled,
+        t.custom_domain, t.domain_status, t.superfone_enabled, t.email_credits,
         COUNT(DISTINCT u.id) FILTER (WHERE u.is_active=TRUE) AS user_count,
         COUNT(DISTINCT l.id) AS lead_count,
         (SELECT au.name  FROM users au WHERE au.tenant_id=t.id AND au.role='owner' AND au.is_active=TRUE LIMIT 1) AS admin_name,
@@ -969,7 +971,7 @@ router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, 
 
 // PATCH /api/auth/tenants/:id
 router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
-  const { name, plan, subscription_status, subscription_expires_at, billing_cycle, plan_price, phone, address, brand_color, logo_url, reply_to_email, owner_name, owner_email, superfone_enabled } = req.body;
+  const { name, plan, subscription_status, subscription_expires_at, billing_cycle, plan_price, phone, address, brand_color, logo_url, reply_to_email, owner_name, owner_email, superfone_enabled, email_credits } = req.body;
   const updates: string[] = [];
   const params: any[] = [];
   if (name !== undefined)                    { params.push(name);                    updates.push(`name=$${params.length}`); }
@@ -984,6 +986,7 @@ router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthReq
   if (logo_url !== undefined)                { params.push(logo_url || null);         updates.push(`logo_url=$${params.length}`); }
   if (reply_to_email !== undefined)          { params.push(reply_to_email || null);   updates.push(`reply_to_email=$${params.length}`); }
   if (superfone_enabled !== undefined)       { params.push(superfone_enabled === true); updates.push(`superfone_enabled=$${params.length}`); }
+  if (email_credits !== undefined)           { params.push(email_credits === '' || email_credits === null ? -1 : Number(email_credits)); updates.push(`email_credits=$${params.length}`); }
   const hasOwnerEdit = owner_name !== undefined || owner_email !== undefined;
   if (!updates.length && !hasOwnerEdit) { res.status(400).json({ error: 'No fields to update' }); return; }
   try {

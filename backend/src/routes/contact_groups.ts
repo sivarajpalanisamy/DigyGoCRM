@@ -3,7 +3,7 @@ import https from 'https';
 import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission } from '../middleware/permissions';
-import { sendEmail, isSmtpConfigured, getTenantEmailIdentity } from '../services/email';
+import { sendEmail, getTenantEmailIdentity } from '../services/email';
 import { decrypt } from '../utils/crypto';
 import { triggerWorkflows } from './workflows';
 
@@ -359,9 +359,6 @@ router.post('/:id/broadcast', checkPermission('contact_groups:manage'), async (r
       }
     } else {
       // email
-      if (!isSmtpConfigured()) {
-        res.status(400).json({ error: 'SMTP not configured — set SMTP_HOST, SMTP_USER, SMTP_PASS in environment' }); return;
-      }
       const bcastIdent = await getTenantEmailIdentity(tenantId);
       for (const m of members) {
         if (!m.email) { skipped++; continue; }
@@ -372,6 +369,7 @@ router.post('/:id/broadcast', checkPermission('contact_groups:manage'), async (r
             subject: subject.trim(),
             fromName: bcastIdent.fromName,
             replyTo: bcastIdent.replyTo,
+            tenantId: tenantId || undefined,
             html: interpolated.replace(/\n/g, '<br>'),
             text: interpolated,
           });
