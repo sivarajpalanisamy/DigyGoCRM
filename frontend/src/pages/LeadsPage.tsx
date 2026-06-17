@@ -3601,6 +3601,15 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
   };
   const daysBg = daysInPipeline <= 2 ? 'bg-emerald-50 text-emerald-700' : daysInPipeline <= 7 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600';
 
+  // Follow-up urgency detection
+  const hasOverdueFU = leadFUs.some((f) => !f.completed && new Date(f.dueAt) < now);
+  const hasTodayFU = !hasOverdueFU && leadFUs.some((f) => {
+    if (f.completed) return false;
+    const d = new Date(f.dueAt);
+    return d.toDateString() === now.toDateString();
+  });
+  const fuUrgency: 'overdue' | 'today' | null = hasOverdueFU ? 'overdue' : hasTodayFU ? 'today' : null;
+
   return (<>
     <div
       ref={(el) => { setSortableRef(el); (cardRef as any).current = el; }}
@@ -3609,7 +3618,10 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.25 : 1 }}
       className={cn(
         'group bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-150 cursor-grab active:cursor-grabbing',
-        highlighted ? 'border-primary ring-2 ring-primary/30 bg-primary/[0.02]' : 'border-gray-100',
+        highlighted ? 'border-primary ring-2 ring-primary/30 bg-primary/[0.02]'
+          : fuUrgency === 'overdue' ? 'border-l-[3px] border-l-red-500 border-t-gray-100 border-r-gray-100 border-b-gray-100 bg-red-50/30'
+          : fuUrgency === 'today' ? 'border-l-[3px] border-l-amber-500 border-t-gray-100 border-r-gray-100 border-b-gray-100 bg-amber-50/30'
+          : 'border-gray-100',
       )}
       onClick={onClick}
     >
@@ -3701,14 +3713,18 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
           </div>
           <div className="flex flex-col gap-1 min-w-0 items-end text-right">
             <div className="flex flex-col min-w-0 items-end">
-              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">
+              <span className={cn("text-[9px] font-medium uppercase tracking-wide leading-none mb-0.5",
+                hasOverdueFU && lastFU && !lastFU.completed ? 'text-red-500' : 'text-[#b0a294]')}>Last Follow</span>
+              <span className={cn("text-[11px] font-medium truncate",
+                lastFU && !lastFU.completed && new Date(lastFU.dueAt) < now ? 'text-red-600 font-semibold' : 'text-[#5c5245]')}>
                 {lastFU ? fmtDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
               </span>
             </div>
             <div className="flex flex-col min-w-0 items-end">
-              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Next Follow</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">
+              <span className={cn("text-[9px] font-medium uppercase tracking-wide leading-none mb-0.5",
+                fuUrgency === 'today' ? 'text-amber-600' : 'text-[#b0a294]')}>Next Follow</span>
+              <span className={cn("text-[11px] font-medium truncate",
+                nextFU && new Date(nextFU.dueAt).toDateString() === now.toDateString() ? 'text-amber-600 font-semibold' : 'text-[#5c5245]')}>
                 {nextFU ? fmtDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
               </span>
             </div>
@@ -3781,6 +3797,14 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
   const ageColor = daysInPipeline <= 2 ? 'text-emerald-600' : daysInPipeline <= 7 ? 'text-amber-600' : 'text-red-500';
   const phoneShown = showPhone ? lead.phone : lead.phone.replace(/\d(?=\d{4})/g, '*');
 
+  const hasOverdueFU = leadFUs.some((f) => !f.completed && new Date(f.dueAt) < now);
+  const hasTodayFU = !hasOverdueFU && leadFUs.some((f) => {
+    if (f.completed) return false;
+    const d = new Date(f.dueAt);
+    return d.toDateString() === now.toDateString();
+  });
+  const fuUrgency: 'overdue' | 'today' | null = hasOverdueFU ? 'overdue' : hasTodayFU ? 'today' : null;
+
   const act = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); setMenuOpen(false); setMoveOpen(false); fn(); };
 
   return (
@@ -3790,11 +3814,14 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
       onPointerUp={cancelLongPress}
       onPointerLeave={cancelLongPress}
       onPointerMove={cancelLongPress}
-      className={cn('relative bg-white rounded-2xl border shadow-sm active:bg-[#fcfaf8] transition-colors',
-        selected ? 'border-primary ring-2 ring-primary/30' : 'border-black/[0.06]')}
+      className={cn('relative rounded-2xl border shadow-sm active:bg-[#fcfaf8] transition-colors',
+        selected ? 'border-primary ring-2 ring-primary/30'
+          : fuUrgency === 'overdue' ? 'border-black/[0.06] bg-red-50/30'
+          : fuUrgency === 'today' ? 'border-black/[0.06] bg-amber-50/30'
+          : 'border-black/[0.06] bg-white')}
     >
       {/* accent edge */}
-      <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full" style={{ background: accent }} />
+      <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full" style={{ background: fuUrgency === 'overdue' ? '#ef4444' : fuUrgency === 'today' ? '#f59e0b' : accent }} />
 
       <div className="pl-4 pr-2.5 py-3">
         {/* Row 1 — identity + menu */}
@@ -3893,12 +3920,20 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
           </div>
           <div className="flex flex-col gap-1 min-w-0 items-end text-right">
             <div className="flex flex-col min-w-0 items-end">
-              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">{lastFU ? fmtDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}</span>
+              <span className={cn("text-[9px] font-medium uppercase tracking-wide leading-none mb-0.5",
+                hasOverdueFU && lastFU && !lastFU.completed ? 'text-red-500' : 'text-[#b0a294]')}>Last Follow</span>
+              <span className={cn("text-[11px] font-medium truncate",
+                lastFU && !lastFU.completed && new Date(lastFU.dueAt) < now ? 'text-red-600 font-semibold' : 'text-[#5c5245]')}>
+                {lastFU ? fmtDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
+              </span>
             </div>
             <div className="flex flex-col min-w-0 items-end">
-              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Next Follow</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">{nextFU ? fmtDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}</span>
+              <span className={cn("text-[9px] font-medium uppercase tracking-wide leading-none mb-0.5",
+                fuUrgency === 'today' ? 'text-amber-600' : 'text-[#b0a294]')}>Next Follow</span>
+              <span className={cn("text-[11px] font-medium truncate",
+                nextFU && new Date(nextFU.dueAt).toDateString() === now.toDateString() ? 'text-amber-600 font-semibold' : 'text-[#5c5245]')}>
+                {nextFU ? fmtDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
+              </span>
             </div>
           </div>
         </div>
