@@ -48,6 +48,7 @@ import CalendarEditPage from "./pages/CalendarEditPage";
 import PublicBookingPage from "./pages/PublicBookingPage";
 import NotFound from "./pages/NotFound";
 import PincodeRoutingPage from "./pages/PincodeRoutingPage";
+import WhatsAppDevicesPage from "./pages/WhatsAppDevicesPage";
 import ReportsPage from "./pages/ReportsPage";
 import CallsPage from "./pages/CallsPage";
 
@@ -98,6 +99,7 @@ const App = () => (
             <Route path="/automation" element={<AutomationOverviewPage />} />
             <Route path="/automation/workflows" element={<AutomationPage />} />
             <Route path="/automation/templates" element={<AutomationTemplatesPage />} />
+            <Route path="/automation/devices" element={<WhatsAppDevicesPage />} />
 
             {/* Calendar */}
             <Route path="/calendar" element={<CalendarPage />} />

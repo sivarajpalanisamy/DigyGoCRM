@@ -89,6 +89,76 @@ router.get('/sessions/:sessionId/status', async (req: AuthRequest, res: Response
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+// GET /api/whatsapp-personal/devices — enriched device list with message counts + assigned staff
+router.get('/devices', async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId!;
+  try {
+    const sessions = await listSessions(tenantId);
+    // Get total message counts per session from wa_personal_stats
+    const statsRes = await query(
+      `SELECT session_id, COALESCE(SUM(messages_sent),0)::int + COALESCE(SUM(messages_received),0)::int AS total_messages
+       FROM wa_personal_stats WHERE tenant_id=$1::uuid AND session_id IS NOT NULL GROUP BY session_id`,
+      [tenantId],
+    );
+    const statsMap: Record<string, number> = {};
+    for (const r of statsRes.rows) statsMap[r.session_id] = Number(r.total_messages);
+
+    // If no per-session stats, get tenant-wide total for the first/only session
+    if (sessions.length > 0 && Object.keys(statsMap).length === 0) {
+      const fallback = await query(
+        `SELECT COALESCE(SUM(messages_sent),0)::int + COALESCE(SUM(messages_received),0)::int AS total FROM wa_personal_stats WHERE tenant_id=$1::uuid`,
+        [tenantId],
+      );
+      if (sessions.length === 1 && fallback.rows[0]) {
+        statsMap[sessions[0].session_id] = Number(fallback.rows[0].total);
+      }
+    }
+
+    // Get assigned_staff for each session
+    const staffRes = await query(
+      `SELECT session_id, COALESCE(assigned_staff, '[]'::jsonb) AS assigned_staff FROM wa_personal_sessions WHERE tenant_id=$1::uuid`,
+      [tenantId],
+    );
+    const staffMap: Record<string, string[]> = {};
+    for (const r of staffRes.rows) staffMap[r.session_id] = r.assigned_staff ?? [];
+
+    // Get staff names for display
+    const allStaffIds = [...new Set(Object.values(staffMap).flat())];
+    let staffNames: Record<string, string> = {};
+    if (allStaffIds.length > 0) {
+      const namesRes = await query(
+        `SELECT id, name FROM users WHERE id = ANY($1::uuid[]) AND tenant_id=$2::uuid`,
+        [allStaffIds, tenantId],
+      );
+      for (const r of namesRes.rows) staffNames[r.id] = r.name;
+    }
+
+    const devices = sessions.map((s: any) => ({
+      ...s,
+      total_messages: statsMap[s.session_id] ?? 0,
+      assigned_staff: (staffMap[s.session_id] ?? []).map((id: string) => ({ id, name: staffNames[id] ?? 'Unknown' })),
+    }));
+
+    res.json(devices);
+  } catch (err: any) {
+    console.error('[WA devices]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /api/whatsapp-personal/sessions/:sessionId/staff — update assigned staff
+router.patch('/sessions/:sessionId/staff', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  const { staff_ids } = req.body as { staff_ids: string[] };
+  if (!Array.isArray(staff_ids)) { res.status(400).json({ error: 'staff_ids must be an array' }); return; }
+  try {
+    await query(
+      `UPDATE wa_personal_sessions SET assigned_staff = $1::jsonb WHERE session_id = $2::uuid AND tenant_id = $3::uuid`,
+      [JSON.stringify(staff_ids), req.params.sessionId, req.user!.tenantId],
+    );
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 // ── Legacy endpoints (backward compatible) ──────────────────────────────────
 
 // GET /api/whatsapp-personal/status — returns first session status

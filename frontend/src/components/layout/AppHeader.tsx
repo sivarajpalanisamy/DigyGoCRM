@@ -31,6 +31,7 @@ const sectionNavs: Record<string, { label: string; path: string }[]> = {
     { label: 'Overview', path: '/automation' },
     { label: 'Workflows', path: '/automation/workflows' },
     { label: 'Templates', path: '/automation/templates' },
+    { label: 'Devices', path: '/automation/devices' },
     { label: 'Uploads', path: '/automation/pincode-routing' },
   ],
   '/calendar': [
