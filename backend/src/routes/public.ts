@@ -117,6 +117,19 @@ router.post('/forms/:slug/submit', async (req: Request, res: Response) => {
     if (!email) email = (data.email ?? data.Email ?? '').toLowerCase().trim();
     if (!phone) phone = data.phone ?? data.Phone ?? '';
 
+    // Server-side required-field validation
+    const requiredFields: Array<{ label: string; mapTo: string; required?: boolean }> = form.fields ?? [];
+    const missing: string[] = [];
+    for (const field of requiredFields) {
+      if (!field.required) continue;
+      const val = (data[field.label] ?? data[field.mapTo] ?? '').toString().trim();
+      if (!val) missing.push(field.label);
+    }
+    if (missing.length > 0) {
+      res.status(400).json({ error: `Required fields missing: ${missing.join(', ')}` });
+      return;
+    }
+
     // Duplicate check — look up by email OR phone (not requiring both)
     const dupRows: Array<{ id: string }> = [];
     if (email) {

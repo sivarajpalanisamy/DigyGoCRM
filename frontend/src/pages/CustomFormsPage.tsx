@@ -269,7 +269,7 @@ export default function CustomFormsPage() {
 </style>
 <div class="dgf-wrap">
 <p class="dgf-title">${esc(form.name)}</p>
-<form id="${uid}_f" novalidate>
+<form id="${uid}_f">
 ${fieldsHtml}
 ${declHtml}
 <button type="submit" class="dgf-btn">${esc(label)}</button>
@@ -281,6 +281,8 @@ var _m={};
 window.${uid}_ms=function(k,el){_m[k]=_m[k]||[];var i=_m[k].indexOf(el.value);el.checked?i<0&&_m[k].push(el.value):i>=0&&_m[k].splice(i,1);};
 document.getElementById('${uid}_f').addEventListener('submit',function(e){
 e.preventDefault();${declCheck}
+var missing=[];e.target.querySelectorAll('[required]').forEach(function(el){if(!el.value||!el.value.trim()){var l=el.getAttribute('data-label')||el.closest('.dgf-field')?.querySelector('.dgf-label')?.textContent||'Field';missing.push(l.replace(/\\*$/,'').trim());}});
+if(missing.length){alert('Please fill in: '+missing.join(', '));return;}
 var btn=e.target.querySelector('button[type=submit]');
 btn.disabled=true;btn.textContent='Submitting…';
 var data={};
