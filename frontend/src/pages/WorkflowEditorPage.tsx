@@ -1840,6 +1840,10 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
   const [showWaTemplatesModal, setShowWaTemplatesModal] = useState(false);
   const [waTemplateMode, setWaTemplateMode] = useState<'write' | 'template'>((cfg.templateId as string) ? 'template' : 'write');
 
+  // WA Personal devices for device selector
+  const [waDevices, setWaDevices] = useState<{ session_id: string; session_name: string; status: string; phone_number: string | null }[]>([]);
+  const needsDeviceSelector = node.actionType === 'send_whatsapp_personal' || (node.actionType === 'internal_notify' && ((cfg.notifType as string) === 'whatsapp_personal'));
+
   useEffect(() => {
     if (node.actionType === 'send_whatsapp_personal') {
       setLoadingWaTemplates(true);
@@ -1848,6 +1852,14 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
         .catch(() => {}).finally(() => setLoadingWaTemplates(false));
     }
   }, [node.actionType]);
+
+  useEffect(() => {
+    if (needsDeviceSelector) {
+      api.get<any[]>('/api/whatsapp-personal/sessions')
+        .then((rows) => { if (Array.isArray(rows)) setWaDevices(rows); })
+        .catch(() => {});
+    }
+  }, [needsDeviceSelector]);
 
   const selectedWaTemplate = Array.isArray(waTemplates) ? waTemplates.find((t) => t.id === (cfg.templateId as string)) : undefined;
 
@@ -2360,6 +2372,18 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
           <div className="bg-teal-50 border border-teal-200 rounded-xl p-3">
             <p className="text-xs text-teal-700"><strong>WhatsApp Personal:</strong> Sends a message via your connected personal WhatsApp session (QR scan). Staff must have a phone number in their profile.</p>
           </div>
+          {waDevices.length > 0 && (
+            <FieldRow label="Send from Device">
+              <select className={selectCls} value={(cfg.session_id as string) ?? ''} onChange={sel('session_id')}>
+                <option value="">Auto (first connected device)</option>
+                {waDevices.map((d) => (
+                  <option key={d.session_id} value={d.session_id}>
+                    {d.session_name}{d.phone_number ? ` (${d.phone_number})` : ''}{d.status === 'connected' ? ' ✓' : ' — offline'}
+                  </option>
+                ))}
+              </select>
+            </FieldRow>
+          )}
           <FieldRow label="Message" required>
             <div>
               <textarea
@@ -2502,6 +2526,20 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
           />
         )}
         <p className="text-sm text-muted-foreground leading-relaxed">Send a message via your connected personal WhatsApp session (QR scan). Requires an active personal WA connection in Integrations.</p>
+
+        {/* Device selector */}
+        {waDevices.length > 0 && (
+          <FieldRow label="Send from Device">
+            <select className={selectCls} value={(cfg.session_id as string) ?? ''} onChange={sel('session_id')}>
+              <option value="">Auto (first connected device)</option>
+              {waDevices.map((d) => (
+                <option key={d.session_id} value={d.session_id}>
+                  {d.session_name}{d.phone_number ? ` (${d.phone_number})` : ''}{d.status === 'connected' ? ' ✓' : ' — offline'}
+                </option>
+              ))}
+            </select>
+          </FieldRow>
+        )}
 
         {/* Source toggle */}
         <div className="flex rounded-lg border border-border overflow-hidden text-sm">

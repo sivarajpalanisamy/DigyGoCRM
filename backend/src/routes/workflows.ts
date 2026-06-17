@@ -1141,7 +1141,8 @@ export async function executeNodes(
 
             const { sendText, getSession } = await import('../services/whatsapp/sessionManager');
             const { toJID } = await import('../services/whatsapp/phoneUtils');
-            if (!getSession(tenantId)) {
+            const waSessionId = (node.config.session_id as string) || undefined;
+            if (!getSession(tenantId, waSessionId)) {
               status = 'failed'; message = 'internal_notify(wa_personal): WhatsApp Personal session not connected'; break;
             }
             // Fetch recipient phone numbers
@@ -1157,7 +1158,7 @@ export async function executeNodes(
             for (const r of recipients) {
               try {
                 const jid = toJID(r.phone);
-                await sendText(tenantId, jid, waMsg);
+                await sendText(tenantId, jid, waMsg, waSessionId);
               } catch (e: any) {
                 console.error(`internal_notify(wa_personal) failed for ${r.phone}:`, e.message);
                 waFailed++;
@@ -1431,7 +1432,8 @@ export async function executeNodes(
           }
           const { sendText, sendMedia, getSession } = await import('../services/whatsapp/sessionManager');
           const { toJID } = await import('../services/whatsapp/phoneUtils');
-          if (!getSession(tenantId)) {
+          const waSessionId = (node.config.session_id as string) || undefined;
+          if (!getSession(tenantId, waSessionId)) {
             status = 'failed'; message = 'send_whatsapp_personal: WhatsApp Personal session not connected — scan QR under Integrations'; break;
           }
 
@@ -1470,9 +1472,9 @@ export async function executeNodes(
               status = 'failed'; message = `send_whatsapp_personal: template file not found on disk`; break;
             }
             const buffer = fsMod.readFileSync(fullPath);
-            await sendMedia(tenantId, jid, buffer, fileType ?? 'application/octet-stream', fileName ?? 'file', msgText || undefined);
+            await sendMedia(tenantId, jid, buffer, fileType ?? 'application/octet-stream', fileName ?? 'file', msgText || undefined, waSessionId);
           } else {
-            await sendText(tenantId, jid, msgText);
+            await sendText(tenantId, jid, msgText, waSessionId);
           }
 
           await query(
