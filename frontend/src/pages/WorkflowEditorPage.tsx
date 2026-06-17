@@ -2287,13 +2287,14 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
 
       {/* Internal Notification */}
       {node.actionType === 'internal_notify' && (<>
-        <p className="text-sm text-muted-foreground leading-relaxed">Send a notification to your team member when a contact reaches this step.</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">Send a notification to your team member/individual who reach this point of the automation workflow.</p>
         <FieldRow label="Action Name">
           <input className={inputCls} value={(cfg.actionName as string) ?? 'Internal Notification'} onChange={sel('actionName')} />
         </FieldRow>
         <FieldRow label="Type of Notification">
           <select className={selectCls} value={(cfg.notifType as string) ?? 'in_app'} onChange={sel('notifType')}>
             <option value="in_app">In App (Bell notification)</option>
+            <option value="email">Email</option>
           </select>
         </FieldRow>
         <FieldRow label="Send To">
@@ -2312,12 +2313,45 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
             </select>
           </FieldRow>
         )}
-        <FieldRow label="Message">
+
+        {/* In-App notification fields */}
+        {((cfg.notifType as string) ?? 'in_app') === 'in_app' && (
+          <FieldRow label="Message">
+            <div>
+              <textarea className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card focus:border-primary outline-none resize-none" rows={3} placeholder="Notification: {first_name} moved to {stage}..." value={(cfg.message as string) ?? ''} onChange={sel('message')} />
+              <VarHints onInsert={(v) => onUpdate({ config: { ...cfg, message: ((cfg.message as string) ?? '') + v } })} />
+            </div>
+          </FieldRow>
+        )}
+
+        {/* Email notification fields */}
+        {(cfg.notifType as string) === 'email' && (<>
+          <FieldRow label="From Name">
+            <input className={inputCls} placeholder="E.g. Your Company Name" value={(cfg.fromName as string) ?? ''} onChange={sel('fromName')} />
+          </FieldRow>
+          <FieldRow label="Email Subject" required>
+            <div>
+              <input className={inputCls} placeholder="E.g. New lead assigned: {first_name}" value={(cfg.emailSubject as string) ?? ''} onChange={sel('emailSubject')} />
+              <VarHints onInsert={(v) => onUpdate({ config: { ...cfg, emailSubject: ((cfg.emailSubject as string) ?? '') + v } })} />
+            </div>
+          </FieldRow>
+          <FieldRow label="Reply To">
+            <input className={inputCls} placeholder="Reply-to email address" value={(cfg.replyTo as string) ?? ''} onChange={sel('replyTo')} />
+          </FieldRow>
           <div>
-            <textarea className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card focus:border-primary outline-none resize-none" rows={3} placeholder="Notification: {first_name} moved to {stage}..." value={(cfg.message as string) ?? ''} onChange={sel('message')} />
-            <VarHints onInsert={(v) => onUpdate({ config: { ...cfg, message: ((cfg.message as string) ?? '') + v } })} />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-semibold">Content</label>
+            </div>
+            <textarea
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card outline-none resize-none min-h-32"
+              rows={5}
+              placeholder="Hi team, a new lead {first_name} {last_name} has been received..."
+              value={(cfg.emailBody as string) ?? ''}
+              onChange={sel('emailBody')}
+            />
+            <VarHints onInsert={(v) => onUpdate({ config: { ...cfg, emailBody: ((cfg.emailBody as string) ?? '') + v } })} />
           </div>
-        </FieldRow>
+        </>)}
       </>)}
 
       {/* Send Email */}
@@ -5143,7 +5177,9 @@ export default function WorkflowEditorPage() {
                       )}
                       {selectedNode?.actionType === 'internal_notify' && (
                         <div className="text-[12px] text-[#4a3c30] leading-relaxed">
-                          {(selectedNode.config.message as string) || 'No message yet.'}
+                          {(selectedNode.config.notifType as string) === 'email'
+                            ? (<><strong>Subject:</strong> {(selectedNode.config.emailSubject as string) || '(no subject)'}<br/>{(selectedNode.config.emailBody as string) || 'No content yet.'}</>)
+                            : (selectedNode.config.message as string) || 'No message yet.'}
                         </div>
                       )}
                     </div>

@@ -1060,15 +1060,16 @@ export async function executeNodes(
 
         // ── Internal Notification ──────────────────────────────────────────────
         case 'internal_notify': {
+          const notifType = (node.config.notifType ?? 'in_app') as string;
           const msg = interpolate((node.config.message ?? 'Workflow notification') as string, lead, valueTokens);
           const notifTitle = interpolate((node.config.actionName ?? 'Automation Notification') as string, lead, valueTokens);
           const sendTo = (node.config.sendTo ?? 'assigned') as string;
 
+          // Resolve recipient user IDs
           let recipientIds: string[] = [];
           if (sendTo === 'specific' && node.config.staff_id) {
             recipientIds = [node.config.staff_id as string];
           } else if (sendTo === 'all') {
-            // Fix 5: exclude owner; Fix 8: exclude the workflow trigger user
             const usersRes = await query(
               `SELECT id FROM users WHERE tenant_id=$1 AND is_active=TRUE AND is_owner IS NOT TRUE`,
               [tenantId]
@@ -1080,6 +1081,60 @@ export async function executeNodes(
             recipientIds = [lead.assigned_to];
           }
 
+          if (recipientIds.length === 0) {
+            status = 'skipped'; message = `internal_notify: no recipients found (sendTo=${sendTo})`;
+            break;
+          }
+
+          // ── Email notification ────────────────────────────────────────────────
+          if (notifType === 'email') {
+            const emailSubject = interpolate((node.config.emailSubject ?? 'Notification') as string, lead, valueTokens);
+            const emailBody    = interpolate((node.config.emailBody ?? '') as string, lead, valueTokens);
+            if (!emailSubject && !emailBody) {
+              status = 'skipped'; message = 'internal_notify(email): no subject or body configured';
+              break;
+            }
+            // Fetch recipient emails
+            const recipientsRes = await query(
+              `SELECT id, email FROM users WHERE id = ANY($1::uuid[]) AND email IS NOT NULL AND email != ''`,
+              [recipientIds]
+            );
+            const recipients = recipientsRes.rows as { id: string; email: string }[];
+            if (recipients.length === 0) {
+              status = 'skipped'; message = `internal_notify(email): no staff email addresses found for ${recipientIds.length} recipient(s)`;
+              break;
+            }
+            const tIdent = await getTenantEmailIdentity(tenantId);
+            const replyTo  = (node.config.replyTo as string)?.trim() || tIdent.replyTo;
+            const fromName = (node.config.fromName as string)?.trim() || tIdent.fromName;
+            let emailFailed = 0;
+            for (const r of recipients) {
+              try {
+                await sendEmail({
+                  to:      r.email,
+                  subject: emailSubject,
+                  html:    emailBody.replace(/\n/g, '<br>'),
+                  text:    emailBody,
+                  replyTo,
+                  fromName,
+                  tenantId,
+                });
+              } catch (e: any) {
+                console.error(`internal_notify(email) failed for ${r.email}:`, e.message);
+                emailFailed++;
+              }
+            }
+            if (emailFailed > 0 && emailFailed === recipients.length) {
+              status = 'failed'; message = `internal_notify(email): all ${emailFailed} emails failed`;
+            } else if (emailFailed > 0) {
+              message = `Email sent to ${recipients.length - emailFailed}/${recipients.length} staff (${emailFailed} failed)`;
+            } else {
+              message = `Email sent to ${recipients.length} staff member(s)`;
+            }
+            break;
+          }
+
+          // ── In-app notification (default) ─────────────────────────────────────
           let notifFailed = 0;
           for (const uid of recipientIds) {
             const nRes = await query(
@@ -1090,7 +1145,6 @@ export async function executeNodes(
             if (!nRes.rows[0]?.id) {
               notifFailed++;
             } else {
-              // Fix 3: emit real-time socket event so recipient sees it immediately
               emitToUser(uid, 'notification:new', {
                 id:         nRes.rows[0].id,
                 type:       'automation',
@@ -1101,9 +1155,7 @@ export async function executeNodes(
               });
             }
           }
-          if (recipientIds.length === 0) {
-            status = 'skipped'; message = `internal_notify: no recipients found (sendTo=${sendTo})`;
-          } else if (notifFailed > 0) {
+          if (notifFailed > 0) {
             status = 'failed'; message = `internal_notify: ${notifFailed}/${recipientIds.length} notifications failed to insert`;
           } else {
             message = `Notified: ${recipientIds.length} recipient(s) · ${sendTo}`;
