@@ -6,6 +6,7 @@ import {
 import {
   ComposedChart, Bar, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  Line, LabelList,
 } from 'recharts';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -215,47 +216,112 @@ function HBarList({ items, getLabel, getRight, getWidth, getColor, avatar }: {
   );
 }
 
-// Stage funnel with drop-off
+// Stage funnel with drop-off, bottleneck detection, and cumulative conversion
 function StageFunnel({ stages }: { stages: StageRow[] }) {
   if (!stages.length) return <EmptyState text="No stage data" />;
   const maxCount = Math.max(...stages.map((s) => s.lead_count), 1);
+  const firstCount = stages[0]?.lead_count ?? 0;
+
+  // Find bottleneck (highest % drop between consecutive stages)
+  let bottleneckIdx = -1;
+  let worstDropPct = 0;
+  stages.forEach((stage, i) => {
+    if (i === 0) return;
+    const prev = stages[i - 1];
+    if (prev.lead_count > 0 && !prev.is_won) {
+      const dp = Math.round((1 - stage.lead_count / prev.lead_count) * 100);
+      if (dp > worstDropPct) { worstDropPct = dp; bottleneckIdx = i; }
+    }
+  });
+
+  const wonStage = stages.find((s) => s.is_won);
+  const overallConv = firstCount > 0 && wonStage ? Math.round((wonStage.lead_count / firstCount) * 100) : 0;
+  const totalLeads = stages.reduce((s, st) => s + st.lead_count, 0);
+  const slowestStage = [...stages].filter((s) => !s.is_won && s.lead_count > 0).sort((a, b) => (b.avg_days ?? 0) - (a.avg_days ?? 0))[0];
+
   return (
-    <div className="flex flex-col gap-2.5">
-      {stages.map((stage, i) => {
-        const prev = stages[i - 1];
-        const dropPct = prev && prev.lead_count > 0
-          ? Math.round((1 - stage.lead_count / prev.lead_count) * 100) : null;
-        const barW = Math.max(Math.round((stage.lead_count / maxCount) * 100), stage.lead_count > 0 ? 3 : 0);
-        const color = stage.is_won ? '#10b981' : STAGE_COLORS[i % STAGE_COLORS.length];
-        const idle = stage.avg_days ?? 0;
-        const [idleBg, idleColor] = idle > 7 ? ['#fef2f2','#ef4444'] : idle > 2 ? ['#fefce8','#ca8a04'] : ['#f0fdf4','#16a34a'];
-        return (
-          <div key={stage.stage_name}>
-            {dropPct !== null && (
-              <div className="flex items-center gap-1.5 my-1 pl-1">
-                <div className="w-px h-3 bg-[#e5d5c5]" />
-                <span className="text-[10px] text-[#b0a090] font-medium">{dropPct}% drop-off</span>
-              </div>
-            )}
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] font-semibold text-[#4a3a2a] w-[90px] shrink-0 truncate">{stage.stage_name}</span>
-              <div className="flex-1 bg-[#f4efe9] rounded-full h-7 overflow-hidden">
-                <div className="h-full rounded-full flex items-center justify-end pr-2.5 transition-all duration-500"
-                  style={{ width: `${barW}%`, background: color }}>
-                  {barW > 14 && <span className="text-[11px] font-bold text-white">{stage.lead_count}</span>}
-                </div>
-              </div>
-              {barW <= 14 && <span className="text-[12px] font-bold text-[#1c1410] w-5 text-right">{stage.lead_count}</span>}
-              <span className="text-[10px] font-bold px-2 py-1 rounded-lg shrink-0"
-                style={{ background: stage.is_won ? '#f0fdf4' : idleBg, color: stage.is_won ? '#16a34a' : idleColor }}>
-                {stage.is_won ? 'Won ✓' : `${idle}d idle`}
-              </span>
+    <div>
+      {/* Summary insights */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f4efe9]">
+          <span className="text-[10px] text-[#9a8a7a] font-semibold uppercase">Entry</span>
+          <span className="text-[13px] font-bold text-[#1c1410]">{firstCount}</span>
+        </div>
+        {wonStage && (
+          <>
+            <span className="text-[#d0c0b0] text-[11px]">→</span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
+              <span className="text-[10px] text-emerald-600 font-semibold uppercase">Won</span>
+              <span className="text-[13px] font-bold text-emerald-700">{wonStage.lead_count}</span>
             </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
+              style={{ background: overallConv >= 15 ? '#f0fdf4' : overallConv >= 5 ? '#fefce8' : '#fef2f2' }}>
+              <span className="text-[10px] font-semibold uppercase"
+                style={{ color: overallConv >= 15 ? '#16a34a' : overallConv >= 5 ? '#ca8a04' : '#ef4444' }}>Conv Rate</span>
+              <span className="text-[13px] font-bold"
+                style={{ color: overallConv >= 15 ? '#15803d' : overallConv >= 5 ? '#a16207' : '#dc2626' }}>{overallConv}%</span>
+            </div>
+          </>
+        )}
+        {bottleneckIdx >= 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50">
+            <span className="text-[10px] text-red-500 font-semibold uppercase">Bottleneck</span>
+            <span className="text-[12px] font-bold text-red-600">{stages[bottleneckIdx].stage_name} ({worstDropPct}%)</span>
           </div>
-        );
-      })}
-      <p className="text-[10px] text-[#c0b0a0] mt-1 pt-2 border-t border-black/[0.04]">
-        Idle = avg days since last activity for leads in this stage
+        )}
+        {slowestStage && (slowestStage.avg_days ?? 0) > 3 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50">
+            <span className="text-[10px] text-amber-600 font-semibold uppercase">Slowest</span>
+            <span className="text-[12px] font-bold text-amber-700">{slowestStage.stage_name} ({slowestStage.avg_days}d avg)</span>
+          </div>
+        )}
+      </div>
+
+      {/* Funnel visualization */}
+      <div className="flex flex-col gap-2.5">
+        {stages.map((stage, i) => {
+          const prev = stages[i - 1];
+          const dropPct = prev && prev.lead_count > 0
+            ? Math.round((1 - stage.lead_count / prev.lead_count) * 100) : null;
+          const cumulConv = firstCount > 0 && i > 0 ? Math.round((stage.lead_count / firstCount) * 100) : null;
+          const barW = Math.max(Math.round((stage.lead_count / maxCount) * 100), stage.lead_count > 0 ? 3 : 0);
+          const color = stage.is_won ? '#10b981' : STAGE_COLORS[i % STAGE_COLORS.length];
+          const idle = stage.avg_days ?? 0;
+          const [idleBg, idleColor] = idle > 7 ? ['#fef2f2','#ef4444'] : idle > 2 ? ['#fefce8','#ca8a04'] : ['#f0fdf4','#16a34a'];
+          const isBottleneck = i === bottleneckIdx;
+          return (
+            <div key={stage.stage_name}>
+              {dropPct !== null && dropPct > 0 && (
+                <div className="flex items-center gap-1.5 my-1 pl-1">
+                  <div className={`w-px h-3 ${isBottleneck ? 'bg-red-300' : 'bg-[#e5d5c5]'}`} />
+                  <span className={`text-[10px] font-medium ${isBottleneck ? 'text-red-500 font-bold' : 'text-[#b0a090]'}`}>
+                    ↓ {dropPct}% drop-off{isBottleneck ? ' — bottleneck' : ''}
+                  </span>
+                </div>
+              )}
+              <div className={`flex items-center gap-3 ${isBottleneck ? 'ring-1 ring-red-200 rounded-xl px-2 py-1 -mx-2 bg-red-50/30' : ''}`}>
+                <span className="text-[11px] font-semibold text-[#4a3a2a] w-[90px] shrink-0 truncate">{stage.stage_name}</span>
+                <div className="flex-1 bg-[#f4efe9] rounded-full h-7 overflow-hidden">
+                  <div className="h-full rounded-full flex items-center justify-end pr-2.5 transition-all duration-500"
+                    style={{ width: `${barW}%`, background: color }}>
+                    {barW > 14 && <span className="text-[11px] font-bold text-white">{stage.lead_count}</span>}
+                  </div>
+                </div>
+                {barW <= 14 && <span className="text-[12px] font-bold text-[#1c1410] w-5 text-right">{stage.lead_count}</span>}
+                {cumulConv !== null && (
+                  <span className="text-[9px] font-semibold text-[#9a8a7a] w-8 text-right shrink-0">{cumulConv}%</span>
+                )}
+                <span className="text-[10px] font-bold px-2 py-1 rounded-lg shrink-0"
+                  style={{ background: stage.is_won ? '#f0fdf4' : idleBg, color: stage.is_won ? '#16a34a' : idleColor }}>
+                  {stage.is_won ? 'Won ✓' : `${idle}d avg`}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-[#c0b0a0] mt-2 pt-2 border-t border-black/[0.04]">
+        % = cumulative conversion from entry · Avg = mean days leads sit in stage · Bottleneck = highest drop-off point
       </p>
     </div>
   );
@@ -293,6 +359,241 @@ function LeadBreakdown({ total, won, active }: { total: number; won: number; act
             <span className="text-[11px] text-[#9a8a7a]">Other {lostPct}%</span>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Source ROI Chart — volume bars + conversion line + contact rate + detail table
+function SourceROIChart({ sources }: { sources: SourceRow[] }) {
+  if (!sources.length) return <EmptyState text="No source data" />;
+
+  const chartData = sources.slice(0, 8).map((s) => ({
+    name: (s.source || 'Unknown').slice(0, 14),
+    fullName: s.source || 'Unknown',
+    total: s.total, contacted: s.contacted, won: s.won,
+    conv: s.conv_pct,
+    contactRate: s.total > 0 ? Math.round((s.contacted / s.total) * 100) : 0,
+  }));
+
+  const bestConv = [...sources].filter((s) => s.total >= 3).sort((a, b) => b.conv_pct - a.conv_pct)[0];
+  const highestVol = sources[0];
+  const bestContact = [...sources].filter((s) => s.total >= 3).sort((a, b) => {
+    return (b.total > 0 ? b.contacted / b.total : 0) - (a.total > 0 ? a.contacted / a.total : 0);
+  })[0];
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {highestVol && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50">
+            <span className="text-[10px] text-blue-500 font-semibold uppercase">Top Volume</span>
+            <span className="text-[12px] font-bold text-blue-700">{highestVol.source || 'Unknown'} ({highestVol.total})</span>
+          </div>
+        )}
+        {bestConv && bestConv.conv_pct > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
+            <span className="text-[10px] text-emerald-500 font-semibold uppercase">Best Conversion</span>
+            <span className="text-[12px] font-bold text-emerald-700">{bestConv.source || 'Unknown'} ({bestConv.conv_pct}%)</span>
+          </div>
+        )}
+        {bestContact && bestContact.contacted > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50">
+            <span className="text-[10px] text-violet-500 font-semibold uppercase">Best Contact Rate</span>
+            <span className="text-[12px] font-bold text-violet-700">{bestContact.source || 'Unknown'} ({bestContact.total > 0 ? Math.round(bestContact.contacted / bestContact.total * 100) : 0}%)</span>
+          </div>
+        )}
+      </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <ComposedChart data={chartData} margin={{ top: 18, right: 40, bottom: 4, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe5" vertical={false} />
+          <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#8a7c6e' }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="left" tick={{ fontSize: 9, fill: '#8a7c6e' }} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
+          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: '#10b981' }} axisLine={false} tickLine={false} domain={[0, 100]} unit="%" width={34} />
+          <Tooltip
+            contentStyle={{ borderRadius: 12, border: '1px solid #f0ebe5', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+            formatter={(val: any, name: string) => {
+              if (name === 'conv') return [`${val}%`, 'Conversion'];
+              if (name === 'contactRate') return [`${val}%`, 'Contact Rate'];
+              return [val, 'Volume'];
+            }}
+            labelFormatter={(_: any, p: any) => p?.[0]?.payload?.fullName ?? _}
+          />
+          <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+          <Bar yAxisId="left" dataKey="total" name="Volume" fill="#bfdbfe" radius={[3, 3, 0, 0]} maxBarSize={36}>
+            <LabelList dataKey="total" position="top" style={{ fontSize: 10, fill: '#1c1410', fontWeight: 700 }} />
+          </Bar>
+          <Line yAxisId="right" type="monotone" dataKey="conv" name="Conv %" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3.5, fill: '#10b981' }} />
+          <Line yAxisId="right" type="monotone" dataKey="contactRate" name="Contact %" stroke="#8b5cf6" strokeWidth={2} strokeDasharray="4 3" dot={{ r: 3, fill: '#8b5cf6' }} />
+        </ComposedChart>
+      </ResponsiveContainer>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full text-[12px]">
+          <thead>
+            <tr className="text-[10px] text-[#9a8a7a] uppercase font-semibold border-b border-black/5">
+              <th className="text-left py-2 px-2">Source</th>
+              <th className="text-right py-2 px-2">Total</th>
+              <th className="text-right py-2 px-2">Contacted</th>
+              <th className="text-right py-2 px-2">Won</th>
+              <th className="text-right py-2 px-2">Contact %</th>
+              <th className="text-right py-2 px-2">Conv %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sources.map((s, i) => {
+              const contactPct = s.total > 0 ? Math.round((s.contacted / s.total) * 100) : 0;
+              return (
+                <tr key={i} className="border-b border-black/[0.03] hover:bg-[var(--app-bg)]">
+                  <td className="py-2 px-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: SOURCE_COLORS[i % SOURCE_COLORS.length] }} />
+                      <span className="font-semibold text-[#1c1410]">{s.source || 'Unknown'}</span>
+                    </div>
+                  </td>
+                  <td className="text-right px-2 font-bold text-[#1c1410]">{s.total}</td>
+                  <td className="text-right px-2 text-[#1c1410]">{s.contacted}</td>
+                  <td className="text-right px-2 font-bold text-emerald-600">{s.won}</td>
+                  <td className="text-right px-2">
+                    <span className={`font-semibold ${contactPct >= 60 ? 'text-violet-600' : contactPct >= 30 ? 'text-[#1c1410]' : 'text-red-500'}`}>{contactPct}%</span>
+                  </td>
+                  <td className="text-right px-2">
+                    <span className={`font-bold px-2 py-0.5 rounded-md text-[11px] ${s.conv_pct >= 20 ? 'bg-emerald-50 text-emerald-700' : s.conv_pct >= 5 ? 'bg-amber-50 text-amber-700' : 'bg-[#f4efe9] text-[#9a8a7a]'}`}>
+                      {s.conv_pct}%
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Staff Leaderboard — sortable table with rankings, performance badges, contact bars
+function StaffLeaderboard({ staff }: { staff: StaffRow[] }) {
+  const [sortBy, setSortBy] = useState<keyof StaffRow>('conv_pct');
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+  const active = staff.filter((s) => s.assigned > 0);
+  const sorted = [...active].sort((a, b) => {
+    const av = (a as any)[sortBy] as number;
+    const bv = (b as any)[sortBy] as number;
+    return sortDir === 'desc' ? bv - av : av - bv;
+  });
+  const toggle = (key: keyof StaffRow) => {
+    if (sortBy === key) setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'));
+    else { setSortBy(key); setSortDir('desc'); }
+  };
+  if (!active.length) return <EmptyState text="No staff with assigned leads" />;
+
+  const getPerf = (s: StaffRow) => {
+    if (s.conv_pct >= 25 && s.contact_pct >= 60) return { label: 'Star', bg: '#fefce8', color: '#ca8a04', border: '#fde047' };
+    if (s.conv_pct >= 10 || s.contact_pct >= 50) return { label: 'Good', bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' };
+    if (s.contact_pct < 25 && s.assigned >= 5) return { label: 'At Risk', bg: '#fef2f2', color: '#ef4444', border: '#fecaca' };
+    return { label: 'Steady', bg: '#f0f4ff', color: '#6366f1', border: '#c7d2fe' };
+  };
+
+  const SortHead = ({ label, field }: { label: string; field: keyof StaffRow }) => (
+    <th className="py-2.5 px-2 cursor-pointer select-none hover:text-[#1c1410] transition-colors text-right"
+      onClick={() => toggle(field)}>
+      <div className="flex items-center gap-1 justify-end">
+        <span>{label}</span>
+        {sortBy === field && <span className="text-[8px]">{sortDir === 'desc' ? '▼' : '▲'}</span>}
+      </div>
+    </th>
+  );
+
+  const avgConv = active.length ? Math.round(active.reduce((s, x) => s + x.conv_pct, 0) / active.length) : 0;
+  const avgContact = active.length ? Math.round(active.reduce((s, x) => s + x.contact_pct, 0) / active.length) : 0;
+  const totalWon = active.reduce((s, x) => s + x.won, 0);
+  const totalAssigned = active.reduce((s, x) => s + x.assigned, 0);
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f4efe9]">
+          <span className="text-[10px] text-[#9a8a7a] font-semibold uppercase">Team</span>
+          <span className="text-[13px] font-bold text-[#1c1410]">{active.length} members</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f4efe9]">
+          <span className="text-[10px] text-[#9a8a7a] font-semibold uppercase">Assigned</span>
+          <span className="text-[13px] font-bold text-[#1c1410]">{totalAssigned}</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
+          <span className="text-[10px] text-emerald-600 font-semibold uppercase">Won</span>
+          <span className="text-[13px] font-bold text-emerald-700">{totalWon}</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50">
+          <span className="text-[10px] text-violet-500 font-semibold uppercase">Avg Contact</span>
+          <span className="text-[13px] font-bold text-violet-700">{avgContact}%</span>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
+          style={{ background: avgConv >= 15 ? '#f0fdf4' : avgConv >= 5 ? '#fefce8' : '#fef2f2' }}>
+          <span className="text-[10px] font-semibold uppercase"
+            style={{ color: avgConv >= 15 ? '#16a34a' : avgConv >= 5 ? '#ca8a04' : '#ef4444' }}>Avg Conv</span>
+          <span className="text-[13px] font-bold"
+            style={{ color: avgConv >= 15 ? '#15803d' : avgConv >= 5 ? '#a16207' : '#dc2626' }}>{avgConv}%</span>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[12px]">
+          <thead>
+            <tr className="text-[10px] text-[#9a8a7a] uppercase font-semibold border-b border-black/5">
+              <th className="text-left py-2.5 px-2 w-8">#</th>
+              <th className="text-left py-2.5 px-2">Staff</th>
+              <SortHead label="Assigned" field="assigned" />
+              <SortHead label="Contacted" field="contact_pct" />
+              <SortHead label="Won" field="won" />
+              <SortHead label="Follow-ups" field="followups" />
+              <SortHead label="Conv %" field="conv_pct" />
+              <th className="text-center py-2.5 px-2">Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((s, i) => {
+              const perf = getPerf(s);
+              const rank = i + 1;
+              const rankStyle = rank === 1 ? 'bg-amber-100 text-amber-800'
+                : rank === 2 ? 'bg-gray-200 text-gray-700'
+                : rank === 3 ? 'bg-orange-100 text-orange-700'
+                : 'bg-[#f4efe9] text-[#9a8a7a]';
+              return (
+                <tr key={s.id} className="border-b border-black/[0.03] hover:bg-[var(--app-bg)] transition-colors">
+                  <td className="py-2.5 px-2">
+                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg text-[10px] font-bold ${rankStyle}`}>{rank}</span>
+                  </td>
+                  <td className="py-2.5 px-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-[10px] font-bold text-primary">{s.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                      </div>
+                      <span className="font-semibold text-[#1c1410] truncate">{s.name}</span>
+                    </div>
+                  </td>
+                  <td className="text-right px-2 font-bold text-[#1c1410]">{s.assigned}</td>
+                  <td className="text-right px-2">
+                    <div className="flex items-center gap-2 justify-end">
+                      <div className="w-14 h-1.5 bg-[#f0ece8] rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${s.contact_pct}%`, background: s.contact_pct >= 60 ? '#10b981' : s.contact_pct >= 30 ? '#f59e0b' : '#ef4444' }} />
+                      </div>
+                      <span className={`font-semibold w-8 text-right ${s.contact_pct >= 60 ? 'text-emerald-600' : s.contact_pct >= 30 ? 'text-amber-500' : 'text-red-500'}`}>{s.contact_pct}%</span>
+                    </div>
+                  </td>
+                  <td className="text-right px-2 font-bold text-emerald-600">{s.won}</td>
+                  <td className="text-right px-2 text-[#1c1410]">{s.followups}</td>
+                  <td className="text-right px-2">
+                    <span className={`font-bold px-2 py-0.5 rounded-md text-[11px] ${s.conv_pct >= 20 ? 'bg-emerald-50 text-emerald-700' : s.conv_pct >= 5 ? 'bg-amber-50 text-amber-700' : 'bg-[#f4efe9] text-[#9a8a7a]'}`}>{s.conv_pct}%</span>
+                  </td>
+                  <td className="text-center px-2">
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-lg border"
+                      style={{ background: perf.bg, color: perf.color, borderColor: perf.border }}>{perf.label}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -436,9 +737,6 @@ function OwnerReport() {
       .then(setData).catch(() => toast.error('Failed to load analytics')).finally(() => setLoading(false));
   }, [pipelineId, period, from, to]);
 
-  const maxSource = data ? Math.max(...data.sources.map((s) => s.total), 1) : 1;
-  const maxStaff  = data ? Math.max(...data.staff.map((s) => s.assigned), 1) : 1;
-
   return (
     <div className="flex flex-col gap-5 pb-10">
       {/* Header */}
@@ -472,49 +770,25 @@ function OwnerReport() {
           {/* Breakdown bar */}
           <LeadBreakdown total={data.kpi.total_leads} won={data.kpi.won} active={data.kpi.active} />
 
-          {/* Trend + Sources */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <Card title="New Leads vs Won — Monthly" sub="Volume trend over the selected period" className="lg:col-span-3">
-              <TrendChart data={data.win_loss} />
-            </Card>
-            <Card title="Lead Sources" sub={`${data.sources.length} sources · volume & conversion`} className="lg:col-span-2">
-              <HBarList
-                items={data.sources}
-                getLabel={(s) => s.source}
-                getWidth={(s) => Math.round((s.total / maxSource) * 100)}
-                getColor={(_, i) => SOURCE_COLORS[i % SOURCE_COLORS.length]}
-                getRight={(s) => (
-                  <>
-                    <p className="text-[12px] font-bold text-[#1c1410]">{s.total}</p>
-                    <p className="text-[10px] text-[#9a8a7a]">{s.conv_pct}% conv</p>
-                  </>
-                )}
-                avatar={(s) => s.source}
-              />
-            </Card>
-          </div>
+          {/* Trend */}
+          <Card title="New Leads vs Won — Monthly" sub="Volume trend over the selected period">
+            <TrendChart data={data.win_loss} />
+          </Card>
 
-          {/* Stage Funnel + Staff Leaderboard */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <Card title="Stage Funnel" sub="Drop-off & idle time per stage" className="lg:col-span-3">
-              <StageFunnel stages={data.stages} />
-            </Card>
-            <Card title="Staff Leaderboard" sub="Ranked by leads assigned" className="lg:col-span-2">
-              <HBarList
-                items={data.staff.filter((s) => s.assigned > 0)}
-                getLabel={(s) => s.name}
-                getWidth={(s) => Math.round((s.assigned / maxStaff) * 100)}
-                getColor={() => '#ea580c'}
-                getRight={(s) => (
-                  <>
-                    <p className="text-[12px] font-bold text-[#1c1410]">{s.assigned} leads</p>
-                    <p className="text-[10px] text-[#9a8a7a]">{s.won} won · {s.conv_pct}%</p>
-                  </>
-                )}
-                avatar={(s) => s.name}
-              />
-            </Card>
-          </div>
+          {/* Source ROI */}
+          <Card title="Source ROI — Volume, Contact Rate & Conversion" sub={`${data.sources.length} sources tracked · bars = volume, lines = rates`}>
+            <SourceROIChart sources={data.sources} />
+          </Card>
+
+          {/* Pipeline Funnel */}
+          <Card title="Pipeline Funnel" sub="Stage distribution, drop-off & idle time">
+            <StageFunnel stages={data.stages} />
+          </Card>
+
+          {/* Staff Leaderboard */}
+          <Card title="Staff Leaderboard" sub="Team performance ranked by conversion — click headers to sort">
+            <StaffLeaderboard staff={data.staff} />
+          </Card>
 
           {/* Stale + Overdue */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -564,11 +838,6 @@ function ManagerReport() {
       .then(setData).catch(() => toast.error('Failed to load analytics')).finally(() => setLoading(false));
   }, [pipelineId, period, from, to]);
 
-  const activeStaff = data?.staff.filter((s) => s.assigned > 0)
-    .sort((a, b) => b.conv_pct - a.conv_pct) ?? [];
-  const maxConvPct  = activeStaff.length ? Math.max(...activeStaff.map((s) => s.conv_pct), 1) : 1;
-  const maxSource   = data ? Math.max(...data.sources.map((s) => s.total), 1) : 1;
-
   return (
     <div className="flex flex-col gap-5 pb-10">
       {/* Header */}
@@ -596,59 +865,35 @@ function ManagerReport() {
             <KpiCard label="Overdue Tasks"   value={data.followups.overdue ?? 0}   sub="Follow-ups past due date"                 icon={CalendarClock} />
           </div>
 
-          {/* Trend + Staff Performance */}
+          {/* Trend + Overdue */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             <Card title="Team Monthly Trend" sub="New leads vs won over time" className="lg:col-span-3">
               <TrendChart data={data.win_loss} />
-            </Card>
-            <Card title="Staff Performance" sub="Ranked by conversion rate" className="lg:col-span-2">
-              <HBarList
-                items={activeStaff}
-                getLabel={(s) => s.name}
-                getWidth={(s) => Math.round((s.conv_pct / maxConvPct) * 100)}
-                getColor={() => '#ea580c'}
-                getRight={(s) => (
-                  <>
-                    <p className="text-[12px] font-bold text-[#1c1410]">{s.conv_pct}%</p>
-                    <p className="text-[10px] text-[#9a8a7a]">{s.won}/{s.assigned} won</p>
-                  </>
-                )}
-                avatar={(s) => s.name}
-              />
-            </Card>
-          </div>
-
-          {/* Stage Funnel + Overdue */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <Card title="Stage Funnel" sub="Where team leads are and drop-off rates" className="lg:col-span-3">
-              <StageFunnel stages={data.stages} />
             </Card>
             <Card title="Overdue Follow-ups" sub="Team tasks past due date" className="lg:col-span-2">
               <OverdueList items={data.followups.overdue_list} />
             </Card>
           </div>
 
-          {/* Sources + Follow-up summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <Card title="Lead Sources" sub="Where team leads are coming from" className="lg:col-span-2">
-              <HBarList
-                items={data.sources}
-                getLabel={(s) => s.source}
-                getWidth={(s) => Math.round((s.total / maxSource) * 100)}
-                getColor={(_, i) => SOURCE_COLORS[i % SOURCE_COLORS.length]}
-                getRight={(s) => (
-                  <>
-                    <p className="text-[12px] font-bold text-[#1c1410]">{s.total}</p>
-                    <p className="text-[10px] text-[#9a8a7a]">{s.conv_pct}% conv</p>
-                  </>
-                )}
-                avatar={(s) => s.source}
-              />
-            </Card>
-            <Card title="Follow-up Summary" sub="Period-scoped task breakdown" className="lg:col-span-3">
-              <FollowupSummary fu={data.followups} />
-            </Card>
-          </div>
+          {/* Pipeline Funnel */}
+          <Card title="Pipeline Funnel" sub="Stage distribution, drop-off & idle time">
+            <StageFunnel stages={data.stages} />
+          </Card>
+
+          {/* Source ROI */}
+          <Card title="Source ROI" sub="Lead sources with contact & conversion rates">
+            <SourceROIChart sources={data.sources} />
+          </Card>
+
+          {/* Staff Leaderboard */}
+          <Card title="Staff Leaderboard" sub="Team performance ranked by conversion — click headers to sort">
+            <StaffLeaderboard staff={data.staff} />
+          </Card>
+
+          {/* Follow-up Summary */}
+          <Card title="Follow-up Summary" sub="Period-scoped task breakdown">
+            <FollowupSummary fu={data.followups} />
+          </Card>
         </div>
       )}
     </div>
