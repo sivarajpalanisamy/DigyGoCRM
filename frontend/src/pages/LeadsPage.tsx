@@ -3619,8 +3619,8 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
       className={cn(
         'group bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-150 cursor-grab active:cursor-grabbing',
         highlighted ? 'border-primary ring-2 ring-primary/30 bg-primary/[0.02]'
-          : fuUrgency === 'overdue' ? 'border-l-[3px] border-l-red-500 border-t-gray-100 border-r-gray-100 border-b-gray-100'
-          : fuUrgency === 'today' ? 'border-l-[3px] border-l-amber-500 border-t-gray-100 border-r-gray-100 border-b-gray-100'
+          : fuUrgency === 'overdue' ? 'border-l-[3px] border-l-red-500 border-t-gray-100 border-r-gray-100 border-b-gray-100 bg-[#fff5f5]'
+          : fuUrgency === 'today' ? 'border-l-[3px] border-l-amber-500 border-t-gray-100 border-r-gray-100 border-b-gray-100 bg-[#fffbeb]'
           : 'border-gray-100',
       )}
       onClick={onClick}
