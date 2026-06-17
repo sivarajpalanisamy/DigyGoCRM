@@ -2848,7 +2848,9 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                           <div className="flex-1 min-w-0">
                             <span className="text-[12px] text-[#7a6b5c]">{f.label}:</span>
                             <span className="ml-1.5 text-[12px] font-semibold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded-md inline-block break-words mt-0.5">
-                              {f.value}
+                              {/https?:\/\/\S+/.test(f.value) ? (
+                                <a href={f.value.match(/https?:\/\/\S+/)?.[0]} target="_blank" rel="noreferrer" className="text-blue-600 underline hover:text-blue-800 break-all">{f.value}</a>
+                              ) : f.value}
                             </span>
                           </div>
                         </div>
