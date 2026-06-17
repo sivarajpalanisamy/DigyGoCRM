@@ -3599,6 +3599,17 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' +
       d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
+  const fmtFUDateTime = (iso: string) => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    const base = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' +
+      d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const diffMs = d.getTime() - now.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return `${base} (today)`;
+    if (diffDays > 0) return `${base} (in ${diffDays}d)`;
+    return `${base} (${Math.abs(diffDays)}d ago)`;
+  };
   const daysBg = daysInPipeline <= 2 ? 'bg-emerald-50 text-emerald-700' : daysInPipeline <= 7 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600';
 
   // Follow-up urgency detection
@@ -3717,7 +3728,7 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
                 hasOverdueFU && lastFU && !lastFU.completed ? 'text-red-500' : 'text-[#b0a294]')}>Last Follow</span>
               <span className={cn("text-[11px] font-medium truncate",
                 lastFU && !lastFU.completed && new Date(lastFU.dueAt) < now ? 'text-red-600 font-semibold' : 'text-[#5c5245]')}>
-                {lastFU ? fmtDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
+                {lastFU ? fmtFUDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
               </span>
             </div>
             <div className="flex flex-col min-w-0 items-end">
@@ -3725,7 +3736,7 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
                 fuUrgency === 'today' ? 'text-amber-600' : 'text-[#b0a294]')}>Next Follow</span>
               <span className={cn("text-[11px] font-medium truncate",
                 nextFU && new Date(nextFU.dueAt).toDateString() === now.toDateString() ? 'text-amber-600 font-semibold' : 'text-[#5c5245]')}>
-                {nextFU ? fmtDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
+                {nextFU ? fmtFUDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
               </span>
             </div>
           </div>
@@ -3793,6 +3804,17 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
     if (isNaN(d.getTime())) return '—';
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' +
       d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+  const fmtFUDateTime = (iso: string) => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    const base = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' +
+      d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const diffMs = d.getTime() - now.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return `${base} (today)`;
+    if (diffDays > 0) return `${base} (in ${diffDays}d)`;
+    return `${base} (${Math.abs(diffDays)}d ago)`;
   };
   const ageColor = daysInPipeline <= 2 ? 'text-emerald-600' : daysInPipeline <= 7 ? 'text-amber-600' : 'text-red-500';
   const phoneShown = showPhone ? lead.phone : lead.phone.replace(/\d(?=\d{4})/g, '*');
@@ -3922,7 +3944,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
                 hasOverdueFU && lastFU && !lastFU.completed ? 'text-red-500' : 'text-[#b0a294]')}>Last Follow</span>
               <span className={cn("text-[11px] font-medium truncate",
                 lastFU && !lastFU.completed && new Date(lastFU.dueAt) < now ? 'text-red-600 font-semibold' : 'text-[#5c5245]')}>
-                {lastFU ? fmtDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
+                {lastFU ? fmtFUDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
               </span>
             </div>
             <div className="flex flex-col min-w-0 items-end">
@@ -3930,7 +3952,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
                 fuUrgency === 'today' ? 'text-amber-600' : 'text-[#b0a294]')}>Next Follow</span>
               <span className={cn("text-[11px] font-medium truncate",
                 nextFU && new Date(nextFU.dueAt).toDateString() === now.toDateString() ? 'text-amber-600 font-semibold' : 'text-[#5c5245]')}>
-                {nextFU ? fmtDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
+                {nextFU ? fmtFUDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">—</span>}
               </span>
             </div>
           </div>
