@@ -88,7 +88,8 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
   if (stage)       { params.push(stage);                  sql += ` AND l.stage_id = $${params.length}`; }
   if (pipeline_id) { params.push(pipeline_id);            sql += ` AND l.pipeline_id = $${params.length}`; }
-  if (assigned_to) { params.push(assigned_to);            sql += ` AND l.assigned_to = $${params.length}`; }
+  if (assigned_to === 'none') { sql += ` AND l.assigned_to IS NULL`; }
+  else if (assigned_to) { params.push(assigned_to);            sql += ` AND l.assigned_to = $${params.length}`; }
   if (source)         { params.push(source);       sql += ` AND l.source = $${params.length}`; }
   if (source_ref)     { params.push(source_ref);   sql += ` AND l.source_ref = $${params.length}`; }
   if (meta_form_id)   { params.push(meta_form_id); sql += ` AND l.meta_form_id = $${params.length}`; }
@@ -302,7 +303,8 @@ router.get('/export', checkPermission('leads:export'), async (req: AuthRequest, 
   if (!viewAll) { params.push(userId); sql += ` AND l.assigned_to = $${params.length}`; }
   if (pipeline_id) { params.push(pipeline_id); sql += ` AND l.pipeline_id = $${params.length}`; }
   if (stage)       { params.push(stage);       sql += ` AND l.stage_id = $${params.length}`; }
-  if (assigned_to) { params.push(assigned_to); sql += ` AND l.assigned_to = $${params.length}`; }
+  if (assigned_to === 'none') { sql += ` AND l.assigned_to IS NULL`; }
+  else if (assigned_to) { params.push(assigned_to); sql += ` AND l.assigned_to = $${params.length}`; }
   if (search) {
     params.push(`%${search}%`);
     const phoneClause = shouldMaskPhone ? '' : ` OR l.phone ILIKE $${params.length}`;
