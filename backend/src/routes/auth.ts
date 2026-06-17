@@ -833,6 +833,111 @@ router.post('/reset-password', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/auth/tenants/dashboard — super admin dashboard analytics
+router.get('/tenants/dashboard', requireAuth, requireSuperAdmin, async (_req: AuthRequest, res: Response) => {
+  try {
+    const [
+      kpiRes, accountsRes, planDistRes, growthRes, inactiveRes, usageRes,
+    ] = await Promise.all([
+      // KPI totals
+      query(`
+        SELECT
+          (SELECT COUNT(*) FROM tenants WHERE is_active=TRUE)::int AS total_accounts,
+          (SELECT COUNT(*) FROM leads WHERE is_deleted=FALSE)::int AS total_leads,
+          (SELECT COUNT(*) FROM users WHERE is_active=TRUE AND role<>'super_admin')::int AS total_users,
+          (SELECT COUNT(*) FROM leads l JOIN pipeline_stages ps ON ps.id=l.stage_id WHERE l.is_deleted=FALSE AND ps.is_won=TRUE)::int AS total_won
+      `),
+      // Per-account breakdown
+      query(`
+        SELECT
+          t.id, t.name, t.plan, t.billing_cycle, t.subscription_status, t.subscription_expires_at,
+          t.created_at,
+          COUNT(DISTINCT u.id) FILTER (WHERE u.is_active=TRUE AND u.role<>'super_admin')::int AS user_count,
+          COUNT(DISTINCT l.id)::int AS lead_count,
+          COUNT(DISTINCT l.id) FILTER (WHERE ps.is_won=TRUE)::int AS won_count,
+          COUNT(DISTINCT p.id)::int AS pipeline_count,
+          COUNT(DISTINCT cf.id)::int AS form_count,
+          COUNT(DISTINCT w.id)::int AS workflow_count,
+          MAX(l.created_at) AS last_lead_at
+        FROM tenants t
+        LEFT JOIN users u ON u.tenant_id=t.id
+        LEFT JOIN leads l ON l.tenant_id=t.id AND l.is_deleted=FALSE
+        LEFT JOIN pipeline_stages ps ON ps.id=l.stage_id
+        LEFT JOIN pipelines p ON p.tenant_id=t.id
+        LEFT JOIN custom_forms cf ON cf.tenant_id=t.id
+        LEFT JOIN workflows w ON w.tenant_id=t.id AND w.is_active=TRUE
+        WHERE t.is_active=TRUE
+        GROUP BY t.id
+        ORDER BY lead_count DESC
+      `),
+      // Plan distribution
+      query(`
+        SELECT
+          COALESCE(billing_cycle, 'monthly') AS plan_name,
+          COUNT(*)::int AS count
+        FROM tenants WHERE is_active=TRUE
+        GROUP BY 1 ORDER BY count DESC
+      `),
+      // Lead growth - top 5 accounts, last 30 days daily
+      query(`
+        SELECT t.name AS account, l.created_at::date AS day, COUNT(*)::int AS count
+        FROM leads l
+        JOIN tenants t ON t.id=l.tenant_id
+        WHERE l.is_deleted=FALSE AND l.created_at >= NOW() - INTERVAL '30 days' AND t.is_active=TRUE
+        GROUP BY t.name, l.created_at::date
+        ORDER BY t.name, day
+      `),
+      // Inactive accounts (no leads in 30 days)
+      query(`
+        SELECT t.id, t.name, t.plan, t.billing_cycle,
+          MAX(l.created_at)::text AS last_lead_at,
+          EXTRACT(DAY FROM NOW() - COALESCE(MAX(l.created_at), t.created_at))::int AS inactive_days
+        FROM tenants t
+        LEFT JOIN leads l ON l.tenant_id=t.id AND l.is_deleted=FALSE
+        WHERE t.is_active=TRUE
+        GROUP BY t.id
+        HAVING COALESCE(MAX(l.created_at), t.created_at) < NOW() - INTERVAL '30 days'
+        ORDER BY inactive_days DESC
+      `),
+      // Accounts nearing plan limits
+      query(`
+        SELECT t.id, t.name, t.plan,
+          COUNT(DISTINCT l.id)::int AS lead_count,
+          COUNT(DISTINCT u.id) FILTER (WHERE u.is_active=TRUE AND u.role<>'super_admin')::int AS user_count
+        FROM tenants t
+        LEFT JOIN leads l ON l.tenant_id=t.id AND l.is_deleted=FALSE
+        LEFT JOIN users u ON u.tenant_id=t.id
+        WHERE t.is_active=TRUE
+        GROUP BY t.id
+        ORDER BY lead_count DESC
+      `),
+    ]);
+
+    // Build top-5 growth chart data
+    const growthByAccount: Record<string, { account: string; data: { day: string; count: number }[] }> = {};
+    for (const row of growthRes.rows) {
+      if (!growthByAccount[row.account]) growthByAccount[row.account] = { account: row.account, data: [] };
+      growthByAccount[row.account].data.push({ day: row.day, count: row.count });
+    }
+    const top5Growth = Object.values(growthByAccount)
+      .map(a => ({ ...a, total: a.data.reduce((s, d) => s + d.count, 0) }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+
+    res.json({
+      kpi: kpiRes.rows[0],
+      accounts: accountsRes.rows,
+      plan_distribution: planDistRes.rows,
+      growth: top5Growth,
+      inactive: inactiveRes.rows,
+      usage: usageRes.rows,
+    });
+  } catch (err) {
+    console.error('[super-admin dashboard]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/auth/tenants — super admin lists tenants
 router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
   const showDeleted = req.query.deleted === 'true';

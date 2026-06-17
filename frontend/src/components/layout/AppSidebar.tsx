@@ -127,21 +127,36 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-2.5 space-y-0.5">
-          {/* Super admin: tenant menus are irrelevant — show only Business */}
+          {/* Super admin: Dashboard + Business */}
           {isSuperAdmin && (
-            <Link
-              to="/admin"
-              onClick={onClose}
-              className={cn(
-                'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200',
-                location.pathname === '/admin'
-                  ? 'bg-primary text-white font-semibold'
-                  : 'text-primary bg-primary/10 hover:bg-primary/20'
-              )}
-            >
-              <ShieldCheck className="w-[18px] h-[18px] shrink-0" />
-              Business
-            </Link>
+            <>
+              <Link
+                to="/admin/dashboard"
+                onClick={onClose}
+                className={cn(
+                  'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200',
+                  location.pathname === '/admin/dashboard'
+                    ? 'bg-primary text-white font-semibold'
+                    : 'text-primary bg-primary/10 hover:bg-primary/20'
+                )}
+              >
+                <LayoutDashboard className="w-[18px] h-[18px] shrink-0" />
+                Dashboard
+              </Link>
+              <Link
+                to="/admin"
+                onClick={onClose}
+                className={cn(
+                  'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200',
+                  location.pathname === '/admin' && !location.pathname.includes('/dashboard')
+                    ? 'bg-primary text-white font-semibold'
+                    : 'text-primary bg-primary/10 hover:bg-primary/20'
+                )}
+              >
+                <ShieldCheck className="w-[18px] h-[18px] shrink-0" />
+                Business
+              </Link>
+            </>
           )}
           {!isSuperAdmin && visibleNavItems.map((item) => (
             <div key={item.label}>

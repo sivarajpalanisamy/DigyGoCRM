@@ -40,6 +40,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ActivatePage from "./pages/ActivatePage";
 import PublicFormPage from "./pages/PublicFormPage";
 import SuperAdminPage from "./pages/SuperAdminPage";
+import SuperAdminDashboardPage from "./pages/SuperAdminDashboardPage";
 import CreateBusinessPage from "./pages/CreateBusinessPage";
 import FollowUpsPage from "./pages/FollowUpsPage";
 import CalendarPage from "./pages/CalendarPage";
@@ -121,6 +122,7 @@ const App = () => (
 
             {/* Super Admin */}
             <Route path="/admin" element={<SuperAdminPage />} />
+            <Route path="/admin/dashboard" element={<SuperAdminDashboardPage />} />
             <Route path="/admin/create" element={<CreateBusinessPage />} />
 
             {/* WA Personal template editor — inside AppLayout (sidebar visible) */}
