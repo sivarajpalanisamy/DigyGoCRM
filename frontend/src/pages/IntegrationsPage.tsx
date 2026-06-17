@@ -1391,9 +1391,9 @@ export default function IntegrationsPage() {
             </button>
             <button
               className="flex items-center justify-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] border border-black/10 rounded-lg px-3 py-1.5 hover:bg-[var(--accent-tint)] hover:text-[var(--brand-dark)] transition-colors"
-              onClick={() => navigate('/settings/integrations/wa-personal')}
+              onClick={() => navigate('/automation/devices')}
             >
-              <BarChart2 className="w-3.5 h-3.5" />Analytics
+              <BarChart2 className="w-3.5 h-3.5" />Manage Devices
             </button>
           </div>
         </div>

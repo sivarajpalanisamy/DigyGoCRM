@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search, Plus, Settings, QrCode, Pencil, UserPlus, Trash2, X, Check, RefreshCw, Wifi, WifiOff,
-  MessageSquare,
+  MessageSquare, BarChart2,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
@@ -27,6 +28,7 @@ export default function WhatsAppDevicesPage() {
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const navigate = useNavigate();
   const { staff } = useCrmStore();
 
   // Modals
@@ -173,6 +175,7 @@ export default function WhatsAppDevicesPage() {
               onAssignStaff={() => { setMenuOpen(null); setAssignDevice(d); setAssignIds(d.assigned_staff.map((s) => s.id)); }}
               onDisconnect={() => { setMenuOpen(null); disconnectDevice(d); }}
               onRemove={() => { setMenuOpen(null); removeDevice(d); }}
+              onViewAnalytics={() => { setMenuOpen(null); navigate('/settings/integrations/wa-personal'); }}
             />
           ))}
         </div>
@@ -276,7 +279,7 @@ function FilterPill({ active, onClick, icon, label, color }: {
   );
 }
 
-function DeviceCard({ device: d, menuOpen, onMenuToggle, onScan, onRename, onAssignStaff, onDisconnect, onRemove }: {
+function DeviceCard({ device: d, menuOpen, onMenuToggle, onScan, onRename, onAssignStaff, onDisconnect, onRemove, onViewAnalytics }: {
   device: Device;
   menuOpen: boolean;
   onMenuToggle: (e: React.MouseEvent) => void;
@@ -285,6 +288,7 @@ function DeviceCard({ device: d, menuOpen, onMenuToggle, onScan, onRename, onAss
   onAssignStaff: () => void;
   onDisconnect: () => void;
   onRemove: () => void;
+  onViewAnalytics: () => void;
 }) {
   return (
     <div className="bg-white rounded-2xl border border-black/5 p-5 flex flex-col gap-3 hover:shadow-sm transition-all relative">
@@ -305,6 +309,7 @@ function DeviceCard({ device: d, menuOpen, onMenuToggle, onScan, onRename, onAss
               )}
               <MenuItem icon={<Pencil className="w-3.5 h-3.5" />} label="Edit Device Name" onClick={onRename} />
               <MenuItem icon={<UserPlus className="w-3.5 h-3.5" />} label="Assign to Staff" onClick={onAssignStaff} />
+              <MenuItem icon={<BarChart2 className="w-3.5 h-3.5" />} label="View Analytics" onClick={onViewAnalytics} />
               <div className="border-t border-black/5 my-1" />
               <MenuItem icon={<Trash2 className="w-3.5 h-3.5" />} label="Remove Device" onClick={onRemove} danger />
             </div>
