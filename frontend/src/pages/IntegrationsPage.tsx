@@ -787,6 +787,13 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                       </p>
                       <p className="text-[11px] text-[#9e8e7e]">Active · new rows sync every 5 min</p>
                     </div>
+                    {(c.spreadsheet_url || c.spreadsheet_id) && (
+                      <a href={c.spreadsheet_url || `https://docs.google.com/spreadsheets/d/${c.spreadsheet_id}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="text-[#9e8e7e] hover:text-primary transition-colors p-1" title="Open in Google Sheets">
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
                     <button onClick={() => openEdit(c)} className="text-[#9e8e7e] hover:text-primary transition-colors p-1" title="Edit mapping">
                       <Pencil className="w-4 h-4" />
                     </button>
