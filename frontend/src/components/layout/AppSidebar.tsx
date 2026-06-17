@@ -148,13 +148,26 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
                 onClick={onClose}
                 className={cn(
                   'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200',
-                  location.pathname === '/admin' && !location.pathname.includes('/dashboard')
+                  (location.pathname === '/admin' || location.pathname === '/admin/create') && !location.pathname.includes('/dashboard') && !location.pathname.includes('/team')
                     ? 'bg-primary text-white font-semibold'
                     : 'text-primary bg-primary/10 hover:bg-primary/20'
                 )}
               >
                 <ShieldCheck className="w-[18px] h-[18px] shrink-0" />
                 Business
+              </Link>
+              <Link
+                to="/admin/team"
+                onClick={onClose}
+                className={cn(
+                  'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200',
+                  location.pathname === '/admin/team'
+                    ? 'bg-primary text-white font-semibold'
+                    : 'text-primary bg-primary/10 hover:bg-primary/20'
+                )}
+              >
+                <Users className="w-[18px] h-[18px] shrink-0" />
+                Team
               </Link>
             </>
           )}

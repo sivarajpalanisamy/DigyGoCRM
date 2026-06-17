@@ -1385,4 +1385,127 @@ router.get('/tenants/:id/domain', requireAuth, requireSuperAdmin, async (req: Au
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Super Admin Sub-Users (Team) ─────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+// GET /api/auth/admin-users — list all super admin users
+router.get('/admin-users', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const r = await query(
+      `SELECT id, name, email, is_active, created_at, last_login_at
+       FROM users WHERE role='super_admin' AND tenant_id IS NULL
+       ORDER BY created_at ASC`
+    );
+    res.json(r.rows);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// POST /api/auth/admin-users — create a new super admin sub-user
+router.post('/admin-users', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
+  const { name, email, password } = req.body;
+  if (!name?.trim() || !email?.trim() || !password || password.length < 6) {
+    res.status(400).json({ error: 'Name, email, and password (min 6 chars) are required' }); return;
+  }
+  try {
+    // Check if email already exists
+    const existing = await query(`SELECT id FROM users WHERE LOWER(email)=LOWER($1)`, [email.trim()]);
+    if (existing.rows[0]) { res.status(409).json({ error: 'Email already in use' }); return; }
+
+    const hash = await bcrypt.hash(password, 10);
+    const r = await query(
+      `INSERT INTO users (name, email, password_hash, role, tenant_id, is_active, password_set)
+       VALUES ($1, $2, $3, 'super_admin', NULL, TRUE, TRUE)
+       RETURNING id, name, email, is_active, created_at`,
+      [name.trim(), email.trim().toLowerCase(), hash]
+    );
+    auditLog(req.user!.userId, 'create_admin_user', { userId: r.rows[0].id, metadata: { email: email.trim() }, ip: req.ip });
+    res.status(201).json(r.rows[0]);
+  } catch (err: any) {
+    console.error('[create-admin-user]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /api/auth/admin-users/:id — update a sub-user (name, email, is_active, password)
+router.patch('/admin-users/:id', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { name, email, password, is_active } = req.body;
+  try {
+    // Verify target is a super_admin user
+    const target = await query(`SELECT id, email FROM users WHERE id=$1 AND role='super_admin' AND tenant_id IS NULL`, [id]);
+    if (!target.rows[0]) { res.status(404).json({ error: 'Admin user not found' }); return; }
+
+    const updates: string[] = [];
+    const params: any[] = [];
+    let idx = 1;
+
+    if (name?.trim()) { updates.push(`name=$${idx++}`); params.push(name.trim()); }
+    if (email?.trim()) {
+      // Check uniqueness
+      const dup = await query(`SELECT id FROM users WHERE LOWER(email)=LOWER($1) AND id != $2`, [email.trim(), id]);
+      if (dup.rows[0]) { res.status(409).json({ error: 'Email already in use' }); return; }
+      updates.push(`email=$${idx++}`); params.push(email.trim().toLowerCase());
+    }
+    if (typeof is_active === 'boolean') { updates.push(`is_active=$${idx++}`); params.push(is_active); }
+    if (password && password.length >= 6) {
+      const hash = await bcrypt.hash(password, 10);
+      updates.push(`password_hash=$${idx++}`); params.push(hash);
+      // Wipe refresh tokens to force re-login
+      updates.push(`refresh_token_hash=NULL, refresh_token_prefix=NULL`);
+    }
+
+    if (updates.length === 0) { res.status(400).json({ error: 'Nothing to update' }); return; }
+
+    params.push(id);
+    const r = await query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id=$${idx} RETURNING id, name, email, is_active, created_at, last_login_at`,
+      params
+    );
+    auditLog(req.user!.userId, 'update_admin_user', { userId: id, metadata: { fields: Object.keys(req.body) }, ip: req.ip });
+    res.json(r.rows[0]);
+  } catch (err: any) {
+    console.error('[update-admin-user]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// DELETE /api/auth/admin-users/:id — delete a sub-user (cannot delete yourself)
+router.delete('/admin-users/:id', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  if (id === req.user!.userId) { res.status(400).json({ error: 'Cannot delete your own account' }); return; }
+  try {
+    const target = await query(`SELECT id, email FROM users WHERE id=$1 AND role='super_admin' AND tenant_id IS NULL`, [id]);
+    if (!target.rows[0]) { res.status(404).json({ error: 'Admin user not found' }); return; }
+
+    await query(`DELETE FROM users WHERE id=$1`, [id]);
+    auditLog(req.user!.userId, 'delete_admin_user', { userId: id, metadata: { email: target.rows[0].email }, ip: req.ip });
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Change Password (for any logged-in user) ────────────────────────────────
+router.post('/change-password', requireAuth, async (req: AuthRequest, res: Response) => {
+  const { current_password, new_password } = req.body;
+  if (!current_password || !new_password || new_password.length < 6) {
+    res.status(400).json({ error: 'Current password and new password (min 6 chars) are required' }); return;
+  }
+  try {
+    const r = await query(`SELECT id, password_hash FROM users WHERE id=$1`, [req.user!.userId]);
+    const user = r.rows[0];
+    if (!user) { res.status(404).json({ error: 'User not found' }); return; }
+
+    const valid = await bcrypt.compare(current_password, user.password_hash);
+    if (!valid) { res.status(401).json({ error: 'Current password is incorrect' }); return; }
+
+    const hash = await bcrypt.hash(new_password, 10);
+    await query(
+      `UPDATE users SET password_hash=$1, refresh_token_hash=NULL, refresh_token_prefix=NULL WHERE id=$2`,
+      [hash, user.id]
+    );
+    auditLog(req.user!.userId, 'change_password', { ip: req.ip });
+    res.json({ message: 'Password changed successfully' });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 export default router;

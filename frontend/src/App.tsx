@@ -42,6 +42,7 @@ import PublicFormPage from "./pages/PublicFormPage";
 import SuperAdminPage from "./pages/SuperAdminPage";
 import SuperAdminDashboardPage from "./pages/SuperAdminDashboardPage";
 import CreateBusinessPage from "./pages/CreateBusinessPage";
+import SuperAdminTeamPage from "./pages/SuperAdminTeamPage";
 import FollowUpsPage from "./pages/FollowUpsPage";
 import CalendarPage from "./pages/CalendarPage";
 import CalendarEditPage from "./pages/CalendarEditPage";
@@ -128,6 +129,7 @@ const App = () => (
             <Route path="/admin" element={<SuperAdminPage />} />
             <Route path="/admin/dashboard" element={<SuperAdminDashboardPage />} />
             <Route path="/admin/create" element={<CreateBusinessPage />} />
+            <Route path="/admin/team" element={<SuperAdminTeamPage />} />
 
             {/* WA Personal template editor — inside AppLayout (sidebar visible) */}
             <Route path="/automation/templates/wa-personal/new" element={<WaPersonalTemplateEditorPage />} />
