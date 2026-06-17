@@ -4581,6 +4581,7 @@ export default function LeadsPage() {
 
   // ── Server-side filter state (S2.3.1 + S2.3.3) ──────────────────────────────
   const [apiLeads, setApiLeads] = useState<Lead[] | null>(null);
+  const [filterLoading, setFilterLoading] = useState(false);
 
   const hasServerFilter = !!(
     search || selectedPipelineId ||
@@ -4589,10 +4590,11 @@ export default function LeadsPage() {
   );
 
   useEffect(() => {
-    if (!hasServerFilter) { setApiLeads(null); return; }
+    if (!hasServerFilter) { setApiLeads(null); setFilterLoading(false); return; }
 
     let cancelled = false;
     const delay = search ? 300 : 0;
+    setFilterLoading(true);
     const t = setTimeout(async () => {
       try {
         let allLeads: any[] = [];
@@ -4607,6 +4609,7 @@ export default function LeadsPage() {
         }
         setApiLeads(mapApiLeadsToStore(allLeads, stageMap));
       } catch { /* ignore */ }
+      if (!cancelled) setFilterLoading(false);
     }, delay);
     return () => { cancelled = true; clearTimeout(t); };
     // `leads.length` is intentionally a dep: when a new lead enters the store
@@ -5138,8 +5141,15 @@ export default function LeadsPage() {
         )}
       </div>
 
+      {/* ── Loading progress bar ── */}
+      {filterLoading && (
+        <div className="w-full h-[3px] bg-primary/10 overflow-hidden rounded-full shrink-0">
+          <div className="h-full w-[40%] bg-primary rounded-full animate-progress" />
+        </div>
+      )}
+
       {/* ── Board ── */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden -mb-6">
+      <div className={cn('flex-1 flex flex-col min-h-0 overflow-hidden -mb-6 transition-opacity duration-200', filterLoading && 'opacity-50 pointer-events-none')}>
       {isMobile ? (
         /* ── Mobile Board — stage tabs + single-stage list ── */
         <div className="flex flex-col flex-1 min-h-0">
