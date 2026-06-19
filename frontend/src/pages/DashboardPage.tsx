@@ -674,7 +674,7 @@ function StaffDashboard({ analytics }: { analytics: Analytics }) {
         />
         {superfoneEnabled && (
           <StatCard
-            label="Calls"
+            label="My Calls"
             value={analytics.calls_total ?? 0}
             sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
             icon={Phone}

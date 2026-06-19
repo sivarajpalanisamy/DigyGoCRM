@@ -525,6 +525,7 @@ export default function CustomFormDetailPage() {
             placeholder: f.placeholder ?? '',
             required: f.required ?? false,
             mapTo: f.mapTo ?? '',
+            options: f.options,
           })));
         }
       })

@@ -2479,8 +2479,8 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     ).catch(() => null);
     setFields((lead.customFields as any) ?? []); // seed from store for the (possibly new) lead, then refresh
     loadFields();
-    api.get<any[]>(`/api/calls/lead/${lead.id}`).then(setLeadCalls).catch(() => null);
-  }, [lead.id]);
+    if (superfoneEnabled) api.get<any[]>(`/api/calls/lead/${lead.id}`).then(setLeadCalls).catch(() => null);
+  }, [lead.id, superfoneEnabled]);
 
   // Option B: re-fetch activities whenever this lead is updated (from any source/window)
   useEffect(() => {
@@ -3319,7 +3319,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
         )}
 
         {/* ── Calls ── */}
-        {!editMode && (
+        {!editMode && superfoneEnabled && (
           <div className="px-5 py-4 border-t border-black/5">
             <h4 className="text-[13px] font-bold text-[#1c1410] mb-3 flex items-center gap-2">
               <PhoneIncoming className="w-4 h-4 text-[var(--brand-dark)]" />

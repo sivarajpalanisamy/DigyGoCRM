@@ -123,13 +123,19 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
   let onlyAssigned = false;
   let isManager = false;
 
+  let callsViewAll = false;
+
   if (!isPrivileged) {
-    const [oa, sm] = await Promise.all([
+    const [oa, sm, cva] = await Promise.all([
       hasPermission(userId, 'leads:only_assigned', tenantId),
       hasPermission(userId, 'staff:manage', tenantId),
+      hasPermission(userId, 'calls:view_all', tenantId),
     ]);
     onlyAssigned = oa;
     isManager    = sm;
+    callsViewAll = cva;
+  } else {
+    callsViewAll = true;
   }
 
   try {
@@ -351,7 +357,7 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
         LIMIT 10
       `, [tenantId]),
 
-      // Calls stats — total, answered, missed in range
+      // Calls stats — total, answered, missed in range (scoped to user if not view_all)
       query(`
         SELECT
           COUNT(*)::int AS total,
@@ -361,6 +367,7 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
         WHERE tenant_id=$1::uuid
           AND COALESCE(started_at, created_at) >= $2
           AND COALESCE(started_at, created_at) <= $3
+          ${callsViewAll ? '' : `AND staff_user_id = '${userId}'`}
       `, [tenantId, rangeStart, rangeEnd]),
     ]);
 
