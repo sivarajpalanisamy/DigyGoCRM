@@ -273,6 +273,35 @@ async function processWhatsAppMessage(payload: any) {
     for (const entry of entries) {
       const changes: any[] = entry.changes ?? [];
       for (const change of changes) {
+
+        // ── Handle template status updates (approved/rejected) ─────────
+        if (change.field === 'message_template_status_update') {
+          const ev = change.value ?? {};
+          const metaName: string = ev.message_template_name ?? '';
+          const newStatus: string = ev.event ?? ''; // APPROVED | REJECTED | PENDING_DELETION | ...
+          if (metaName && newStatus) {
+            const mapped = newStatus === 'APPROVED' ? 'approved'
+              : newStatus === 'REJECTED' ? 'rejected'
+              : newStatus === 'PENDING_DELETION' ? 'rejected'
+              : null;
+            if (mapped) {
+              const updated = await query(
+                `UPDATE templates SET status=$1, updated_at=NOW()
+                 WHERE meta_name=$2 AND template_type='waba'
+                 RETURNING id, tenant_id, name, status`,
+                [mapped, metaName]
+              );
+              for (const row of updated.rows) {
+                console.log(`[WABA] Template "${metaName}" status → ${mapped} (tenant ${row.tenant_id})`);
+                emitToTenant(row.tenant_id, 'template:status_updated', {
+                  id: row.id, name: row.name, status: mapped,
+                });
+              }
+            }
+          }
+          continue;
+        }
+
         const value = change.value ?? {};
 
         const phoneNumberId: string = value.metadata?.phone_number_id;

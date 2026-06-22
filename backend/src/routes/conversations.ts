@@ -749,34 +749,67 @@ router.patch('/:id/status', checkPermission('inbox:send'), async (req: AuthReque
 // PATCH /api/conversations/:id/read — mark as read + send blue-tick receipts back to WA
 router.patch('/:id/read', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
   try {
+    const tenantId = req.user!.tenantId!;
     await query(
       'UPDATE conversations SET unread_count=0 WHERE id=$1 AND tenant_id=$2',
-      [req.params.id, req.user!.tenantId],
+      [req.params.id, tenantId],
     );
 
-    // Send read receipts back to WhatsApp Personal (blue ticks)
-    const sock = getSession(req.user!.tenantId!);
-    if (sock) {
-      const unread = await query(
-        `SELECT wamid, remote_jid FROM messages
-         WHERE conversation_id=$1 AND tenant_id=$2 AND sender='customer' AND status='delivered'
-           AND wamid IS NOT NULL AND remote_jid IS NOT NULL`,
-        [req.params.id, req.user!.tenantId],
-      );
-      if (unread.rows.length > 0) {
-        const keys = unread.rows.map((r: any) => ({
-          remoteJid: r.remote_jid,
-          id:        r.wamid,
-          fromMe:    false,
-        }));
-        sock.readMessages(keys).catch(() => null);
+    // Determine conversation channel
+    const convRes = await query(
+      'SELECT channel FROM conversations WHERE id=$1 AND tenant_id=$2',
+      [req.params.id, tenantId],
+    );
+    const channel = convRes.rows[0]?.channel;
 
-        const wamids = unread.rows.map((r: any) => r.wamid);
-        await query(
-          `UPDATE messages SET status='read' WHERE wamid = ANY($1) AND tenant_id=$2`,
-          [wamids, req.user!.tenantId],
-        ).catch(() => null);
+    // Get unread customer messages
+    const unread = await query(
+      `SELECT wamid, remote_jid FROM messages
+       WHERE conversation_id=$1 AND tenant_id=$2 AND sender='customer' AND status='delivered'
+         AND wamid IS NOT NULL`,
+      [req.params.id, tenantId],
+    );
+
+    if (unread.rows.length > 0) {
+      if (channel === 'whatsapp') {
+        // WABA: send read receipts via Cloud API
+        const wabaRes = await query(
+          'SELECT phone_number_id, access_token FROM waba_integrations WHERE tenant_id=$1 AND is_active=TRUE LIMIT 1',
+          [tenantId],
+        );
+        if (wabaRes.rows[0]) {
+          const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
+          const waToken = decrypt(encToken);
+          for (const row of unread.rows) {
+            sendWARequest(phone_number_id, waToken, {
+              messaging_product: 'whatsapp',
+              status: 'read',
+              message_id: row.wamid,
+            }).catch(() => null);
+          }
+        }
+      } else if (channel === 'personal_wa') {
+        // Personal WA: send read receipts via Baileys
+        const sock = getSession(tenantId);
+        if (sock) {
+          const withJid = unread.rows.filter((r: any) => r.remote_jid);
+          if (withJid.length > 0) {
+            const keys = withJid.map((r: any) => ({
+              remoteJid: r.remote_jid,
+              id: r.wamid,
+              fromMe: false,
+            }));
+            sock.readMessages(keys).catch(() => null);
+          }
+        }
       }
+
+      // Mark messages as read in DB
+      const wamids = unread.rows.map((r: any) => r.wamid);
+      await query(
+        `UPDATE messages SET status='read' WHERE wamid = ANY($1) AND tenant_id=$2`,
+        [wamids, tenantId],
+      ).catch(() => null);
     }
 
     res.json({ success: true });

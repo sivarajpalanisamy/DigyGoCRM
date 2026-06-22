@@ -443,6 +443,48 @@ function sendWATemplate(
   return sendWARequest(phoneNumberId, token, tplPayload);
 }
 
+// Log a WABA-sent message to conversations + messages so it appears in the Inbox.
+async function logWabaMessageToInbox(
+  tenantId: string, leadId: string, phone: string, body: string, wamid: string
+): Promise<void> {
+  try {
+    // Find or create an open WABA conversation for this lead
+    let convRes = await query(
+      `SELECT id FROM conversations WHERE lead_id=$1 AND channel='whatsapp' AND status<>'resolved' LIMIT 1`,
+      [leadId]
+    );
+    let convId: string;
+    if (convRes.rows[0]) {
+      convId = convRes.rows[0].id;
+    } else {
+      const newConv = await query(
+        `INSERT INTO conversations (tenant_id, lead_id, channel, status, unread_count, last_message, last_message_at)
+         VALUES ($1,$2,'whatsapp','open',0,$3,NOW()) RETURNING id`,
+        [tenantId, leadId, body]
+      );
+      convId = newConv.rows[0].id;
+    }
+
+    // Insert the outbound message
+    const msgRes = await query(
+      `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, created_at)
+       VALUES ($1,$2,$3,'agent',$4,FALSE,$5,'sent','workflow',NOW()) RETURNING *`,
+      [convId, tenantId, leadId, body, wamid || null]
+    );
+
+    await query(
+      `UPDATE conversations SET last_message=$1, last_message_at=NOW() WHERE id=$2`,
+      [body, convId]
+    );
+
+    if (msgRes.rows[0]) {
+      emitToTenant(tenantId, 'message:new', msgRes.rows[0]);
+    }
+  } catch (err: any) {
+    console.error('[logWabaMessageToInbox]', err?.message ?? err);
+  }
+}
+
 // Leak 7 fix: sync a tag name to the tags + lead_tags junction tables so tag-based
 // filtering (which queries lead_tags) stays consistent with workflow-written tags.
 async function syncTagToJunction(tenantId: string, leadId: string, tagName: string): Promise<void> {
@@ -1410,6 +1452,7 @@ export async function executeNodes(
           // Check if a WABA template is selected (has meta_name = synced from Meta)
           const tplId = (node.config.template_id ?? '') as string;
           let waResp: any;
+          let sentBody = '';
           if (tplId) {
             const tplRes = await query(
               'SELECT meta_name, language, body, header, meta_components FROM templates WHERE id=$1::uuid AND tenant_id=$2',
@@ -1436,8 +1479,12 @@ export async function executeNodes(
               if (waResp?.error) {
                 throw new Error(`WhatsApp template API error (${waResp.error.code}): ${waResp.error.message}`);
               }
+              sentBody = `[Template: ${tpl.meta_name}] ${tpl.body ?? ''}`;
               const wamid = waResp?.messages?.[0]?.id ?? '';
               message = `WhatsApp template "${tpl.meta_name}" sent to ${toPhone}${wamid ? ` (wamid: ${wamid})` : ''}`;
+
+              // Log to inbox
+              await logWabaMessageToInbox(tenantId, lead.id, toPhone, sentBody, wamid);
               break;
             }
           }
@@ -1455,6 +1502,9 @@ export async function executeNodes(
           }
           const wamid = waResp?.messages?.[0]?.id ?? '';
           message = `WhatsApp sent to ${toPhone}${wamid ? ` (wamid: ${wamid})` : ''}`;
+
+          // Log to inbox
+          await logWabaMessageToInbox(tenantId, lead.id, toPhone, msgText, wamid);
           break;
         }
 

@@ -11,6 +11,7 @@ import { cn, copyToClipboard } from '@/lib/utils';
 import { toast } from 'sonner';
 import { api, getAccessToken, BASE } from '@/lib/api';
 import { usePermission } from '@/hooks/usePermission';
+import { getSocket } from '@/lib/socket';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type TemplateType = 'waba' | 'email' | 'sms' | 'wa_personal';
@@ -614,6 +615,20 @@ export default function AutomationTemplatesPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Real-time template status updates from Meta webhooks
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const handler = (data: { id: string; status: string }) => {
+      setTemplates((prev) => prev.map((t) =>
+        t.id === data.id ? { ...t, status: data.status as Template['status'] } : t
+      ));
+      toast.info(`Template status updated: ${data.status}`);
+    };
+    socket.on('template:status_updated', handler);
+    return () => { socket.off('template:status_updated', handler); };
+  }, []);
 
   const byType = (t: TemplateType) => templates.filter((x) => (x.template_type ?? 'waba') === t);
   const waba = byType('waba');
