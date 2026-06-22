@@ -313,7 +313,7 @@ router.post('/submit-to-meta', checkPermission('automation_templates:manage'), a
       `INSERT INTO templates
          (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, meta_name, meta_template_id, meta_components)
        VALUES ($1::uuid,$2,'waba',$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11)
-       ON CONFLICT (tenant_id, meta_name, language) DO UPDATE SET
+       ON CONFLICT (tenant_id, meta_name, language) WHERE meta_name IS NOT NULL DO UPDATE SET
          name=EXCLUDED.name, category=EXCLUDED.category, status='pending',
          body=EXCLUDED.body, header=EXCLUDED.header, footer=EXCLUDED.footer,
          buttons=EXCLUDED.buttons, meta_template_id=EXCLUDED.meta_template_id,
@@ -429,7 +429,7 @@ router.post('/sync-waba', checkPermission('automation_templates:manage'), async 
         `INSERT INTO templates
            (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, meta_name, meta_components)
          VALUES ($1::uuid,$2,'waba',$3,$4,$5,$6,$7,$8,$9,$10,$11)
-         ON CONFLICT (tenant_id, meta_name, language) DO UPDATE SET
+         ON CONFLICT (tenant_id, meta_name, language) WHERE meta_name IS NOT NULL DO UPDATE SET
            name=EXCLUDED.name, category=EXCLUDED.category, status=EXCLUDED.status,
            body=EXCLUDED.body, header=EXCLUDED.header, footer=EXCLUDED.footer,
            buttons=EXCLUDED.buttons, meta_components=EXCLUDED.meta_components,
