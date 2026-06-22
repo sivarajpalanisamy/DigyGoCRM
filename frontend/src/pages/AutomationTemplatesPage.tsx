@@ -51,9 +51,17 @@ interface WaPersonalTemplate {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function parseButtons(b: WABAButton[] | string | undefined | null): WABAButton[] {
   if (!b) return [];
-  if (typeof b === 'string') { try { return JSON.parse(b); } catch { return []; } }
-  if (Array.isArray(b)) return b;
-  return [];
+  let arr: any[];
+  if (typeof b === 'string') { try { arr = JSON.parse(b); } catch { return []; } }
+  else if (Array.isArray(b)) { arr = b; }
+  else { return []; }
+  // Normalize Meta format (text/url/phone_number) → frontend format (label/value)
+  return arr.map((btn: any, i: number) => ({
+    id: btn.id || `b-${i}-${Date.now()}`,
+    type: btn.type ?? 'QUICK_REPLY',
+    label: btn.label ?? btn.text ?? '',
+    value: btn.value ?? btn.url ?? btn.phone_number ?? '',
+  }));
 }
 
 function fileIcon(type: string | null | undefined) {
