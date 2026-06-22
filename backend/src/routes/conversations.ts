@@ -817,6 +817,71 @@ router.patch('/:id/read', checkPermission('inbox:send'), async (req: AuthRequest
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+// GET /api/conversations/broadcast-leads — filtered leads for broadcast
+router.get('/broadcast-leads', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { pipeline_id, stage_id, tag_id, group_id, search, from_date, to_date } = req.query as Record<string, string>;
+
+  try {
+    let sql = `SELECT DISTINCT l.id, l.name, l.phone, l.email, l.created_at,
+               p.name AS pipeline_name, ps.name AS stage_name
+               FROM leads l
+               LEFT JOIN pipelines p ON p.id = l.pipeline_id
+               LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id`;
+    const params: any[] = [tenantId];
+    let paramIdx = 2;
+
+    if (tag_id) {
+      sql += ` JOIN lead_tags lt ON lt.lead_id = l.id AND lt.tag_id = $${paramIdx}::uuid`;
+      params.push(tag_id);
+      paramIdx++;
+    }
+
+    if (group_id) {
+      sql += ` JOIN contact_group_members cgm ON cgm.lead_id = l.id AND cgm.group_id = $${paramIdx}::uuid`;
+      params.push(group_id);
+      paramIdx++;
+    }
+
+    sql += ` WHERE l.tenant_id = $1 AND l.is_deleted = FALSE AND l.phone IS NOT NULL AND l.phone <> ''`;
+
+    if (pipeline_id) {
+      sql += ` AND l.pipeline_id = $${paramIdx}::uuid`;
+      params.push(pipeline_id);
+      paramIdx++;
+    }
+
+    if (stage_id) {
+      sql += ` AND l.stage_id = $${paramIdx}::uuid`;
+      params.push(stage_id);
+      paramIdx++;
+    }
+
+    if (search?.trim()) {
+      sql += ` AND (l.name ILIKE $${paramIdx} OR l.phone ILIKE $${paramIdx} OR l.email ILIKE $${paramIdx})`;
+      params.push(`%${search.trim()}%`);
+      paramIdx++;
+    }
+
+    if (from_date) {
+      sql += ` AND l.created_at >= $${paramIdx}::date`;
+      params.push(from_date);
+      paramIdx++;
+    }
+
+    if (to_date) {
+      sql += ` AND l.created_at < ($${paramIdx}::date + INTERVAL '1 day')`;
+      params.push(to_date);
+      paramIdx++;
+    }
+
+    sql += ` ORDER BY l.created_at DESC LIMIT 2000`;
+
+    const result = await query(sql, params);
+    res.json(result.rows);
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
 // POST /api/conversations/broadcast — send a WABA template to multiple leads
 router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
   const { tenantId } = req.user!;
