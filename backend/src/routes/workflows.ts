@@ -1019,6 +1019,27 @@ export async function executeNodes(
         }
 
         // ── Remove from CRM (soft-delete lead) ────────────────────────────────
+        case 'create_contact': {
+          if (lead.id && !lead.id.startsWith('test-')) {
+            const { upsertContact } = await import('../utils/contacts');
+            const contactResult = await upsertContact(
+              tenantId,
+              lead.name ?? lead.phone ?? 'Unknown',
+              lead.email ?? null,
+              lead.phone ?? null,
+              lead.id
+            );
+            message = contactResult.isNew
+              ? `Contact created: ${lead.name ?? lead.phone}`
+              : `Contact already exists for ${lead.phone ?? lead.email ?? lead.name}`;
+          } else if (lead.id?.startsWith('test-')) {
+            status = 'skipped'; message = 'create_contact: test contact is not a real CRM lead';
+          } else {
+            status = 'skipped'; message = 'create_contact: no lead ID';
+          }
+          break;
+        }
+
         case 'remove_from_crm': {
           if (lead.id && !lead.id.startsWith('test-')) {
             await query(
@@ -2338,6 +2359,8 @@ export interface TriggerContext {
   tag?:          string;   // for contact_tagged trigger
   channel?:      string;   // for inbox_message trigger (e.g. 'whatsapp')
   messageBody?:  string;   // for inbox_message keyword matching
+  buttonPayload?: string;  // for template_button_clicked trigger
+  templateName?:  string;  // for template_button_clicked trigger
   apptType?:     string;   // for appointment_* triggers (event type name)
   calendarId?:   string;   // for calendar_form_submitted (booking_link.id)
   group_id?:     string;   // for contact_group_added trigger
@@ -2408,6 +2431,11 @@ export async function triggerWorkflows(
         if (cfgStage    && cfgStage    !== enrichedLead.stage_id)    continue;
       }
 
+      if (triggerType === 'lead_created') {
+        const cfgSource = (triggerNode.config?.source as string) ?? '';
+        if (cfgSource && cfgSource !== (enrichedLead.source ?? '')) continue;
+      }
+
       if (triggerType === 'follow_up') {
         const cfgType  = (triggerNode.config?.followupType as string) ?? '';
         const cfgStaff = (triggerNode.config?.assignedTo   as string) ?? '';
@@ -2453,6 +2481,13 @@ export async function triggerWorkflows(
         const cfgKeyword = (triggerNode.config?.keyword  as string) ?? '';
         if (cfgChannel && cfgChannel !== (ctx.channel ?? '')) continue;
         if (cfgKeyword && !(ctx.messageBody ?? '').toLowerCase().includes(cfgKeyword.toLowerCase())) continue;
+      }
+
+      if (triggerType === 'template_button_clicked') {
+        const cfgPayload  = (triggerNode.config?.button_payload  as string) ?? '';
+        const cfgTemplate = (triggerNode.config?.template_name   as string) ?? '';
+        if (cfgPayload  && cfgPayload.toLowerCase() !== (ctx.buttonPayload ?? '').toLowerCase()) continue;
+        if (cfgTemplate && cfgTemplate.toLowerCase() !== (ctx.templateName ?? '').toLowerCase()) continue;
       }
 
       if (triggerType === 'call_answered' || triggerType === 'call_missed') {

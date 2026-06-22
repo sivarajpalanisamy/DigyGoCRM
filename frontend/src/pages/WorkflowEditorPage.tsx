@@ -42,6 +42,7 @@ const TRIGGER_CATEGORIES: TriggerCategory[] = [
   {
     id: 'crm', label: 'CRM',
     items: [
+      { id: 'lead_created', label: 'Lead Created', Icon: UserPlus, sourceId: 'crm' },
       { id: 'stage_changed', label: 'Stage Changed', Icon: ArrowLeftRight, sourceId: 'crm' },
       { id: 'follow_up', label: 'Follow Up', Icon: History, sourceId: 'crm' },
       { id: 'notes_added', label: 'Notes Added', Icon: FilePlus, sourceId: 'crm' },
@@ -86,6 +87,7 @@ const TRIGGER_CATEGORIES: TriggerCategory[] = [
     id: 'inbox', label: 'Inbox',
     items: [
       { id: 'inbox_message', label: 'New Message', Icon: Inbox, sourceId: 'inbox' },
+      { id: 'template_button_clicked', label: 'Template Button Clicked', Icon: MessageSquare, sourceId: 'inbox' },
     ],
   },
   {
@@ -155,6 +157,7 @@ const ACTION_LIST: { id: string; label: string; desc: string; category: ActionCa
   { id: 'broadcast_group',      label: 'Broadcast to Group',          desc: 'Send to all members of a contact group with interval', category: 'Operation',   Icon: Radio,         color: 'bg-orange-100 text-orange-700' },
   { id: 'contact_group',        label: 'Contact Group',               desc: 'Add, move, or remove contact in a contact group',    category: 'Operation',     Icon: Users,         color: 'bg-sky-100 text-sky-600' },
   { id: 'remove_contact',       label: 'Remove from Group',           desc: 'Remove contact from a specific contact group',       category: 'Operation',     Icon: UserX,         color: 'bg-red-100 text-red-700' },
+  { id: 'create_contact',        label: 'Create Contact',              desc: 'Save lead as a contact record',                      category: 'Operation',     Icon: UserRoundCog,  color: 'bg-sky-100 text-sky-700' },
   { id: 'remove_from_crm',      label: 'Remove from CRM',             desc: 'Remove contact from CRM',                            category: 'Operation',     Icon: FolderX,       color: 'bg-rose-100 text-rose-700' },
   // ── Workflow Control ────────────────────────────────────────────────────────
   { id: 'execute_automation',   label: 'Execute Automation',          desc: 'Can run another automation workflow',                 category: 'Operation',     Icon: Play,          color: 'bg-primary/10 text-primary' },
@@ -235,6 +238,7 @@ const ACTION_ACCENT: Record<string, { bar: string; icon: string; badge: string }
   contact_group:         { bar: 'bg-sky-500',     icon: 'bg-sky-50 text-sky-600',        badge: 'bg-sky-100 text-sky-700' },
   contact_group_access:  { bar: 'bg-sky-600',     icon: 'bg-sky-50 text-sky-700',        badge: 'bg-sky-100 text-sky-800' },
   remove_contact:        { bar: 'bg-red-600',     icon: 'bg-red-50 text-red-700',        badge: 'bg-red-100 text-red-800' },
+  create_contact:        { bar: 'bg-sky-600',     icon: 'bg-sky-50 text-sky-700',        badge: 'bg-sky-100 text-sky-800' },
   remove_from_crm:       { bar: 'bg-rose-600',    icon: 'bg-rose-50 text-rose-700',      badge: 'bg-rose-100 text-rose-800' },
   // Workflow control
   execute_automation:    { bar: 'bg-primary',     icon: 'bg-primary/10 text-primary',    badge: 'bg-primary/10 text-primary' },
@@ -450,6 +454,39 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
           </div>
         </FieldRow>
       )}
+
+      {/* CRM — lead created */}
+      {node.actionType === 'lead_created' && (<>
+        <FieldRow label="Lead Source (optional)">
+          <select className={selectCls} value={(cfg.source as string) ?? ''} onChange={sel('source')}>
+            <option value="">Any source</option>
+            {[
+              { value: 'whatsapp',         label: 'WhatsApp' },
+              { value: 'meta_form',        label: 'Meta Form' },
+              { value: 'custom_form',      label: 'Custom Form' },
+              { value: 'landing_page',     label: 'Landing Page' },
+              { value: 'calendar_booking', label: 'Calendar Booking' },
+              { value: 'manual',           label: 'Manual' },
+              { value: 'import',           label: 'Import' },
+              { value: 'api',              label: 'API' },
+            ].map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </FieldRow>
+        <FieldRow label="Select Pipeline (optional)">
+          <select className={selectCls} value={(cfg.pipeline_id as string) ?? ''} onChange={(e) => onUpdate({ config: { ...cfg, pipeline_id: e.target.value, stage_id: '' } })}>
+            <option value="">Any pipeline</option>
+            {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </FieldRow>
+        {(cfg.pipeline_id as string) && (
+          <FieldRow label="Select Stage (optional)">
+            <select className={selectCls} value={(cfg.stage_id as string) ?? ''} onChange={sel('stage_id')}>
+              <option value="">Any stage</option>
+              {(pipelines.find(p => p.id === (cfg.pipeline_id as string)))?.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </FieldRow>
+        )}
+      </>)}
 
       {/* CRM — stage changed */}
       {node.actionType === 'stage_changed' && (<>
@@ -826,6 +863,18 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
         <FieldRow label="Keyword Filter (optional)">
           <input className={inputCls} placeholder="e.g. pricing, demo, help" value={(cfg.keyword as string) ?? ''} onChange={sel('keyword')} />
           <p className="text-xs text-muted-foreground mt-1">Trigger only when message contains this keyword.</p>
+        </FieldRow>
+      </>)}
+
+      {/* Template button clicked trigger */}
+      {node.actionType === 'template_button_clicked' && (<>
+        <FieldRow label="Button Text / Payload">
+          <input className={inputCls} placeholder="e.g. Interested, Yes, Book Now" value={(cfg.button_payload as string) ?? ''} onChange={sel('button_payload')} />
+          <p className="text-xs text-muted-foreground mt-1">Match the exact button text the user clicks. Leave blank to match any button click.</p>
+        </FieldRow>
+        <FieldRow label="Template Name (optional)">
+          <input className={inputCls} placeholder="e.g. welcome_offer — leave blank for any template" value={(cfg.template_name as string) ?? ''} onChange={sel('template_name')} />
+          <p className="text-xs text-muted-foreground mt-1">Filter by template meta name. Blank = any template button.</p>
         </FieldRow>
       </>)}
 
@@ -3398,7 +3447,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
       })()}
 
       {/* No-config actions */}
-      {['exit_workflow', 'remove_workflow', 'remove_staff', 'remove_from_crm'].includes(node.actionType) && (
+      {['exit_workflow', 'remove_workflow', 'remove_staff', 'remove_from_crm', 'create_contact'].includes(node.actionType) && (
         <div className="py-6 text-center text-sm text-muted-foreground bg-muted/40 rounded-xl">
           <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mx-auto mb-2">
             <NodeIconRenderer actionType={node.actionType} />
@@ -3409,7 +3458,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
       )}
 
       {/* Fallback */}
-      {!['add_to_crm','assign_ai','assign_staff','change_appointment','change_lead_quality','contact_group_access','contact_group','change_stage','add_tag','remove_tag','remove_contact','remove_from_crm','execute_automation','update_attributes','create_followup','create_note','event_start_time','internal_notify','send_email','send_sms','send_whatsapp','delay','if_else','tag_contact','post_instagram','facebook_post','webhook_call','api_call','exit_workflow','remove_workflow','remove_staff','pincode_routing'].includes(node.actionType) && (
+      {!['add_to_crm','assign_ai','assign_staff','change_appointment','change_lead_quality','contact_group_access','contact_group','change_stage','add_tag','remove_tag','remove_contact','remove_from_crm','create_contact','execute_automation','update_attributes','create_followup','create_note','event_start_time','internal_notify','send_email','send_sms','send_whatsapp','delay','if_else','tag_contact','post_instagram','facebook_post','webhook_call','api_call','exit_workflow','remove_workflow','remove_staff','pincode_routing'].includes(node.actionType) && (
         <div className="py-4 text-center text-sm text-muted-foreground">
           <p className="text-xs">Select an action to configure it.</p>
         </div>

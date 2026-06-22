@@ -508,6 +508,32 @@ async function processWhatsAppMessage(payload: any) {
               { triggerContext: { channel: 'whatsapp', messageBody: content } }
             ).catch(() => null)
           );
+
+          // Fire template_button_clicked for Quick Reply button taps (msg.type === 'button')
+          // and interactive button replies (msg.interactive?.button_reply)
+          const buttonPayload = msg.button?.text ?? msg.button?.payload
+            ?? msg.interactive?.button_reply?.title ?? msg.interactive?.button_reply?.id
+            ?? null;
+          if (buttonPayload) {
+            // Try to find which template was sent to this lead recently (last outbound template message)
+            let templateName = '';
+            try {
+              const tplMsg = await query(
+                `SELECT body FROM messages WHERE lead_id=$1 AND tenant_id=$2 AND sender='agent' AND body LIKE '[Template:%' ORDER BY created_at DESC LIMIT 1`,
+                [leadId, tenantId]
+              );
+              if (tplMsg.rows[0]?.body) {
+                const match = tplMsg.rows[0].body.match(/\[Template: ([^\]]+)\]/);
+                if (match) templateName = match[1];
+              }
+            } catch { /* ignore */ }
+
+            setImmediate(() =>
+              triggerWorkflows('template_button_clicked', lead, tenantId, 'webhook',
+                { triggerContext: { buttonPayload: String(buttonPayload), templateName, channel: 'whatsapp', messageBody: content } }
+              ).catch(() => null)
+            );
+          }
         }
       }
     }
