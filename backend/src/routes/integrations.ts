@@ -1786,12 +1786,15 @@ router.get('/waba/status', checkPermission('integrations:view'), async (req: Aut
       'SELECT phone_number, phone_number_id, waba_id, is_active FROM waba_integrations WHERE tenant_id=$1',
       [req.user!.tenantId]
     );
+    const base = process.env.WEBHOOK_BASE_URL || process.env.FRONTEND_URL || '';
+    const webhookUrl = `${base}/api/webhooks/whatsapp`;
+    const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN || '';
     if (!result.rows[0]) {
-      res.json({ connected: false });
+      res.json({ connected: false, webhookUrl, verifyToken });
       return;
     }
     const row = result.rows[0];
-    res.json({ connected: true, phoneNumber: row.phone_number, phoneNumberId: row.phone_number_id, wabaId: row.waba_id, isActive: row.is_active });
+    res.json({ connected: true, phoneNumber: row.phone_number, phoneNumberId: row.phone_number_id, wabaId: row.waba_id, isActive: row.is_active, webhookUrl, verifyToken });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 

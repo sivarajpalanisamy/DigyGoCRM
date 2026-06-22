@@ -20,6 +20,8 @@ interface WabaStatus {
   phoneNumberId?: string;
   wabaId?: string;
   isActive?: boolean;
+  webhookUrl?: string;
+  verifyToken?: string;
 }
 
 interface WabaStats {
@@ -48,9 +50,8 @@ export default function WhatsAppSetupPage() {
   const [autoAssign, setAutoAssign] = useState(true);
   const [autoReply, setAutoReply] = useState(true);
 
-  const baseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
-  const webhookUrl = `${baseUrl}/api/webhooks/whatsapp`;
-  const verifyToken = import.meta.env.VITE_META_WEBHOOK_VERIFY_TOKEN ?? '(set META_WEBHOOK_VERIFY_TOKEN in env)';
+  const webhookUrl = status?.webhookUrl || '';
+  const verifyToken = status?.verifyToken || '';
 
   useEffect(() => {
     Promise.all([
