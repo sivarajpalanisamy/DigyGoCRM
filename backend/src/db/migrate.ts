@@ -106,6 +106,7 @@ const MIGRATIONS = [
   'migration_104_delay_queue_add_lead_id.sql',
   'migration_105_waba_templates.sql',
   'migration_106_waba_enhancements.sql',
+  'migration_107_broadcasts.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
