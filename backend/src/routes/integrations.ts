@@ -1966,6 +1966,11 @@ router.post('/waba/setup', checkPermission('integrations:manage'), async (req: A
     );
     res.json({ success: true, status: 'active', phoneNumber: resolvedPhone });
 
+    // Subscribe app to WABA for webhook events (required to receive messages)
+    graphPost(`/${waba_id}/subscribed_apps`, access_token, {}).catch((e) =>
+      console.error('[WABA subscribe]', e?.message ?? e)
+    );
+
     // Auto-sync WABA templates in background (fire-and-forget)
     syncWabaTemplates(req.user!.tenantId!, waba_id, access_token).catch((e) =>
       console.error('[WABA auto-sync templates]', e?.message ?? e)
