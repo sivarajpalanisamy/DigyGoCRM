@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Bell, X, LogOut, Settings, User, Unplug, UserPlus, UserCheck, ArrowRight, ArrowLeft, Clock, MessageCircle, CalendarCheck, Zap, Info, ChevronDown } from 'lucide-react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useCrmStore } from '@/store/crmStore';
@@ -111,6 +111,16 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const [showProfile, setShowProfile] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const dropdownBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const openNav = useCallback((label: string) => {
+    const btn = dropdownBtnRefs.current[label];
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      setDropdownPos({ top: rect.bottom, left: rect.left });
+    }
+    setOpenDropdown(label);
+  }, []);
   const { notifications, markAllNotificationsRead, markNotificationRead, removeNotification, clearAllNotifications } = useCrmStore();
   const { currentUser, logout, isImpersonating, exitImpersonation } = useAuthStore();
   const { companyName } = useCompanyStore();
@@ -208,7 +218,8 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                   return (
                     <div key={item.label} className="relative h-full flex items-center">
                       <button
-                        onClick={() => setOpenDropdown(isOpen ? null : item.label)}
+                        ref={(el) => { dropdownBtnRefs.current[item.label] = el; }}
+                        onClick={() => isOpen ? setOpenDropdown(null) : openNav(item.label)}
                         className={cn(
                           'relative flex items-center gap-1 h-full px-3 md:px-4 text-[12px] md:text-[13.5px] font-medium whitespace-nowrap transition-colors duration-150 select-none',
                           childActive
@@ -226,8 +237,8 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
                           <div
-                            className="absolute left-0 top-full z-50 min-w-[160px] bg-white rounded-xl border border-black/5 py-1.5 overflow-hidden"
-                            style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+                            className="fixed z-50 min-w-[160px] bg-white rounded-xl border border-black/5 py-1.5"
+                            style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.12)', top: dropdownPos.top, left: dropdownPos.left }}
                           >
                             {item.children.map((child) => (
                               <Link
