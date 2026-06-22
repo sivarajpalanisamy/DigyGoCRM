@@ -948,11 +948,12 @@ router.get('/broadcasts/:id', checkPermission('inbox:send'), async (req: AuthReq
 // POST /api/conversations/broadcast — send a WABA template to multiple leads
 router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
-  const { template_id, lead_ids, template_params, filters } = req.body as {
+  const { template_id, lead_ids, template_params, filters, name: customName } = req.body as {
     template_id: string;
     lead_ids: string[];
     template_params?: Record<string, Array<{ type: string; text: string }>>;
     filters?: Record<string, any>;
+    name?: string;
   };
 
   if (!template_id || !lead_ids?.length) {
@@ -982,7 +983,7 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
 
     // Create broadcast record
     const now = new Date();
-    const broadcastName = `${tpl.meta_name}-${now.toISOString().slice(0,10)}-${now.toTimeString().slice(0,8).replace(/:/g,'-')}`;
+    const broadcastName = customName?.trim() || `${tpl.meta_name}-${now.toISOString().slice(0,10)}-${now.toTimeString().slice(0,8).replace(/:/g,'-')}`;
     const bcRes = await query(
       `INSERT INTO broadcasts (tenant_id, name, template_id, template_name, template_meta_name, template_body, template_header, template_footer, total_leads, status, filters, created_by)
        VALUES ($1,$2,$3::uuid,$4,$5,$6,$7,$8,$9,'sending',$10::jsonb,$11)

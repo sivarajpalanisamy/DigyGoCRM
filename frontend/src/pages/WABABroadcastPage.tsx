@@ -109,6 +109,7 @@ export default function WABABroadcastPage() {
 
   // ── Create wizard state ──
   const [step, setStep] = useState<Step>('leads');
+  const [broadcastName, setBroadcastName] = useState('');
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [groups, setGroups] = useState<ContactGroup[]>([]);
@@ -221,6 +222,7 @@ export default function WABABroadcastPage() {
       const res = await api.post<BroadcastResult>('/api/conversations/broadcast', {
         template_id: selectedTemplate.id,
         lead_ids: Array.from(selectedIds),
+        name: broadcastName.trim() || undefined,
         filters: { pipeline: filterPipeline, stage: filterStage, tag: filterTag, group: filterGroup, from_date: filterFromDate, to_date: filterToDate },
       });
       setResult(res);
@@ -234,7 +236,7 @@ export default function WABABroadcastPage() {
 
   const resetWizard = () => {
     setStep('leads'); setSelectedIds(new Set()); setSelectedTemplate(null); setResult(null);
-    clearFilters();
+    setBroadcastName(''); clearFilters();
   };
 
   const goBackToList = () => {
@@ -264,6 +266,14 @@ export default function WABABroadcastPage() {
           </button>
           <Megaphone className="w-5 h-5 text-primary" />
           <h1 className="text-xl font-headline font-bold text-[#1c1410]">Create Broadcast</h1>
+        </div>
+
+        {/* Broadcast Name */}
+        <div className="bg-white rounded-2xl border border-black/5 px-4 py-3">
+          <label className="text-[11px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-1 block">Broadcast Name</label>
+          <Input value={broadcastName} onChange={(e) => setBroadcastName(e.target.value)}
+            placeholder="e.g. Diwali Offer 2026 — leave blank for auto-generated name"
+            className="h-9" />
         </div>
 
         {/* Step Indicator */}
