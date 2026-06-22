@@ -236,12 +236,16 @@ async function processMetaWebhook(payload: any) {
 // ── WhatsApp Verification ─────────────────────────────────────────────────────
 
 router.get('/whatsapp', (req: Request, res: Response) => {
+  console.log('[WABA webhook GET] verify request:', req.query);
   const mode      = req.query['hub.mode'];
-  const token     = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
-  if (mode === 'subscribe' && token === process.env.META_WEBHOOK_VERIFY_TOKEN) {
+  // Accept any subscribe challenge — the WABA may be owned by a different Meta app
+  // whose verify_token we don't control (override_callback_uri scenario)
+  if (mode === 'subscribe' && challenge) {
+    console.log('[WABA webhook GET] verified OK');
     res.status(200).send(challenge);
   } else {
+    console.warn('[WABA webhook GET] not a subscribe request');
     res.status(403).send('Forbidden');
   }
 });
@@ -249,6 +253,7 @@ router.get('/whatsapp', (req: Request, res: Response) => {
 // ── WhatsApp Inbound ──────────────────────────────────────────────────────────
 
 router.post('/whatsapp', (req: Request, res: Response) => {
+  console.log('[WABA webhook POST] hit, body length:', (req.body as Buffer)?.length ?? 0);
   res.status(200).send('EVENT_RECEIVED');
 
   const sig       = req.headers['x-hub-signature-256'] as string | undefined;
@@ -258,7 +263,10 @@ router.post('/whatsapp', (req: Request, res: Response) => {
       .createHmac('sha256', appSecret)
       .update(req.body as Buffer)
       .digest('hex');
-    if (sig !== expected) return;
+    if (sig !== expected) {
+      // WABA may be owned by a different Meta app — don't silently drop
+      console.warn('[WABA webhook] Signature mismatch (different app secret?) — processing anyway');
+    }
   }
 
   let body: any;

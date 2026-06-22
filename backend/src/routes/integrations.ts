@@ -1840,6 +1840,27 @@ router.get('/waba/status', checkPermission('integrations:view'), async (req: Aut
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+// POST /api/integrations/waba/resubscribe — re-trigger webhook subscription with override_callback_uri
+router.post('/waba/resubscribe', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT waba_id, access_token FROM waba_integrations WHERE tenant_id=$1 AND is_active=TRUE LIMIT 1',
+      [req.user!.tenantId]
+    );
+    if (!result.rows[0]) { res.status(404).json({ error: 'No active WABA' }); return; }
+    const { waba_id, access_token: enc } = result.rows[0];
+    const token = decrypt(enc);
+    const base = (process.env.WEBHOOK_BASE_URL || process.env.FRONTEND_URL || '').replace(/\/$/, '');
+    const webhookUrl = `${base}/api/webhooks/whatsapp`;
+    const subRes = await graphPost(`/${waba_id}/subscribed_apps`, token, { override_callback_uri: webhookUrl });
+    console.log('[WABA resubscribe]', JSON.stringify(subRes), '→', webhookUrl);
+    res.json({ success: true, webhookUrl, response: subRes });
+  } catch (e: any) {
+    console.error('[WABA resubscribe error]', e?.message ?? e);
+    res.status(500).json({ error: e?.message || 'Failed to resubscribe' });
+  }
+});
+
 // GET /api/integrations/waba/stats
 router.get('/waba/stats', checkPermission('integrations:view'), async (req: AuthRequest, res: Response) => {
   try {
@@ -1967,9 +1988,12 @@ router.post('/waba/setup', checkPermission('integrations:manage'), async (req: A
     res.json({ success: true, status: 'active', phoneNumber: resolvedPhone });
 
     // Subscribe app to WABA for webhook events (required to receive messages)
-    graphPost(`/${waba_id}/subscribed_apps`, access_token, {}).catch((e) =>
-      console.error('[WABA subscribe]', e?.message ?? e)
-    );
+    // override_callback_uri redirects webhooks to our server even if the token belongs to a different Meta app
+    const wabaWebhookUrl = (process.env.WEBHOOK_BASE_URL || process.env.FRONTEND_URL || '').replace(/\/$/, '') + '/api/webhooks/whatsapp';
+    graphPost(`/${waba_id}/subscribed_apps`, access_token, {
+      override_callback_uri: wabaWebhookUrl,
+    }).then(() => console.log('[WABA subscribe] OK, override →', wabaWebhookUrl))
+      .catch((e) => console.error('[WABA subscribe]', e?.message ?? e));
 
     // Auto-sync WABA templates in background (fire-and-forget)
     syncWabaTemplates(req.user!.tenantId!, waba_id, access_token).catch((e) =>
