@@ -882,13 +882,77 @@ router.get('/broadcast-leads', checkPermission('inbox:send'), async (req: AuthRe
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
+// GET /api/conversations/broadcasts — list all broadcasts for tenant
+router.get('/broadcasts', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { search } = req.query as Record<string, string>;
+  try {
+    let sql = `SELECT b.id, b.name, b.template_name, b.template_meta_name, b.total_leads,
+               b.sent, b.failed, b.skipped, b.delivered, b.read_count, b.status,
+               b.created_at, b.completed_at, u.name AS created_by_name
+               FROM broadcasts b
+               LEFT JOIN users u ON u.id = b.created_by
+               WHERE b.tenant_id = $1`;
+    const params: any[] = [tenantId];
+    if (search?.trim()) {
+      sql += ` AND b.name ILIKE $2`;
+      params.push(`%${search.trim()}%`);
+    }
+    sql += ` ORDER BY b.created_at DESC LIMIT 200`;
+    const result = await query(sql, params);
+    res.json(result.rows);
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
+// GET /api/conversations/broadcasts/:id — broadcast detail with delivery stats
+router.get('/broadcasts/:id', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { id } = req.params;
+  try {
+    const bRes = await query(
+      `SELECT b.*, u.name AS created_by_name FROM broadcasts b
+       LEFT JOIN users u ON u.id = b.created_by
+       WHERE b.id = $1::uuid AND b.tenant_id = $2`,
+      [id, tenantId],
+    );
+    if (!bRes.rows[0]) { res.status(404).json({ error: 'Broadcast not found' }); return; }
+    const broadcast = bRes.rows[0];
+
+    // Get per-status message counts
+    const statsRes = await query(
+      `SELECT status, COUNT(*)::int AS count FROM messages
+       WHERE broadcast_id = $1::uuid AND tenant_id = $2
+       GROUP BY status`,
+      [id, tenantId],
+    );
+    const statusCounts: Record<string, number> = {};
+    for (const r of statsRes.rows) statusCounts[r.status] = r.count;
+
+    // Get failure breakdown by error_reason
+    const failRes = await query(
+      `SELECT COALESCE(error_reason, 'Unknown error') AS reason, COUNT(*)::int AS count
+       FROM messages
+       WHERE broadcast_id = $1::uuid AND tenant_id = $2 AND status = 'failed'
+       GROUP BY error_reason ORDER BY count DESC`,
+      [id, tenantId],
+    );
+
+    res.json({
+      ...broadcast,
+      delivery_stats: statusCounts,
+      failure_breakdown: failRes.rows,
+    });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
 // POST /api/conversations/broadcast — send a WABA template to multiple leads
 router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
-  const { tenantId } = req.user!;
-  const { template_id, lead_ids, template_params } = req.body as {
+  const { tenantId, userId } = req.user!;
+  const { template_id, lead_ids, template_params, filters } = req.body as {
     template_id: string;
     lead_ids: string[];
     template_params?: Record<string, Array<{ type: string; text: string }>>;
+    filters?: Record<string, any>;
   };
 
   if (!template_id || !lead_ids?.length) {
@@ -910,11 +974,22 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
 
     // Get template
     const tplRes = await query(
-      `SELECT meta_name, language, body FROM templates WHERE id=$1::uuid AND tenant_id=$2 AND template_type='waba'`,
+      `SELECT id, name, meta_name, language, body, header, footer FROM templates WHERE id=$1::uuid AND tenant_id=$2 AND template_type='waba'`,
       [template_id, tenantId],
     );
     const tpl = tplRes.rows[0];
     if (!tpl?.meta_name) { res.status(400).json({ error: 'Template not found or not synced with Meta' }); return; }
+
+    // Create broadcast record
+    const now = new Date();
+    const broadcastName = `${tpl.meta_name}-${now.toISOString().slice(0,10)}-${now.toTimeString().slice(0,8).replace(/:/g,'-')}`;
+    const bcRes = await query(
+      `INSERT INTO broadcasts (tenant_id, name, template_id, template_name, template_meta_name, template_body, template_header, template_footer, total_leads, status, filters, created_by)
+       VALUES ($1,$2,$3::uuid,$4,$5,$6,$7,$8,$9,'sending',$10::jsonb,$11)
+       RETURNING id`,
+      [tenantId, broadcastName, template_id, tpl.name, tpl.meta_name, tpl.body, tpl.header ?? null, tpl.footer ?? null, lead_ids.length, JSON.stringify(filters ?? {}), userId],
+    );
+    const broadcastId = bcRes.rows[0].id;
 
     // Fetch leads
     const leadsRes = await query(
@@ -925,7 +1000,7 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
     let sent = 0, failed = 0, skipped = 0;
     const errors: string[] = [];
 
-    // Build template components (same for all recipients unless per-lead params are added later)
+    // Build template components
     const components: Array<{ type: string; parameters: Array<{ type: string; text: string }> }> = [];
     if (template_params) {
       for (const [compType, params] of Object.entries(template_params)) {
@@ -956,10 +1031,9 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
           errors.push(`${lead.name}: ${resp.error.message}`);
         } else {
           sent++;
-          // Log to conversation
+          // Log to conversation with broadcast_id
           const wamid = resp?.messages?.[0]?.id ?? null;
           const msgBody = `[Template: ${tpl.meta_name}] ${tpl.body ?? ''}`;
-          // Find or create conversation
           let convRes2 = await query(
             `SELECT id FROM conversations WHERE lead_id=$1 AND channel='whatsapp' AND status<>'resolved' LIMIT 1`,
             [lead.id],
@@ -976,9 +1050,9 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
             convId = nc.rows[0].id;
           }
           await query(
-            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, created_at)
-             VALUES ($1,$2,$3,'agent',$4,FALSE,$5,'sent','broadcast',NOW())`,
-            [convId, tenantId, lead.id, msgBody, wamid],
+            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, broadcast_id, created_at)
+             VALUES ($1,$2,$3,'agent',$4,FALSE,$5,'sent','broadcast',$6::uuid,NOW())`,
+            [convId, tenantId, lead.id, msgBody, wamid, broadcastId],
           );
           await query(
             `UPDATE conversations SET last_message=$1, last_message_at=NOW() WHERE id=$2`,
@@ -993,7 +1067,17 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
       }
     }
 
-    res.json({ sent, failed, skipped, total: leadsRes.rows.length, errors: errors.slice(0, 20) });
+    // Update broadcast record with final counts
+    await query(
+      `UPDATE broadcasts SET sent=$1, failed=$2, skipped=$3, status='completed', completed_at=NOW(),
+       error_details=$4::jsonb WHERE id=$5::uuid`,
+      [sent, failed, skipped, JSON.stringify(errors.slice(0, 50)), broadcastId],
+    );
+
+    // Emit to frontend
+    if (tenantId) emitToTenant(tenantId, 'broadcast:completed', { id: broadcastId, name: broadcastName, sent, failed, skipped, total: leadsRes.rows.length });
+
+    res.json({ id: broadcastId, sent, failed, skipped, total: leadsRes.rows.length, errors: errors.slice(0, 20) });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 

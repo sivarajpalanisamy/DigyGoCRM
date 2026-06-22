@@ -347,7 +347,7 @@ async function processWhatsAppMessage(payload: any) {
                  $1='failed'
                  OR COALESCE((CASE status WHEN 'read' THEN 3 WHEN 'delivered' THEN 2 WHEN 'sent' THEN 1 ELSE 0 END), 0) < $4
                )
-             RETURNING id, conversation_id, status`,
+             RETURNING id, conversation_id, status, broadcast_id`,
             [mapped, wamid, tenantId, rank, errorReason]
           );
 
@@ -358,6 +358,21 @@ async function processWhatsAppMessage(payload: any) {
               error_reason: errorReason,
               conversation_id: updateRes.rows[0].conversation_id,
             });
+
+            // Update broadcast delivery counters if this message belongs to a broadcast
+            const bcId = updateRes.rows[0].broadcast_id;
+            if (bcId) {
+              if (mapped === 'delivered') {
+                await query('UPDATE broadcasts SET delivered = delivered + 1 WHERE id = $1::uuid', [bcId]);
+              } else if (mapped === 'read') {
+                await query('UPDATE broadcasts SET read_count = read_count + 1 WHERE id = $1::uuid', [bcId]);
+              } else if (mapped === 'failed') {
+                await query(
+                  'UPDATE broadcasts SET failed = failed + 1, sent = GREATEST(sent - 1, 0) WHERE id = $1::uuid',
+                  [bcId],
+                );
+              }
+            }
           }
 
           if (errorReason) {
