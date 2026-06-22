@@ -1817,6 +1817,83 @@ router.get('/waba/stats', checkPermission('integrations:view'), async (req: Auth
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+// GET /api/integrations/waba/template-analytics — per-template message counts by status
+router.get('/waba/template-analytics', checkPermission('integrations:view'), async (req: AuthRequest, res: Response) => {
+  try {
+    const tid = req.user!.tenantId;
+    // Count messages per template by matching body pattern "[Template: meta_name]"
+    const result = await query(
+      `SELECT t.id, t.name, t.meta_name, t.status, t.language,
+              COALESCE(s.sent, 0) AS sent,
+              COALESCE(s.delivered, 0) AS delivered,
+              COALESCE(s.read, 0) AS read,
+              COALESCE(s.failed, 0) AS failed
+       FROM templates t
+       LEFT JOIN LATERAL (
+         SELECT
+           COUNT(*) FILTER (WHERE m.status IN ('sent','delivered','read')) AS sent,
+           COUNT(*) FILTER (WHERE m.status IN ('delivered','read')) AS delivered,
+           COUNT(*) FILTER (WHERE m.status = 'read') AS read,
+           COUNT(*) FILTER (WHERE m.status = 'failed') AS failed
+         FROM messages m
+         JOIN conversations c ON c.id = m.conversation_id
+         WHERE c.tenant_id = $1::uuid
+           AND c.channel = 'whatsapp'
+           AND m.sender = 'agent'
+           AND m.body LIKE '[Template: ' || t.meta_name || ']%'
+       ) s ON TRUE
+       WHERE t.tenant_id = $1::uuid AND t.template_type = 'waba' AND t.meta_name IS NOT NULL
+       ORDER BY s.sent DESC NULLS LAST`,
+      [tid]
+    );
+    res.json(result.rows);
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
+// GET /api/integrations/waba/quality — phone number quality rating + messaging limits from Meta
+router.get('/waba/quality', checkPermission('integrations:view'), async (req: AuthRequest, res: Response) => {
+  try {
+    const tid = req.user!.tenantId;
+    const wabaRes = await query(
+      'SELECT phone_number_id, waba_id, access_token FROM waba_integrations WHERE tenant_id=$1::uuid AND is_active=TRUE LIMIT 1',
+      [tid]
+    );
+    if (!wabaRes.rows[0]) { res.json({ connected: false }); return; }
+
+    const { phone_number_id, waba_id, access_token: encToken } = wabaRes.rows[0];
+    const token = decrypt(encToken);
+
+    // Fetch phone number details from Meta Graph API
+    const phoneUrl = `https://graph.facebook.com/v21.0/${phone_number_id}?fields=quality_rating,messaging_limit_tier,verified_name,code_verification_status,display_phone_number,name_status,status&access_token=${encodeURIComponent(token)}`;
+    const phoneData: any = await new Promise((resolve, reject) => {
+      https.get(phoneUrl, (r) => {
+        let d = '';
+        r.on('data', (c: string) => { d += c; });
+        r.on('end', () => { try { resolve(JSON.parse(d)); } catch { reject(new Error('Invalid JSON')); } });
+      }).on('error', reject);
+    });
+
+    if (phoneData.error) {
+      res.json({ connected: true, error: phoneData.error.message });
+      return;
+    }
+
+    res.json({
+      connected: true,
+      qualityRating: phoneData.quality_rating ?? 'UNKNOWN',
+      messagingLimitTier: phoneData.messaging_limit_tier ?? 'UNKNOWN',
+      verifiedName: phoneData.verified_name ?? null,
+      nameStatus: phoneData.name_status ?? null,
+      displayPhoneNumber: phoneData.display_phone_number ?? null,
+      codeVerificationStatus: phoneData.code_verification_status ?? null,
+      accountStatus: phoneData.status ?? null,
+    });
+  } catch (err: any) {
+    console.error('[WABA quality]', err?.message ?? err);
+    res.status(500).json({ error: 'Failed to fetch quality data' });
+  }
+});
+
 // POST /api/integrations/waba/setup
 router.post('/waba/setup', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
   const { phone_number, phone_number_id, waba_id, access_token } = req.body as {

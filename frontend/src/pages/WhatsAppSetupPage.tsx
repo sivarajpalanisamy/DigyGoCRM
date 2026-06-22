@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   MessageCircle, Check, Eye, EyeOff, RefreshCw, Copy,
   ExternalLink, AlertCircle, X, FileText, MessageSquare,
-  Send, ChevronDown, ChevronUp, Inbox, Zap,
+  Send, ChevronDown, ChevronUp, Inbox, Zap, BarChart3, Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,46 @@ interface WabaStats {
   messagesToday: number;
 }
 
+interface TemplateAnalytics {
+  id: string;
+  name: string;
+  meta_name: string;
+  status: string;
+  language: string;
+  sent: number;
+  delivered: number;
+  read: number;
+  failed: number;
+}
+
+interface QualityData {
+  connected: boolean;
+  qualityRating?: string;
+  messagingLimitTier?: string;
+  verifiedName?: string;
+  displayPhoneNumber?: string;
+  nameStatus?: string;
+  accountStatus?: string;
+  error?: string;
+}
+
+const qualityColor: Record<string, string> = {
+  GREEN: 'text-green-600 bg-green-50 border-green-200',
+  YELLOW: 'text-amber-600 bg-amber-50 border-amber-200',
+  RED: 'text-red-600 bg-red-50 border-red-200',
+  UNKNOWN: 'text-gray-500 bg-gray-50 border-gray-200',
+};
+
+const tierLabel: Record<string, string> = {
+  TIER_NOT_SET: 'Not set',
+  TIER_50: '50 / day',
+  TIER_250: '250 / day',
+  TIER_1K: '1,000 / day',
+  TIER_10K: '10,000 / day',
+  TIER_100K: '100,000 / day',
+  TIER_UNLIMITED: 'Unlimited',
+};
+
 export default function WhatsAppSetupPage() {
   const navigate = useNavigate();
 
@@ -49,6 +89,8 @@ export default function WhatsAppSetupPage() {
 
   const [autoAssign, setAutoAssign] = useState(true);
   const [autoReply, setAutoReply] = useState(true);
+  const [tplAnalytics, setTplAnalytics] = useState<TemplateAnalytics[]>([]);
+  const [quality, setQuality] = useState<QualityData | null>(null);
 
   const webhookUrl = status?.webhookUrl || '';
   const verifyToken = status?.verifyToken || '';
@@ -65,6 +107,9 @@ export default function WhatsAppSetupPage() {
           setPhoneNumber(s.phoneNumber ?? '');
           setPhoneNumberId(s.phoneNumberId ?? '');
           setWabaId(s.wabaId ?? '');
+          // Fetch analytics + quality in background
+          api.get<TemplateAnalytics[]>('/api/integrations/waba/template-analytics').then(setTplAnalytics).catch(() => null);
+          api.get<QualityData>('/api/integrations/waba/quality').then(setQuality).catch(() => null);
         } else {
           setShowSetup(true);
         }
@@ -233,6 +278,86 @@ export default function WhatsAppSetupPage() {
                 <p className="text-[11px] text-[#7a6b5c]">View WABA conversations</p>
               </div>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Quality Rating & Messaging Limits */}
+      {connected && quality?.connected && !quality.error && (
+        <div className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4.5 h-4.5 text-[#7a6b5c]" />
+            <h3 className="text-[14px] font-bold text-[#1c1410]">Quality & Limits</h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className={cn('rounded-xl border p-3', qualityColor[quality.qualityRating ?? 'UNKNOWN'])}>
+              <p className="text-[11px] font-medium opacity-70">Quality Rating</p>
+              <p className="text-lg font-bold mt-0.5">{quality.qualityRating ?? 'N/A'}</p>
+            </div>
+            <div className="rounded-xl border border-black/5 p-3 bg-[#faf8f6]">
+              <p className="text-[11px] font-medium text-[#7a6b5c]">Messaging Limit</p>
+              <p className="text-lg font-bold text-[#1c1410] mt-0.5">
+                {tierLabel[quality.messagingLimitTier ?? ''] ?? quality.messagingLimitTier ?? 'N/A'}
+              </p>
+            </div>
+            <div className="rounded-xl border border-black/5 p-3 bg-[#faf8f6]">
+              <p className="text-[11px] font-medium text-[#7a6b5c]">Verified Name</p>
+              <p className="text-sm font-semibold text-[#1c1410] mt-1 truncate">{quality.verifiedName ?? 'N/A'}</p>
+            </div>
+            <div className="rounded-xl border border-black/5 p-3 bg-[#faf8f6]">
+              <p className="text-[11px] font-medium text-[#7a6b5c]">Account Status</p>
+              <p className="text-sm font-semibold text-[#1c1410] mt-1 capitalize">{quality.accountStatus?.toLowerCase() ?? 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Template Analytics */}
+      {connected && tplAnalytics.length > 0 && (
+        <div className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4.5 h-4.5 text-[#7a6b5c]" />
+            <h3 className="text-[14px] font-bold text-[#1c1410]">Template Analytics</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-black/5">
+                  <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Template</th>
+                  <th className="text-right py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Sent</th>
+                  <th className="text-right py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Delivered</th>
+                  <th className="text-right py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Read</th>
+                  <th className="text-right py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Failed</th>
+                  <th className="text-right py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Delivery %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tplAnalytics.map((t) => {
+                  const deliveryRate = t.sent > 0 ? Math.round((t.delivered / t.sent) * 100) : 0;
+                  return (
+                    <tr key={t.id} className="border-b border-black/5 last:border-0 hover:bg-[#faf8f6] transition-colors">
+                      <td className="py-2.5 px-3">
+                        <p className="font-medium text-[#1c1410]">{t.name}</p>
+                        <p className="text-[11px] text-[#7a6b5c] font-mono">{t.meta_name}</p>
+                      </td>
+                      <td className="text-right py-2.5 px-3 font-semibold text-[#1c1410]">{t.sent}</td>
+                      <td className="text-right py-2.5 px-3 text-emerald-600 font-semibold">{t.delivered}</td>
+                      <td className="text-right py-2.5 px-3 text-blue-600 font-semibold">{t.read}</td>
+                      <td className="text-right py-2.5 px-3 text-red-500 font-semibold">{t.failed}</td>
+                      <td className="text-right py-2.5 px-3">
+                        {t.sent > 0 ? (
+                          <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full',
+                            deliveryRate >= 90 ? 'bg-green-50 text-green-700' :
+                            deliveryRate >= 70 ? 'bg-amber-50 text-amber-700' :
+                            'bg-red-50 text-red-700'
+                          )}>{deliveryRate}%</span>
+                        ) : <span className="text-xs text-[#7a6b5c]">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
