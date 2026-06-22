@@ -2361,6 +2361,7 @@ export interface TriggerContext {
   messageBody?:  string;   // for inbox_message keyword matching
   buttonPayload?: string;  // for template_button_clicked trigger
   templateName?:  string;  // for template_button_clicked trigger
+  waPhone?:      string;   // the WhatsApp number that received/sent the message
   apptType?:     string;   // for appointment_* triggers (event type name)
   calendarId?:   string;   // for calendar_form_submitted (booking_link.id)
   group_id?:     string;   // for contact_group_added trigger
@@ -2479,15 +2480,19 @@ export async function triggerWorkflows(
       if (triggerType === 'inbox_message') {
         const cfgChannel = (triggerNode.config?.channel  as string) ?? '';
         const cfgKeyword = (triggerNode.config?.keyword  as string) ?? '';
+        const cfgWaPhone = (triggerNode.config?.wa_phone as string) ?? '';
         if (cfgChannel && cfgChannel !== (ctx.channel ?? '')) continue;
         if (cfgKeyword && !(ctx.messageBody ?? '').toLowerCase().includes(cfgKeyword.toLowerCase())) continue;
+        if (cfgWaPhone && ctx.waPhone && !ctx.waPhone.includes(cfgWaPhone.replace(/\D/g, ''))) continue;
       }
 
       if (triggerType === 'template_button_clicked') {
         const cfgPayload  = (triggerNode.config?.button_payload  as string) ?? '';
         const cfgTemplate = (triggerNode.config?.template_name   as string) ?? '';
+        const cfgWaPhone  = (triggerNode.config?.wa_phone        as string) ?? '';
         if (cfgPayload  && cfgPayload.toLowerCase() !== (ctx.buttonPayload ?? '').toLowerCase()) continue;
         if (cfgTemplate && cfgTemplate.toLowerCase() !== (ctx.templateName ?? '').toLowerCase()) continue;
+        if (cfgWaPhone && ctx.waPhone && !ctx.waPhone.includes(cfgWaPhone.replace(/\D/g, ''))) continue;
       }
 
       if (triggerType === 'call_answered' || triggerType === 'call_missed') {

@@ -305,15 +305,17 @@ async function processWhatsAppMessage(payload: any) {
         const value = change.value ?? {};
 
         const phoneNumberId: string = value.metadata?.phone_number_id;
+        const wabaDisplayPhone: string = value.metadata?.display_phone_number ?? '';
         if (!phoneNumberId) continue;
 
         const wabaRes = await query(
-          'SELECT tenant_id FROM waba_integrations WHERE phone_number_id=$1 AND is_active=TRUE LIMIT 1',
+          'SELECT tenant_id, phone_number FROM waba_integrations WHERE phone_number_id=$1 AND is_active=TRUE LIMIT 1',
           [phoneNumberId]
         );
         const waba = wabaRes.rows[0];
         if (!waba) continue;
         const tenantId: string = waba.tenant_id;
+        const wabaPhone: string = waba.phone_number || wabaDisplayPhone;
 
         // ── Handle delivery status updates ──────────────────────────────
         const statuses: any[] = value.statuses ?? [];
@@ -505,7 +507,7 @@ async function processWhatsAppMessage(payload: any) {
           const lead = { id: leadId, tenant_id: tenantId, phone: waPhone, name: leadName };
           setImmediate(() =>
             triggerWorkflows('inbox_message', lead, tenantId, 'webhook',
-              { triggerContext: { channel: 'whatsapp', messageBody: content } }
+              { triggerContext: { channel: 'whatsapp', messageBody: content, waPhone: wabaPhone } }
             ).catch(() => null)
           );
 
@@ -530,7 +532,7 @@ async function processWhatsAppMessage(payload: any) {
 
             setImmediate(() =>
               triggerWorkflows('template_button_clicked', lead, tenantId, 'webhook',
-                { triggerContext: { buttonPayload: String(buttonPayload), templateName, channel: 'whatsapp', messageBody: content } }
+                { triggerContext: { buttonPayload: String(buttonPayload), templateName, channel: 'whatsapp', messageBody: content, waPhone: wabaPhone } }
               ).catch(() => null)
             );
           }

@@ -339,7 +339,7 @@ type FormOpt = { id: string; name: string };
 type TemplateOpt = { id: string; name: string; body?: string; meta_name?: string | null; language?: string; header?: string | null };
 type WaTemplate = { id: string; name: string; message: string; file_path: string | null; file_type: string | null; file_name: string | null; created_at: string; updated_at: string };
 
-function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff, forms, metaForms, eventTypes, bookingLinks, metaPages, webhookUrls, contactGroups, sheetConfigs, allowReentry, onToggleReentry, workflowId, apiToken, onRegenerateToken }: {
+function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff, forms, metaForms, eventTypes, bookingLinks, metaPages, webhookUrls, contactGroups, sheetConfigs, waNumbers, allowReentry, onToggleReentry, workflowId, apiToken, onRegenerateToken }: {
   node: WFNode;
   onUpdate: (updates: Partial<WFNode>) => void;
   onChangeTrigger: () => void;
@@ -353,6 +353,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
   webhookUrls: { webhookInbound: string; paymentReceived: string; courseEnrolled: string };
   contactGroups?: { id: string; name: string }[];
   sheetConfigs?: { id: string; spreadsheet_name: string; sheet_name: string }[];
+  waNumbers?: { id: string; phone: string; label: string; type: 'personal_wa' | 'waba'; connected: boolean }[];
   allowReentry: boolean;
   onToggleReentry: (val: boolean) => void;
   workflowId?: string;
@@ -862,6 +863,16 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
             <option value="facebook">Facebook DM</option>
           </select>
         </FieldRow>
+        {((cfg.channel as string) === 'whatsapp' || (cfg.channel as string) === 'personal_wa') && (waNumbers ?? []).length > 0 && (
+          <FieldRow label="WhatsApp Number (optional)">
+            <select className={selectCls} value={(cfg.wa_phone as string) ?? ''} onChange={sel('wa_phone')}>
+              <option value="">Any number</option>
+              {(waNumbers ?? []).filter((n) => !(cfg.channel as string) || n.type === (cfg.channel as string)).map((n) => (
+                <option key={n.id} value={n.phone}>{n.label}{n.connected ? '' : ' (disconnected)'}</option>
+              ))}
+            </select>
+          </FieldRow>
+        )}
         <FieldRow label="Keyword Filter (optional)">
           <input className={inputCls} placeholder="e.g. pricing, demo, help" value={(cfg.keyword as string) ?? ''} onChange={sel('keyword')} />
           <p className="text-xs text-muted-foreground mt-1">Trigger only when message contains this keyword.</p>
@@ -870,6 +881,16 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
 
       {/* Template button clicked trigger */}
       {node.actionType === 'template_button_clicked' && (<>
+        {(waNumbers ?? []).filter((n) => n.type === 'waba').length > 0 && (
+          <FieldRow label="WABA Number (optional)">
+            <select className={selectCls} value={(cfg.wa_phone as string) ?? ''} onChange={sel('wa_phone')}>
+              <option value="">Any WABA number</option>
+              {(waNumbers ?? []).filter((n) => n.type === 'waba').map((n) => (
+                <option key={n.id} value={n.phone}>{n.label}{n.connected ? '' : ' (disconnected)'}</option>
+              ))}
+            </select>
+          </FieldRow>
+        )}
         <FieldRow label="Button Text / Payload">
           <input className={inputCls} placeholder="e.g. Interested, Yes, Book Now" value={(cfg.button_payload as string) ?? ''} onChange={sel('button_payload')} />
           <p className="text-xs text-muted-foreground mt-1">Match the exact button text the user clicks. Leave blank to match any button click.</p>
@@ -1864,7 +1885,7 @@ function WaTemplatesModal({ onClose, onSelect }: { onClose: () => void; onSelect
 }
 
 // ── Action Config Panel ────────────────────────────────────────────────────────
-function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workflows, routingSets, contactGroups, onRefreshPipelines, refreshingPipelines }: {
+function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workflows, routingSets, contactGroups, waNumbers, onRefreshPipelines, refreshingPipelines }: {
   node: WFNode;
   onUpdate: (updates: Partial<WFNode>) => void;
   pipelines: PipelineOpt[];
@@ -1873,6 +1894,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
   workflows: { id: string; name: string; status: string }[];
   routingSets?: { id: string; name: string; match_field: string; match_type: string }[];
   contactGroups?: { id: string; name: string }[];
+  waNumbers?: { id: string; phone: string; label: string; type: 'personal_wa' | 'waba'; connected: boolean }[];
   onRefreshPipelines?: () => void;
   refreshingPipelines?: boolean;
 }) {
@@ -2540,6 +2562,16 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
       {/* WhatsApp Message */}
       {node.actionType === 'send_whatsapp' && (<>
         <p className="text-sm text-muted-foreground leading-relaxed">Send an automated WhatsApp message to contacts at this step.</p>
+        {(waNumbers ?? []).filter((n) => n.type === 'waba').length > 0 && (
+          <FieldRow label="Send From (WABA Number)">
+            <select className={selectCls} value={(cfg.wa_phone_id as string) ?? ''} onChange={sel('wa_phone_id')}>
+              <option value="">Default WABA number</option>
+              {(waNumbers ?? []).filter((n) => n.type === 'waba').map((n) => (
+                <option key={n.id} value={n.id}>{n.label}{n.connected ? '' : ' (disconnected)'}</option>
+              ))}
+            </select>
+          </FieldRow>
+        )}
         <FieldRow label="Select Template" required>
           {templates.length === 0 ? (
             <div className="border border-border rounded-lg px-4 py-3 text-sm text-muted-foreground bg-muted/40">
@@ -4095,7 +4127,7 @@ interface BranchNodeContext {
 // ── Node Config Modal ──────────────────────────────────────────────────────────
 function NodeConfigModal({
   node, branchCtx, onClose, onUpdate, onDelete, onChangeTrigger, onChangeAction,
-  pipelines, staff, forms, metaForms, eventTypes, bookingLinks, metaPages, webhookUrls, templates, workflows, routingSets, contactGroups, sheetConfigs,
+  pipelines, staff, forms, metaForms, eventTypes, bookingLinks, metaPages, webhookUrls, templates, workflows, routingSets, contactGroups, sheetConfigs, waNumbers,
   showAIPanel, setShowAIPanel,
   aiPrompt, setAIPrompt, aiTone, setAITone, aiFormat, setAIFormat, aiLength, setAILength,
   onAIGenerate, allowReentry, onToggleReentry, onRefreshPipelines, refreshingPipelines,
@@ -4121,6 +4153,7 @@ function NodeConfigModal({
   routingSets?: { id: string; name: string; match_field: string; match_type: string }[];
   contactGroups?: { id: string; name: string }[];
   sheetConfigs?: { id: string; spreadsheet_name: string; sheet_name: string }[];
+  waNumbers?: { id: string; phone: string; label: string; type: 'personal_wa' | 'waba'; connected: boolean }[];
   showAIPanel: boolean;
   setShowAIPanel: (v: boolean) => void;
   aiPrompt: string; setAIPrompt: (v: string) => void;
@@ -4256,10 +4289,10 @@ function NodeConfigModal({
             /* Settings tab */
             <>
               {node.type === 'trigger'
-                ? <TriggerConfigPanel node={node} onUpdate={onUpdate} onChangeTrigger={onChangeTrigger} pipelines={pipelines} staff={staff} forms={forms} metaForms={metaForms} eventTypes={eventTypes} bookingLinks={bookingLinks} metaPages={metaPages} webhookUrls={webhookUrls} contactGroups={contactGroups} sheetConfigs={sheetConfigs} allowReentry={allowReentry} onToggleReentry={onToggleReentry} workflowId={workflowId} apiToken={apiToken} onRegenerateToken={onRegenerateToken} />
+                ? <TriggerConfigPanel node={node} onUpdate={onUpdate} onChangeTrigger={onChangeTrigger} pipelines={pipelines} staff={staff} forms={forms} metaForms={metaForms} eventTypes={eventTypes} bookingLinks={bookingLinks} metaPages={metaPages} webhookUrls={webhookUrls} contactGroups={contactGroups} sheetConfigs={sheetConfigs} waNumbers={waNumbers} allowReentry={allowReentry} onToggleReentry={onToggleReentry} workflowId={workflowId} apiToken={apiToken} onRegenerateToken={onRegenerateToken} />
                 : node.type === 'condition'
                 ? <ConditionConfigPanel node={node} onUpdate={onUpdate} pipelines={pipelines} staff={staff} />
-                : <ActionConfigPanel node={node} onUpdate={onUpdate} pipelines={pipelines} staff={staff} templates={templates} workflows={workflows} routingSets={routingSets} contactGroups={contactGroups} onRefreshPipelines={onRefreshPipelines} refreshingPipelines={refreshingPipelines} />
+                : <ActionConfigPanel node={node} onUpdate={onUpdate} pipelines={pipelines} staff={staff} templates={templates} workflows={workflows} routingSets={routingSets} contactGroups={contactGroups} waNumbers={waNumbers} onRefreshPipelines={onRefreshPipelines} refreshingPipelines={refreshingPipelines} />
               }
             </>
           )}
@@ -4579,6 +4612,7 @@ export default function WorkflowEditorPage() {
   const [editorRoutingSets, setEditorRoutingSets] = useState<{ id: string; name: string; match_field: string; match_type: string }[]>([]);
   const [editorContactGroups, setEditorContactGroups] = useState<{ id: string; name: string }[]>([]);
   const [editorSheetConfigs, setEditorSheetConfigs] = useState<{ id: string; spreadsheet_name: string; sheet_name: string }[]>([]);
+  const [editorWaNumbers, setEditorWaNumbers] = useState<{ id: string; phone: string; label: string; type: 'personal_wa' | 'waba'; connected: boolean }[]>([]);
   const [refreshingPipelines, setRefreshingPipelines] = useState(false);
 
   const refreshPipelines = () => {
@@ -4626,6 +4660,9 @@ export default function WorkflowEditorPage() {
     }).catch(() => {});
     api.get<any[]>('/api/contact-groups').then((rows) => {
       setEditorContactGroups((rows ?? []).map((g) => ({ id: g.id, name: g.name })));
+    }).catch(() => {});
+    api.get<any[]>('/api/integrations/wa-numbers').then((rows) => {
+      setEditorWaNumbers(rows ?? []);
     }).catch(() => {});
     api.get<{ configs: any[] }>('/api/integrations/sheets/status').then((data) => {
       setEditorSheetConfigs((data.configs ?? []).map((c: any) => ({
@@ -5462,10 +5499,10 @@ export default function WorkflowEditorPage() {
 
                     {/* Main config */}
                     {selectedNode.type === 'trigger'
-                      ? <TriggerConfigPanel node={selectedNode} onUpdate={(u) => updateNode(selectedNode.id, u)} onChangeTrigger={() => setShowTriggerPicker(true)} pipelines={editorPipelines} staff={editorStaff} forms={editorForms} metaForms={editorMetaForms} eventTypes={editorEventTypes} bookingLinks={editorBookingLinks} metaPages={editorMetaPages} webhookUrls={editorWebhookUrls} contactGroups={editorContactGroups} sheetConfigs={editorSheetConfigs} allowReentry={workflow.allowReentry} onToggleReentry={(val) => setWorkflow((w) => ({ ...w, allowReentry: val }))} workflowId={workflow.id} apiToken={workflow.apiToken} onRegenerateToken={handleRegenerateToken} />
+                      ? <TriggerConfigPanel node={selectedNode} onUpdate={(u) => updateNode(selectedNode.id, u)} onChangeTrigger={() => setShowTriggerPicker(true)} pipelines={editorPipelines} staff={editorStaff} forms={editorForms} metaForms={editorMetaForms} eventTypes={editorEventTypes} bookingLinks={editorBookingLinks} metaPages={editorMetaPages} webhookUrls={editorWebhookUrls} contactGroups={editorContactGroups} sheetConfigs={editorSheetConfigs} waNumbers={editorWaNumbers} allowReentry={workflow.allowReentry} onToggleReentry={(val) => setWorkflow((w) => ({ ...w, allowReentry: val }))} workflowId={workflow.id} apiToken={workflow.apiToken} onRegenerateToken={handleRegenerateToken} />
                       : selectedNodeIsCondition
                       ? <ConditionConfigPanel node={selectedNode} onUpdate={(u) => selectedBranchCtx ? updateBranchNode('', 'yes', selectedNode.id, u) : updateNode(selectedNode.id, u)} pipelines={editorPipelines} staff={editorStaff} />
-                      : <ActionConfigPanel node={selectedNode} onUpdate={(u) => selectedBranchCtx ? updateBranchNode('', 'yes', selectedNode.id, u) : updateNode(selectedNode.id, u)} pipelines={editorPipelines} staff={editorStaff} templates={editorTemplates} workflows={editorWorkflows} routingSets={editorRoutingSets} contactGroups={editorContactGroups} onRefreshPipelines={refreshPipelines} refreshingPipelines={refreshingPipelines} />
+                      : <ActionConfigPanel node={selectedNode} onUpdate={(u) => selectedBranchCtx ? updateBranchNode('', 'yes', selectedNode.id, u) : updateNode(selectedNode.id, u)} pipelines={editorPipelines} staff={editorStaff} templates={editorTemplates} workflows={editorWorkflows} routingSets={editorRoutingSets} contactGroups={editorContactGroups} waNumbers={editorWaNumbers} onRefreshPipelines={refreshPipelines} refreshingPipelines={refreshingPipelines} />
                     }
                   </>
                 )}
@@ -5517,6 +5554,7 @@ export default function WorkflowEditorPage() {
           routingSets={editorRoutingSets}
           contactGroups={editorContactGroups}
           sheetConfigs={editorSheetConfigs}
+          waNumbers={editorWaNumbers}
           showAIPanel={showAIPanel}
           setShowAIPanel={setShowAIPanel}
           aiPrompt={aiPrompt} setAIPrompt={setAIPrompt}

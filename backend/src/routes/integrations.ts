@@ -668,6 +668,48 @@ router.get('/meta/callback', async (req: Request, res: Response) => {
 // All routes below require authentication
 router.use(requireAuth);
 
+// ── WhatsApp Numbers (all connected numbers for workflow selectors) ──────────
+router.get('/wa-numbers', async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId;
+  if (!tenantId) { res.json([]); return; }
+  try {
+    // Personal WA sessions
+    const personalRes = await query(
+      `SELECT session_id, COALESCE(session_name, 'Default') AS session_name, phone_number, status
+       FROM wa_personal_sessions WHERE tenant_id=$1::uuid ORDER BY connected_at ASC NULLS LAST`,
+      [tenantId],
+    );
+    // WABA integrations
+    const wabaRes = await query(
+      `SELECT id, phone_number, phone_number_id, is_active FROM waba_integrations WHERE tenant_id=$1`,
+      [tenantId],
+    );
+
+    const numbers: { id: string; phone: string; label: string; type: 'personal_wa' | 'waba'; connected: boolean }[] = [];
+
+    for (const s of personalRes.rows) {
+      numbers.push({
+        id: s.session_id,
+        phone: s.phone_number ?? '',
+        label: `${s.session_name}${s.phone_number ? ` (${s.phone_number})` : ''}`,
+        type: 'personal_wa',
+        connected: s.status === 'connected',
+      });
+    }
+    for (const w of wabaRes.rows) {
+      numbers.push({
+        id: w.id,
+        phone: w.phone_number ?? '',
+        label: `WABA${w.phone_number ? ` (${w.phone_number})` : ''}`,
+        type: 'waba',
+        connected: w.is_active === true,
+      });
+    }
+
+    res.json(numbers);
+  } catch (err) { console.error(err); res.json([]); }
+});
+
 // ── META ─────────────────────────────────────────────────────────────────────
 
 // POST /api/integrations/meta/manual-connect — store a Page Access Token directly (no OAuth)

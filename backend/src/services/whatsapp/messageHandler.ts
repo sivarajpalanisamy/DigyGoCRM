@@ -315,8 +315,9 @@ export async function handleInboundMessage(
       await triggerWorkflows('inbox_message', {
         id: lead.id, name: lead.name, phone: lead.phone,
         assigned_to: lead.assigned_to, tenant_id: tenantId,
-        channel: 'personal_wa',
-      } as any, tenantId, 'system');
+      } as any, tenantId, 'system',
+        { triggerContext: { channel: 'personal_wa', messageBody: text, waPhone: waPhone ?? undefined } }
+      );
     } catch { /* ignore */ }
   }
 
