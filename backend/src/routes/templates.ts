@@ -273,6 +273,12 @@ router.post('/submit-to-meta', checkPermission('automation_templates:manage'), a
     }
 
     if (buttons?.length) {
+      const hasQR = buttons.some((b) => b.type === 'QUICK_REPLY');
+      const hasCTA = buttons.some((b) => b.type === 'URL' || b.type === 'PHONE_NUMBER');
+      if (hasQR && hasCTA) {
+        res.status(400).json({ error: 'Cannot mix Quick Reply buttons with URL/Phone buttons' });
+        return;
+      }
       const metaButtons = buttons.map((b) => {
         if (b.type === 'QUICK_REPLY') return { type: 'QUICK_REPLY', text: b.text };
         if (b.type === 'URL') return { type: 'URL', text: b.text, url: b.url };
@@ -289,10 +295,13 @@ router.post('/submit-to-meta', checkPermission('automation_templates:manage'), a
       components,
     };
 
+    console.log('[WABA template] Submitting to Meta:', JSON.stringify(payload));
     const metaResp = await graphPost(`/${waba_id}/message_templates`, token, payload);
 
     if (metaResp.error) {
-      res.status(400).json({ error: `Meta API: ${metaResp.error.message}` });
+      console.error('[WABA template] Meta error:', JSON.stringify(metaResp.error));
+      const detail = metaResp.error.error_user_msg || metaResp.error.message || 'Unknown error';
+      res.status(400).json({ error: `Meta API: ${detail}` });
       return;
     }
 

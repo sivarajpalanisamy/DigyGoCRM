@@ -163,11 +163,21 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
   const handleSave = async () => {
     if (!name.trim()) { toast.error('Template name required'); return; }
     if (!body.trim()) { toast.error('Body text required'); return; }
+    // Meta doesn't allow mixing Quick Reply with URL/Phone buttons
+    const activeButtons = buttons.filter((b) => b.label.trim());
+    const hasQR = activeButtons.some((b) => b.type === 'QUICK_REPLY');
+    const hasCTA = activeButtons.some((b) => b.type === 'URL' || b.type === 'PHONE_NUMBER');
+    if (hasQR && hasCTA) { toast.error('Cannot mix Quick Reply buttons with URL/Phone buttons — Meta requires all buttons to be the same type'); return; }
+    // URL buttons must have a valid URL
+    for (const b of activeButtons) {
+      if (b.type === 'URL' && !b.value.trim()) { toast.error(`Button "${b.label}" needs a URL`); return; }
+      if (b.type === 'PHONE_NUMBER' && !b.value.trim()) { toast.error(`Button "${b.label}" needs a phone number`); return; }
+    }
     setSaving(true);
     try {
       // If submitting to Meta, use the submit-to-meta endpoint directly
       if (submitMeta && !initial) {
-        const metaButtons = buttons.filter((b) => b.label.trim()).map((b) => ({
+        const metaButtons = activeButtons.map((b) => ({
           type: b.type,
           text: b.label,
           ...(b.type === 'URL' ? { url: b.value } : {}),
