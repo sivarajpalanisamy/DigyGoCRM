@@ -386,6 +386,13 @@ async function processWhatsAppMessage(payload: any) {
         const messages: any[] = value.messages ?? [];
         if (!messages.length) continue;
 
+        // Extract contact profile name from webhook payload
+        const contacts: any[] = value.contacts ?? [];
+        const profileNameMap: Record<string, string> = {};
+        for (const c of contacts) {
+          if (c.wa_id && c.profile?.name) profileNameMap[c.wa_id] = c.profile.name;
+        }
+
         // Fetch WABA access token for media downloads
         let wabaToken: string | null = null;
         try {
@@ -400,6 +407,7 @@ async function processWhatsAppMessage(payload: any) {
           const waPhone: string = msg.from;
           const wamid: string   = msg.id;
           const msgType: string = msg.type ?? 'text';
+          console.log(`[WABA inbound] from=${waPhone} type=${msgType} wamid=${wamid} profile=${profileNameMap[waPhone] ?? 'unknown'}`);
 
           // Extract media ID + extension for download
           const mediaObj = msg.image ?? msg.document ?? msg.video ?? msg.audio ?? msg.sticker ?? null;
@@ -440,20 +448,25 @@ async function processWhatsAppMessage(payload: any) {
             mediaPath = await downloadWabaMedia(mediaId, wabaToken, tenantId, ext);
           }
 
-          // Find or create lead
+          // Find or create lead (use last-10-digit match like Personal WA handler)
           let leadId: string;
           let leadName: string = waPhone;
+          const cleanDigits = waPhone.replace(/\D/g, '');
           const leadRes = await query(
-            `SELECT id, name FROM leads WHERE phone=$1 AND tenant_id=$2 AND is_deleted=FALSE LIMIT 1`,
-            [waPhone, tenantId]
+            `SELECT id, name, phone FROM leads WHERE tenant_id=$1 AND is_deleted=FALSE
+             AND REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE '%' || RIGHT($2, 10)
+             LIMIT 1`,
+            [tenantId, cleanDigits]
           );
           if (leadRes.rows[0]) {
             leadId = leadRes.rows[0].id;
             leadName = leadRes.rows[0].name;
           } else {
+            const displayPhone = waPhone.startsWith('+') ? waPhone : `+${waPhone}`;
+            const contactName = profileNameMap[waPhone] ?? displayPhone;
             const newLead = await query(
               `INSERT INTO leads (tenant_id, name, phone, source) VALUES ($1,$2,$3,'whatsapp') RETURNING *`,
-              [tenantId, waPhone, waPhone]
+              [tenantId, contactName, displayPhone]
             );
             leadId = newLead.rows[0].id;
             leadName = newLead.rows[0].name;
@@ -465,21 +478,35 @@ async function processWhatsAppMessage(payload: any) {
             });
           }
 
-          // Find or create open conversation
+          // Find or create open conversation (check lead_id first, then phone fallback)
           let convId: string;
           const convRes = await query(
-            `SELECT id FROM conversations WHERE lead_id=$1 AND channel='whatsapp' AND status<>'resolved' LIMIT 1`,
-            [leadId]
+            `SELECT id FROM conversations WHERE tenant_id=$1 AND channel='whatsapp' AND lead_id=$2 AND status<>'resolved'
+             ORDER BY last_message_at DESC NULLS LAST LIMIT 1`,
+            [tenantId, leadId]
           );
           if (convRes.rows[0]) {
             convId = convRes.rows[0].id;
           } else {
-            const newConv = await query(
-              `INSERT INTO conversations (tenant_id, lead_id, channel, status, unread_count, last_message, last_message_at)
-               VALUES ($1,$2,'whatsapp','open',1,$3,NOW()) RETURNING id`,
-              [tenantId, leadId, content]
+            // Also check phone-based conversations (e.g. created by single-send before lead was linked)
+            const phoneConv = await query(
+              `SELECT id FROM conversations WHERE tenant_id=$1 AND channel='whatsapp'
+               AND REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE '%' || RIGHT($2, 10)
+               ORDER BY last_message_at DESC NULLS LAST LIMIT 1`,
+              [tenantId, cleanDigits]
             );
-            convId = newConv.rows[0].id;
+            if (phoneConv.rows[0]) {
+              convId = phoneConv.rows[0].id;
+              // Link lead to existing conversation
+              await query('UPDATE conversations SET lead_id=$1 WHERE id=$2 AND lead_id IS NULL', [leadId, convId]).catch(() => null);
+            } else {
+              const newConv = await query(
+                `INSERT INTO conversations (tenant_id, lead_id, channel, status, unread_count, last_message, last_message_at, phone)
+                 VALUES ($1,$2,'whatsapp','open',1,$3,NOW(),$4) RETURNING id`,
+                [tenantId, leadId, content, waPhone]
+              );
+              convId = newConv.rows[0].id;
+            }
           }
 
           const msgRes = await query(
