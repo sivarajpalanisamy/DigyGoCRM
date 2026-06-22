@@ -189,6 +189,182 @@ function graphGet(apiPath: string, token: string): Promise<any> {
   });
 }
 
+function graphPost(apiPath: string, token: string, payload: object): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify(payload);
+    const req = https.request({
+      hostname: 'graph.facebook.com',
+      path: `/v21.0${apiPath}`,
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON')); } });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+function graphDelete(apiPath: string, token: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'graph.facebook.com',
+      path: `/v21.0${apiPath}`,
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON')); } });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+// POST /api/templates/submit-to-meta — create a template on Meta for approval
+router.post('/submit-to-meta', checkPermission('automation_templates:manage'), async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId!;
+  const { name, category, language, body, header, footer, buttons } = req.body as {
+    name: string; category: string; language: string; body: string;
+    header?: string; footer?: string;
+    buttons?: Array<{ type: string; text: string; url?: string; phone_number?: string }>;
+  };
+
+  if (!name?.trim() || !body?.trim()) {
+    res.status(400).json({ error: 'name and body are required' });
+    return;
+  }
+
+  // Meta requires snake_case, lowercase name
+  const metaName = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  if (!metaName) { res.status(400).json({ error: 'Invalid template name' }); return; }
+
+  try {
+    const wabaRes = await query(
+      'SELECT waba_id, access_token FROM waba_integrations WHERE tenant_id=$1::uuid AND is_active=TRUE LIMIT 1',
+      [tenantId],
+    );
+    if (!wabaRes.rows[0]) {
+      res.status(400).json({ error: 'WABA not connected' });
+      return;
+    }
+    const { waba_id, access_token: encToken } = wabaRes.rows[0];
+    const token = decrypt(encToken);
+
+    // Build Meta template components
+    const components: any[] = [];
+
+    if (header?.trim()) {
+      components.push({ type: 'HEADER', format: 'TEXT', text: header.trim() });
+    }
+
+    components.push({ type: 'BODY', text: body.trim() });
+
+    if (footer?.trim()) {
+      components.push({ type: 'FOOTER', text: footer.trim() });
+    }
+
+    if (buttons?.length) {
+      const metaButtons = buttons.map((b) => {
+        if (b.type === 'QUICK_REPLY') return { type: 'QUICK_REPLY', text: b.text };
+        if (b.type === 'URL') return { type: 'URL', text: b.text, url: b.url };
+        if (b.type === 'PHONE_NUMBER') return { type: 'PHONE_NUMBER', text: b.text, phone_number: b.phone_number };
+        return { type: 'QUICK_REPLY', text: b.text };
+      });
+      components.push({ type: 'BUTTONS', buttons: metaButtons });
+    }
+
+    const payload = {
+      name: metaName,
+      category: (category || 'UTILITY').toUpperCase(),
+      language: language || 'en',
+      components,
+    };
+
+    const metaResp = await graphPost(`/${waba_id}/message_templates`, token, payload);
+
+    if (metaResp.error) {
+      res.status(400).json({ error: `Meta API: ${metaResp.error.message}` });
+      return;
+    }
+
+    const metaTemplateId = metaResp.id;
+    const displayName = name.trim();
+
+    // Store in local DB
+    const result = await query(
+      `INSERT INTO templates
+         (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, meta_name, meta_template_id, meta_components)
+       VALUES ($1::uuid,$2,'waba',$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (tenant_id, meta_name, language) DO UPDATE SET
+         name=EXCLUDED.name, category=EXCLUDED.category, status='pending',
+         body=EXCLUDED.body, header=EXCLUDED.header, footer=EXCLUDED.footer,
+         buttons=EXCLUDED.buttons, meta_template_id=EXCLUDED.meta_template_id,
+         meta_components=EXCLUDED.meta_components, updated_at=NOW()
+       RETURNING *`,
+      [
+        tenantId, displayName, (category || 'UTILITY').toUpperCase(), language || 'en',
+        body.trim(), header?.trim() ?? null, footer?.trim() ?? null,
+        JSON.stringify(buttons ?? []), metaName, metaTemplateId, JSON.stringify(components),
+      ],
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err: any) {
+    console.error('[Template submit to Meta]', err?.message ?? err);
+    res.status(500).json({ error: 'Failed to submit template' });
+  }
+});
+
+// DELETE /api/templates/:id/meta — delete a template from Meta
+router.delete('/:id/meta', checkPermission('automation_templates:manage'), async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId!;
+  try {
+    const tplRes = await query(
+      'SELECT meta_name FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+      [req.params.id, tenantId],
+    );
+    if (!tplRes.rows[0]?.meta_name) {
+      res.status(404).json({ error: 'Template not found or not a Meta template' });
+      return;
+    }
+
+    const wabaRes = await query(
+      'SELECT waba_id, access_token FROM waba_integrations WHERE tenant_id=$1::uuid AND is_active=TRUE LIMIT 1',
+      [tenantId],
+    );
+    if (!wabaRes.rows[0]) { res.status(400).json({ error: 'WABA not connected' }); return; }
+
+    const { waba_id, access_token: encToken } = wabaRes.rows[0];
+    const token = decrypt(encToken);
+
+    const metaResp = await graphDelete(
+      `/${waba_id}/message_templates?name=${encodeURIComponent(tplRes.rows[0].meta_name)}`,
+      token,
+    );
+
+    if (metaResp.error) {
+      res.status(400).json({ error: `Meta API: ${metaResp.error.message}` });
+      return;
+    }
+
+    // Remove from local DB
+    await query('DELETE FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid', [req.params.id, tenantId]);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('[Template delete from Meta]', err?.message ?? err);
+    res.status(500).json({ error: 'Failed to delete template' });
+  }
+});
+
 // POST /api/templates/sync-waba — pull approved templates from Meta
 router.post('/sync-waba', checkPermission('automation_templates:manage'), async (req: AuthRequest, res: Response) => {
   const tenantId = req.user!.tenantId!;

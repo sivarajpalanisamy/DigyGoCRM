@@ -97,6 +97,50 @@ function sendWAMedia(
   });
 }
 
+function sendWAInteractive(
+  phoneNumberId: string, token: string, toPhone: string,
+  interactiveType: 'button' | 'list',
+  bodyText: string,
+  buttons?: Array<{ id: string; title: string }>,
+  sections?: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>,
+  headerText?: string, footerText?: string,
+): Promise<any> {
+  const interactive: any = {
+    type: interactiveType,
+    body: { text: bodyText },
+  };
+  if (headerText) interactive.header = { type: 'text', text: headerText };
+  if (footerText) interactive.footer = { text: footerText };
+
+  if (interactiveType === 'button' && buttons?.length) {
+    interactive.action = {
+      buttons: buttons.slice(0, 3).map((b) => ({
+        type: 'reply',
+        reply: { id: b.id, title: b.title.slice(0, 20) },
+      })),
+    };
+  } else if (interactiveType === 'list' && sections?.length) {
+    interactive.action = {
+      button: 'View Options',
+      sections: sections.map((s) => ({
+        title: s.title,
+        rows: s.rows.map((r) => ({
+          id: r.id,
+          title: r.title.slice(0, 24),
+          description: r.description?.slice(0, 72),
+        })),
+      })),
+    };
+  }
+
+  return sendWARequest(phoneNumberId, token, {
+    messaging_product: 'whatsapp',
+    to: toPhone.replace(/\D/g, ''),
+    type: 'interactive',
+    interactive,
+  });
+}
+
 // GET /api/conversations/wa-contacts?q=name — search WA phone-book contacts (cached from Baileys)
 router.get('/wa-contacts', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
   const q = ((req.query.q as string) ?? '').toLowerCase().trim();
@@ -553,6 +597,74 @@ router.post('/:id/media', checkPermission('inbox:send'), upload.single('file'), 
       ...msgRes.rows[0],
       media_url: `/api/conversations/media/${msgRes.rows[0].id}`,
     });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
+// POST /api/conversations/:id/interactive — send interactive message (buttons/list) via WABA
+router.post('/:id/interactive', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { type, body: bodyText, buttons, sections, header, footer } = req.body as {
+    type: 'button' | 'list';
+    body: string;
+    buttons?: Array<{ id: string; title: string }>;
+    sections?: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>;
+    header?: string;
+    footer?: string;
+  };
+
+  if (!bodyText?.trim()) { res.status(400).json({ error: 'body required' }); return; }
+  if (type === 'button' && (!buttons?.length)) { res.status(400).json({ error: 'buttons required' }); return; }
+  if (type === 'list' && (!sections?.length)) { res.status(400).json({ error: 'sections required' }); return; }
+
+  try {
+    const convRes = await query(
+      `SELECT c.*, COALESCE(l.phone, c.phone) AS lead_phone
+       FROM conversations c LEFT JOIN leads l ON l.id = c.lead_id
+       WHERE c.id=$1 AND c.tenant_id=$2`,
+      [req.params.id, req.user!.tenantId],
+    );
+    if (!convRes.rows[0]) { res.status(404).json({ error: 'Not found' }); return; }
+    const conv = convRes.rows[0];
+
+    if (conv.channel !== 'whatsapp') {
+      res.status(400).json({ error: 'Interactive messages only supported for WABA' }); return;
+    }
+
+    const wabaRes = await query(
+      'SELECT phone_number_id, access_token FROM waba_integrations WHERE tenant_id=$1 AND is_active=TRUE',
+      [req.user!.tenantId],
+    );
+    if (!wabaRes.rows[0]) { res.status(400).json({ error: 'WABA not connected' }); return; }
+    const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
+    const token = decrypt(encToken);
+
+    const waResp = await sendWAInteractive(
+      phone_number_id, token, conv.lead_phone,
+      type, bodyText.trim(), buttons, sections, header, footer,
+    );
+
+    const wamid = waResp?.messages?.[0]?.id ?? null;
+    if (waResp?.error) {
+      res.status(400).json({ error: `WhatsApp: ${waResp.error.message}` }); return;
+    }
+
+    // Build display body
+    const displayBody = type === 'button'
+      ? `${bodyText}\n[Buttons: ${buttons!.map((b) => b.title).join(', ')}]`
+      : `${bodyText}\n[List: ${sections!.flatMap((s) => s.rows.map((r) => r.title)).join(', ')}]`;
+
+    const msgRes = await query(
+      `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, created_at)
+       VALUES ($1,$2,$3,'agent',$4,FALSE,$5,'sent','manual',NOW()) RETURNING *`,
+      [req.params.id, req.user!.tenantId, conv.lead_id ?? null, displayBody, wamid],
+    );
+
+    await query(
+      `UPDATE conversations SET last_message=$1, last_message_at=NOW(), unread_count=0 WHERE id=$2`,
+      [bodyText.trim(), req.params.id],
+    );
+
+    emitToTenant(req.user!.tenantId!, 'message:new', msgRes.rows[0]);
+    res.status(201).json(msgRes.rows[0]);
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 

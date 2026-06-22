@@ -6,7 +6,7 @@ import { getSocket } from '@/lib/socket';
 import {
   Search, Send, Paperclip, Check, CheckCheck, MessageCircle,
   ArrowLeft, StickyNote, Zap, ChevronDown, UserCheck, X, Smartphone, AlertCircle,
-  Loader2, Download, Filter, FileText, RefreshCw,
+  Loader2, Download, Filter, FileText, RefreshCw, ListOrdered,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ interface ApiMessage {
   is_deleted?: boolean;
   media_url?: string | null;
   status: string;
+  error_reason?: string | null;
   created_at: string;
 }
 
@@ -128,6 +129,9 @@ export default function InboxPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<WabaTemplate | null>(null);
   const [templateParamValues, setTemplateParamValues] = useState<Record<string, string[]>>({});
   const [syncingTemplates, setSyncingTemplates] = useState(false);
+  const [showInteractive, setShowInteractive] = useState(false);
+  const [interactiveBody, setInteractiveBody] = useState('');
+  const [interactiveButtons, setInteractiveButtons] = useState<Array<{ id: string; title: string }>>([{ id: '1', title: '' }]);
 
   const [showNewChat, setShowNewChat]     = useState(false);
   const [newChatPhone, setNewChatPhone]   = useState('');
@@ -350,6 +354,30 @@ export default function InboxPage() {
       requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
     } catch (err: any) {
       toast.error(err?.message ?? 'Failed to send template');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSendInteractive = async () => {
+    if (!selectedId || !interactiveBody.trim() || sending) return;
+    const validButtons = interactiveButtons.filter((b) => b.title.trim());
+    if (!validButtons.length) { toast.error('Add at least one button'); return; }
+    setSending(true);
+    try {
+      const msg = await api.post<ApiMessage>(`/api/conversations/${selectedId}/interactive`, {
+        type: 'button',
+        body: interactiveBody.trim(),
+        buttons: validButtons.map((b, i) => ({ id: String(i + 1), title: b.title.trim() })),
+      });
+      setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
+      setShowInteractive(false);
+      setInteractiveBody('');
+      setInteractiveButtons([{ id: '1', title: '' }]);
+      toast.success('Interactive message sent');
+      requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to send');
     } finally {
       setSending(false);
     }
@@ -858,9 +886,12 @@ export default function InboxPage() {
                           {msg.sender === 'agent' && !msg.is_note && !isDeleted && msg.status === 'delivered' && <CheckCheck className="w-3 h-3 text-primary-foreground/50" />}
                           {msg.sender === 'agent' && !msg.is_note && !isDeleted && msg.status === 'sent'      && <Check className="w-3 h-3 text-primary-foreground/50" />}
                           {msg.sender === 'agent' && !msg.is_note && !isDeleted && msg.status === 'failed'    && (
-                            <AlertCircle className="w-3 h-3 text-red-200" title="Not delivered to WhatsApp" />
+                            <AlertCircle className="w-3 h-3 text-red-200" title={msg.error_reason || 'Delivery failed'} />
                           )}
                         </div>
+                        {msg.sender === 'agent' && msg.status === 'failed' && msg.error_reason && (
+                          <p className="text-[10px] text-red-300 mt-0.5">{msg.error_reason}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -939,6 +970,18 @@ export default function InboxPage() {
                       <FileText className="w-5 h-5" />
                     </button>
                   )}
+                  {/* Interactive message button — WABA only */}
+                  {isWaba && !isNote && (
+                    <button
+                      onClick={() => setShowInteractive(!showInteractive)}
+                      className={cn('p-2 rounded-lg transition-colors',
+                        showInteractive
+                          ? 'bg-violet-100 text-violet-700'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-[var(--accent-tint)]')}
+                      title="Send buttons / interactive message">
+                      <ListOrdered className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Template picker dropdown — channel-aware */}
@@ -996,6 +1039,60 @@ export default function InboxPage() {
                         ))
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Interactive message composer — WABA only */}
+                {showInteractive && isWaba && (
+                  <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 bg-white rounded-xl border border-black/10 shadow-lg z-30 p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-[#1c1410]">Interactive Message (Buttons)</span>
+                      <button onClick={() => setShowInteractive(false)} className="p-1 rounded hover:bg-black/5">
+                        <X className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                    <textarea
+                      className="w-full border border-black/10 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-violet-300"
+                      rows={3}
+                      placeholder="Message body text..."
+                      value={interactiveBody}
+                      onChange={(e) => setInteractiveBody(e.target.value)}
+                    />
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-medium text-[#7a6b5c]">Reply Buttons (max 3)</span>
+                      {interactiveButtons.map((btn, idx) => (
+                        <div key={btn.id} className="flex items-center gap-2">
+                          <Input
+                            className="flex-1 text-sm h-8"
+                            placeholder={`Button ${idx + 1} label`}
+                            maxLength={20}
+                            value={btn.title}
+                            onChange={(e) => {
+                              const copy = [...interactiveButtons];
+                              copy[idx] = { ...copy[idx], title: e.target.value };
+                              setInteractiveButtons(copy);
+                            }}
+                          />
+                          {interactiveButtons.length > 1 && (
+                            <button onClick={() => setInteractiveButtons(interactiveButtons.filter((_, i) => i !== idx))}
+                              className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      {interactiveButtons.length < 3 && (
+                        <button
+                          onClick={() => setInteractiveButtons([...interactiveButtons, { id: String(interactiveButtons.length + 1), title: '' }])}
+                          className="text-xs text-violet-600 hover:underline">
+                          + Add button
+                        </button>
+                      )}
+                    </div>
+                    <Button onClick={handleSendInteractive} disabled={!interactiveBody.trim() || sending} className="w-full bg-violet-600 hover:bg-violet-700">
+                      {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                      Send Interactive
+                    </Button>
                   </div>
                 )}
 

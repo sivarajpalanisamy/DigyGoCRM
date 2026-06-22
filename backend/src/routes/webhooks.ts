@@ -306,29 +306,33 @@ async function processWhatsAppMessage(payload: any) {
           const statusRank: Record<string, number> = { failed: 0, sent: 1, delivered: 2, read: 3 };
           const rank = statusRank[mapped] ?? 0;
 
+          // Extract error reason for failed messages
+          const errorReason = mapped === 'failed' && st.errors?.length
+            ? (st.errors[0]?.title ?? st.errors[0]?.message ?? 'Delivery failed')
+            : null;
+
           const updateRes = await query(
-            `UPDATE messages SET status=$1, updated_at=NOW()
+            `UPDATE messages SET status=$1, error_reason=COALESCE($5, error_reason), updated_at=NOW()
              WHERE wamid=$2 AND tenant_id=$3
                AND (
                  $1='failed'
                  OR COALESCE((CASE status WHEN 'read' THEN 3 WHEN 'delivered' THEN 2 WHEN 'sent' THEN 1 ELSE 0 END), 0) < $4
                )
              RETURNING id, conversation_id, status`,
-            [mapped, wamid, tenantId, rank]
+            [mapped, wamid, tenantId, rank, errorReason]
           );
 
           if (updateRes.rows[0]) {
             emitToTenant(tenantId, 'message:updated', {
               id: updateRes.rows[0].id,
               status: mapped,
+              error_reason: errorReason,
               conversation_id: updateRes.rows[0].conversation_id,
             });
           }
 
-          // If failed, log the error reason
-          if (mapped === 'failed' && st.errors?.length) {
-            const errMsg = st.errors[0]?.title ?? st.errors[0]?.message ?? 'Unknown error';
-            console.error(`[WABA status] Message ${wamid} failed: ${errMsg}`);
+          if (errorReason) {
+            console.error(`[WABA status] Message ${wamid} failed: ${errorReason}`);
           }
         }
 
@@ -362,14 +366,22 @@ async function processWhatsAppMessage(payload: any) {
           };
           const ext = extMap[mimeType] || (mimeType ? `.${mimeType.split('/')[1]?.split(';')[0] ?? 'bin'}` : '.bin');
 
+          // Handle interactive responses (button replies, list selections)
+          const interactiveReply =
+            msg.interactive?.button_reply?.title
+            ?? msg.interactive?.list_reply?.title
+            ?? null;
+
           const content: string =
             msg.text?.body
+            ?? interactiveReply
             ?? msg.image?.caption
             ?? (msg.document?.filename ? `[Document: ${msg.document.filename}]` : null)
             ?? (msgType === 'image' ? '[Image]' : null)
             ?? (msgType === 'video' ? '[Video]' : null)
             ?? (msgType === 'audio' ? '[Audio]' : null)
             ?? (msgType === 'sticker' ? '[Sticker]' : null)
+            ?? (msgType === 'interactive' ? (interactiveReply || '[Interactive]') : null)
             ?? `[${msgType}]`;
 
           // Dedup by wamid

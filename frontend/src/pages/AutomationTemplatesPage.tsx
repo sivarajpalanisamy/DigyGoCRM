@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
-  Plus, Pencil, Trash2, Copy, X, Check, Eye, ArrowLeft,
+  Plus, Pencil, Trash2, Copy, X, Check, Eye, ArrowLeft, Send,
   Paperclip, Upload, Loader2, FileText, Image as ImageIcon, Film, RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ interface Template {
   footer?: string | null;
   buttons: WABAButton[] | string;
   meta_name?: string | null;
+  meta_template_id?: string | null;
   meta_components?: any[] | null;
   file_path?: string | null;
   file_type?: string | null;
@@ -149,6 +150,7 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
   const [file, setFile] = useState<File | null>(null);
   const [removeFile, setRemoveFile] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [submitMeta, setSubmitMeta] = useState(!initial); // default ON for new templates
 
   const addBtn = () => {
     if (buttons.length >= 3) { toast.error('Max 3 buttons allowed'); return; }
@@ -162,6 +164,28 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
     if (!body.trim()) { toast.error('Body text required'); return; }
     setSaving(true);
     try {
+      // If submitting to Meta, use the submit-to-meta endpoint directly
+      if (submitMeta && !initial) {
+        const metaButtons = buttons.filter((b) => b.label.trim()).map((b) => ({
+          type: b.type === 'CALL_TO_ACTION' ? 'URL' : 'QUICK_REPLY',
+          text: b.label,
+          ...(b.type === 'CALL_TO_ACTION' ? { url: b.value } : {}),
+        }));
+        const saved = await api.post<Template>('/api/templates/submit-to-meta', {
+          name: name.trim(),
+          category,
+          language,
+          body: body.trim(),
+          header: header.trim() || undefined,
+          footer: footer.trim() || undefined,
+          buttons: metaButtons.length ? metaButtons : undefined,
+        });
+        toast.success('Template submitted to Meta for approval');
+        onSaved(saved);
+        return;
+      }
+
+      // Local save only (or editing existing template)
       const fd = new FormData();
       fd.append('name', name.trim().toLowerCase().replace(/\s+/g, '_'));
       fd.append('template_type', 'waba');
@@ -177,7 +201,7 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
         initial?.id ? `/api/templates/${initial.id}` : '/api/templates',
         initial?.id ? 'PATCH' : 'POST', fd,
       );
-      toast.success(initial ? 'Template updated — resubmitted for approval' : 'Template submitted for Meta approval');
+      toast.success(initial ? 'Template updated' : 'Template saved locally');
       onSaved(saved);
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
@@ -263,11 +287,22 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
             </div>
           </div>
         </div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-black/5 shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Saving…</> : <><Check className="w-4 h-4 mr-1" />{initial ? 'Save Changes' : 'Submit for Approval'}</>}
-          </Button>
+        <div className="flex items-center justify-between px-5 py-4 border-t border-black/5 shrink-0">
+          {!initial && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <input type="checkbox" checked={submitMeta} onChange={(e) => setSubmitMeta(e.target.checked)}
+                className="rounded border-gray-300 text-primary focus:ring-primary/30" />
+              <span className="text-[#7a6b5c]">Submit to Meta for approval</span>
+            </label>
+          )}
+          {initial && <div />}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Saving…</> :
+                <><Check className="w-4 h-4 mr-1" />{initial ? 'Save Changes' : submitMeta ? 'Submit to Meta' : 'Save Locally'}</>}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -612,6 +647,38 @@ export default function AutomationTemplatesPage() {
     } catch { toast.error('Delete failed'); }
   };
 
+  const handleSubmitToMeta = async (t: Template) => {
+    if (!confirm(`Submit "${t.name}" to Meta for approval? This will create the template on your WABA account.`)) return;
+    try {
+      const btns = parseButtons(t.buttons);
+      const metaButtons = btns.map((b) => ({
+        type: b.type === 'CALL_TO_ACTION' ? 'URL' : 'QUICK_REPLY',
+        text: b.label,
+        ...(b.type === 'CALL_TO_ACTION' ? { url: b.value } : {}),
+      }));
+      const saved = await api.post<Template>('/api/templates/submit-to-meta', {
+        name: t.name,
+        category: t.category,
+        language: t.language,
+        body: t.body,
+        header: t.header || undefined,
+        footer: t.footer || undefined,
+        buttons: metaButtons.length ? metaButtons : undefined,
+      });
+      setTemplates((prev) => prev.map((x) => x.id === t.id ? saved : x));
+      toast.success('Template submitted to Meta for approval');
+    } catch (e: any) { toast.error(e.message || 'Submit failed'); }
+  };
+
+  const handleDeleteFromMeta = async (t: Template) => {
+    if (!confirm(`Delete "${t.name}" from Meta? This removes the template from both Meta and your local database.`)) return;
+    try {
+      await api.delete(`/api/templates/${t.id}/meta`);
+      setTemplates((prev) => prev.filter((x) => x.id !== t.id));
+      toast.success('Template deleted from Meta');
+    } catch (e: any) { toast.error(e.message || 'Delete failed'); }
+  };
+
   const handleWaPersonalSaved = (saved: WaPersonalTemplate) => {
     setWaPersonalTemplates((prev) => {
       const idx = prev.findIndex((t) => t.id === saved.id);
@@ -798,8 +865,15 @@ export default function AutomationTemplatesPage() {
                     <div className="flex gap-1 shrink-0">
                       {tab === 'waba' && <button onClick={() => setPreview(t)} className="p-1.5 rounded-md hover:bg-[var(--accent-tint)] text-muted-foreground hover:text-foreground transition-colors" title="Preview"><Eye className="w-4 h-4" /></button>}
                       <button onClick={() => { copyToClipboard(t.name); toast.success('Template name copied'); }} className="p-1.5 rounded-md hover:bg-[var(--accent-tint)] text-muted-foreground hover:text-foreground transition-colors" title="Copy name"><Copy className="w-4 h-4" /></button>
+                      {canManage && tab === 'waba' && !t.meta_template_id && (
+                        <button onClick={() => handleSubmitToMeta(t)} className="p-1.5 rounded-md hover:bg-emerald-50 text-muted-foreground hover:text-emerald-600 transition-colors" title="Submit to Meta for approval"><Send className="w-4 h-4" /></button>
+                      )}
                       {canManage && <button onClick={() => setEditItem(t)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-primary transition-colors" title="Edit"><Pencil className="w-4 h-4" /></button>}
-                      {canManage && <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded-md hover:bg-red-50 text-muted-foreground hover:text-destructive transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>}
+                      {canManage && tab === 'waba' && t.meta_template_id ? (
+                        <button onClick={() => handleDeleteFromMeta(t)} className="p-1.5 rounded-md hover:bg-red-50 text-muted-foreground hover:text-destructive transition-colors" title="Delete from Meta"><Trash2 className="w-4 h-4" /></button>
+                      ) : canManage && (
+                        <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded-md hover:bg-red-50 text-muted-foreground hover:text-destructive transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                      )}
                     </div>
                   </div>
                 </div>
