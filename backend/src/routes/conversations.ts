@@ -24,14 +24,9 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
-function sendWAMessage(phoneNumberId: string, token: string, toPhone: string, text: string): Promise<any> {
+function sendWARequest(phoneNumberId: string, token: string, payload: object): Promise<any> {
   return new Promise((resolve, reject) => {
-    const payload = JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: toPhone.replace(/\D/g, ''),
-      type: 'text',
-      text: { body: text },
-    });
+    const body = JSON.stringify(payload);
     const options = {
       hostname: 'graph.facebook.com',
       path: `/v17.0/${phoneNumberId}/messages`,
@@ -39,7 +34,7 @@ function sendWAMessage(phoneNumberId: string, token: string, toPhone: string, te
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
+        'Content-Length': Buffer.byteLength(body),
       },
     };
     const req = https.request(options, (res) => {
@@ -50,9 +45,40 @@ function sendWAMessage(phoneNumberId: string, token: string, toPhone: string, te
       });
     });
     req.on('error', reject);
-    req.write(payload);
+    req.write(body);
     req.end();
   });
+}
+
+function sendWAMessage(phoneNumberId: string, token: string, toPhone: string, text: string): Promise<any> {
+  return sendWARequest(phoneNumberId, token, {
+    messaging_product: 'whatsapp',
+    to: toPhone.replace(/\D/g, ''),
+    type: 'text',
+    text: { body: text },
+  });
+}
+
+function sendWATemplate(
+  phoneNumberId: string, token: string, toPhone: string,
+  templateName: string, languageCode: string,
+  components: Array<{ type: string; parameters: Array<{ type: string; text?: string }> }>
+): Promise<any> {
+  const tplPayload: any = {
+    messaging_product: 'whatsapp',
+    to: toPhone.replace(/\D/g, ''),
+    type: 'template',
+    template: {
+      name: templateName,
+      language: { code: languageCode },
+    },
+  };
+  // Only include components if there are parameters to fill
+  const withParams = components.filter((c) => c.parameters && c.parameters.length > 0);
+  if (withParams.length > 0) {
+    tplPayload.template.components = withParams;
+  }
+  return sendWARequest(phoneNumberId, token, tplPayload);
 }
 
 // GET /api/conversations/wa-contacts?q=name — search WA phone-book contacts (cached from Baileys)
@@ -265,8 +291,12 @@ router.get('/:id/messages', checkAnyPermission('inbox:view_all','inbox:send'), a
 
 // POST /api/conversations/:id/messages
 router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
-  const { body, is_note } = req.body as { body?: string; is_note?: boolean };
-  if (!body?.trim()) { res.status(400).json({ error: 'body required' }); return; }
+  const { body, is_note, template_id, template_params } = req.body as {
+    body?: string; is_note?: boolean;
+    template_id?: string;
+    template_params?: Array<{ type: string; parameters: Array<{ type: string; text?: string }> }>;
+  };
+  if (!template_id && !body?.trim()) { res.status(400).json({ error: 'body required' }); return; }
   try {
     const convRes = await query(
       `SELECT c.*, COALESCE(l.phone, c.phone) AS lead_phone
@@ -279,8 +309,9 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
     const conv = convRes.rows[0];
 
     let wamid: string | null = null;
+    let messageBody = body?.trim() ?? '';
 
-    // Send via WABA
+    // Send via WABA — template or text
     if (!is_note && conv.channel === 'whatsapp' && conv.lead_phone) {
       try {
         const wabaRes = await query(
@@ -290,8 +321,34 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
         if (wabaRes.rows[0]) {
           const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
           const token = decrypt(encToken);
-          const waResp = await sendWAMessage(phone_number_id, token, conv.lead_phone, body.trim());
-          wamid = waResp?.messages?.[0]?.id ?? null;
+
+          if (template_id) {
+            // Send as template message
+            const tplRes = await query(
+              'SELECT meta_name, language, body, header FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+              [template_id, req.user!.tenantId],
+            );
+            const tpl = tplRes.rows[0];
+            if (tpl?.meta_name) {
+              const waResp = await sendWATemplate(
+                phone_number_id, token, conv.lead_phone,
+                tpl.meta_name, tpl.language ?? 'en',
+                template_params ?? [],
+              );
+              wamid = waResp?.messages?.[0]?.id ?? null;
+              if (waResp?.error) {
+                console.error('WABA template send error:', waResp.error);
+                res.status(400).json({ error: `WhatsApp error: ${waResp.error.message}` });
+                return;
+              }
+              // Build display body from template for message storage
+              if (!messageBody) messageBody = tpl.body ?? tpl.meta_name;
+            }
+          } else {
+            // Send as plain text
+            const waResp = await sendWAMessage(phone_number_id, token, conv.lead_phone, messageBody);
+            wamid = waResp?.messages?.[0]?.id ?? null;
+          }
         }
       } catch (e) { console.error('WABA send error:', e); }
     }
@@ -316,7 +373,7 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
           if (lidMsgRes?.rows[0]?.remote_jid) {
             targetJid = lidMsgRes.rows[0].remote_jid;
           }
-          wamid = await sendText(req.user!.tenantId!, targetJid, body.trim());
+          wamid = await sendText(req.user!.tenantId!, targetJid, messageBody);
         } catch (e: any) {
           console.error('[Personal WA] Send error:', e?.message ?? e);
           deliveryFailed = true;
@@ -328,18 +385,18 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
     const msgRes = await query(
       `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, created_at)
        VALUES ($1,$2,$3,'agent',$4,$5,$6,$7,'manual',NOW()) RETURNING *`,
-      [req.params.id, req.user!.tenantId, conv.lead_id ?? null, body.trim(), is_note ?? false, wamid, msgStatus],
+      [req.params.id, req.user!.tenantId, conv.lead_id ?? null, messageBody, is_note ?? false, wamid, msgStatus],
     );
 
     if (!is_note) {
       await query(
         `UPDATE conversations SET last_message=$1, last_message_at=NOW(), unread_count=0 WHERE id=$2`,
-        [body.trim(), req.params.id],
+        [messageBody, req.params.id],
       );
       // Emit conversation:updated so all connected clients update the preview and re-sort
       emitToTenant(req.user!.tenantId!, 'conversation:updated', {
         id:              req.params.id,
-        last_message:    body.trim(),
+        last_message:    messageBody,
         last_message_at: new Date().toISOString(),
         unread_count:    0,
       });

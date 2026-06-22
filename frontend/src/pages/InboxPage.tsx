@@ -6,7 +6,7 @@ import { getSocket } from '@/lib/socket';
 import {
   Search, Send, Paperclip, Check, CheckCheck, MessageCircle,
   ArrowLeft, StickyNote, Zap, ChevronDown, UserCheck, X, Smartphone, AlertCircle,
-  Loader2, Download, Filter,
+  Loader2, Download, Filter, FileText, RefreshCw,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -118,6 +118,15 @@ export default function InboxPage() {
   const typingTimeoutRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef         = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+
+  // WABA template picker state
+  interface WabaTemplate { id: string; name: string; meta_name: string | null; language: string; body: string; header: string | null; status: string; meta_components: any[] | null }
+  const [wabaTemplates, setWabaTemplates] = useState<WabaTemplate[]>([]);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<WabaTemplate | null>(null);
+  const [templateParamValues, setTemplateParamValues] = useState<Record<string, string[]>>({});
+  const [syncingTemplates, setSyncingTemplates] = useState(false);
+
   const [showNewChat, setShowNewChat]     = useState(false);
   const [newChatPhone, setNewChatPhone]   = useState('');
   const [newChatText, setNewChatText]     = useState('');
@@ -252,6 +261,94 @@ export default function InboxPage() {
       socket.off('conversation:updated', onConvUpdated);
     };
   }, []);
+
+  // Load WABA templates on mount
+  useEffect(() => {
+    api.get<any[]>('/api/templates').then((rows) => {
+      const waba = (rows ?? []).filter((t: any) => t.meta_name && t.status === 'approved');
+      setWabaTemplates(waba);
+    }).catch(() => {});
+  }, []);
+
+  // Count {{N}} placeholders in text
+  const countParams = (text: string | null): number => {
+    if (!text) return 0;
+    const matches = text.match(/\{\{\d+\}\}/g);
+    return matches ? new Set(matches).size : 0;
+  };
+
+  // Handle template selection
+  const handleTemplateSelect = (tpl: WabaTemplate) => {
+    setSelectedTemplate(tpl);
+    setShowTemplatePicker(false);
+    // Pre-fill param values with empty strings
+    const bodyCount = countParams(tpl.body);
+    const headerCount = countParams(tpl.header);
+    const vals: Record<string, string[]> = {};
+    if (bodyCount > 0) vals.body = Array(bodyCount).fill('');
+    if (headerCount > 0) vals.header = Array(headerCount).fill('');
+    setTemplateParamValues(vals);
+  };
+
+  // Cancel template selection
+  const clearTemplate = () => {
+    setSelectedTemplate(null);
+    setTemplateParamValues({});
+  };
+
+  // Sync templates from Meta
+  const syncTemplates = async () => {
+    setSyncingTemplates(true);
+    try {
+      await api.post('/api/templates/sync-waba', {});
+      const rows = await api.get<any[]>('/api/templates');
+      const waba = (rows ?? []).filter((t: any) => t.meta_name && t.status === 'approved');
+      setWabaTemplates(waba);
+      toast.success(`Synced ${waba.length} template(s) from Meta`);
+    } catch {
+      toast.error('Failed to sync templates');
+    } finally {
+      setSyncingTemplates(false);
+    }
+  };
+
+  // Send template message
+  const handleTemplateSend = async () => {
+    if (!selectedTemplate || !selectedId || sending) return;
+    setSending(true);
+    try {
+      // Build components array for Meta API
+      const components: Array<{ type: string; parameters: Array<{ type: string; text: string }> }> = [];
+      for (const [compType, values] of Object.entries(templateParamValues)) {
+        if (values.length > 0) {
+          components.push({
+            type: compType,
+            parameters: values.map((v) => ({ type: 'text', text: v })),
+          });
+        }
+      }
+
+      const msg = await api.post<ApiMessage>(`/api/conversations/${selectedId}/messages`, {
+        body: selectedTemplate.body,
+        template_id: selectedTemplate.id,
+        template_params: components,
+      });
+      setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
+      setConversations((prev) =>
+        prev.map((c) => c.id === selectedId
+          ? { ...c, last_message: selectedTemplate.body, last_message_at: new Date().toISOString() }
+          : c,
+        ),
+      );
+      clearTemplate();
+      toast.success('Template message sent');
+      requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to send template');
+    } finally {
+      setSending(false);
+    }
+  };
 
   const getInitials = (name: string | null | undefined, phone: string | null | undefined) => {
     const display = name || phone || '?';
@@ -768,7 +865,7 @@ export default function InboxPage() {
             )}
 
             {/* Input */}
-            <div className={cn('border-t border-orange-100 p-3 bg-[#faf4ef]', isNote && 'bg-yellow-50')}>
+            <div className={cn('border-t border-orange-100 p-3 bg-[#faf4ef] relative', isNote && 'bg-yellow-50')}>
               {isNote && (
                 <p className="text-xs font-semibold text-yellow-600 mb-2 flex items-center gap-1">
                   <StickyNote className="w-3 h-3" /> Internal Note — not visible to customer
@@ -799,18 +896,108 @@ export default function InboxPage() {
                     accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }}
                   />
+                  {/* Template picker button — only for WABA conversations */}
+                  {conversations.find((c) => c.id === selectedId)?.channel === 'whatsapp' && !isNote && (
+                    <button
+                      onClick={() => setShowTemplatePicker(!showTemplatePicker)}
+                      className={cn('p-2 rounded-lg transition-colors',
+                        showTemplatePicker || selectedTemplate
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-[var(--accent-tint)]')}
+                      title="Send template message">
+                      <FileText className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
-                <Input
-                  className={cn('flex-1', isNote && 'border-yellow-300 bg-yellow-50 focus-visible:ring-yellow-200')}
-                  placeholder={isNote ? 'Write an internal note...' : 'Type a message...'}
-                  value={messageText}
-                  onChange={(e) => handleTypingChange(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                />
-                <Button onClick={handleSend} disabled={!messageText.trim() || sending}
-                  className={isNote ? 'bg-yellow-500 hover:bg-yellow-600' : ''}>
-                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </Button>
+
+                {/* Template picker dropdown */}
+                {showTemplatePicker && (
+                  <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 bg-white rounded-xl border border-black/10 shadow-lg z-30 max-h-72 overflow-hidden flex flex-col">
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-black/5">
+                      <span className="text-xs font-semibold text-[#1c1410]">WhatsApp Templates</span>
+                      <div className="flex items-center gap-1">
+                        <button onClick={syncTemplates} disabled={syncingTemplates}
+                          className="text-xs text-[#c2410c] hover:underline flex items-center gap-1">
+                          <RefreshCw className={cn('w-3 h-3', syncingTemplates && 'animate-spin')} />
+                          Sync
+                        </button>
+                        <button onClick={() => setShowTemplatePicker(false)} className="p-1 rounded hover:bg-black/5">
+                          <X className="w-3.5 h-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="overflow-y-auto flex-1">
+                      {wabaTemplates.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                          <p>No approved templates found.</p>
+                          <button onClick={syncTemplates} disabled={syncingTemplates}
+                            className="mt-2 text-[#c2410c] hover:underline text-xs">
+                            {syncingTemplates ? 'Syncing...' : 'Sync from Meta'}
+                          </button>
+                        </div>
+                      ) : wabaTemplates.map((tpl) => (
+                        <button key={tpl.id} onClick={() => handleTemplateSelect(tpl)}
+                          className="w-full text-left px-3 py-2.5 border-b border-black/5 last:border-0 hover:bg-[#faf8f6] transition-colors">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-[#1c1410]">{tpl.name}</span>
+                            <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600">{tpl.language}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{tpl.body}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Selected template preview + param fill */}
+                {selectedTemplate ? (
+                  <div className="flex-1 flex flex-col gap-2">
+                    <div className="border border-emerald-200 bg-emerald-50 rounded-lg px-3 py-2 text-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-emerald-700">Template: {selectedTemplate.name}</span>
+                        <button onClick={clearTemplate} className="text-muted-foreground hover:text-foreground">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-[#4a3c30] whitespace-pre-line">{selectedTemplate.body}</p>
+                    </div>
+                    {/* Parameter inputs */}
+                    {Object.entries(templateParamValues).map(([compType, values]) =>
+                      values.map((val, idx) => (
+                        <Input
+                          key={`${compType}-${idx}`}
+                          className="text-sm"
+                          placeholder={`${compType === 'header' ? 'Header' : 'Body'} parameter {{${idx + 1}}}`}
+                          value={val}
+                          onChange={(e) => {
+                            const copy = { ...templateParamValues };
+                            copy[compType] = [...copy[compType]];
+                            copy[compType][idx] = e.target.value;
+                            setTemplateParamValues(copy);
+                          }}
+                        />
+                      ))
+                    )}
+                    <Button onClick={handleTemplateSend} disabled={sending} className="w-full">
+                      {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                      Send Template
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Input
+                      className={cn('flex-1', isNote && 'border-yellow-300 bg-yellow-50 focus-visible:ring-yellow-200')}
+                      placeholder={isNote ? 'Write an internal note...' : 'Type a message...'}
+                      value={messageText}
+                      onChange={(e) => handleTypingChange(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                    />
+                    <Button onClick={handleSend} disabled={!messageText.trim() || sending}
+                      className={isNote ? 'bg-yellow-500 hover:bg-yellow-600' : ''}>
+                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </>

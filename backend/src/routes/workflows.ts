@@ -386,15 +386,10 @@ async function logStep(
 
 interface ExecStats { skipped: number; failed: number; exit?: boolean }
 
-// Leak 5 fix: WhatsApp text send via WABA integration (mirrors conversations.ts pattern)
-function sendWAText(phoneNumberId: string, token: string, toPhone: string, text: string): Promise<any> {
+// WhatsApp Cloud API send helpers
+function sendWARequest(phoneNumberId: string, token: string, payload: object): Promise<any> {
   return new Promise((resolve, reject) => {
-    const payload = JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: toPhone.replace(/\D/g, ''),
-      type: 'text',
-      text: { body: text },
-    });
+    const body = JSON.stringify(payload);
     const options = {
       hostname: 'graph.facebook.com',
       path: `/v17.0/${phoneNumberId}/messages`,
@@ -402,7 +397,7 @@ function sendWAText(phoneNumberId: string, token: string, toPhone: string, text:
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
+        'Content-Length': Buffer.byteLength(body),
       },
     };
     const req = https.request(options, (res) => {
@@ -413,9 +408,39 @@ function sendWAText(phoneNumberId: string, token: string, toPhone: string, text:
       });
     });
     req.on('error', reject);
-    req.write(payload);
+    req.write(body);
     req.end();
   });
+}
+
+function sendWAText(phoneNumberId: string, token: string, toPhone: string, text: string): Promise<any> {
+  return sendWARequest(phoneNumberId, token, {
+    messaging_product: 'whatsapp',
+    to: toPhone.replace(/\D/g, ''),
+    type: 'text',
+    text: { body: text },
+  });
+}
+
+function sendWATemplate(
+  phoneNumberId: string, token: string, toPhone: string,
+  templateName: string, languageCode: string,
+  components: Array<{ type: string; parameters: Array<{ type: string; text?: string }> }>
+): Promise<any> {
+  const tplPayload: any = {
+    messaging_product: 'whatsapp',
+    to: toPhone.replace(/\D/g, ''),
+    type: 'template',
+    template: {
+      name: templateName,
+      language: { code: languageCode },
+    },
+  };
+  const withParams = components.filter((c) => c.parameters && c.parameters.length > 0);
+  if (withParams.length > 0) {
+    tplPayload.template.components = withParams;
+  }
+  return sendWARequest(phoneNumberId, token, tplPayload);
 }
 
 // Leak 7 fix: sync a tag name to the tags + lead_tags junction tables so tag-based
@@ -1366,7 +1391,6 @@ export async function executeNodes(
         }
 
         // ── Send WhatsApp ──────────────────────────────────────────────────────
-        // Leak 5 fix: actually send via WABA integration
         case 'send_whatsapp': {
           const toPhone = lead.phone;
           if (!toPhone) {
@@ -1382,13 +1406,50 @@ export async function executeNodes(
           }
           const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
           const waToken = decrypt(encToken);
+
+          // Check if a WABA template is selected (has meta_name = synced from Meta)
+          const tplId = (node.config.template_id ?? '') as string;
+          let waResp: any;
+          if (tplId) {
+            const tplRes = await query(
+              'SELECT meta_name, language, body, header, meta_components FROM templates WHERE id=$1::uuid AND tenant_id=$2',
+              [tplId, tenantId]
+            );
+            const tpl = tplRes.rows[0];
+            if (tpl?.meta_name) {
+              // Build components from param mappings in node.config.params
+              const paramMappings = (node.config.params ?? {}) as Record<string, Array<{ value: string }>>;
+              const tplComponents: Array<{ type: string; parameters: Array<{ type: string; text: string }> }> = [];
+
+              for (const [compType, params] of Object.entries(paramMappings)) {
+                if (!Array.isArray(params) || params.length === 0) continue;
+                tplComponents.push({
+                  type: compType,
+                  parameters: params.map((p) => ({
+                    type: 'text',
+                    text: interpolate((p.value ?? '') as string, lead, valueTokens),
+                  })),
+                });
+              }
+
+              waResp = await sendWATemplate(phone_number_id, waToken, toPhone, tpl.meta_name, tpl.language ?? 'en', tplComponents);
+              if (waResp?.error) {
+                throw new Error(`WhatsApp template API error (${waResp.error.code}): ${waResp.error.message}`);
+              }
+              const wamid = waResp?.messages?.[0]?.id ?? '';
+              message = `WhatsApp template "${tpl.meta_name}" sent to ${toPhone}${wamid ? ` (wamid: ${wamid})` : ''}`;
+              break;
+            }
+          }
+
+          // Fallback: send as plain text
           const msgText = interpolate(
             (node.config.message ?? node.config.template ?? '') as string, lead, valueTokens
           );
           if (!msgText) {
             status = 'skipped'; message = 'send_whatsapp: no message body configured'; break;
           }
-          const waResp = await sendWAText(phone_number_id, waToken, toPhone, msgText);
+          waResp = await sendWAText(phone_number_id, waToken, toPhone, msgText);
           if (waResp?.error) {
             throw new Error(`WhatsApp API error (${waResp.error.code}): ${waResp.error.message}`);
           }

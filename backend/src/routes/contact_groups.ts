@@ -7,14 +7,9 @@ import { sendEmail, getTenantEmailIdentity } from '../services/email';
 import { decrypt } from '../utils/crypto';
 import { triggerWorkflows } from './workflows';
 
-function sendWAText(phoneNumberId: string, token: string, toPhone: string, text: string): Promise<any> {
+function sendWARequest(phoneNumberId: string, token: string, payload: object): Promise<any> {
   return new Promise((resolve, reject) => {
-    const payload = JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: toPhone.replace(/\D/g, ''),
-      type: 'text',
-      text: { body: text },
-    });
+    const body = JSON.stringify(payload);
     const req = https.request({
       hostname: 'graph.facebook.com',
       path: `/v17.0/${phoneNumberId}/messages`,
@@ -22,7 +17,7 @@ function sendWAText(phoneNumberId: string, token: string, toPhone: string, text:
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
+        'Content-Length': Buffer.byteLength(body),
       },
     }, (res) => {
       let data = '';
@@ -30,9 +25,39 @@ function sendWAText(phoneNumberId: string, token: string, toPhone: string, text:
       res.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON from WhatsApp API')); } });
     });
     req.on('error', reject);
-    req.write(payload);
+    req.write(body);
     req.end();
   });
+}
+
+function sendWAText(phoneNumberId: string, token: string, toPhone: string, text: string): Promise<any> {
+  return sendWARequest(phoneNumberId, token, {
+    messaging_product: 'whatsapp',
+    to: toPhone.replace(/\D/g, ''),
+    type: 'text',
+    text: { body: text },
+  });
+}
+
+function sendWATemplate(
+  phoneNumberId: string, token: string, toPhone: string,
+  templateName: string, languageCode: string,
+  components: Array<{ type: string; parameters: Array<{ type: string; text?: string }> }>
+): Promise<any> {
+  const tplPayload: any = {
+    messaging_product: 'whatsapp',
+    to: toPhone.replace(/\D/g, ''),
+    type: 'template',
+    template: {
+      name: templateName,
+      language: { code: languageCode },
+    },
+  };
+  const withParams = components.filter((c) => c.parameters && c.parameters.length > 0);
+  if (withParams.length > 0) {
+    tplPayload.template.components = withParams;
+  }
+  return sendWARequest(phoneNumberId, token, tplPayload);
 }
 
 function interpolateBroadcast(template: string, member: { name: string | null; phone: string | null; email: string | null }): string {
@@ -298,11 +323,11 @@ router.delete('/:id/members/:leadId', checkPermission('contact_groups:manage'), 
 
 // POST /api/contact-groups/:id/broadcast — send WhatsApp or email to all members
 router.post('/:id/broadcast', checkPermission('contact_groups:manage'), async (req: AuthRequest, res: Response) => {
-  const { type, message, subject } = req.body;
+  const { type, message, subject, template_id, template_params } = req.body;
   if (!type || !['whatsapp', 'email'].includes(type)) {
     res.status(400).json({ error: 'type must be "whatsapp" or "email"' }); return;
   }
-  if (!message?.trim()) {
+  if (!template_id && !message?.trim()) {
     res.status(400).json({ error: 'message is required' }); return;
   }
   if (type === 'email' && !subject?.trim()) {
@@ -342,10 +367,34 @@ router.post('/:id/broadcast', checkPermission('contact_groups:manage'), async (r
       const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
       const waToken = decrypt(encToken);
 
+      // Resolve template if provided
+      let tplMeta: { meta_name: string; language: string } | null = null;
+      if (template_id) {
+        const tplRes = await query(
+          'SELECT meta_name, language FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+          [template_id, tenantId],
+        );
+        if (tplRes.rows[0]?.meta_name) tplMeta = tplRes.rows[0];
+      }
+
       for (const m of members) {
         if (!m.phone) { skipped++; continue; }
         try {
-          const resp = await sendWAText(phone_number_id, waToken, m.phone, interpolateBroadcast(message.trim(), m));
+          let resp: any;
+          if (tplMeta) {
+            // Build per-member parameters by interpolating param values
+            const rawParams = (template_params ?? []) as Array<{ type: string; parameters: Array<{ type: string; text?: string }> }>;
+            const resolvedComps = rawParams.map((comp) => ({
+              type: comp.type,
+              parameters: (comp.parameters ?? []).map((p) => ({
+                type: 'text' as const,
+                text: interpolateBroadcast(p.text ?? '', m),
+              })),
+            }));
+            resp = await sendWATemplate(phone_number_id, waToken, m.phone, tplMeta.meta_name, tplMeta.language ?? 'en', resolvedComps);
+          } else {
+            resp = await sendWAText(phone_number_id, waToken, m.phone, interpolateBroadcast(message.trim(), m));
+          }
           if (resp?.error) {
             failed++;
             errors.push(`${m.name}: ${resp.error.message}`);

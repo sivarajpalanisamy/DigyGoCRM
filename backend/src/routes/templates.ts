@@ -1,10 +1,12 @@
 import path from 'path';
 import fs from 'fs';
+import https from 'https';
 import { Router, Response } from 'express';
 import multer from 'multer';
 import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission } from '../middleware/permissions';
+import { decrypt } from '../utils/crypto';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
@@ -30,6 +32,7 @@ router.get('/', checkPermission('automation_templates:read'), async (req: AuthRe
     const result = await query(
       `SELECT id, name, template_type, category, language, status, subject,
               body, header, footer, buttons, variables,
+              meta_name, meta_components,
               file_path, file_type, file_name, created_at, updated_at
        FROM templates WHERE tenant_id=$1::uuid ORDER BY created_at DESC`,
       [req.user!.tenantId],
@@ -171,6 +174,92 @@ router.delete('/:id', checkPermission('automation_templates:manage'), async (req
     }
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Graph API helper (lightweight, for template sync) ────────────────────────
+function graphGet(apiPath: string, token: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const sep = apiPath.includes('?') ? '&' : '?';
+    const url = `https://graph.facebook.com/v21.0${apiPath}${sep}access_token=${token}`;
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON')); } });
+    }).on('error', reject);
+  });
+}
+
+// POST /api/templates/sync-waba — pull approved templates from Meta
+router.post('/sync-waba', checkPermission('automation_templates:manage'), async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId!;
+  try {
+    const wabaRes = await query(
+      'SELECT waba_id, access_token FROM waba_integrations WHERE tenant_id=$1::uuid AND is_active=TRUE LIMIT 1',
+      [tenantId],
+    );
+    if (!wabaRes.rows[0]) {
+      res.status(400).json({ error: 'WhatsApp Business not connected. Set it up under Integrations → WhatsApp.' });
+      return;
+    }
+    const { waba_id, access_token: encToken } = wabaRes.rows[0];
+    const token = decrypt(encToken);
+
+    // Fetch all templates from Meta (paginated)
+    let allTemplates: any[] = [];
+    let nextPath: string | null = `/${waba_id}/message_templates?fields=name,status,category,language,components&limit=100`;
+    while (nextPath) {
+      const data = await graphGet(nextPath, token);
+      if (data.error) {
+        res.status(400).json({ error: `Meta API error: ${data.error.message}` });
+        return;
+      }
+      allTemplates.push(...(data.data ?? []));
+      const nextUrl: string | undefined = data.paging?.next;
+      if (nextUrl) {
+        try { nextPath = new URL(nextUrl).pathname + new URL(nextUrl).search; } catch { nextPath = null; }
+      } else {
+        nextPath = null;
+      }
+    }
+
+    let synced = 0;
+    for (const tpl of allTemplates) {
+      const components: any[] = tpl.components ?? [];
+      const headerComp = components.find((c: any) => c.type === 'HEADER');
+      const bodyComp = components.find((c: any) => c.type === 'BODY');
+      const footerComp = components.find((c: any) => c.type === 'FOOTER');
+      const buttonsComp = components.find((c: any) => c.type === 'BUTTONS');
+
+      const bodyText = bodyComp?.text ?? '';
+      const headerText = headerComp?.format === 'TEXT' ? (headerComp.text ?? null) : null;
+      const footerText = footerComp?.text ?? null;
+      const buttons = buttonsComp?.buttons ?? [];
+      const metaName = tpl.name;
+      const lang = tpl.language ?? 'en';
+      const category = tpl.category ?? 'UTILITY';
+      const status = (tpl.status ?? 'PENDING').toLowerCase();
+      const displayName = metaName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+      await query(
+        `INSERT INTO templates
+           (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, meta_name, meta_components)
+         VALUES ($1::uuid,$2,'waba',$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         ON CONFLICT (tenant_id, meta_name, language) DO UPDATE SET
+           name=EXCLUDED.name, category=EXCLUDED.category, status=EXCLUDED.status,
+           body=EXCLUDED.body, header=EXCLUDED.header, footer=EXCLUDED.footer,
+           buttons=EXCLUDED.buttons, meta_components=EXCLUDED.meta_components,
+           updated_at=NOW()`,
+        [tenantId, displayName, category, lang, status, bodyText, headerText, footerText,
+         JSON.stringify(buttons), metaName, JSON.stringify(components)],
+      );
+      synced++;
+    }
+
+    res.json({ success: true, synced, total: allTemplates.length });
+  } catch (err: any) {
+    console.error('[template sync]', err);
+    res.status(500).json({ error: err.message ?? 'Server error' });
+  }
 });
 
 export default router;

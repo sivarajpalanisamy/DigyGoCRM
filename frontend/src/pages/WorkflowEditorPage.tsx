@@ -332,7 +332,7 @@ const inputCls = 'w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-
 type PipelineOpt = { id: string; name: string; stages: Array<{ id: string; name: string }> };
 type StaffOpt = { id: string; name: string };
 type FormOpt = { id: string; name: string };
-type TemplateOpt = { id: string; name: string; body?: string };
+type TemplateOpt = { id: string; name: string; body?: string; meta_name?: string | null; language?: string; header?: string | null };
 type WaTemplate = { id: string; name: string; message: string; file_path: string | null; file_type: string | null; file_name: string | null; created_at: string; updated_at: string };
 
 function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff, forms, metaForms, eventTypes, bookingLinks, metaPages, webhookUrls, contactGroups, sheetConfigs, allowReentry, onToggleReentry, workflowId, apiToken, onRegenerateToken }: {
@@ -2492,7 +2492,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
         <FieldRow label="Select Template" required>
           {templates.length === 0 ? (
             <div className="border border-border rounded-lg px-4 py-3 text-sm text-muted-foreground bg-muted/40">
-              No templates found. Create templates in Settings → WhatsApp Templates.
+              No templates found. Sync from Meta under Automation → Templates, or create one manually.
             </div>
           ) : (
             <div className="border border-border rounded-lg overflow-hidden">
@@ -2500,7 +2500,21 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 {templates.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => onUpdate({ config: { ...cfg, template: t.name, template_id: t.id, message: t.body ?? t.name } })}
+                    onClick={() => {
+                      const newCfg: Record<string, any> = { ...cfg, template: t.name, template_id: t.id, message: t.body ?? t.name };
+                      // For WABA templates, init empty param mappings
+                      if (t.meta_name) {
+                        const bodyParams = (t.body ?? '').match(/\{\{\d+\}\}/g);
+                        const headerParams = (t.header ?? '').match(/\{\{\d+\}\}/g);
+                        const params: Record<string, Array<{ value: string }>> = {};
+                        if (bodyParams) params.body = [...new Set(bodyParams)].map(() => ({ value: '' }));
+                        if (headerParams) params.header = [...new Set(headerParams)].map(() => ({ value: '' }));
+                        newCfg.params = params;
+                      } else {
+                        delete newCfg.params;
+                      }
+                      onUpdate({ config: newCfg });
+                    }}
                     className={cn(
                       'w-full text-left px-4 py-2.5 text-sm border-b border-gray-100 last:border-0 transition-colors',
                       (cfg.template_id as string) === t.id
@@ -2508,13 +2522,83 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                         : 'hover:bg-gray-50 text-gray-700'
                     )}
                   >
-                    {t.name}
+                    <div className="flex items-center justify-between">
+                      <span>{t.name}</span>
+                      {t.meta_name && <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 ml-2">WABA</span>}
+                    </div>
+                    {t.body && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{t.body}</p>}
                   </button>
                 ))}
               </div>
             </div>
           )}
         </FieldRow>
+        {/* WABA template parameter mapping */}
+        {(() => {
+          const selTpl = templates.find((t) => t.id === (cfg.template_id as string));
+          if (!selTpl?.meta_name) return null;
+          const params = (cfg.params ?? {}) as Record<string, Array<{ value: string }>>;
+          const VARIABLE_OPTIONS = [
+            { label: 'First Name', value: '{first_name}' },
+            { label: 'Last Name', value: '{last_name}' },
+            { label: 'Full Name', value: '{full_name}' },
+            { label: 'Email', value: '{email}' },
+            { label: 'Phone', value: '{phone}' },
+            { label: 'Stage', value: '{stage}' },
+            { label: 'Pipeline', value: '{pipeline}' },
+            { label: 'Source', value: '{source}' },
+            { label: 'Assigned Staff', value: '{assigned_staff}' },
+            { label: 'Today', value: '{today}' },
+            { label: 'Date', value: '{date}' },
+            { label: 'Time', value: '{time}' },
+          ];
+          const allEntries = Object.entries(params);
+          if (allEntries.length === 0) return null;
+          return (
+            <>
+              <p className="text-xs font-semibold text-emerald-700 mt-2">Template Parameters</p>
+              <p className="text-xs text-muted-foreground mb-1">Map each {'{{N}}'} placeholder to a CRM variable or type custom text.</p>
+              {allEntries.map(([compType, mappings]) =>
+                mappings.map((m, idx) => (
+                  <FieldRow key={`${compType}-${idx}`} label={`${compType === 'header' ? 'Header' : 'Body'} {{${idx + 1}}}`}>
+                    <div className="flex gap-2">
+                      <select
+                        className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-white"
+                        value={VARIABLE_OPTIONS.find((v) => v.value === m.value) ? m.value : '_custom'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const updated = { ...params };
+                          updated[compType] = [...updated[compType]];
+                          updated[compType][idx] = { value: val === '_custom' ? '' : val };
+                          onUpdate({ config: { ...cfg, params: updated } });
+                        }}
+                      >
+                        <option value="_custom">Custom text...</option>
+                        {VARIABLE_OPTIONS.map((v) => (
+                          <option key={v.value} value={v.value}>{v.label}</option>
+                        ))}
+                      </select>
+                      {!VARIABLE_OPTIONS.find((v) => v.value === m.value) && (
+                        <input
+                          type="text"
+                          className="flex-1 border border-border rounded-lg px-3 py-2 text-sm"
+                          placeholder="Custom value or {variable}"
+                          value={m.value}
+                          onChange={(e) => {
+                            const updated = { ...params };
+                            updated[compType] = [...updated[compType]];
+                            updated[compType][idx] = { value: e.target.value };
+                            onUpdate({ config: { ...cfg, params: updated } });
+                          }}
+                        />
+                      )}
+                    </div>
+                  </FieldRow>
+                ))
+              )}
+            </>
+          );
+        })()}
       </>)}
 
       {/* WhatsApp Personal */}
@@ -4472,7 +4556,7 @@ export default function WorkflowEditorPage() {
       setEditorMetaForms(active.map((f) => ({ id: f.form_id, name: f.form_name })));
     }).catch(() => {});
     api.get<any[]>('/api/templates').then((rows) => {
-      setEditorTemplates((rows ?? []).map((t) => ({ id: t.id, name: t.name, body: t.body })));
+      setEditorTemplates((rows ?? []).map((t) => ({ id: t.id, name: t.name, body: t.body, meta_name: t.meta_name, language: t.language, header: t.header })));
     }).catch(() => {});
     api.get<any[]>('/api/workflows').then((rows) => {
       setEditorWorkflows((rows ?? []).filter((w) => w.id !== workflow.id).map((w) => ({ id: w.id, name: w.name, status: w.status })));
@@ -4725,7 +4809,7 @@ export default function WorkflowEditorPage() {
         }
         if (node.actionType === 'change_stage' && !node.config.stage_id) return `"Change Pipeline Stage" is missing a stage.`;
         if (node.actionType === 'send_email' && !node.config.subject) return `"Send Email" is missing a subject.`;
-        if (node.actionType === 'send_whatsapp' && !node.config.template) return `"WhatsApp Message" is missing a template.`;
+        if (node.actionType === 'send_whatsapp' && !node.config.template && !node.config.template_id) return `"WhatsApp Message" is missing a template.`;
         if (node.actionType === 'send_whatsapp_personal' && !node.config.message && !node.config.templateId) return `"WhatsApp Personal" is missing a message or template.`;
         if (node.actionType === 'webhook_call' && !node.config.url) return `"Webhook Call" is missing a URL.`;
         if (node.actionType === 'execute_automation' && !node.config.workflow_id) return `"Execute Automation" has no workflow selected.`;
