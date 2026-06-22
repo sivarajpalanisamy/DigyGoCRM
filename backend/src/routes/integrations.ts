@@ -1824,6 +1824,11 @@ router.post('/waba/setup', checkPermission('integrations:manage'), async (req: A
       [req.user!.tenantId, resolvedPhone, phone_number_id, waba_id, encrypted]
     );
     res.json({ success: true, status: 'active', phoneNumber: resolvedPhone });
+
+    // Auto-sync WABA templates in background (fire-and-forget)
+    syncWabaTemplates(req.user!.tenantId!, waba_id, access_token).catch((e) =>
+      console.error('[WABA auto-sync templates]', e?.message ?? e)
+    );
   } catch (err: any) {
     if (err?.code === 'ENOTFOUND') {
       res.status(400).json({ error: 'Could not reach Meta API. Check credentials.' });
@@ -1832,6 +1837,45 @@ router.post('/waba/setup', checkPermission('integrations:manage'), async (req: A
     }
   }
 });
+
+// Auto-sync WABA templates from Meta after connection
+async function syncWabaTemplates(tenantId: string, wabaId: string, accessToken: string) {
+  let allTemplates: any[] = [];
+  let nextPath: string | null = `/${wabaId}/message_templates?fields=name,status,category,language,components&limit=100`;
+  while (nextPath) {
+    const data = await graphGet(nextPath, accessToken);
+    if (data.error) { console.error('[WABA sync] Meta API error:', data.error.message); return; }
+    allTemplates.push(...(data.data ?? []));
+    const nextUrl: string | undefined = data.paging?.next;
+    if (nextUrl) {
+      try { nextPath = new URL(nextUrl).pathname + new URL(nextUrl).search; } catch { nextPath = null; }
+    } else { nextPath = null; }
+  }
+  for (const tpl of allTemplates) {
+    const components: any[] = tpl.components ?? [];
+    const bodyComp = components.find((c: any) => c.type === 'BODY');
+    const headerComp = components.find((c: any) => c.type === 'HEADER');
+    const footerComp = components.find((c: any) => c.type === 'FOOTER');
+    const buttonsComp = components.find((c: any) => c.type === 'BUTTONS');
+    const displayName = (tpl.name as string).replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+    await query(
+      `INSERT INTO templates
+         (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, meta_name, meta_components)
+       VALUES ($1::uuid,$2,'waba',$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (tenant_id, meta_name, language) DO UPDATE SET
+         name=EXCLUDED.name, category=EXCLUDED.category, status=EXCLUDED.status,
+         body=EXCLUDED.body, header=EXCLUDED.header, footer=EXCLUDED.footer,
+         buttons=EXCLUDED.buttons, meta_components=EXCLUDED.meta_components,
+         updated_at=NOW()`,
+      [tenantId, displayName, tpl.category ?? 'UTILITY', tpl.language ?? 'en',
+       (tpl.status ?? 'PENDING').toLowerCase(), bodyComp?.text ?? '',
+       headerComp?.format === 'TEXT' ? (headerComp.text ?? null) : null,
+       footerComp?.text ?? null, JSON.stringify(buttonsComp?.buttons ?? []),
+       tpl.name, JSON.stringify(components)]
+    ).catch(() => null);
+  }
+  console.log(`[WABA sync] Synced ${allTemplates.length} templates for tenant ${tenantId}`);
+}
 
 // ── SMTP Email Integration ─────────────────────────────────────────────────────
 

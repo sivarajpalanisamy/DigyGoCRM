@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Plus, Pencil, Trash2, Copy, X, Check, Eye, ArrowLeft,
-  Paperclip, Upload, Loader2, FileText, Image as ImageIcon, Film,
+  Paperclip, Upload, Loader2, FileText, Image as ImageIcon, Film, RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn, copyToClipboard } from '@/lib/utils';
 import { toast } from 'sonner';
-import { getAccessToken, BASE } from '@/lib/api';
+import { api, getAccessToken, BASE } from '@/lib/api';
 import { usePermission } from '@/hooks/usePermission';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -28,6 +28,8 @@ interface Template {
   header?: string | null;
   footer?: string | null;
   buttons: WABAButton[] | string;
+  meta_name?: string | null;
+  meta_components?: any[] | null;
   file_path?: string | null;
   file_type?: string | null;
   file_name?: string | null;
@@ -541,6 +543,20 @@ export default function AutomationTemplatesPage() {
   const [editWaPersonal, setEditWaPersonal] = useState<WaPersonalTemplate | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [preview, setPreview] = useState<Template | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const syncFromMeta = async () => {
+    setSyncing(true);
+    try {
+      const res = await api.post<{ synced: number; total: number }>('/api/templates/sync-waba', {});
+      toast.success(`Synced ${res.synced} template(s) from Meta`);
+      load();
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to sync templates from Meta');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const load = () => {
     setLoading(true);
@@ -643,11 +659,19 @@ export default function AutomationTemplatesPage() {
             <p className="text-sm text-[#7a6b5c]">Reusable message templates for WhatsApp, Email and SMS</p>
           </div>
         </div>
-        {canManage && (
-          <Button onClick={() => tab === 'wa_personal' ? navigate('/automation/templates/wa-personal/new') : setShowCreate(true)}>
-            <Plus className="w-4 h-4 mr-1" />New Template
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canManage && tab === 'waba' && (
+            <Button variant="outline" onClick={syncFromMeta} disabled={syncing}>
+              <RefreshCw className={cn('w-4 h-4 mr-1', syncing && 'animate-spin')} />
+              {syncing ? 'Syncing...' : 'Sync from Meta'}
+            </Button>
+          )}
+          {canManage && (
+            <Button onClick={() => tab === 'wa_personal' ? navigate('/automation/templates/wa-personal/new') : setShowCreate(true)}>
+              <Plus className="w-4 h-4 mr-1" />New Template
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -728,7 +752,13 @@ export default function AutomationTemplatesPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={cn('text-sm font-bold text-[#1c1410]', tab === 'waba' && 'font-mono')}>{t.name}</p>
+                        <p className={cn('text-sm font-bold text-[#1c1410]', tab === 'waba' && t.meta_name && 'font-mono')}>{t.name}</p>
+                        {tab === 'waba' && t.meta_name && (
+                          <Badge className="border-0 text-[10px] bg-emerald-50 text-emerald-700">Synced</Badge>
+                        )}
+                        {tab === 'waba' && !t.meta_name && (
+                          <Badge className="border-0 text-[10px] bg-gray-100 text-gray-500">Local</Badge>
+                        )}
                         {tab === 'waba' && t.category && !['EMAIL','SMS'].includes(t.category) && (
                           <Badge className={cn('border-0 text-xs', catColor[t.category] ?? 'bg-gray-100 text-gray-700')}>{t.category}</Badge>
                         )}
@@ -746,6 +776,7 @@ export default function AutomationTemplatesPage() {
                       {tab === 'email' && t.subject && (
                         <p className="text-[11px] text-[#7a6b5c] mt-0.5 font-medium">Subject: {t.subject}</p>
                       )}
+                      {tab === 'waba' && t.meta_name && <p className="text-[11px] text-[#7a6b5c] mt-0.5 font-mono">Meta: {t.meta_name}</p>}
                       {tab === 'waba' && t.header && <p className="text-sm font-semibold text-[#1c1410] mt-2">{t.header}</p>}
                       <p className="text-[13px] text-[#7a6b5c] mt-1 line-clamp-2 whitespace-pre-line">{t.body}</p>
                       {tab === 'waba' && btns.length > 0 && (
