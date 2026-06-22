@@ -945,6 +945,109 @@ router.get('/broadcasts/:id', checkPermission('inbox:send'), async (req: AuthReq
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
+// POST /api/conversations/waba-single-send — send a WABA template to a single phone number
+router.post('/waba-single-send', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const { phone, template_id, lead_id } = req.body as {
+    phone: string; template_id: string; lead_id?: string;
+  };
+  if (!phone?.trim()) { res.status(400).json({ error: 'phone is required' }); return; }
+  if (!template_id) { res.status(400).json({ error: 'template_id is required' }); return; }
+
+  try {
+    const wabaRes = await query(
+      'SELECT phone_number_id, access_token FROM waba_integrations WHERE tenant_id=$1::uuid AND is_active=TRUE LIMIT 1',
+      [tenantId],
+    );
+    if (!wabaRes.rows[0]) { res.status(400).json({ error: 'WABA not connected' }); return; }
+    const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
+    const token = decrypt(encToken);
+
+    const tplRes = await query(
+      'SELECT meta_name, language, body, header FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+      [template_id, tenantId],
+    );
+    const tpl = tplRes.rows[0];
+    if (!tpl?.meta_name) { res.status(400).json({ error: 'Template not found or not synced to Meta' }); return; }
+
+    const waResp = await sendWATemplate(phone_number_id, token, phone.trim(), tpl.meta_name, tpl.language ?? 'en', []);
+    if (waResp?.error) {
+      console.error('[WABA single send] error:', waResp.error);
+      res.status(400).json({ error: `WhatsApp error: ${waResp.error.message}` });
+      return;
+    }
+
+    const wamid = waResp?.messages?.[0]?.id ?? null;
+    const messageBody = tpl.body ?? tpl.meta_name;
+
+    // Find or create conversation + store message
+    let leadId = lead_id ?? null;
+    const cleanPhone = phone.trim().replace(/\D/g, '');
+    if (!leadId) {
+      const leadRes = await query(
+        `SELECT id FROM leads WHERE tenant_id=$1::uuid AND is_deleted=FALSE
+         AND REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE '%' || RIGHT($2, 10) LIMIT 1`,
+        [tenantId, cleanPhone],
+      );
+      leadId = leadRes.rows[0]?.id ?? null;
+    }
+
+    let convId: string | null = null;
+    if (leadId) {
+      const convRes = await query(
+        `SELECT id FROM conversations WHERE tenant_id=$1::uuid AND channel='whatsapp' AND lead_id=$2::uuid
+         ORDER BY last_message_at DESC NULLS LAST LIMIT 1`,
+        [tenantId, leadId],
+      );
+      if (convRes.rows[0]) {
+        convId = convRes.rows[0].id;
+      } else {
+        const newConv = await query(
+          `INSERT INTO conversations (tenant_id, lead_id, channel, status, unread_count, last_message_at, phone)
+           VALUES ($1::uuid, $2::uuid, 'whatsapp', 'open', 0, NOW(), $3) RETURNING id`,
+          [tenantId, leadId, phone.trim()],
+        );
+        convId = newConv.rows[0].id;
+      }
+    } else {
+      const convRes = await query(
+        `SELECT id FROM conversations WHERE tenant_id=$1::uuid AND channel='whatsapp' AND lead_id IS NULL
+         AND REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE '%' || RIGHT($2, 10)
+         ORDER BY last_message_at DESC NULLS LAST LIMIT 1`,
+        [tenantId, cleanPhone],
+      );
+      if (convRes.rows[0]) {
+        convId = convRes.rows[0].id;
+      } else {
+        const newConv = await query(
+          `INSERT INTO conversations (tenant_id, lead_id, channel, status, unread_count, last_message_at, phone)
+           VALUES ($1::uuid, NULL, 'whatsapp', 'open', 0, NOW(), $2) RETURNING id`,
+          [tenantId, phone.trim()],
+        );
+        convId = newConv.rows[0].id;
+      }
+    }
+
+    // Insert message
+    if (convId) {
+      await query(
+        `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, wamid, status, sent_by, created_at)
+         VALUES ($1, $2::uuid, $3, 'agent', $4, $5, 'sent', 'manual', NOW())`,
+        [convId, tenantId, leadId, messageBody, wamid],
+      );
+      await query(
+        `UPDATE conversations SET last_message=$1, last_message_at=NOW() WHERE id=$2`,
+        [messageBody.slice(0, 200), convId],
+      );
+    }
+
+    res.json({ success: true, wamid, conversation_id: convId });
+  } catch (err: any) {
+    console.error('[WABA single send]', err);
+    res.status(500).json({ error: err?.message ?? 'Server error' });
+  }
+});
+
 // POST /api/conversations/broadcast — send a WABA template to multiple leads
 router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;

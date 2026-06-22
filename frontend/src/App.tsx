@@ -53,6 +53,7 @@ import WhatsAppDevicesPage from "./pages/WhatsAppDevicesPage";
 import WhatsAppSingleSendPage from "./pages/WhatsAppSingleSendPage";
 import WhatsAppSetupPage from "./pages/WhatsAppSetupPage";
 import WABABroadcastPage from "./pages/WABABroadcastPage";
+import WABASingleSendPage from "./pages/WABASingleSendPage";
 import ReportsPage from "./pages/ReportsPage";
 import CallsPage from "./pages/CallsPage";
 
@@ -108,6 +109,7 @@ const App = () => (
             <Route path="/automation/waba" element={<WhatsAppSetupPage />} />
             <Route path="/automation/waba-templates" element={<AutomationTemplatesPage />} />
             <Route path="/automation/waba-broadcast" element={<WABABroadcastPage />} />
+            <Route path="/automation/waba-send" element={<WABASingleSendPage />} />
 
             {/* Calendar */}
             <Route path="/calendar" element={<CalendarPage />} />
