@@ -103,6 +103,7 @@ const MIGRATIONS = [
   'migration_101_email_credits.sql',
   'migration_102_wa_multi_session.sql',
   'migration_103_wa_device_staff.sql',
+  'migration_104_delay_queue_add_lead_id.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
