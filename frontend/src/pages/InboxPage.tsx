@@ -130,8 +130,13 @@ export default function InboxPage() {
   const [templateParamValues, setTemplateParamValues] = useState<Record<string, string[]>>({});
   const [syncingTemplates, setSyncingTemplates] = useState(false);
   const [showInteractive, setShowInteractive] = useState(false);
+  const [interactiveType, setInteractiveType] = useState<'button' | 'list'>('button');
   const [interactiveBody, setInteractiveBody] = useState('');
   const [interactiveButtons, setInteractiveButtons] = useState<Array<{ id: string; title: string }>>([{ id: '1', title: '' }]);
+  const [interactiveListTitle, setInteractiveListTitle] = useState('');
+  const [interactiveSections, setInteractiveSections] = useState<Array<{ title: string; rows: Array<{ id: string; title: string; description: string }> }>>([
+    { title: 'Options', rows: [{ id: '1', title: '', description: '' }] },
+  ]);
 
   const [showNewChat, setShowNewChat]     = useState(false);
   const [newChatPhone, setNewChatPhone]   = useState('');
@@ -361,19 +366,45 @@ export default function InboxPage() {
 
   const handleSendInteractive = async () => {
     if (!selectedId || !interactiveBody.trim() || sending) return;
-    const validButtons = interactiveButtons.filter((b) => b.title.trim());
-    if (!validButtons.length) { toast.error('Add at least one button'); return; }
-    setSending(true);
-    try {
-      const msg = await api.post<ApiMessage>(`/api/conversations/${selectedId}/interactive`, {
+
+    let payload: any;
+    if (interactiveType === 'button') {
+      const validButtons = interactiveButtons.filter((b) => b.title.trim());
+      if (!validButtons.length) { toast.error('Add at least one button'); return; }
+      payload = {
         type: 'button',
         body: interactiveBody.trim(),
         buttons: validButtons.map((b, i) => ({ id: String(i + 1), title: b.title.trim() })),
-      });
+      };
+    } else {
+      // List type
+      const validSections = interactiveSections.map((s) => ({
+        title: s.title.trim() || 'Options',
+        rows: s.rows.filter((r) => r.title.trim()).map((r) => ({
+          id: r.id,
+          title: r.title.trim(),
+          description: r.description.trim() || undefined,
+        })),
+      })).filter((s) => s.rows.length > 0);
+      if (!validSections.length) { toast.error('Add at least one list item'); return; }
+      payload = {
+        type: 'list',
+        body: interactiveBody.trim(),
+        button_text: interactiveListTitle.trim() || 'View Options',
+        sections: validSections,
+      };
+    }
+
+    setSending(true);
+    try {
+      const msg = await api.post<ApiMessage>(`/api/conversations/${selectedId}/interactive`, payload);
       setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
       setShowInteractive(false);
       setInteractiveBody('');
+      setInteractiveType('button');
       setInteractiveButtons([{ id: '1', title: '' }]);
+      setInteractiveListTitle('');
+      setInteractiveSections([{ title: 'Options', rows: [{ id: '1', title: '', description: '' }] }]);
       toast.success('Interactive message sent');
       requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
     } catch (err: any) {
@@ -1044,54 +1075,112 @@ export default function InboxPage() {
 
                 {/* Interactive message composer — WABA only */}
                 {showInteractive && isWaba && (
-                  <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 bg-white rounded-xl border border-black/10 shadow-lg z-30 p-3 space-y-3">
+                  <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 bg-white rounded-xl border border-black/10 shadow-lg z-30 p-3 space-y-3 max-h-80 overflow-y-auto">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-[#1c1410]">Interactive Message (Buttons)</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-[#1c1410]">Interactive Message</span>
+                        <select value={interactiveType} onChange={(e) => setInteractiveType(e.target.value as 'button' | 'list')}
+                          className="text-xs border border-black/10 rounded-md px-2 py-0.5 bg-white">
+                          <option value="button">Buttons</option>
+                          <option value="list">List Menu</option>
+                        </select>
+                      </div>
                       <button onClick={() => setShowInteractive(false)} className="p-1 rounded hover:bg-black/5">
                         <X className="w-3.5 h-3.5 text-muted-foreground" />
                       </button>
                     </div>
                     <textarea
                       className="w-full border border-black/10 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-violet-300"
-                      rows={3}
+                      rows={2}
                       placeholder="Message body text..."
                       value={interactiveBody}
                       onChange={(e) => setInteractiveBody(e.target.value)}
                     />
-                    <div className="space-y-2">
-                      <span className="text-[11px] font-medium text-[#7a6b5c]">Reply Buttons (max 3)</span>
-                      {interactiveButtons.map((btn, idx) => (
-                        <div key={btn.id} className="flex items-center gap-2">
-                          <Input
-                            className="flex-1 text-sm h-8"
-                            placeholder={`Button ${idx + 1} label`}
-                            maxLength={20}
-                            value={btn.title}
-                            onChange={(e) => {
-                              const copy = [...interactiveButtons];
-                              copy[idx] = { ...copy[idx], title: e.target.value };
-                              setInteractiveButtons(copy);
-                            }}
-                          />
-                          {interactiveButtons.length > 1 && (
-                            <button onClick={() => setInteractiveButtons(interactiveButtons.filter((_, i) => i !== idx))}
-                              className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600">
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      {interactiveButtons.length < 3 && (
-                        <button
-                          onClick={() => setInteractiveButtons([...interactiveButtons, { id: String(interactiveButtons.length + 1), title: '' }])}
-                          className="text-xs text-violet-600 hover:underline">
-                          + Add button
-                        </button>
-                      )}
-                    </div>
+
+                    {interactiveType === 'button' ? (
+                      <div className="space-y-2">
+                        <span className="text-[11px] font-medium text-[#7a6b5c]">Reply Buttons (max 3)</span>
+                        {interactiveButtons.map((btn, idx) => (
+                          <div key={btn.id} className="flex items-center gap-2">
+                            <Input className="flex-1 text-sm h-8" placeholder={`Button ${idx + 1} label`} maxLength={20}
+                              value={btn.title} onChange={(e) => {
+                                const copy = [...interactiveButtons];
+                                copy[idx] = { ...copy[idx], title: e.target.value };
+                                setInteractiveButtons(copy);
+                              }} />
+                            {interactiveButtons.length > 1 && (
+                              <button onClick={() => setInteractiveButtons(interactiveButtons.filter((_, i) => i !== idx))}
+                                className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {interactiveButtons.length < 3 && (
+                          <button onClick={() => setInteractiveButtons([...interactiveButtons, { id: String(interactiveButtons.length + 1), title: '' }])}
+                            className="text-xs text-violet-600 hover:underline">+ Add button</button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Input className="text-sm h-8" placeholder="Menu button text (e.g. View Options)" maxLength={20}
+                          value={interactiveListTitle} onChange={(e) => setInteractiveListTitle(e.target.value)} />
+                        {interactiveSections.map((sec, si) => (
+                          <div key={si} className="border border-black/5 rounded-lg p-2 space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <Input className="flex-1 text-xs h-7" placeholder="Section title"
+                                value={sec.title} onChange={(e) => {
+                                  const copy = [...interactiveSections];
+                                  copy[si] = { ...copy[si], title: e.target.value };
+                                  setInteractiveSections(copy);
+                                }} />
+                              {interactiveSections.length > 1 && (
+                                <button onClick={() => setInteractiveSections(interactiveSections.filter((_, i) => i !== si))}
+                                  className="p-0.5 rounded text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
+                              )}
+                            </div>
+                            {sec.rows.map((row, ri) => (
+                              <div key={row.id} className="flex items-center gap-1.5 pl-2">
+                                <Input className="flex-1 text-xs h-7" placeholder="Item title" maxLength={24}
+                                  value={row.title} onChange={(e) => {
+                                    const copy = [...interactiveSections];
+                                    copy[si].rows[ri] = { ...row, title: e.target.value };
+                                    setInteractiveSections(copy);
+                                  }} />
+                                <Input className="flex-1 text-xs h-7" placeholder="Description (optional)" maxLength={72}
+                                  value={row.description} onChange={(e) => {
+                                    const copy = [...interactiveSections];
+                                    copy[si].rows[ri] = { ...row, description: e.target.value };
+                                    setInteractiveSections(copy);
+                                  }} />
+                                {sec.rows.length > 1 && (
+                                  <button onClick={() => {
+                                    const copy = [...interactiveSections];
+                                    copy[si] = { ...copy[si], rows: copy[si].rows.filter((_, i) => i !== ri) };
+                                    setInteractiveSections(copy);
+                                  }} className="p-0.5 rounded text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
+                                )}
+                              </div>
+                            ))}
+                            {sec.rows.length < 10 && (
+                              <button onClick={() => {
+                                const copy = [...interactiveSections];
+                                copy[si] = { ...copy[si], rows: [...copy[si].rows, { id: String(Date.now()), title: '', description: '' }] };
+                                setInteractiveSections(copy);
+                              }} className="text-[11px] text-violet-600 hover:underline pl-2">+ Add item</button>
+                            )}
+                          </div>
+                        ))}
+                        {interactiveSections.length < 10 && (
+                          <button onClick={() => setInteractiveSections([...interactiveSections, { title: '', rows: [{ id: String(Date.now()), title: '', description: '' }] }])}
+                            className="text-xs text-violet-600 hover:underline">+ Add section</button>
+                        )}
+                      </div>
+                    )}
+
                     <Button onClick={handleSendInteractive} disabled={!interactiveBody.trim() || sending} className="w-full bg-violet-600 hover:bg-violet-700">
                       {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                      Send Interactive
+                      Send {interactiveType === 'button' ? 'Buttons' : 'List'}
                     </Button>
                   </div>
                 )}

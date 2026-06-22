@@ -103,7 +103,7 @@ function sendWAInteractive(
   bodyText: string,
   buttons?: Array<{ id: string; title: string }>,
   sections?: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>,
-  headerText?: string, footerText?: string,
+  headerText?: string, footerText?: string, listButtonText?: string,
 ): Promise<any> {
   const interactive: any = {
     type: interactiveType,
@@ -121,7 +121,7 @@ function sendWAInteractive(
     };
   } else if (interactiveType === 'list' && sections?.length) {
     interactive.action = {
-      button: 'View Options',
+      button: (listButtonText || 'View Options').slice(0, 20),
       sections: sections.map((s) => ({
         title: s.title,
         rows: s.rows.map((r) => ({
@@ -602,13 +602,14 @@ router.post('/:id/media', checkPermission('inbox:send'), upload.single('file'), 
 
 // POST /api/conversations/:id/interactive — send interactive message (buttons/list) via WABA
 router.post('/:id/interactive', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
-  const { type, body: bodyText, buttons, sections, header, footer } = req.body as {
+  const { type, body: bodyText, buttons, sections, header, footer, button_text } = req.body as {
     type: 'button' | 'list';
     body: string;
     buttons?: Array<{ id: string; title: string }>;
     sections?: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>;
     header?: string;
     footer?: string;
+    button_text?: string;
   };
 
   if (!bodyText?.trim()) { res.status(400).json({ error: 'body required' }); return; }
@@ -639,7 +640,7 @@ router.post('/:id/interactive', checkPermission('inbox:send'), async (req: AuthR
 
     const waResp = await sendWAInteractive(
       phone_number_id, token, conv.lead_phone,
-      type, bodyText.trim(), buttons, sections, header, footer,
+      type, bodyText.trim(), buttons, sections, header, footer, button_text,
     );
 
     const wamid = waResp?.messages?.[0]?.id ?? null;
@@ -814,6 +815,121 @@ router.patch('/:id/read', checkPermission('inbox:send'), async (req: AuthRequest
 
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// POST /api/conversations/broadcast — send a WABA template to multiple leads
+router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { template_id, lead_ids, template_params } = req.body as {
+    template_id: string;
+    lead_ids: string[];
+    template_params?: Record<string, Array<{ type: string; text: string }>>;
+  };
+
+  if (!template_id || !lead_ids?.length) {
+    res.status(400).json({ error: 'template_id and lead_ids are required' }); return;
+  }
+  if (lead_ids.length > 500) {
+    res.status(400).json({ error: 'Maximum 500 recipients per broadcast' }); return;
+  }
+
+  try {
+    // Get WABA credentials
+    const wabaRes = await query(
+      'SELECT phone_number_id, access_token FROM waba_integrations WHERE tenant_id=$1 AND is_active=TRUE LIMIT 1',
+      [tenantId],
+    );
+    if (!wabaRes.rows[0]) { res.status(400).json({ error: 'WABA not connected' }); return; }
+    const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
+    const waToken = decrypt(encToken);
+
+    // Get template
+    const tplRes = await query(
+      `SELECT meta_name, language, body FROM templates WHERE id=$1::uuid AND tenant_id=$2 AND template_type='waba'`,
+      [template_id, tenantId],
+    );
+    const tpl = tplRes.rows[0];
+    if (!tpl?.meta_name) { res.status(400).json({ error: 'Template not found or not synced with Meta' }); return; }
+
+    // Fetch leads
+    const leadsRes = await query(
+      `SELECT id, name, phone FROM leads WHERE id = ANY($1::uuid[]) AND tenant_id=$2 AND is_deleted=FALSE`,
+      [lead_ids, tenantId],
+    );
+
+    let sent = 0, failed = 0, skipped = 0;
+    const errors: string[] = [];
+
+    // Build template components (same for all recipients unless per-lead params are added later)
+    const components: Array<{ type: string; parameters: Array<{ type: string; text: string }> }> = [];
+    if (template_params) {
+      for (const [compType, params] of Object.entries(template_params)) {
+        if (Array.isArray(params) && params.length > 0) {
+          components.push({ type: compType, parameters: params });
+        }
+      }
+    }
+
+    for (const lead of leadsRes.rows) {
+      if (!lead.phone) { skipped++; continue; }
+      try {
+        const payload: any = {
+          messaging_product: 'whatsapp',
+          to: lead.phone.replace(/\D/g, ''),
+          type: 'template',
+          template: {
+            name: tpl.meta_name,
+            language: { code: tpl.language ?? 'en' },
+          },
+        };
+        if (components.length > 0) {
+          payload.template.components = components;
+        }
+        const resp = await sendWARequest(phone_number_id, waToken, payload);
+        if (resp?.error) {
+          failed++;
+          errors.push(`${lead.name}: ${resp.error.message}`);
+        } else {
+          sent++;
+          // Log to conversation
+          const wamid = resp?.messages?.[0]?.id ?? null;
+          const msgBody = `[Template: ${tpl.meta_name}] ${tpl.body ?? ''}`;
+          // Find or create conversation
+          let convRes2 = await query(
+            `SELECT id FROM conversations WHERE lead_id=$1 AND channel='whatsapp' AND status<>'resolved' LIMIT 1`,
+            [lead.id],
+          );
+          let convId: string;
+          if (convRes2.rows[0]) {
+            convId = convRes2.rows[0].id;
+          } else {
+            const nc = await query(
+              `INSERT INTO conversations (tenant_id, lead_id, channel, status, unread_count, last_message, last_message_at)
+               VALUES ($1,$2,'whatsapp','open',0,$3,NOW()) RETURNING id`,
+              [tenantId, lead.id, msgBody],
+            );
+            convId = nc.rows[0].id;
+          }
+          await query(
+            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, created_at)
+             VALUES ($1,$2,$3,'agent',$4,FALSE,$5,'sent','broadcast',NOW())`,
+            [convId, tenantId, lead.id, msgBody, wamid],
+          );
+          await query(
+            `UPDATE conversations SET last_message=$1, last_message_at=NOW() WHERE id=$2`,
+            [msgBody, convId],
+          );
+        }
+        // Small delay to avoid rate limiting
+        if (leadsRes.rows.length > 10) await new Promise((r) => setTimeout(r, 100));
+      } catch (err: any) {
+        failed++;
+        errors.push(`${lead.name}: ${err.message}`);
+      }
+    }
+
+    res.json({ sent, failed, skipped, total: leadsRes.rows.length, errors: errors.slice(0, 20) });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
 export default router;

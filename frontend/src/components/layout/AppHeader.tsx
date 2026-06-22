@@ -48,6 +48,7 @@ const sectionNavs: Record<string, NavItem[]> = {
       children: [
         { label: 'Dashboard', path: '/automation/waba' },
         { label: 'Templates', path: '/automation/waba-templates' },
+        { label: 'Broadcast', path: '/automation/waba-broadcast' },
       ],
     },
     { label: 'Uploads', path: '/automation/pincode-routing' },
