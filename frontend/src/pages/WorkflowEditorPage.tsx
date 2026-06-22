@@ -461,7 +461,8 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
           <select className={selectCls} value={(cfg.source as string) ?? ''} onChange={sel('source')}>
             <option value="">Any source</option>
             {[
-              { value: 'whatsapp',         label: 'WhatsApp' },
+              { value: 'whatsapp',         label: 'WhatsApp Business (WABA)' },
+              { value: 'personal_wa',      label: 'WhatsApp Personal' },
               { value: 'meta_form',        label: 'Meta Form' },
               { value: 'custom_form',      label: 'Custom Form' },
               { value: 'landing_page',     label: 'Landing Page' },
@@ -853,7 +854,8 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
         <FieldRow label="Channel">
           <select className={selectCls} value={(cfg.channel as string) ?? ''} onChange={sel('channel')}>
             <option value="">Any channel</option>
-            <option value="whatsapp">WhatsApp</option>
+            <option value="whatsapp">WhatsApp Business (WABA)</option>
+            <option value="personal_wa">WhatsApp Personal</option>
             <option value="email">Email</option>
             <option value="sms">SMS</option>
             <option value="instagram">Instagram DM</option>

@@ -162,7 +162,7 @@ export async function handleInboundMessage(
       if (settings.wa_auto_create_lead) {
         const newLead = await query(
           `INSERT INTO leads (tenant_id, name, phone, source, pipeline_id, stage_id, created_at, updated_at)
-           SELECT $1::uuid, $2, $3, 'whatsapp', p.id, s.id, NOW(), NOW()
+           SELECT $1::uuid, $2, $3, 'personal_wa', p.id, s.id, NOW(), NOW()
            FROM pipelines p
            LEFT JOIN pipeline_stages s ON s.pipeline_id = p.id
            WHERE p.tenant_id=$1::uuid AND p.is_deleted=FALSE
