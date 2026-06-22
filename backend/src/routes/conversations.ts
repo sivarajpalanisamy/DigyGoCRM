@@ -81,6 +81,22 @@ function sendWATemplate(
   return sendWARequest(phoneNumberId, token, tplPayload);
 }
 
+function sendWAMedia(
+  phoneNumberId: string, token: string, toPhone: string,
+  mediaType: 'image' | 'document' | 'video' | 'audio',
+  mediaUrl: string, caption?: string, filename?: string,
+): Promise<any> {
+  const mediaObj: any = { link: mediaUrl };
+  if (caption) mediaObj.caption = caption;
+  if (filename && mediaType === 'document') mediaObj.filename = filename;
+  return sendWARequest(phoneNumberId, token, {
+    messaging_product: 'whatsapp',
+    to: toPhone.replace(/\D/g, ''),
+    type: mediaType,
+    [mediaType]: mediaObj,
+  });
+}
+
 // GET /api/conversations/wa-contacts?q=name — search WA phone-book contacts (cached from Baileys)
 router.get('/wa-contacts', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
   const q = ((req.query.q as string) ?? '').toLowerCase().trim();
@@ -407,7 +423,7 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
-// POST /api/conversations/:id/media — send a media file via Personal WA
+// POST /api/conversations/:id/media — send a media file via Personal WA or WABA
 router.post('/:id/media', checkPermission('inbox:send'), upload.single('file'), async (req: AuthRequest, res: Response) => {
   if (!req.file) { res.status(400).json({ error: 'file required' }); return; }
   const caption = (req.body.caption as string | undefined)?.trim() ?? '';
@@ -423,8 +439,8 @@ router.post('/:id/media', checkPermission('inbox:send'), upload.single('file'), 
     if (!convRes.rows[0]) { res.status(404).json({ error: 'Conversation not found' }); return; }
     const conv = convRes.rows[0];
 
-    if (conv.channel !== 'personal_wa') {
-      res.status(400).json({ error: 'Media send only supported for Personal WhatsApp' }); return;
+    if (conv.channel !== 'personal_wa' && conv.channel !== 'whatsapp') {
+      res.status(400).json({ error: 'Media send only supported for WhatsApp channels' }); return;
     }
     if (!conv.lead_phone) {
       res.status(400).json({ error: 'No phone on conversation' }); return;
@@ -439,27 +455,67 @@ router.post('/:id/media', checkPermission('inbox:send'), upload.single('file'), 
     fs.writeFileSync(filePath, req.file.buffer);
     const relPath  = `wa_media/${req.user!.tenantId}/${filename}`;
 
-    // Send via Baileys — resolve @lid JID the same way as text send
     let wamid: string | null = null;
     let deliveryFailed = false;
-    try {
-      let mediaTargetJid = toJID(conv.lead_phone);
-      const lidMR = await query(
-        `SELECT remote_jid FROM messages WHERE conversation_id=$1 AND remote_jid LIKE '%@lid' ORDER BY created_at DESC LIMIT 1`,
-        [req.params.id],
-      ).catch(() => null);
-      if (lidMR?.rows[0]?.remote_jid) mediaTargetJid = lidMR.rows[0].remote_jid;
-      wamid = await sendMedia(
-        req.user!.tenantId!,
-        mediaTargetJid,
-        req.file.buffer,
-        req.file.mimetype,
-        req.file.originalname,
-        caption,
-      );
-    } catch (e: any) {
-      console.error('[Personal WA] Media send error:', e?.message ?? e);
-      deliveryFailed = true;
+
+    if (conv.channel === 'whatsapp') {
+      // Send via WABA Cloud API
+      try {
+        const wabaRes = await query(
+          'SELECT phone_number_id, access_token FROM waba_integrations WHERE tenant_id=$1 AND is_active=TRUE',
+          [req.user!.tenantId],
+        );
+        if (!wabaRes.rows[0]) { res.status(400).json({ error: 'WABA not connected' }); return; }
+        const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
+        const token = decrypt(encToken);
+
+        // Build public URL for the saved file
+        const baseUrl = process.env.WEBHOOK_BASE_URL || process.env.FRONTEND_URL || '';
+        const publicMediaUrl = `${baseUrl}/api/public/waba-media/${req.user!.tenantId}/${filename}`;
+
+        // Determine WABA media type from MIME
+        const mt = req.file.mimetype;
+        const wabaMediaType: 'image' | 'document' | 'video' | 'audio' =
+          mt.startsWith('image/') ? 'image' :
+          mt.startsWith('video/') ? 'video' :
+          mt.startsWith('audio/') ? 'audio' : 'document';
+
+        const waResp = await sendWAMedia(
+          phone_number_id, token, conv.lead_phone,
+          wabaMediaType, publicMediaUrl,
+          caption || undefined,
+          wabaMediaType === 'document' ? req.file.originalname : undefined,
+        );
+        wamid = waResp?.messages?.[0]?.id ?? null;
+        if (waResp?.error) {
+          console.error('WABA media send error:', waResp.error);
+          deliveryFailed = true;
+        }
+      } catch (e: any) {
+        console.error('[WABA] Media send error:', e?.message ?? e);
+        deliveryFailed = true;
+      }
+    } else {
+      // Send via Baileys (Personal WA) — resolve @lid JID the same way as text send
+      try {
+        let mediaTargetJid = toJID(conv.lead_phone);
+        const lidMR = await query(
+          `SELECT remote_jid FROM messages WHERE conversation_id=$1 AND remote_jid LIKE '%@lid' ORDER BY created_at DESC LIMIT 1`,
+          [req.params.id],
+        ).catch(() => null);
+        if (lidMR?.rows[0]?.remote_jid) mediaTargetJid = lidMR.rows[0].remote_jid;
+        wamid = await sendMedia(
+          req.user!.tenantId!,
+          mediaTargetJid,
+          req.file.buffer,
+          req.file.mimetype,
+          req.file.originalname,
+          caption,
+        );
+      } catch (e: any) {
+        console.error('[Personal WA] Media send error:', e?.message ?? e);
+        deliveryFailed = true;
+      }
     }
 
     // Derive message body label

@@ -6,8 +6,12 @@ import { parseMetaFieldData } from '../utils/meta';
 import { upsertContact } from '../utils/contacts';
 import { emitToTenant } from '../socket';
 import { sendNewLeadNotification, sendCallLoggedNotification } from '../utils/notifications';
+import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import https from 'https';
+
+const WA_MEDIA_DIR = process.env.WA_MEDIA_DIR || path.join(process.cwd(), 'wa_media');
 
 const router = Router();
 
@@ -22,6 +26,38 @@ function graphGet(path: string, token: string): Promise<any> {
       });
     }).on('error', reject);
   });
+}
+
+// Download WABA media by ID → save to disk → return relative path
+async function downloadWabaMedia(
+  mediaId: string, token: string, tenantId: string, ext: string
+): Promise<string | null> {
+  try {
+    // Step 1: get the media URL from Meta
+    const meta = await graphGet(`/${mediaId}`, token);
+    const url: string | undefined = meta?.url;
+    if (!url) return null;
+
+    // Step 2: download the binary
+    const data = await new Promise<Buffer>((resolve, reject) => {
+      const parsed = new URL(url);
+      https.get({ hostname: parsed.hostname, path: parsed.pathname + parsed.search, headers: { Authorization: `Bearer ${token}` } }, (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+      }).on('error', reject);
+    });
+
+    // Step 3: save to disk
+    const dir = path.join(WA_MEDIA_DIR, tenantId);
+    fs.mkdirSync(dir, { recursive: true });
+    const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
+    fs.writeFileSync(path.join(dir, filename), data);
+    return `wa_media/${tenantId}/${filename}`;
+  } catch (e: any) {
+    console.error('[WABA media download]', e?.message ?? e);
+    return null;
+  }
 }
 
 // ── Meta Verification ─────────────────────────────────────────────────────────
@@ -238,8 +274,6 @@ async function processWhatsAppMessage(payload: any) {
       const changes: any[] = entry.changes ?? [];
       for (const change of changes) {
         const value = change.value ?? {};
-        const messages: any[] = value.messages ?? [];
-        if (!messages.length) continue;
 
         const phoneNumberId: string = value.metadata?.phone_number_id;
         if (!phoneNumberId) continue;
@@ -252,16 +286,101 @@ async function processWhatsAppMessage(payload: any) {
         if (!waba) continue;
         const tenantId: string = waba.tenant_id;
 
+        // ── Handle delivery status updates ──────────────────────────────
+        const statuses: any[] = value.statuses ?? [];
+        for (const st of statuses) {
+          const wamid: string | undefined = st.id;
+          const statusVal: string | undefined = st.status; // sent | delivered | read | failed
+          if (!wamid || !statusVal) continue;
+
+          // Map Meta status to our DB status
+          const mapped = statusVal === 'read' ? 'read'
+            : statusVal === 'delivered' ? 'delivered'
+            : statusVal === 'sent' ? 'sent'
+            : statusVal === 'failed' ? 'failed'
+            : null;
+          if (!mapped) continue;
+
+          // Only upgrade status: sent → delivered → read (never downgrade)
+          // Failed always overrides
+          const statusRank: Record<string, number> = { failed: 0, sent: 1, delivered: 2, read: 3 };
+          const rank = statusRank[mapped] ?? 0;
+
+          const updateRes = await query(
+            `UPDATE messages SET status=$1, updated_at=NOW()
+             WHERE wamid=$2 AND tenant_id=$3
+               AND (
+                 $1='failed'
+                 OR COALESCE((CASE status WHEN 'read' THEN 3 WHEN 'delivered' THEN 2 WHEN 'sent' THEN 1 ELSE 0 END), 0) < $4
+               )
+             RETURNING id, conversation_id, status`,
+            [mapped, wamid, tenantId, rank]
+          );
+
+          if (updateRes.rows[0]) {
+            emitToTenant(tenantId, 'message:updated', {
+              id: updateRes.rows[0].id,
+              status: mapped,
+              conversation_id: updateRes.rows[0].conversation_id,
+            });
+          }
+
+          // If failed, log the error reason
+          if (mapped === 'failed' && st.errors?.length) {
+            const errMsg = st.errors[0]?.title ?? st.errors[0]?.message ?? 'Unknown error';
+            console.error(`[WABA status] Message ${wamid} failed: ${errMsg}`);
+          }
+        }
+
+        // ── Handle inbound messages ─────────────────────────────────────
+        const messages: any[] = value.messages ?? [];
+        if (!messages.length) continue;
+
+        // Fetch WABA access token for media downloads
+        let wabaToken: string | null = null;
+        try {
+          const tokenRes = await query(
+            'SELECT access_token FROM waba_integrations WHERE tenant_id=$1 AND is_active=TRUE LIMIT 1',
+            [tenantId]
+          );
+          if (tokenRes.rows[0]) wabaToken = decrypt(tokenRes.rows[0].access_token);
+        } catch { /* ignore */ }
+
         for (const msg of messages) {
           const waPhone: string = msg.from;
           const wamid: string   = msg.id;
           const msgType: string = msg.type ?? 'text';
+
+          // Extract media ID + extension for download
+          const mediaObj = msg.image ?? msg.document ?? msg.video ?? msg.audio ?? msg.sticker ?? null;
+          const mediaId: string | null = mediaObj?.id ?? null;
+          const mimeType: string = mediaObj?.mime_type ?? '';
+          const extMap: Record<string, string> = {
+            'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp',
+            'video/mp4': '.mp4', 'audio/ogg': '.ogg', 'audio/mpeg': '.mp3',
+            'application/pdf': '.pdf',
+          };
+          const ext = extMap[mimeType] || (mimeType ? `.${mimeType.split('/')[1]?.split(';')[0] ?? 'bin'}` : '.bin');
+
           const content: string =
-            msg.text?.body ?? msg.image?.caption ?? msg.document?.filename ?? `[${msgType}]`;
+            msg.text?.body
+            ?? msg.image?.caption
+            ?? (msg.document?.filename ? `[Document: ${msg.document.filename}]` : null)
+            ?? (msgType === 'image' ? '[Image]' : null)
+            ?? (msgType === 'video' ? '[Video]' : null)
+            ?? (msgType === 'audio' ? '[Audio]' : null)
+            ?? (msgType === 'sticker' ? '[Sticker]' : null)
+            ?? `[${msgType}]`;
 
           // Dedup by wamid
           const dupMsg = await query('SELECT id FROM messages WHERE wamid=$1 LIMIT 1', [wamid]);
           if (dupMsg.rows[0]) continue;
+
+          // Download media from Meta (fire-and-forget style — save path now, download async)
+          let mediaPath: string | null = null;
+          if (mediaId && wabaToken) {
+            mediaPath = await downloadWabaMedia(mediaId, wabaToken, tenantId, ext);
+          }
 
           // Find or create lead
           let leadId: string;
@@ -306,9 +425,9 @@ async function processWhatsAppMessage(payload: any) {
           }
 
           const msgRes = await query(
-            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, created_at)
-             VALUES ($1,$2,$3,'customer',$4,FALSE,$5,'delivered','customer',NOW()) RETURNING *`,
-            [convId, tenantId, leadId, content, wamid]
+            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, media_url, status, sent_by, created_at)
+             VALUES ($1,$2,$3,'customer',$4,FALSE,$5,$6,'delivered','customer',NOW()) RETURNING *`,
+            [convId, tenantId, leadId, content, wamid, mediaPath]
           );
 
           await query(

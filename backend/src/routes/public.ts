@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs';
 import { Router, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { query, pool } from '../db';
@@ -646,6 +648,25 @@ router.post('/trigger/course/:tenantId', bookingLimiter, async (req: Request, re
     console.error('[course_enrolled endpoint]', err);
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// ── Public media endpoint for WABA media sends ───────────────────────────────
+// Meta needs to download the media from a public URL when we send media messages.
+const WA_MEDIA_DIR = process.env.WA_MEDIA_DIR || path.join(process.cwd(), 'wa_media');
+
+router.get('/waba-media/:tenantId/:filename', (req: Request, res: Response) => {
+  const { tenantId, filename } = req.params;
+  // Sanitize to prevent path traversal
+  const safeTenant = path.basename(tenantId);
+  const safeFile = path.basename(filename);
+  const filePath = path.join(WA_MEDIA_DIR, safeTenant, safeFile);
+
+  if (!fs.existsSync(filePath)) {
+    res.status(404).json({ error: 'Not found' });
+    return;
+  }
+
+  res.sendFile(filePath);
 });
 
 export default router;
