@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, X, LogOut, Settings, User, Unplug, UserPlus, UserCheck, ArrowRight, ArrowLeft, Clock, MessageCircle, CalendarCheck, Zap, Info } from 'lucide-react';
+import { Bell, X, LogOut, Settings, User, Unplug, UserPlus, UserCheck, ArrowRight, ArrowLeft, Clock, MessageCircle, CalendarCheck, Zap, Info, ChevronDown } from 'lucide-react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
@@ -10,7 +10,12 @@ import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
-const sectionNavs: Record<string, { label: string; path: string }[]> = {
+type NavTab = { label: string; path: string };
+type NavDropdown = { label: string; children: NavTab[] };
+type NavItem = NavTab | NavDropdown;
+const isDropdown = (item: NavItem): item is NavDropdown => 'children' in item;
+
+const sectionNavs: Record<string, NavItem[]> = {
   '/inbox': [
     { label: 'Inbox', path: '/inbox' },
     { label: 'Overview', path: '/inbox/overview' },
@@ -30,9 +35,21 @@ const sectionNavs: Record<string, { label: string; path: string }[]> = {
   '/automation': [
     { label: 'Overview', path: '/automation' },
     { label: 'Workflows', path: '/automation/workflows' },
-    { label: 'Templates', path: '/automation/templates' },
-    { label: 'WhatsApp Devices', path: '/automation/devices' },
-    { label: 'Single Send', path: '/automation/wa-send' },
+    {
+      label: 'WhatsApp',
+      children: [
+        { label: 'Devices', path: '/automation/devices' },
+        { label: 'Templates', path: '/automation/templates' },
+        { label: 'Single Send', path: '/automation/wa-send' },
+      ],
+    },
+    {
+      label: 'WABA',
+      children: [
+        { label: 'Dashboard', path: '/automation/waba' },
+        { label: 'Templates', path: '/automation/waba-templates' },
+      ],
+    },
     { label: 'Uploads', path: '/automation/pincode-routing' },
   ],
   '/calendar': [
@@ -93,6 +110,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const [notifTab, setNotifTab] = useState<'alerts' | 'activity'>('alerts');
   const [showProfile, setShowProfile] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const { notifications, markAllNotificationsRead, markNotificationRead, removeNotification, clearAllNotifications } = useCrmStore();
   const { currentUser, logout, isImpersonating, exitImpersonation } = useAuthStore();
   const { companyName } = useCompanyStore();
@@ -183,23 +201,73 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
         <div className="flex-1 flex items-center overflow-x-auto scrollbar-hide">
           {subNav ? (
             <nav className="flex items-center h-14 md:h-16">
-              {subNav.map((tab) => (
-                <Link
-                  key={tab.path}
-                  to={tab.path}
-                  className={cn(
-                    'relative flex items-center h-full px-3 md:px-4 text-[12px] md:text-[13.5px] font-medium whitespace-nowrap transition-colors duration-150 select-none',
-                    isTabActive(tab.path)
-                      ? 'text-primary font-semibold'
-                      : 'text-[#7a6b5c] hover:text-[#1c1410]'
-                  )}
-                >
-                  {tab.label}
-                  {isTabActive(tab.path) && (
-                    <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-primary" />
-                  )}
-                </Link>
-              ))}
+              {subNav.map((item) => {
+                if (isDropdown(item)) {
+                  const childActive = item.children.some((c) => isTabActive(c.path));
+                  const isOpen = openDropdown === item.label;
+                  return (
+                    <div key={item.label} className="relative h-full flex items-center">
+                      <button
+                        onClick={() => setOpenDropdown(isOpen ? null : item.label)}
+                        className={cn(
+                          'relative flex items-center gap-1 h-full px-3 md:px-4 text-[12px] md:text-[13.5px] font-medium whitespace-nowrap transition-colors duration-150 select-none',
+                          childActive
+                            ? 'text-primary font-semibold'
+                            : 'text-[#7a6b5c] hover:text-[#1c1410]'
+                        )}
+                      >
+                        {item.label}
+                        <ChevronDown className={cn('w-3 h-3 transition-transform', isOpen && 'rotate-180')} />
+                        {childActive && (
+                          <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-primary" />
+                        )}
+                      </button>
+                      {isOpen && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
+                          <div
+                            className="absolute left-0 top-full z-50 min-w-[160px] bg-white rounded-xl border border-black/5 py-1.5 overflow-hidden"
+                            style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+                          >
+                            {item.children.map((child) => (
+                              <Link
+                                key={child.path}
+                                to={child.path}
+                                onClick={() => setOpenDropdown(null)}
+                                className={cn(
+                                  'block px-4 py-2 text-[13px] font-medium transition-colors whitespace-nowrap',
+                                  isTabActive(child.path)
+                                    ? 'text-primary bg-[var(--accent-tint)] font-semibold'
+                                    : 'text-[#3a2e26] hover:bg-[var(--app-bg)]'
+                                )}
+                              >
+                                {child.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                }
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      'relative flex items-center h-full px-3 md:px-4 text-[12px] md:text-[13.5px] font-medium whitespace-nowrap transition-colors duration-150 select-none',
+                      isTabActive(item.path)
+                        ? 'text-primary font-semibold'
+                        : 'text-[#7a6b5c] hover:text-[#1c1410]'
+                    )}
+                  >
+                    {item.label}
+                    {isTabActive(item.path) && (
+                      <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-primary" />
+                    )}
+                  </Link>
+                );
+              })}
             </nav>
           ) : (
             <div />
@@ -237,7 +305,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           {/* Bell */}
           <div className="relative">
             <button
-              onClick={() => setShowNotifs(!showNotifs)}
+              onClick={() => { setShowNotifs(!showNotifs); setOpenDropdown(null); }}
               className={cn(
                 'relative p-2 rounded-xl text-[#7a6b5c] hover:text-primary hover:bg-[var(--accent-tint)] transition-colors',
                 showNotifs && 'text-primary bg-[var(--accent-tint)]'
@@ -390,7 +458,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           {/* Profile */}
           <div className="relative">
             <button
-              onClick={() => { setShowProfile((v) => !v); setShowNotifs(false); }}
+              onClick={() => { setShowProfile((v) => !v); setShowNotifs(false); setOpenDropdown(null); }}
               className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-[var(--accent-tint)] transition-colors"
             >
               <div className="hidden sm:block text-right">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   Plus, Pencil, Trash2, Copy, X, Check, Eye, ArrowLeft,
   Paperclip, Upload, Loader2, FileText, Image as ImageIcon, Film, RefreshCw,
@@ -527,10 +527,13 @@ function WABAPreview({ template, onClose }: { template: Template; onClose: () =>
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function AutomationTemplatesPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const canManage = usePermission('automation_templates:manage');
 
-  const [tab, setTab] = useState<TemplateType>((searchParams.get('tab') as TemplateType) ?? 'waba');
+  const isWabaRoute = location.pathname === '/automation/waba-templates';
+  const defaultTab: TemplateType = (searchParams.get('tab') as TemplateType) ?? (isWabaRoute ? 'waba' : 'wa_personal');
+  const [tab, setTab] = useState<TemplateType>(defaultTab);
 
   const handleTabChange = (t: TemplateType) => {
     setTab(t);
@@ -651,7 +654,7 @@ export default function AutomationTemplatesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/automation')} className="p-2 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-[#1c1410] transition-colors shrink-0">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-[#1c1410] transition-colors shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>

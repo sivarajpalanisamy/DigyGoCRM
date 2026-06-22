@@ -91,7 +91,7 @@ export default function WhatsAppSetupPage() {
     <div className="space-y-8 max-w-3xl">
       <div className="flex items-center gap-3">
         <button
-          onClick={() => navigate('/lead-generation')}
+          onClick={() => navigate(-1)}
           className="p-2 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-[#1c1410] transition-colors shrink-0"
         >
           <ArrowLeft className="w-5 h-5" />
