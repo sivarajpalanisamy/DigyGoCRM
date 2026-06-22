@@ -15,7 +15,7 @@ import { usePermission } from '@/hooks/usePermission';
 // ── Types ──────────────────────────────────────────────────────────────────────
 type TemplateType = 'waba' | 'email' | 'sms' | 'wa_personal';
 type WABACategory = 'MARKETING' | 'UTILITY' | 'AUTHENTICATION';
-interface WABAButton { id: string; type: 'QUICK_REPLY' | 'CALL_TO_ACTION'; label: string; value: string; }
+interface WABAButton { id: string; type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER'; label: string; value: string; }
 interface Template {
   id: string;
   name: string;
@@ -154,7 +154,7 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
 
   const addBtn = () => {
     if (buttons.length >= 3) { toast.error('Max 3 buttons allowed'); return; }
-    setButtons([...buttons, { id: `b-${Date.now()}`, type: 'QUICK_REPLY', label: '', value: '' }]);
+    setButtons([...buttons, { id: `b-${Date.now()}`, type: 'QUICK_REPLY' as const, label: '', value: '' }]);
   };
   const upd = (id: string, k: keyof WABAButton, v: string) => setButtons(buttons.map((b) => b.id === id ? { ...b, [k]: v } : b));
   const del = (id: string) => setButtons(buttons.filter((b) => b.id !== id));
@@ -167,9 +167,10 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
       // If submitting to Meta, use the submit-to-meta endpoint directly
       if (submitMeta && !initial) {
         const metaButtons = buttons.filter((b) => b.label.trim()).map((b) => ({
-          type: b.type === 'CALL_TO_ACTION' ? 'URL' : 'QUICK_REPLY',
+          type: b.type,
           text: b.label,
-          ...(b.type === 'CALL_TO_ACTION' ? { url: b.value } : {}),
+          ...(b.type === 'URL' ? { url: b.value } : {}),
+          ...(b.type === 'PHONE_NUMBER' ? { phone_number: b.value } : {}),
         }));
         const saved = await api.post<Template>('/api/templates/submit-to-meta', {
           name: name.trim(),
@@ -276,10 +277,13 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
                 <div key={btn.id} className="flex gap-2 items-center p-2.5 rounded-xl border border-black/5 bg-[var(--app-bg)]">
                   <select className="border border-black/5 rounded-lg px-2 py-1.5 text-xs bg-card outline-none shrink-0" value={btn.type} onChange={(e) => upd(btn.id, 'type', e.target.value)}>
                     <option value="QUICK_REPLY">Quick Reply</option>
-                    <option value="CALL_TO_ACTION">CTA</option>
+                    <option value="URL">URL</option>
+                    <option value="PHONE_NUMBER">Phone</option>
                   </select>
                   <Input value={btn.label} onChange={(e) => upd(btn.id, 'label', e.target.value)} placeholder="Button label" className="flex-1 text-xs" />
-                  <Input value={btn.value} onChange={(e) => upd(btn.id, 'value', e.target.value)} placeholder={btn.type === 'CALL_TO_ACTION' ? 'https://...' : 'payload'} className="flex-1 text-xs font-mono" />
+                  <Input value={btn.value} onChange={(e) => upd(btn.id, 'value', e.target.value)}
+                    placeholder={btn.type === 'URL' ? 'https://...' : btn.type === 'PHONE_NUMBER' ? '+919876543210' : 'payload'}
+                    className="flex-1 text-xs font-mono" />
                   <button onClick={() => del(btn.id)} className="p-1 text-muted-foreground hover:text-destructive rounded"><X className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
@@ -652,9 +656,10 @@ export default function AutomationTemplatesPage() {
     try {
       const btns = parseButtons(t.buttons);
       const metaButtons = btns.map((b) => ({
-        type: b.type === 'CALL_TO_ACTION' ? 'URL' : 'QUICK_REPLY',
+        type: b.type,
         text: b.label,
-        ...(b.type === 'CALL_TO_ACTION' ? { url: b.value } : {}),
+        ...(b.type === 'URL' ? { url: b.value } : {}),
+        ...(b.type === 'PHONE_NUMBER' ? { phone_number: b.value } : {}),
       }));
       const saved = await api.post<Template>('/api/templates/submit-to-meta', {
         name: t.name,
@@ -853,7 +858,7 @@ export default function AutomationTemplatesPage() {
                         <div className="flex gap-2 mt-2 flex-wrap">
                           {btns.map((btn) => (
                             <span key={btn.id} className={cn('text-xs px-2.5 py-1 rounded-lg border font-medium', btn.type === 'QUICK_REPLY' ? 'border-primary/30 text-primary bg-primary/5' : 'border-blue-200 text-blue-600 bg-blue-50')}>
-                              {btn.type === 'CALL_TO_ACTION' ? '🔗 ' : ''}{btn.label}
+                              {btn.type === 'URL' ? '🔗 ' : btn.type === 'PHONE_NUMBER' ? '📞 ' : ''}{btn.label}
                             </span>
                           ))}
                         </div>
