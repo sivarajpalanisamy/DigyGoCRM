@@ -1795,6 +1795,25 @@ router.get('/waba/status', checkPermission('integrations:view'), async (req: Aut
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+// GET /api/integrations/waba/stats
+router.get('/waba/stats', checkPermission('integrations:view'), async (req: AuthRequest, res: Response) => {
+  try {
+    const tid = req.user!.tenantId;
+    const [tplRes, convRes, msgRes, msgTodayRes] = await Promise.all([
+      query(`SELECT COUNT(*) AS cnt FROM templates WHERE tenant_id=$1::uuid AND template_type='waba'`, [tid]),
+      query(`SELECT COUNT(*) AS cnt FROM conversations WHERE tenant_id=$1::uuid AND channel='waba'`, [tid]),
+      query(`SELECT COUNT(*) AS cnt FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE c.tenant_id=$1::uuid AND c.channel='waba'`, [tid]),
+      query(`SELECT COUNT(*) AS cnt FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE c.tenant_id=$1::uuid AND c.channel='waba' AND m.created_at >= CURRENT_DATE`, [tid]),
+    ]);
+    res.json({
+      templates: parseInt(tplRes.rows[0]?.cnt ?? '0'),
+      conversations: parseInt(convRes.rows[0]?.cnt ?? '0'),
+      totalMessages: parseInt(msgRes.rows[0]?.cnt ?? '0'),
+      messagesToday: parseInt(msgTodayRes.rows[0]?.cnt ?? '0'),
+    });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 // POST /api/integrations/waba/setup
 router.post('/waba/setup', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
   const { phone_number, phone_number_id, waba_id, access_token } = req.body as {
