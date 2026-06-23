@@ -730,50 +730,6 @@ export default function CustomFormDetailPage() {
               <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g. Contact Us, Demo Request…" />
             </div>
 
-            {/* Button */}
-            <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Link2 className="w-3.5 h-3.5 text-primary" />
-                </div>
-                <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Button</h3>
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Button Title</label>
-                <Input value={submitLabel} onChange={(e) => setSubmitLabel(e.target.value)} placeholder="e.g. Submit, Enquire Now" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-1">Redirect Link</label>
-                <p className="text-[11px] text-[#b09e8d] mb-2">Where to send the user after form is submitted</p>
-                <Input value={redirectLink} onChange={(e) => setRedirectLink(e.target.value)} placeholder="https://yoursite.com/thank-you" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <ColorPicker label="Button Color" value={btnColor} onChange={setBtnColor} />
-                <ColorPicker label="Button Text Color" value={btnTextColor} onChange={setBtnTextColor} />
-              </div>
-            </div>
-
-            {/* Form Colors */}
-            <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Palette className="w-3.5 h-3.5 text-primary" />
-                  </div>
-                  <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Form Colors</h3>
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={transparentForm} onChange={(e) => setTransparentForm(e.target.checked)}
-                    className="w-4 h-4 rounded accent-orange-500" />
-                  <span className="text-[12px] font-medium text-[#7a6b5c]">Transparent background</span>
-                </label>
-              </div>
-              <div className={`grid grid-cols-2 gap-4 transition-opacity ${transparentForm ? 'opacity-40 pointer-events-none' : ''}`}>
-                <ColorPicker label="Form Background" value={formBgColor} onChange={setFormBgColor} />
-                <ColorPicker label="Form Text Color" value={formTextColor} onChange={setFormTextColor} />
-              </div>
-            </div>
-
             {/* ── Form Fields ── */}
             <div className="bg-white rounded-2xl border border-black/5 card-shadow overflow-hidden">
               <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
@@ -1037,6 +993,50 @@ export default function CustomFormDetailPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Button */}
+            <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Link2 className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Button</h3>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Button Title</label>
+                <Input value={submitLabel} onChange={(e) => setSubmitLabel(e.target.value)} placeholder="e.g. Submit, Enquire Now" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-1">Redirect Link</label>
+                <p className="text-[11px] text-[#b09e8d] mb-2">Where to send the user after form is submitted</p>
+                <Input value={redirectLink} onChange={(e) => setRedirectLink(e.target.value)} placeholder="https://yoursite.com/thank-you" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <ColorPicker label="Button Color" value={btnColor} onChange={setBtnColor} />
+                <ColorPicker label="Button Text Color" value={btnTextColor} onChange={setBtnTextColor} />
+              </div>
+            </div>
+
+            {/* Form Colors */}
+            <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Palette className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Form Colors</h3>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" checked={transparentForm} onChange={(e) => setTransparentForm(e.target.checked)}
+                    className="w-4 h-4 rounded accent-orange-500" />
+                  <span className="text-[12px] font-medium text-[#7a6b5c]">Transparent background</span>
+                </label>
+              </div>
+              <div className={`grid grid-cols-2 gap-4 transition-opacity ${transparentForm ? 'opacity-40 pointer-events-none' : ''}`}>
+                <ColorPicker label="Form Background" value={formBgColor} onChange={setFormBgColor} />
+                <ColorPicker label="Form Text Color" value={formTextColor} onChange={setFormTextColor} />
+              </div>
             </div>
 
             {/* Save button */}
