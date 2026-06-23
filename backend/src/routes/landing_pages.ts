@@ -49,7 +49,7 @@ router.post('/', checkPermission('landing_pages:create'), async (req: AuthReques
   let n = 1;
   try {
     while (true) {
-      const chk = await query('SELECT id FROM landing_pages WHERE slug=$1', [finalSlug]);
+      const chk = await query('SELECT id FROM landing_pages WHERE slug=$1 AND is_deleted=FALSE', [finalSlug]);
       if (!chk.rows.length) break;
       n++;
       finalSlug = `${baseSlug}-${n}`;

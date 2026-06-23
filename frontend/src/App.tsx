@@ -58,6 +58,7 @@ import ReportsPage from "./pages/ReportsPage";
 import CallsPage from "./pages/CallsPage";
 import LandingPagesPage from "./pages/LandingPagesPage";
 import LandingPageBuilderPage from "./pages/LandingPageBuilderPage";
+import PublicLandingPage from "./pages/PublicLandingPage";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,7 @@ const App = () => (
           <Route path="/activate" element={<ActivatePage />} />
           <Route path="/f/:slug" element={<PublicFormPage />} />
           <Route path="/book/:slug" element={<PublicBookingPage />} />
+          <Route path="/p/:slug" element={<PublicLandingPage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
           {/* App routes */}

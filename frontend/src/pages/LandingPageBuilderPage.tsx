@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 import {
@@ -409,11 +409,18 @@ function PropsPanel({ block, onChange }: { block: Block; onChange: (props: Recor
                 className="w-10 px-2 py-1 rounded-lg border border-black/10 text-center text-[13px] bg-white outline-none" />
               <input type="text" value={item.title} onChange={(e) => { const items = [...p.items]; items[i] = { ...item, title: e.target.value }; set('items', items); }}
                 placeholder="Title" className="flex-1 px-2 py-1 rounded-lg border border-black/10 text-[12px] bg-white outline-none" />
+              <button onClick={() => { const items = p.items.filter((_: any, j: number) => j !== i); set('items', items); }}
+                className="p-1 rounded-lg hover:bg-red-50 text-[#b09e8d] hover:text-red-500 transition-colors shrink-0"
+                title="Remove"><Trash2 className="w-3 h-3" /></button>
             </div>
             <textarea value={item.desc} rows={2} onChange={(e) => { const items = [...p.items]; items[i] = { ...item, desc: e.target.value }; set('items', items); }}
               placeholder="Description" className="w-full px-2 py-1 rounded-lg border border-black/10 text-[11px] bg-white outline-none resize-none" />
           </div>
         ))}
+        <button onClick={() => set('items', [...p.items, { icon: '✨', title: 'New Feature', desc: 'Description here.' }])}
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-black/15 text-[11px] font-semibold text-[#7a6b5c] hover:border-primary hover:text-primary transition-colors">
+          <Plus className="w-3 h-3" /> Add Feature
+        </button>
       </div>
     </div>;
 
@@ -432,8 +439,15 @@ function PropsPanel({ block, onChange }: { block: Block; onChange: (props: Recor
               className="w-20 px-2 py-1.5 rounded-lg border border-black/10 text-[12px] font-bold bg-[var(--app-bg)] outline-none" />
             <input type="text" value={item.label} placeholder="Label" onChange={(e) => { const items = [...p.items]; items[i] = { ...item, label: e.target.value }; set('items', items); }}
               className="flex-1 px-2 py-1.5 rounded-lg border border-black/10 text-[12px] bg-[var(--app-bg)] outline-none" />
+            <button onClick={() => { const items = p.items.filter((_: any, j: number) => j !== i); set('items', items); }}
+              className="p-1 rounded-lg hover:bg-red-50 text-[#b09e8d] hover:text-red-500 transition-colors shrink-0"
+              title="Remove"><Trash2 className="w-3 h-3" /></button>
           </div>
         ))}
+        <button onClick={() => set('items', [...p.items, { value: '0', label: 'New Stat' }])}
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-black/15 text-[11px] font-semibold text-[#7a6b5c] hover:border-primary hover:text-primary transition-colors">
+          <Plus className="w-3 h-3" /> Add Stat
+        </button>
       </div>
     </div>;
 
@@ -484,11 +498,14 @@ export default function LandingPageBuilderPage() {
   const [editingName, setEditingName] = useState(false);
   const [showThemes, setShowThemes] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loadingPage, setLoadingPage] = useState(!!pageId);
+  const [dirty, setDirty] = useState(false);
+  const loadedRef = useRef(false);
 
   // Load existing page data when editing
   useEffect(() => {
-    if (!pageId) { setPageName('Untitled Page'); return; }
+    if (!pageId) { setPageName('Untitled Page'); loadedRef.current = true; return; }
     api.get<any>(`/api/landing-pages/${pageId}`)
       .then((page) => {
         setPageName(page.title ?? 'Untitled Page');
@@ -497,8 +514,23 @@ export default function LandingPageBuilderPage() {
         if (content?.themeKey && THEMES[content.themeKey]) setThemeKey(content.themeKey);
       })
       .catch(() => { toast.error('Failed to load page'); setPageName('Untitled Page'); })
-      .finally(() => setLoadingPage(false));
+      .finally(() => { setLoadingPage(false); loadedRef.current = true; });
   }, [pageId]);
+
+  // Track dirty state after initial load
+  const markDirty = useCallback(() => { if (loadedRef.current) setDirty(true); }, []);
+  const origSetBlocks = setBlocks;
+  const setBlocksDirty = useCallback((v: Block[] | ((prev: Block[]) => Block[])) => { origSetBlocks(v); markDirty(); }, [origSetBlocks, markDirty]);
+  const setThemeKeyDirty = useCallback((v: string) => { setThemeKey(v); markDirty(); }, [markDirty]);
+  const setPageNameDirty = useCallback((v: string) => { setPageName(v); markDirty(); }, [markDirty]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirty]);
 
   const theme = THEMES[themeKey];
   const selectedBlock = blocks.find((b) => b.id === selectedId) ?? null;
@@ -516,7 +548,7 @@ export default function LandingPageBuilderPage() {
     if (over && active.id !== over.id) {
       const oldIdx = blocks.findIndex((b) => b.id === active.id);
       const newIdx = blocks.findIndex((b) => b.id === over.id);
-      setBlocks(arrayMove(blocks, oldIdx, newIdx));
+      setBlocksDirty(arrayMove(blocks, oldIdx, newIdx));
     }
   };
 
@@ -526,16 +558,16 @@ export default function LandingPageBuilderPage() {
       const idx = blocks.findIndex((b) => b.id === selectedId);
       const next = [...blocks];
       next.splice(idx + 1, 0, newBlock);
-      setBlocks(next);
+      setBlocksDirty(next);
     } else {
-      setBlocks([...blocks, newBlock]);
+      setBlocksDirty([...blocks, newBlock]);
     }
     setSelectedId(newBlock.id);
     toast.success(`${type} block added`);
   };
 
   const deleteBlock = (id: string) => {
-    setBlocks(blocks.filter((b) => b.id !== id));
+    setBlocksDirty(blocks.filter((b) => b.id !== id));
     if (selectedId === id) setSelectedId(null);
   };
 
@@ -543,11 +575,40 @@ export default function LandingPageBuilderPage() {
     const idx = blocks.findIndex((b) => b.id === id);
     const newIdx = dir === 'up' ? idx - 1 : idx + 1;
     if (newIdx < 0 || newIdx >= blocks.length) return;
-    setBlocks(arrayMove(blocks, idx, newIdx));
+    setBlocksDirty(arrayMove(blocks, idx, newIdx));
   };
 
   const updateProps = (id: string, props: Record<string, any>) =>
-    setBlocks(blocks.map((b) => b.id === id ? { ...b, props } : b));
+    setBlocksDirty(blocks.map((b) => b.id === id ? { ...b, props } : b));
+
+  // Save as draft or publish
+  const savePage = async (status: 'draft' | 'published') => {
+    if (!pageName.trim()) { toast.error('Page title is required'); return; }
+    const isPublish = status === 'published';
+    if (isPublish) setPublishing(true); else setSaving(true);
+    const content = { blocks, themeKey };
+    try {
+      if (pageId) {
+        await api.patch(`/api/landing-pages/${pageId}`, { title: pageName, content, status });
+      } else {
+        await api.post('/api/landing-pages', {
+          title: pageName,
+          slug: pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+          template: 'Custom',
+          status,
+          content,
+        });
+      }
+      setDirty(false);
+      toast.success(isPublish ? 'Page published!' : 'Draft saved');
+      navigate('/lead-generation/landing-pages');
+    } catch (err: any) {
+      toast.error(err?.message ?? `Failed to ${isPublish ? 'publish' : 'save'}`);
+    } finally {
+      setPublishing(false);
+      setSaving(false);
+    }
+  };
 
   const canvasWidth = device === 'mobile' ? 390 : device === 'tablet' ? 768 : undefined;
 
@@ -564,7 +625,10 @@ export default function LandingPageBuilderPage() {
 
       {/* Top bar */}
       <div className="h-12 bg-white border-b border-black/8 flex items-center px-4 gap-3 shrink-0 z-20 shadow-sm">
-        <button onClick={() => navigate('/lead-generation/landing-pages')}
+        <button onClick={() => {
+            if (dirty && !window.confirm('You have unsaved changes. Leave anyway?')) return;
+            navigate('/lead-generation/landing-pages');
+          }}
           className="flex items-center gap-1 text-[12px] text-[#7a6b5c] hover:text-primary transition-colors shrink-0">
           <ArrowLeft className="w-3.5 h-3.5" /> Pages
         </button>
@@ -572,7 +636,7 @@ export default function LandingPageBuilderPage() {
         <div className="w-px h-5 bg-black/10" />
 
         {editingName
-          ? <input autoFocus value={pageName} onChange={(e) => setPageName(e.target.value)}
+          ? <input autoFocus value={pageName} onChange={(e) => setPageNameDirty(e.target.value)}
               onBlur={() => setEditingName(false)} onKeyDown={(e) => e.key === 'Enter' && setEditingName(false)}
               className="text-[13px] font-semibold text-[#1c1410] border-b border-primary outline-none bg-transparent min-w-[140px]" />
           : <button onClick={() => setEditingName(true)}
@@ -597,7 +661,7 @@ export default function LandingPageBuilderPage() {
               <div className="fixed inset-0 z-10" onClick={() => setShowThemes(false)} />
               <div className="absolute top-9 right-0 z-20 bg-white rounded-2xl border border-black/8 shadow-xl p-2 w-40">
                 {Object.entries(THEMES).map(([key, t]) => (
-                  <button key={key} onClick={() => { setThemeKey(key); setShowThemes(false); }}
+                  <button key={key} onClick={() => { setThemeKeyDirty(key); setShowThemes(false); }}
                     className={cn('w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] font-medium transition-colors',
                       themeKey === key ? 'bg-primary/10 text-primary' : 'text-[#1c1410] hover:bg-[var(--app-bg)]')}>
                     <span className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
@@ -621,29 +685,10 @@ export default function LandingPageBuilderPage() {
           ))}
         </div>
 
-        <Button size="sm" disabled={publishing} onClick={async () => {
-          const content = { blocks, themeKey };
-          setPublishing(true);
-          try {
-            if (pageId) {
-              await api.patch(`/api/landing-pages/${pageId}`, { title: pageName, content, status: 'published' });
-            } else {
-              await api.post('/api/landing-pages', {
-                title: pageName,
-                slug: pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-                template: 'Custom',
-                status: 'published',
-                content,
-              });
-            }
-            toast.success('Page published successfully!');
-            navigate('/lead-generation/landing-pages');
-          } catch (err: any) {
-            toast.error(err?.message ?? 'Failed to publish');
-          } finally {
-            setPublishing(false);
-          }
-        }}>
+        <Button variant="outline" size="sm" disabled={saving || publishing} onClick={() => savePage('draft')}>
+          <Check className="w-3.5 h-3.5" /> {saving ? 'Saving…' : 'Save Draft'}
+        </Button>
+        <Button size="sm" disabled={publishing || saving} onClick={() => savePage('published')}>
           <Zap className="w-3.5 h-3.5" /> {publishing ? 'Publishing…' : 'Publish'}
         </Button>
       </div>

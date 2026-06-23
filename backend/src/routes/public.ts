@@ -669,4 +669,162 @@ router.get('/waba-media/:tenantId/:filename', (req: Request, res: Response) => {
   res.sendFile(filePath);
 });
 
+// ── Public landing pages ──────────────────────────────────────────────────────
+
+const pageLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: process.env.NODE_ENV === 'production' ? 60 : 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests.' },
+});
+
+// GET /api/public/page/:slug — view a published landing page
+router.get('/page/:slug', pageLimiter, async (req: Request, res: Response) => {
+  try {
+    const result = await query(
+      `SELECT lp.id, lp.title, lp.slug, lp.content, lp.tenant_id,
+              t.name AS company_name, t.branding
+       FROM landing_pages lp
+       JOIN tenants t ON t.id = lp.tenant_id
+       WHERE lp.slug=$1 AND lp.status='published' AND lp.is_deleted=FALSE`,
+      [req.params.slug]
+    );
+    if (!result.rows[0]) { res.status(404).json({ error: 'Page not found' }); return; }
+    // Increment view counter (fire-and-forget)
+    query('UPDATE landing_pages SET views = views + 1 WHERE id=$1', [result.rows[0].id]).catch(() => {});
+    res.json(result.rows[0]);
+  } catch (err: any) {
+    console.error('[public page]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/public/page/:slug/submit — submit a lead form on a landing page
+const pageSubmitLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: process.env.NODE_ENV === 'production' ? 20 : 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many submissions. Please try again later.' },
+});
+
+router.post('/page/:slug/submit', pageSubmitLimiter, async (req: Request, res: Response) => {
+  try {
+    const pageResult = await query(
+      `SELECT id, tenant_id, title FROM landing_pages
+       WHERE slug=$1 AND status='published' AND is_deleted=FALSE`,
+      [req.params.slug]
+    );
+    if (!pageResult.rows[0]) { res.status(404).json({ error: 'Page not found' }); return; }
+    const page = pageResult.rows[0];
+
+    const { name, email, phone, message, company } = req.body;
+    if (!name?.trim() && !email?.trim() && !phone?.trim()) {
+      res.status(400).json({ error: 'At least one contact field is required' }); return;
+    }
+
+    // Find default pipeline + first stage for this tenant
+    const pipeResult = await query(
+      `SELECT p.id AS pipeline_id, ps.id AS stage_id
+       FROM pipelines p
+       JOIN pipeline_stages ps ON ps.pipeline_id = p.id
+       WHERE p.tenant_id=$1 AND p.is_default=TRUE
+       ORDER BY ps.stage_order ASC LIMIT 1`,
+      [page.tenant_id]
+    );
+    // Fallback: any pipeline
+    let pipelineId: string | null = null;
+    let stageId: string | null = null;
+    if (pipeResult.rows[0]) {
+      pipelineId = pipeResult.rows[0].pipeline_id;
+      stageId = pipeResult.rows[0].stage_id;
+    } else {
+      const anyPipe = await query(
+        `SELECT p.id AS pipeline_id, ps.id AS stage_id
+         FROM pipelines p
+         JOIN pipeline_stages ps ON ps.pipeline_id = p.id
+         WHERE p.tenant_id=$1
+         ORDER BY ps.stage_order ASC LIMIT 1`,
+        [page.tenant_id]
+      );
+      if (anyPipe.rows[0]) {
+        pipelineId = anyPipe.rows[0].pipeline_id;
+        stageId = anyPipe.rows[0].stage_id;
+      }
+    }
+
+    if (!pipelineId || !stageId) {
+      res.status(500).json({ error: 'No pipeline configured' }); return;
+    }
+
+    // Dedup by phone or email within the pipeline
+    const dedupField = phone?.trim() ? 'phone' : email?.trim() ? 'email' : null;
+    if (dedupField) {
+      const dedupVal = dedupField === 'phone' ? phone.trim() : email.trim();
+      const existing = await query(
+        `SELECT id FROM leads WHERE tenant_id=$1 AND pipeline_id=$2 AND ${dedupField}=$3 AND is_deleted=FALSE`,
+        [page.tenant_id, pipelineId, dedupVal]
+      );
+      if (existing.rows[0]) {
+        // Increment leads counter anyway
+        query('UPDATE landing_pages SET leads = leads + 1 WHERE id=$1', [page.id]).catch(() => {});
+        res.json({ success: true, duplicate: true });
+        return;
+      }
+    }
+
+    const firstName = (name?.trim() ?? '').split(' ')[0] || '';
+    const lastName = (name?.trim() ?? '').split(' ').slice(1).join(' ') || '';
+
+    const leadResult = await query(
+      `INSERT INTO leads (tenant_id, first_name, last_name, email, phone, source, pipeline_id, stage_id, custom_fields)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [
+        page.tenant_id, firstName, lastName,
+        email?.trim() || null, phone?.trim() || null,
+        `Landing Page: ${page.title}`,
+        pipelineId, stageId,
+        JSON.stringify({ company: company?.trim() || '', message: message?.trim() || '', landing_page_slug: req.params.slug }),
+      ]
+    );
+    const lead = leadResult.rows[0];
+
+    // Increment leads counter
+    query('UPDATE landing_pages SET leads = leads + 1 WHERE id=$1', [page.id]).catch(() => {});
+
+    // Backfill custom fields
+    try { await backfillCustomFields(lead.id, page.tenant_id, {}); } catch {}
+
+    // Emit socket event
+    try {
+      const withJoin = await query(
+        'SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id = l.assigned_to WHERE l.id=$1',
+        [lead.id]
+      );
+      emitToTenant(page.tenant_id, 'lead:created', withJoin.rows[0] ?? lead);
+    } catch {}
+
+    // Trigger workflows
+    try { await triggerWorkflows('lead_created', lead, page.tenant_id, lead.id); } catch {}
+
+    // Upsert contact
+    const fullName = [firstName, lastName].filter(Boolean).join(' ');
+    try { await upsertContact(page.tenant_id, fullName, email?.trim() || null, phone?.trim() || null, lead.id); } catch {}
+
+    // Notify
+    try {
+      await sendNewLeadNotification(page.tenant_id, {
+        id: lead.id, name: fullName, source: lead.source,
+        pipeline_id: pipelineId!, stage_id: stageId!,
+      }, null);
+    } catch {}
+
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('[page submit]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;
