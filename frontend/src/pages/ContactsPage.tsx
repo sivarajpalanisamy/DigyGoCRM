@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   Users, UserCheck, UserPlus, Phone, Search, Mail, MoreVertical, User,
   MessageCircle, Pencil, Trash2, ArrowRightLeft, Filter, X, Download,
-  ChevronDown, Tag, FileText, Loader2,
+  ChevronDown, Tag, FileText, Loader2, Zap, Settings,
 } from 'lucide-react';
 import { useCrmStore } from '@/store/crmStore';
 import { usePermission } from '@/hooks/usePermission';
@@ -332,8 +332,71 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
   );
 }
 
+// ─── Workflow Trigger Modal ──────────────────────────────────────────────────
+function WorkflowTriggerModal({ leadIds, workflows, onClose, onSuccess }: {
+  leadIds: string[];
+  workflows: any[];
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const activeWorkflows = workflows.filter((w) => w.status === 'active');
+  const [selected, setSelected] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const send = async () => {
+    if (!selected) { toast.error('Please select a workflow'); return; }
+    const wf = activeWorkflows.find((w) => w.id === selected);
+    setSending(true);
+    try {
+      await api.post(`/api/workflows/${selected}/bulk-trigger`, { lead_ids: leadIds });
+      toast.success(`${leadIds.length} contact${leadIds.length !== 1 ? 's' : ''} pushed to "${wf?.name}" — automation is executing`);
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to trigger workflow');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-black/5">
+          <h3 className="font-bold text-[17px] text-[#1c1410]">Trigger Workflow</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-4 h-4 text-[#7a6b5c]" /></button>
+        </div>
+        <div className="px-6 py-5 space-y-3">
+          <label className="text-[13px] font-semibold text-[#1c1410] block">Select Active Workflow</label>
+          <div className="relative">
+            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white appearance-none pr-10">
+              <option value="">— Choose a workflow —</option>
+              {activeWorkflows.map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+          {activeWorkflows.length === 0 && (
+            <p className="text-[12px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+              No active workflows found. Set a workflow to Active in Automation first.
+            </p>
+          )}
+          <p className="text-[12px] text-blue-500 flex items-start gap-1.5 pt-1">
+            <Settings className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            {leadIds.length} contact{leadIds.length !== 1 ? 's' : ''} selected — all will be pushed through the chosen workflow.
+          </p>
+        </div>
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/5">
+          <button onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-200 text-[13px] font-bold text-gray-600 hover:bg-gray-300 transition-colors uppercase tracking-wide">Close</button>
+          <button onClick={send} disabled={sending || !selected} className="px-6 py-2 rounded-lg bg-green-500 text-[13px] font-bold text-white hover:bg-green-600 disabled:opacity-50 transition-colors uppercase tracking-wide">
+            {sending ? 'Sending…' : 'Send'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ContactsPage() {
-  const { leads, pipelines, staff, updateLead, deleteLead } = useCrmStore();
+  const { leads, pipelines, staff, updateLead, deleteLead, workflows } = useCrmStore();
   const canEditContact   = usePermission('leads:edit');
   const canDeleteContact = usePermission('leads:delete');
   const canExport        = usePermission('contacts:export');
@@ -354,6 +417,7 @@ export default function ContactsPage() {
   const selectedContact = leads.find((l) => l.id === selectedContactId) ?? null;
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showWorkflow, setShowWorkflow] = useState(false);
 
   const allSources = useMemo(() => ['All', ...Array.from(new Set(leads.map((l) => l.source)))].filter(Boolean), [leads]);
   const allTags = useMemo(() => ['All', ...Array.from(new Set(leads.flatMap((l) => l.tags)))], [leads]);
@@ -617,6 +681,9 @@ export default function ContactsPage() {
             <div className="w-6 h-6 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center">{selected.length}</div>
             <span className="text-[12px] font-semibold text-[#1c1410]">selected</span>
           </div>
+          <button onClick={() => setShowWorkflow(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-primary hover:bg-primary/10 transition-colors">
+            <Zap className="w-3.5 h-3.5" /> Trigger Workflow
+          </button>
           {canDeleteContact && (
             <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-red-500 hover:bg-red-50 transition-colors">
               <Trash2 className="w-3.5 h-3.5" /> Delete
@@ -872,6 +939,15 @@ export default function ContactsPage() {
         }}
         filename="contacts"
         onClose={() => setShowExportModal(false)}
+      />
+    )}
+
+    {showWorkflow && (
+      <WorkflowTriggerModal
+        leadIds={selected}
+        workflows={workflows}
+        onClose={() => setShowWorkflow(false)}
+        onSuccess={() => { setShowWorkflow(false); setSelected([]); }}
       />
     )}
 
