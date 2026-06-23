@@ -239,6 +239,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                     }}
                     className={cn(inputCls, 'cursor-pointer appearance-none')}
                   >
+                    <option value="">— Select pipeline —</option>
                     {pipelines.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
@@ -252,6 +253,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                     onChange={(e) => setForm((f) => ({ ...f, stageId: e.target.value }))}
                     className={cn(inputCls, 'cursor-pointer appearance-none')}
                   >
+                    <option value="">— Select stage —</option>
                     {selectedStages.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
