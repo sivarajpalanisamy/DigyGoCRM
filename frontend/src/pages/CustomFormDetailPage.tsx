@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
 // ─── Form field types ─────────────────────────────────────────────────────────
-type FieldType = 'text' | 'email' | 'phone' | 'number' | 'textarea' | 'dropdown' | 'radio' | 'multiselect' | 'checkbox';
+type FieldType = 'text' | 'email' | 'phone' | 'number' | 'textarea' | 'dropdown' | 'radio' | 'multiselect' | 'checkbox' | 'date';
 
 interface FormField {
   id: string;
@@ -29,11 +29,13 @@ interface FormField {
 const FIELD_ICONS: Record<FieldType, React.ElementType> = {
   text: Type, email: Mail, phone: Phone, number: Hash,
   textarea: AlignLeft, dropdown: ChevronDown, radio: ChevronDown, multiselect: ChevronDown, checkbox: ToggleLeft,
+  date: CalendarDays,
 };
 
 const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   text: 'Text', email: 'Email', phone: 'Phone', number: 'Number',
   textarea: 'Long Text', dropdown: 'Dropdown', radio: 'Radio', multiselect: 'Multi-select', checkbox: 'Checkbox',
+  date: 'Date',
 };
 
 // ─── Standard CRM fields available for forms ─────────────────────────────────
@@ -45,7 +47,7 @@ const PICKER_STD = [
   { slug: 'business_name',name: 'Business Name', type: 'text'     as FieldType, Icon: Type },
   { slug: 'street_address',name: 'Address',      type: 'textarea' as FieldType, Icon: AlignLeft },
   { slug: 'postal_code',  name: 'Postal Code',   type: 'text'     as FieldType, Icon: Hash },
-  { slug: 'date_of_birth',name: 'Date of Birth', type: 'text'     as FieldType, Icon: CalendarDays },
+  { slug: 'date_of_birth',name: 'Date of Birth', type: 'date'     as FieldType, Icon: CalendarDays },
 ];
 
 // ─── Types for inline field creation (mirrors FieldsPage) ────────────────────
@@ -77,15 +79,19 @@ const dataTypeToFieldType = (dt: DataType): FieldType => {
   if (dt === 'Radio')        return 'radio';
   if (dt === 'Multi-select') return 'multiselect';
   if (dt === 'Checkbox')     return 'checkbox';
+  if (dt === 'Date')         return 'date';
   return 'text';
 };
 
 // ─── Inline helpers ───────────────────────────────────────────────────────────
 const STANDARD_CRM_FIELDS = [
-  { slug: 'first_name', name: 'First Name' },
-  { slug: 'last_name',  name: 'Last Name' },
-  { slug: 'email',      name: 'Email' },
-  { slug: 'phone',      name: 'Phone' },
+  { slug: 'first_name',    name: 'First Name' },
+  { slug: 'last_name',     name: 'Last Name' },
+  { slug: 'email',         name: 'Email' },
+  { slug: 'phone',         name: 'Phone' },
+  { slug: 'date_of_birth', name: 'DOB' },
+  { slug: 'business_name', name: 'Business Name' },
+  { slug: 'postal_code',   name: 'Postal Code' },
 ];
 
 // ─── ColorPicker ─────────────────────────────────────────────────────────────
@@ -518,15 +524,19 @@ export default function CustomFormDetailPage() {
         setPolicyLink(form.declaration_link ?? '');
         const rawFields: any[] = Array.isArray(form.fields) ? form.fields : [];
         if (rawFields.length > 0) {
-          setFields(rawFields.map((f: any, i: number) => ({
-            id: f.id ?? `f${i}`,
-            label: f.label ?? '',
-            type: (f.type as FieldType) ?? 'text',
-            placeholder: f.placeholder ?? '',
-            required: f.required ?? false,
-            mapTo: f.mapTo ?? '',
-            options: f.options,
-          })));
+          setFields(rawFields.map((f: any, i: number) => {
+            const mapTo = f.mapTo ?? '';
+            const autoRequired = mapTo === 'email' || mapTo === 'phone';
+            return {
+              id: f.id ?? `f${i}`,
+              label: f.label ?? '',
+              type: (f.type as FieldType) ?? 'text',
+              placeholder: f.placeholder ?? '',
+              required: autoRequired ? true : (f.required ?? false),
+              mapTo,
+              options: f.options,
+            };
+          }));
         }
       })
       .catch(() => toast.error('Failed to load form'))
@@ -534,7 +544,13 @@ export default function CustomFormDetailPage() {
   }, [id]);
 
   const updateField = (fid: string, changes: Partial<FormField>) =>
-    setFields(fields.map((f) => f.id === fid ? { ...f, ...changes } : f));
+    setFields(fields.map((f) => {
+      if (f.id !== fid) return f;
+      const updated = { ...f, ...changes };
+      // Enforce required for email/phone mapped fields
+      if (updated.mapTo === 'email' || updated.mapTo === 'phone') updated.required = true;
+      return updated;
+    }));
 
   const removeField = (fid: string) => {
     if (fields.length === 1) { toast.error('A form must have at least one field'); return; }
@@ -1007,7 +1023,7 @@ export default function CustomFormDetailPage() {
                         <span className="text-[13px]" style={{ color: formTextColor }}>{field.placeholder || field.label}</span>
                       </div>
                     ) : (
-                      <input disabled type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : 'text'}
+                      <input disabled type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : field.type === 'date' ? 'date' : 'text'}
                         placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
                         className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[13px] text-[#7a6b5c] placeholder:text-[#b09e8d] outline-none" />
                     )}

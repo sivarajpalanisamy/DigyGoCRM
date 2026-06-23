@@ -232,7 +232,7 @@ export default function CustomFormsPage() {
       } else if (f.type === 'checkbox') {
         inp = `<label class="dgf-chk"><input type="checkbox" data-label="${lbl}"> ${esc(f.placeholder || f.label)}</label>`;
       } else {
-        const t = f.type === 'email' ? 'email' : f.type === 'phone' ? 'tel' : f.type === 'number' ? 'number' : 'text';
+        const t = f.type === 'email' ? 'email' : f.type === 'phone' ? 'tel' : f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text';
         inp = `<input type="${t}" class="dgf-input" data-label="${lbl}" placeholder="${ph}"${req}>`;
       }
       return `<div class="dgf-field"><label class="dgf-label">${lbl}${star}</label>${inp}</div>`;

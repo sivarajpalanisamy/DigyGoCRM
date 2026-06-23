@@ -258,7 +258,7 @@ export default function PublicFormPage() {
                   </div>
                 ) : (
                   <input
-                    type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : field.type === 'number' ? 'number' : 'text'}
+                    type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
                     value={val}
                     onChange={(e) => set(e.target.value)}
                     placeholder={field.placeholder}
