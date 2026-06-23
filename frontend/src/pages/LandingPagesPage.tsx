@@ -187,7 +187,7 @@ export default function LandingPagesPage() {
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={() => navigate('/lead-generation/landing-pages/builder')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/lead-generation/landing-pages/builder')} title="Create new page in builder">
             <Paintbrush className="w-3.5 h-3.5" /> Open Builder
           </Button>
           <Button size="sm" onClick={() => setShowModal(true)}>
@@ -266,7 +266,7 @@ export default function LandingPagesPage() {
                       <span className="text-[11px] text-[#7a6b5c]">Live</span>
                     </div>
                     <div className="flex gap-0.5">
-                      <button onClick={() => navigate('/lead-generation/landing-pages/builder')}
+                      <button onClick={() => navigate(`/lead-generation/landing-pages/builder?id=${page.id}`)}
                         className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors" title="Edit in builder">
                         <Paintbrush className="w-3.5 h-3.5" />
                       </button>

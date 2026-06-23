@@ -56,6 +56,8 @@ import WABABroadcastPage from "./pages/WABABroadcastPage";
 import WABASingleSendPage from "./pages/WABASingleSendPage";
 import ReportsPage from "./pages/ReportsPage";
 import CallsPage from "./pages/CallsPage";
+import LandingPagesPage from "./pages/LandingPagesPage";
+import LandingPageBuilderPage from "./pages/LandingPageBuilderPage";
 
 const queryClient = new QueryClient();
 
@@ -92,6 +94,7 @@ const App = () => (
             <Route path="/lead-generation/meta-forms" element={<MetaFormsPage />} />
             <Route path="/lead-generation/custom-forms" element={<CustomFormsPage />} />
             <Route path="/lead-generation/custom-forms/:id" element={<CustomFormDetailPage />} />
+            <Route path="/lead-generation/landing-pages" element={<LandingPagesPage />} />
 
             {/* Lead Management */}
             <Route path="/lead-management" element={<LeadManagementOverviewPage />} />
@@ -146,6 +149,7 @@ const App = () => (
           {/* Full-screen editors — outside AppLayout but still protected */}
           <Route path="/automation/editor/:id" element={<WorkflowEditorPage />} />
           <Route path="/automation/analytics/:id" element={<WorkflowAnalyticsPage />} />
+          <Route path="/lead-generation/landing-pages/builder" element={<LandingPageBuilderPage />} />
           </Route>{/* closes AuthGuard */}
 
           <Route path="*" element={<NotFound />} />

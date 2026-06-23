@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 import {
@@ -480,10 +480,25 @@ export default function LandingPageBuilderPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [themeKey, setThemeKey] = useState('brand');
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [pageName, setPageName] = useState('Free Demo Booking');
+  const [pageName, setPageName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [showThemes, setShowThemes] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [loadingPage, setLoadingPage] = useState(!!pageId);
+
+  // Load existing page data when editing
+  useEffect(() => {
+    if (!pageId) { setPageName('Untitled Page'); return; }
+    api.get<any>(`/api/landing-pages/${pageId}`)
+      .then((page) => {
+        setPageName(page.title ?? 'Untitled Page');
+        const content = typeof page.content === 'string' ? JSON.parse(page.content) : page.content;
+        if (content?.blocks?.length) setBlocks(content.blocks);
+        if (content?.themeKey && THEMES[content.themeKey]) setThemeKey(content.themeKey);
+      })
+      .catch(() => { toast.error('Failed to load page'); setPageName('Untitled Page'); })
+      .finally(() => setLoadingPage(false));
+  }, [pageId]);
 
   const theme = THEMES[themeKey];
   const selectedBlock = blocks.find((b) => b.id === selectedId) ?? null;
@@ -535,6 +550,14 @@ export default function LandingPageBuilderPage() {
     setBlocks(blocks.map((b) => b.id === id ? { ...b, props } : b));
 
   const canvasWidth = device === 'mobile' ? 390 : device === 'tablet' ? 768 : undefined;
+
+  if (loadingPage) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#e8ddd5]">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-[#e8ddd5] overflow-hidden">
@@ -603,7 +626,7 @@ export default function LandingPageBuilderPage() {
           setPublishing(true);
           try {
             if (pageId) {
-              await api.patch(`/api/landing-pages/${pageId}`, { content, status: 'published' });
+              await api.patch(`/api/landing-pages/${pageId}`, { title: pageName, content, status: 'published' });
             } else {
               await api.post('/api/landing-pages', {
                 title: pageName,

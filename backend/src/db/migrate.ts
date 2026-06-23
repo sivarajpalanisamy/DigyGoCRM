@@ -108,6 +108,7 @@ const MIGRATIONS = [
   'migration_106_waba_enhancements.sql',
   'migration_107_broadcasts.sql',
   'migration_108_custom_forms_tags.sql',
+  'migration_109_landing_pages_soft_delete.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
