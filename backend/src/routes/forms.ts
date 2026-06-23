@@ -80,6 +80,16 @@ router.post('/', checkPermission('custom_forms:create'), checkUsage('forms'), as
   const tenantId = req.user!.tenantId;
 
   try {
+    // Validate pipeline_id and stage_id belong to this tenant
+    if (pipeline_id) {
+      const pCheck = await query('SELECT id FROM pipelines WHERE id=$1 AND tenant_id=$2', [pipeline_id, tenantId]);
+      if (!pCheck.rows.length) { res.status(400).json({ error: 'Invalid pipeline' }); return; }
+      if (stage_id) {
+        const sCheck = await query('SELECT id FROM pipeline_stages WHERE id=$1 AND pipeline_id=$2', [stage_id, pipeline_id]);
+        if (!sCheck.rows.length) { res.status(400).json({ error: 'Invalid stage for this pipeline' }); return; }
+      }
+    }
+
     // Auto-generate globally unique slug (across all tenants — slugs are shared URL namespace)
     let slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     let candidate = slug;

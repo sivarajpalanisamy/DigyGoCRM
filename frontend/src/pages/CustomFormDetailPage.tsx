@@ -507,6 +507,7 @@ export default function CustomFormDetailPage() {
   const [transparentForm, setTransparentForm] = useState(false);
   const [formBgColor, setFormBgColor] = useState('#ffffff');
   const [formTextColor, setFormTextColor] = useState('#1c1410');
+  const [thankYouMessage, setThankYouMessage] = useState('Thank you for your submission!');
 
   // Fields
   const [fields, setFields] = useState<FormField[]>([
@@ -558,6 +559,7 @@ export default function CustomFormDetailPage() {
         setPipelineId(form.pipeline_id ?? '');
         setStageId(form.stage_id ?? '');
         setTags(Array.isArray(form.tags) ? form.tags : []);
+        setThankYouMessage(form.thank_you_message ?? 'Thank you for your submission!');
         setDeclarationEnabled(form.declaration_enabled ?? false);
         setPolicyTitle(form.declaration_title ?? '');
         setPolicyLink(form.declaration_link ?? '');
@@ -672,6 +674,7 @@ export default function CustomFormDetailPage() {
       declaration_title: policyTitle || null,
       declaration_link: policyLink || null,
       tags,
+      thank_you_message: thankYouMessage || 'Thank you for your submission!',
     };
     try {
       if (isNew) {
@@ -1006,8 +1009,12 @@ export default function CustomFormDetailPage() {
                 <Input value={submitLabel} onChange={(e) => setSubmitLabel(e.target.value)} placeholder="e.g. Submit, Enquire Now" />
               </div>
               <div>
+                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Thank You Message</label>
+                <Input value={thankYouMessage} onChange={(e) => setThankYouMessage(e.target.value)} placeholder="Thank you for your submission!" />
+              </div>
+              <div>
                 <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-1">Redirect Link</label>
-                <p className="text-[11px] text-[#b09e8d] mb-2">Where to send the user after form is submitted</p>
+                <p className="text-[11px] text-[#b09e8d] mb-2">Where to send the user after form is submitted (optional)</p>
                 <Input value={redirectLink} onChange={(e) => setRedirectLink(e.target.value)} placeholder="https://yoursite.com/thank-you" />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1072,6 +1079,31 @@ export default function CustomFormDetailPage() {
                     {field.type === 'textarea' ? (
                       <textarea disabled placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
                         className="w-full h-20 px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[13px] text-[#7a6b5c] placeholder:text-[#b09e8d] resize-none outline-none" />
+                    ) : field.type === 'dropdown' ? (
+                      <select disabled className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[13px] text-[#7a6b5c] outline-none">
+                        <option>— Select —</option>
+                        {(field.options ?? []).map((o) => <option key={o}>{o}</option>)}
+                      </select>
+                    ) : field.type === 'radio' ? (
+                      <div className="space-y-1.5 pt-1">
+                        {(field.options ?? []).map((o) => (
+                          <label key={o} className="flex items-center gap-2">
+                            <input type="radio" disabled className="w-3.5 h-3.5" style={{ accentColor: btnColor }} />
+                            <span className="text-[12px]" style={{ color: formTextColor }}>{o}</span>
+                          </label>
+                        ))}
+                        {(!field.options || field.options.length === 0) && <p className="text-[11px] text-[#b09e8d] italic">No options added</p>}
+                      </div>
+                    ) : field.type === 'multiselect' ? (
+                      <div className="space-y-1.5 pt-1">
+                        {(field.options ?? []).map((o) => (
+                          <label key={o} className="flex items-center gap-2">
+                            <input type="checkbox" disabled className="w-3.5 h-3.5 rounded" style={{ accentColor: btnColor }} />
+                            <span className="text-[12px]" style={{ color: formTextColor }}>{o}</span>
+                          </label>
+                        ))}
+                        {(!field.options || field.options.length === 0) && <p className="text-[11px] text-[#b09e8d] italic">No options added</p>}
+                      </div>
                     ) : field.type === 'checkbox' ? (
                       <div className="flex items-center gap-2">
                         <input type="checkbox" disabled className="w-4 h-4 rounded" style={{ accentColor: btnColor }} />

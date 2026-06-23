@@ -227,7 +227,7 @@ export default function CustomFormsPage() {
         ).join('');
       } else if (f.type === 'multiselect') {
         inp = (f.options ?? []).map((o) =>
-          `<label class="dgf-chk"><input type="checkbox" data-ms="${lbl}" value="${esc(o)}" onchange="${uid}_ms('${lbl}',this)"> ${esc(o)}</label>`
+          `<label class="dgf-chk"><input type="checkbox" data-ms="${lbl}" value="${esc(o)}" onchange="${uid}_ms('${esc(lbl).replace(/'/g, "\\'")}',this)"> ${esc(o)}</label>`
         ).join('');
       } else if (f.type === 'checkbox') {
         inp = `<label class="dgf-chk"><input type="checkbox" data-label="${lbl}"> ${esc(f.placeholder || f.label)}</label>`;

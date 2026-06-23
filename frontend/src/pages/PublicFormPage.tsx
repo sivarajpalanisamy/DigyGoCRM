@@ -68,6 +68,10 @@ export default function PublicFormPage() {
         errs[field.label] = `${field.label} is required`;
         continue;
       }
+      if (field.required && field.type === 'multiselect' && !val.split(',').filter(Boolean).length) {
+        errs[field.label] = `Please select at least one option`;
+        continue;
+      }
       if (val && (field.mapTo === 'email' || field.type === 'email')) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
           errs[field.label] = 'Please enter a valid email address';
@@ -112,7 +116,7 @@ export default function PublicFormPage() {
       if (!res.ok) { alert(json.error ?? 'Submission failed'); return; }
       setThankYou(json.message ?? form.thank_you_message ?? 'Thank you!');
       setSubmitted(true);
-      if (json.redirectUrl) {
+      if (json.redirectUrl && /^https?:\/\//i.test(json.redirectUrl)) {
         setTimeout(() => { window.location.href = json.redirectUrl; }, 2000);
       }
     } catch {
