@@ -5,6 +5,14 @@ import {
   Type, Mail, Phone, Hash, AlignLeft, ChevronDown, ToggleLeft,
   Tag, Link2, Palette, Database, FileCheck, ArrowLeft, CalendarDays, RefreshCw,
 } from 'lucide-react';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove, SortableContext, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -455,6 +463,22 @@ function CreateFieldModal({
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+function SortableFieldItem({ id, children }: { id: string; children: (dragHandleProps: Record<string, any>) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: 'relative' as const,
+    zIndex: isDragging ? 10 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({ ...attributes, ...listeners })}
+    </div>
+  );
+}
+
 export default function CustomFormDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -488,6 +512,19 @@ export default function CustomFormDetailPage() {
   const [fields, setFields] = useState<FormField[]>([
     { id: 'f1', label: 'Full Name', type: 'text', placeholder: 'Your name', required: true, mapTo: 'first_name' },
   ]);
+
+  // Drag-and-drop sensors (distance constraint avoids conflict with inputs)
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const handleFieldDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setFields((prev) => {
+        const oldIdx = prev.findIndex((f) => f.id === active.id);
+        const newIdx = prev.findIndex((f) => f.id === over.id);
+        return arrayMove(prev, oldIdx, newIdx);
+      });
+    }
+  };
 
   // Modals
   const [showPicker, setShowPicker] = useState(false);
@@ -743,15 +780,19 @@ export default function CustomFormDetailPage() {
                 </button>
               </div>
 
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleFieldDragEnd}>
+              <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
               <div className="divide-y divide-black/5">
                 {fields.map((field) => {
                   const Icon = FIELD_ICONS[field.type] ?? Type;
                   const mappedName = allCrmFields.find((f) => f.slug === field.mapTo)?.name;
                   return (
-                    <div key={field.id} className="px-5 py-4">
-                      {/* Top row: drag handle, icon, label, placeholder, required toggle, delete */}
+                    <SortableFieldItem key={field.id} id={field.id}>
+                      {(dragHandleProps) => (
+                    <div className="px-5 py-4">
+                      {/* Top row: drag handle, icon, label, placeholder, delete */}
                       <div className="flex items-center gap-2.5">
-                        <button className="shrink-0 cursor-grab text-[#b09e8d] hover:text-[#7a6b5c] transition-colors">
+                        <button {...dragHandleProps} className="shrink-0 cursor-grab active:cursor-grabbing text-[#b09e8d] hover:text-[#7a6b5c] transition-colors touch-none">
                           <GripVertical className="w-4 h-4" />
                         </button>
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -867,9 +908,13 @@ export default function CustomFormDetailPage() {
                         </div>
                       </div>
                     </div>
+                      )}
+                    </SortableFieldItem>
                   );
                 })}
               </div>
+              </SortableContext>
+              </DndContext>
 
               {/* Empty state */}
               {fields.length === 0 && (
