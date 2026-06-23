@@ -562,33 +562,33 @@ export default function CustomFormDetailPage() {
         setPolicyLink(form.declaration_link ?? '');
         const rawFields: any[] = Array.isArray(form.fields) ? form.fields : [];
         if (rawFields.length > 0) {
-          setFields(rawFields.map((f: any, i: number) => {
-            const mapTo = f.mapTo ?? '';
-            const autoRequired = mapTo === 'email' || mapTo === 'phone';
-            return {
+          setFields(rawFields.map((f: any, i: number) => ({
               id: f.id ?? `f${i}`,
               label: f.label ?? '',
               type: (f.type as FieldType) ?? 'text',
               placeholder: f.placeholder ?? '',
-              required: autoRequired ? true : (f.required ?? false),
-              mapTo,
+              required: f.required ?? false,
+              mapTo: f.mapTo ?? '',
               options: f.options,
-            };
-          }));
+          })));
         }
       })
       .catch(() => toast.error('Failed to load form'))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const updateField = (fid: string, changes: Partial<FormField>) =>
-    setFields(fields.map((f) => {
-      if (f.id !== fid) return f;
-      const updated = { ...f, ...changes };
-      // Enforce required for email/phone mapped fields
-      if (updated.mapTo === 'email' || updated.mapTo === 'phone') updated.required = true;
-      return updated;
-    }));
+  const updateField = (fid: string, changes: Partial<FormField>) => {
+    // If trying to un-require a phone/email field, check there's still at least one required phone/email
+    const target = fields.find((f) => f.id === fid);
+    if (target && changes.required === false && (target.mapTo === 'phone' || target.mapTo === 'email')) {
+      const otherRequired = fields.some((f) => f.id !== fid && (f.mapTo === 'phone' || f.mapTo === 'email') && f.required);
+      if (!otherRequired) {
+        toast.error('At least one Phone or Email field must be required');
+        return;
+      }
+    }
+    setFields(fields.map((f) => f.id === fid ? { ...f, ...changes } : f));
+  };
 
   const removeField = (fid: string) => {
     if (fields.length === 1) { toast.error('A form must have at least one field'); return; }
@@ -653,8 +653,8 @@ export default function CustomFormDetailPage() {
 
   const handleSave = async () => {
     if (!formName.trim()) { toast.error('Form name is required'); return; }
-    const hasPhoneOrEmail = fields.some((f) => f.mapTo === 'phone' || f.mapTo === 'email');
-    if (!hasPhoneOrEmail) { toast.error('Form must have at least a Phone or Email field'); return; }
+    const hasRequiredPhoneOrEmail = fields.some((f) => (f.mapTo === 'phone' || f.mapTo === 'email') && f.required);
+    if (!hasRequiredPhoneOrEmail) { toast.error('At least one Phone or Email field must be required'); return; }
     setSaving(true);
     const payload = {
       name: formName.trim(),
@@ -867,12 +867,8 @@ export default function CustomFormDetailPage() {
                           <Switch
                             checked={field.required}
                             onCheckedChange={(v) => updateField(field.id, { required: v })}
-                            disabled={field.mapTo === 'email' || field.mapTo === 'phone'}
                           />
                           <span className="text-[11px] font-medium text-[#7a6b5c]">Required</span>
-                          {(field.mapTo === 'email' || field.mapTo === 'phone') && (
-                            <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Auto</span>
-                          )}
                         </div>
                       </div>
                     </div>
