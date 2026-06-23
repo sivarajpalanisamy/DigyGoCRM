@@ -54,8 +54,8 @@ router.post('/', checkPermission('landing_pages:create'), async (req: AuthReques
       n++;
       finalSlug = `${baseSlug}-${n}`;
     }
-    // Normalize content: ensure it's stored as JSONB-compatible object
-    const contentValue = typeof content === 'string' ? content : JSON.stringify(content ?? {});
+    // Normalize content: ensure we pass an object (pg driver serializes JSONB automatically)
+    const contentValue = typeof content === 'string' ? JSON.parse(content) : (content ?? {});
     const result = await query(
       `INSERT INTO landing_pages (tenant_id, title, slug, template, status, content)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
@@ -87,7 +87,7 @@ router.patch('/:id', checkPermission('landing_pages:edit'), async (req: AuthRequ
     params.push(status); fields.push(`status=$${params.length}`);
   }
   if (content !== undefined) {
-    const contentValue = typeof content === 'string' ? content : JSON.stringify(content);
+    const contentValue = typeof content === 'string' ? JSON.parse(content) : content;
     params.push(contentValue); fields.push(`content=$${params.length}`);
   }
 

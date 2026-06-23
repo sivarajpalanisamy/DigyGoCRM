@@ -13,7 +13,7 @@ import {
   ArrowLeft, Monitor, Tablet, Smartphone, Check, Zap, GripVertical, Trash2,
   Plus, ChevronDown, ChevronUp, AlignLeft, MousePointerClick, LayoutGrid,
   Quote, BarChart2, ClipboardList, Minus, ChevronsUpDown, Layout, Megaphone,
-  Heading1, Settings2, Palette, Image as ImageIcon, X,
+  Heading1, Settings2, Palette, Image as ImageIcon, X, Copy, Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -153,8 +153,8 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
       return (
         <div className="px-10 py-12">
           {p.title && <h2 className="text-[22px] font-bold text-center mb-8" style={{ color: theme.text }}>{p.title}</h2>}
-          <div className="grid grid-cols-3 gap-5">
-            {p.items.map((item: any, i: number) => (
+          <div className={`grid gap-5 ${(p.items?.length ?? 0) <= 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+            {(p.items ?? []).map((item: any, i: number) => (
               <div key={i} className="flex flex-col gap-2 p-5 rounded-2xl" style={{ background: theme.accent }}>
                 <span className="text-2xl">{item.icon}</span>
                 <h4 className="font-bold text-[14px]" style={{ color: theme.text }}>{item.title}</h4>
@@ -190,8 +190,8 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
     case 'stats':
       return (
         <div className="px-10 py-10">
-          <div className="grid grid-cols-4 gap-4">
-            {p.items.map((item: any, i: number) => (
+          <div className={`grid gap-4 ${(p.items?.length ?? 0) <= 2 ? 'grid-cols-2' : (p.items?.length ?? 0) === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+            {(p.items ?? []).map((item: any, i: number) => (
               <div key={i} className="flex flex-col items-center gap-1 p-5 rounded-2xl" style={{ background: theme.accent }}>
                 <span className="text-[28px] font-extrabold" style={{ color: theme.primary }}>{item.value}</span>
                 <span className="text-[12px]" style={{ color: theme.muted }}>{item.label}</span>
@@ -224,10 +224,10 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
 // ── Sortable block wrapper ─────────────────────────────────────────────────────
 
 function SortableBlock({
-  block, theme, selected, onSelect, onDelete, onMoveUp, onMoveDown, isFirst, isLast,
+  block, theme, selected, onSelect, onDelete, onDuplicate, onMoveUp, onMoveDown, isFirst, isLast,
 }: {
   block: Block; theme: Theme; selected: boolean;
-  onSelect: () => void; onDelete: () => void;
+  onSelect: () => void; onDelete: () => void; onDuplicate: () => void;
   onMoveUp: () => void; onMoveDown: () => void;
   isFirst: boolean; isLast: boolean;
 }) {
@@ -267,9 +267,16 @@ function SortableBlock({
           <ChevronDown className="w-3.5 h-3.5 text-[#b09e8d]" />
         </button>
         <button
+          onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+          className="p-1 rounded-lg hover:bg-blue-50 transition-colors mt-1"
+          title="Duplicate block (Ctrl+D)"
+        >
+          <Copy className="w-3.5 h-3.5 text-[#b09e8d] hover:text-blue-500" />
+        </button>
+        <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="p-1 rounded-lg hover:bg-red-50 transition-colors mt-1"
-          title="Delete block"
+          className="p-1 rounded-lg hover:bg-red-50 transition-colors"
+          title="Delete block (Del)"
         >
           <Trash2 className="w-3.5 h-3.5 text-[#b09e8d] hover:text-red-500" />
         </button>
@@ -509,9 +516,9 @@ export default function LandingPageBuilderPage() {
     api.get<any>(`/api/landing-pages/${pageId}`)
       .then((page) => {
         setPageName(page.title ?? 'Untitled Page');
-        const content = typeof page.content === 'string' ? JSON.parse(page.content) : page.content;
-        if (content?.blocks?.length) setBlocks(content.blocks);
-        if (content?.themeKey && THEMES[content.themeKey]) setThemeKey(content.themeKey);
+        const content = typeof page.content === 'string' ? JSON.parse(page.content) : (page.content ?? {});
+        if (Array.isArray(content.blocks)) setBlocks(content.blocks);
+        if (content.themeKey && THEMES[content.themeKey]) setThemeKey(content.themeKey);
       })
       .catch(() => { toast.error('Failed to load page'); setPageName('Untitled Page'); })
       .finally(() => { setLoadingPage(false); loadedRef.current = true; });
@@ -531,6 +538,35 @@ export default function LandingPageBuilderPage() {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [dirty]);
+
+  // Keyboard shortcuts
+  const savePageRef = useRef(savePage);
+  savePageRef.current = savePage;
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Ctrl+S / Cmd+S — save draft
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        savePageRef.current('draft');
+        return;
+      }
+      // Delete / Backspace — delete selected block (only when not editing text)
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+        const tag = (e.target as HTMLElement).tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        e.preventDefault();
+        deleteBlock(selectedId);
+        return;
+      }
+      // Ctrl+D / Cmd+D — duplicate selected block
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd' && selectedId) {
+        e.preventDefault();
+        duplicateBlock(selectedId);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  });
 
   const theme = THEMES[themeKey];
   const selectedBlock = blocks.find((b) => b.id === selectedId) ?? null;
@@ -569,6 +605,18 @@ export default function LandingPageBuilderPage() {
   const deleteBlock = (id: string) => {
     setBlocksDirty(blocks.filter((b) => b.id !== id));
     if (selectedId === id) setSelectedId(null);
+  };
+
+  const duplicateBlock = (id: string) => {
+    const idx = blocks.findIndex((b) => b.id === id);
+    if (idx === -1) return;
+    const src = blocks[idx];
+    const dup: Block = { id: `b-${Date.now()}`, type: src.type, props: JSON.parse(JSON.stringify(src.props)) };
+    const next = [...blocks];
+    next.splice(idx + 1, 0, dup);
+    setBlocksDirty(next);
+    setSelectedId(dup.id);
+    toast.success('Block duplicated');
   };
 
   const moveBlock = (id: string, dir: 'up' | 'down') => {
@@ -645,6 +693,13 @@ export default function LandingPageBuilderPage() {
             </button>
         }
 
+        {pageName.trim() && (
+          <span className="hidden sm:flex items-center gap-1 text-[10px] text-[#b09e8d] font-mono">
+            <Globe className="w-3 h-3" />
+            /p/{pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}
+          </span>
+        )}
+
         <div className="flex-1" />
 
         {/* Theme picker */}
@@ -658,8 +713,8 @@ export default function LandingPageBuilderPage() {
           </button>
           {showThemes && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowThemes(false)} />
-              <div className="absolute top-9 right-0 z-20 bg-white rounded-2xl border border-black/8 shadow-xl p-2 w-40">
+              <div className="fixed inset-0 z-30" onClick={() => setShowThemes(false)} />
+              <div className="absolute top-9 right-0 z-40 bg-white rounded-2xl border border-black/8 shadow-xl p-2 w-40">
                 {Object.entries(THEMES).map(([key, t]) => (
                   <button key={key} onClick={() => { setThemeKeyDirty(key); setShowThemes(false); }}
                     className={cn('w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] font-medium transition-colors',
@@ -746,6 +801,7 @@ export default function LandingPageBuilderPage() {
                       selected={selectedId === block.id}
                       onSelect={() => setSelectedId(block.id)}
                       onDelete={() => deleteBlock(block.id)}
+                      onDuplicate={() => duplicateBlock(block.id)}
                       onMoveUp={() => moveBlock(block.id, 'up')}
                       onMoveDown={() => moveBlock(block.id, 'down')}
                       isFirst={idx === 0}
