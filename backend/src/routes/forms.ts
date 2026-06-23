@@ -76,6 +76,16 @@ router.post('/', checkPermission('custom_forms:create'), checkUsage('forms'), as
     tags,
   } = req.body;
   if (!name) { res.status(400).json({ error: 'Form name required' }); return; }
+  // Validate fields have required structure
+  if (fields && Array.isArray(fields)) {
+    for (const f of fields) {
+      if (!f.id || !f.label || !f.type) {
+        res.status(400).json({ error: 'Each field must have id, label, and type' }); return;
+      }
+    }
+  }
+  // Filter empty tag names
+  const cleanTags = Array.isArray(tags) ? tags.filter((t: string) => t?.trim()) : [];
 
   const tenantId = req.user!.tenantId;
 
@@ -125,7 +135,7 @@ router.post('/', checkPermission('custom_forms:create'), checkUsage('forms'), as
         declaration_enabled ?? false,
         declaration_title ?? null,
         declaration_link ?? null,
-        tags ?? [],
+        cleanTags,
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -142,6 +152,8 @@ router.patch('/:id', checkPermission('custom_forms:edit'), async (req: AuthReque
     declaration_enabled, declaration_title, declaration_link,
     tags,
   } = req.body;
+  // Filter empty tag names
+  const cleanTags = Array.isArray(tags) ? tags.filter((t: string) => t?.trim()) : [];
   try {
     const result = await query(
       `UPDATE custom_forms SET
@@ -165,7 +177,7 @@ router.patch('/:id', checkPermission('custom_forms:edit'), async (req: AuthReque
         declaration_enabled ?? false,
         declaration_title ?? null,
         declaration_link ?? null,
-        tags ?? [],
+        cleanTags,
         req.params.id, req.user!.tenantId,
       ]
     );
@@ -184,18 +196,19 @@ router.delete('/:id', checkPermission('custom_forms:delete'), async (req: AuthRe
       [id]
     );
     if (Number(subCount.rows[0].count) > 0) {
-      // soft delete
+      // soft delete — form has submissions, deactivate instead of removing
       await query(
         'UPDATE custom_forms SET is_active=FALSE WHERE id=$1 AND tenant_id=$2',
         [id, tenantId]
       );
+      res.json({ success: true, soft_deleted: true, reason: 'Form has submissions — deactivated instead of deleted' });
     } else {
       await query(
         'DELETE FROM custom_forms WHERE id=$1 AND tenant_id=$2',
         [id, tenantId]
       );
+      res.json({ success: true });
     }
-    res.json({ success: true });
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -282,20 +295,21 @@ router.post('/:id/submit', async (req: AuthRequest, res: Response) => {
     const phone = findField(['phone', 'mobile', 'phone_number', 'mobile_number', 'contact_number']);
 
     if (name) {
-      // Dedup: check if a lead with this phone or email already exists for this tenant
+      // Dedup: check if a lead with this phone or email already exists
+      // When form has a pipeline, scope dedup to that pipeline; otherwise check whole tenant
       let existingLead: any = null;
       if (phone) {
-        const ex = await query(
-          `SELECT * FROM leads WHERE tenant_id=$1 AND phone=$2 AND is_deleted=FALSE LIMIT 1`,
-          [form.tenant_id, phone]
-        );
+        const params: any[] = [form.tenant_id, phone];
+        let sql = `SELECT * FROM leads WHERE tenant_id=$1 AND phone=$2 AND is_deleted=FALSE`;
+        if (form.pipeline_id) { params.push(form.pipeline_id); sql += ` AND pipeline_id=$${params.length}`; }
+        const ex = await query(sql + ' LIMIT 1', params);
         existingLead = ex.rows[0] ?? null;
       }
       if (!existingLead && email) {
-        const ex = await query(
-          `SELECT * FROM leads WHERE tenant_id=$1 AND email=$2 AND is_deleted=FALSE LIMIT 1`,
-          [form.tenant_id, email]
-        );
+        const params: any[] = [form.tenant_id, email];
+        let sql = `SELECT * FROM leads WHERE tenant_id=$1 AND email=$2 AND is_deleted=FALSE`;
+        if (form.pipeline_id) { params.push(form.pipeline_id); sql += ` AND pipeline_id=$${params.length}`; }
+        const ex = await query(sql + ' LIMIT 1', params);
         existingLead = ex.rows[0] ?? null;
       }
 

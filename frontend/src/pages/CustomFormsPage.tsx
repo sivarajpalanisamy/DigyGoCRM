@@ -235,7 +235,8 @@ export default function CustomFormsPage() {
         const t = f.type === 'email' ? 'email' : f.type === 'phone' ? 'tel' : f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text';
         inp = `<input type="${t}" class="dgf-input" data-label="${lbl}" placeholder="${ph}"${req}>`;
       }
-      return `<div class="dgf-field"><label class="dgf-label">${lbl}${star}</label>${inp}</div>`;
+      const reqAttr = f.required ? ' data-req="1"' : '';
+      return `<div class="dgf-field"${reqAttr}><label class="dgf-label">${lbl}${star}</label>${inp}</div>`;
     }).join('\n');
 
     const declHtml = (form.declaration_enabled && form.declaration_title)
@@ -281,7 +282,8 @@ var _m={};
 window.${uid}_ms=function(k,el){_m[k]=_m[k]||[];var i=_m[k].indexOf(el.value);el.checked?i<0&&_m[k].push(el.value):i>=0&&_m[k].splice(i,1);};
 document.getElementById('${uid}_f').addEventListener('submit',function(e){
 e.preventDefault();${declCheck}
-var missing=[];e.target.querySelectorAll('[required]').forEach(function(el){if(!el.value||!el.value.trim()){var l=el.getAttribute('data-label')||el.closest('.dgf-field')?.querySelector('.dgf-label')?.textContent||'Field';missing.push(l.replace(/\\*$/,'').trim());}});
+var missing=[];e.target.querySelectorAll('[required]').forEach(function(el){if(el.type==='radio'){var nm=el.name;if(!e.target.querySelector('input[name="'+nm+'"]:checked')){var l=el.getAttribute('data-label')||'Field';if(missing.indexOf(l)<0)missing.push(l.replace(/\\*$/,'').trim());}return;}if(!el.value||!el.value.trim()){var l=el.getAttribute('data-label')||el.closest('.dgf-field')?.querySelector('.dgf-label')?.textContent||'Field';missing.push(l.replace(/\\*$/,'').trim());}});
+e.target.querySelectorAll('.dgf-field[data-req] [data-ms]').forEach(function(el){var k=el.getAttribute('data-ms');if(!_m[k]||!_m[k].length){if(missing.indexOf(k)<0)missing.push(k);}});
 if(missing.length){alert('Please fill in: '+missing.join(', '));return;}
 var btn=e.target.querySelector('button[type=submit]');
 btn.disabled=true;btn.textContent='Submitting…';
