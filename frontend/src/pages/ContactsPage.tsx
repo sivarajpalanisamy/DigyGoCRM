@@ -852,7 +852,24 @@ export default function ContactsPage() {
           { key: 'lead_updated_at', label: 'Last Updated' },
           { key: 'notes', label: 'Notes' },
         ]}
-        buildUrl={(fields, format) => `/api/contacts/export?fields=${fields.join(',')}&format=${format}`}
+        buildUrl={(fields, format) => {
+          const p = new URLSearchParams({ fields: fields.join(','), format });
+          if (sourceFilter !== 'All') p.set('source', sourceFilter);
+          if (tagFilter !== 'All') p.set('tag', tagFilter);
+          if (pipelineFilter !== 'All') p.set('pipeline_id', pipelineFilter);
+          if (stageFilter !== 'All') p.set('stage_id', stageFilter);
+          if (typeFilter !== 'All') p.set('type', typeFilter);
+          if (dateFilter !== 'All time') {
+            const now = new Date();
+            if (dateFilter === 'Today') { const d = now.toISOString().slice(0, 10); p.set('date_from', d); p.set('date_to', d); }
+            else if (dateFilter === 'This week') { const w = new Date(now); w.setDate(now.getDate() - 7); p.set('date_from', w.toISOString().slice(0, 10)); }
+            else if (dateFilter === 'This month') { p.set('date_from', `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`); }
+            else if (dateFilter === 'Last 30 days') { const d = new Date(now); d.setDate(now.getDate() - 30); p.set('date_from', d.toISOString().slice(0, 10)); }
+            else if (dateFilter === 'Custom range') { if (customFrom) p.set('date_from', customFrom); if (customTo) p.set('date_to', customTo); }
+          }
+          if (selected.length > 0) p.set('ids', selected.join(','));
+          return `/api/contacts/export?${p.toString()}`;
+        }}
         filename="contacts"
         onClose={() => setShowExportModal(false)}
       />

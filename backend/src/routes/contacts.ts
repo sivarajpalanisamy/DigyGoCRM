@@ -64,7 +64,7 @@ const CONTACT_FIELDS: Record<string, string> = {
 router.get('/export', checkPermission('contacts:export'), async (req: AuthRequest, res: Response) => {
   try {
     const { userId, tenantId, role } = req.user!;
-    const { fields = '', format = 'xlsx' } = req.query as Record<string, string>;
+    const { fields = '', format = 'xlsx', source, tag, pipeline_id, stage_id, type, date_from, date_to, ids } = req.query as Record<string, string>;
     const isSuperAdmin = role === 'super_admin';
 
     let onlyAssigned = false;
@@ -73,10 +73,48 @@ router.get('/export', checkPermission('contacts:export'), async (req: AuthReques
     }
 
     const params: any[] = [tenantId];
-    let assignedFilter = '';
+    let extraFilter = '';
     if (onlyAssigned) {
       params.push(userId);
-      assignedFilter = ` AND (l.assigned_to = $${params.length}::uuid OR $${params.length}::uuid = ANY(l.team_members))`;
+      extraFilter += ` AND (l.assigned_to = $${params.length}::uuid OR $${params.length}::uuid = ANY(l.team_members))`;
+    }
+    if (source) {
+      params.push(source);
+      extraFilter += ` AND l.source = $${params.length}`;
+    }
+    if (tag) {
+      params.push(tag);
+      extraFilter += ` AND $${params.length} = ANY(l.tags)`;
+    }
+    if (pipeline_id === '__none__') {
+      extraFilter += ` AND l.pipeline_id IS NULL`;
+    } else if (pipeline_id) {
+      params.push(pipeline_id);
+      extraFilter += ` AND l.pipeline_id = $${params.length}::uuid`;
+    }
+    if (stage_id) {
+      params.push(stage_id);
+      extraFilter += ` AND l.stage_id = $${params.length}::uuid`;
+    }
+    if (type === 'Customer') {
+      extraFilter += ` AND ps.name = 'Closed Won'`;
+    } else if (type === 'Lead') {
+      extraFilter += ` AND (ps.name IS NULL OR ps.name <> 'Closed Won')`;
+    }
+    if (date_from) {
+      params.push(date_from);
+      extraFilter += ` AND c.created_at >= $${params.length}::date`;
+    }
+    if (date_to) {
+      params.push(date_to);
+      extraFilter += ` AND c.created_at < ($${params.length}::date + INTERVAL '1 day')`;
+    }
+    if (ids) {
+      const idArr = ids.split(',').filter(Boolean);
+      if (idArr.length > 0) {
+        params.push(idArr);
+        extraFilter += ` AND c.lead_id = ANY($${params.length}::uuid[])`;
+      }
     }
 
     const result = await query(
@@ -109,7 +147,7 @@ router.get('/export', checkPermission('contacts:export'), async (req: AuthReques
        LEFT JOIN users u ON u.id = l.assigned_to
        LEFT JOIN pipelines p ON p.id = l.pipeline_id
        LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
-       WHERE c.tenant_id = $1${assignedFilter}
+       WHERE c.tenant_id = $1${extraFilter}
        ORDER BY c.created_at DESC LIMIT 10000`,
       params
     );
