@@ -24,6 +24,7 @@ const sectionNavs: Record<string, NavItem[]> = {
     { label: 'Overview', path: '/lead-generation' },
     { label: 'Meta Forms', path: '/lead-generation/meta-forms' },
     { label: 'Custom Forms', path: '/lead-generation/custom-forms' },
+    { label: 'Landing Pages', path: '/lead-generation/landing-pages' },
   ],
   '/lead-management': [
     { label: 'Overview', path: '/lead-management' },
