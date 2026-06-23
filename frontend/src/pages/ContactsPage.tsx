@@ -344,6 +344,8 @@ export default function ContactsPage() {
   const [sourceFilter, setSourceFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState<typeof TYPE_OPTIONS[number]>('All');
   const [tagFilter, setTagFilter] = useState('All');
+  const [pipelineFilter, setPipelineFilter] = useState('All');
+  const [stageFilter, setStageFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState<typeof DATE_OPTIONS[number]>('All time');
   const [customFrom, setCustomFrom] = useState('');  // yyyy-MM-dd
   const [customTo, setCustomTo] = useState('');      // yyyy-MM-dd
@@ -387,6 +389,11 @@ export default function ContactsPage() {
       if (typeFilter === 'Customer' && l.stage !== 'Closed Won') return false;
       if (typeFilter === 'Lead' && l.stage === 'Closed Won') return false;
       if (tagFilter !== 'All' && !l.tags.includes(tagFilter)) return false;
+      if (pipelineFilter !== 'All') {
+        if (pipelineFilter === '__none__') { if (l.pipelineId) return false; }
+        else if (l.pipelineId !== pipelineFilter) return false;
+      }
+      if (stageFilter !== 'All' && l.stageId !== stageFilter) return false;
       if (dateFilter !== 'All time') {
         const created = new Date(l.createdAt);
         if (dateFilter === 'Today' && created.toDateString() !== now.toDateString()) return false;
@@ -406,15 +413,15 @@ export default function ContactsPage() {
       }
       return true;
     });
-  }, [leads, search, sourceFilter, typeFilter, tagFilter, dateFilter, customFrom, customTo]);
+  }, [leads, search, sourceFilter, typeFilter, tagFilter, pipelineFilter, stageFilter, dateFilter, customFrom, customTo]);
 
-  const activeFiltersCount = [sourceFilter !== 'All', typeFilter !== 'All', tagFilter !== 'All', dateFilter !== 'All time'].filter(Boolean).length;
+  const activeFiltersCount = [sourceFilter !== 'All', typeFilter !== 'All', tagFilter !== 'All', pipelineFilter !== 'All', stageFilter !== 'All', dateFilter !== 'All time'].filter(Boolean).length;
 
   // Client-side pagination — render one page of rows instead of all (thousands of)
   // DOM nodes at once. This is the main fix for the Contacts page being heavy.
   const PAGE_SIZE = 50;
   const [page, setPage] = useState(1);
-  useEffect(() => { setPage(1); }, [search, sourceFilter, typeFilter, tagFilter, dateFilter, customFrom, customTo, leads.length]);
+  useEffect(() => { setPage(1); }, [search, sourceFilter, typeFilter, tagFilter, pipelineFilter, stageFilter, dateFilter, customFrom, customTo, leads.length]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paged = useMemo(() => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE), [filtered, safePage]);
@@ -422,7 +429,7 @@ export default function ContactsPage() {
   const toggleAll = () => setSelected(selected.length === filtered.length ? [] : filtered.map((l) => l.id));
   const toggleOne = (id: string) => setSelected((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
-  const clearFilters = () => { setSourceFilter('All'); setTypeFilter('All'); setTagFilter('All'); setDateFilter('All time'); setCustomFrom(''); setCustomTo(''); };
+  const clearFilters = () => { setSourceFilter('All'); setTypeFilter('All'); setTagFilter('All'); setPipelineFilter('All'); setStageFilter('All'); setDateFilter('All time'); setCustomFrom(''); setCustomTo(''); };
 
   const bulkDelete = async () => {
     let failed = 0;
@@ -555,6 +562,26 @@ export default function ContactsPage() {
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9a8a7a] pointer-events-none" />
           </div>
+          <div className="relative">
+            <select value={pipelineFilter} onChange={(e) => { setPipelineFilter(e.target.value); setStageFilter('All'); }} className={selectCls} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <option value="All">All Pipelines</option>
+              <option value="__none__">No Pipeline</option>
+              {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9a8a7a] pointer-events-none" />
+          </div>
+          {pipelineFilter !== 'All' && pipelineFilter !== '__none__' && (() => {
+            const stages = pipelines.find((p) => p.id === pipelineFilter)?.stages ?? [];
+            return stages.length > 0 ? (
+              <div className="relative">
+                <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className={selectCls} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                  <option value="All">All Stages</option>
+                  {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9a8a7a] pointer-events-none" />
+              </div>
+            ) : null;
+          })()}
           <div className="relative">
             <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as typeof dateFilter)} className={selectCls} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
               {DATE_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
