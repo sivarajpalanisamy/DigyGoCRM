@@ -557,6 +557,7 @@ export default function CustomFormDetailPage() {
         setFormTextColor(form.form_text_color ?? '#1c1410');
         setPipelineId(form.pipeline_id ?? '');
         setStageId(form.stage_id ?? '');
+        setTags(Array.isArray(form.tags) ? form.tags : []);
         setDeclarationEnabled(form.declaration_enabled ?? false);
         setPolicyTitle(form.declaration_title ?? '');
         setPolicyLink(form.declaration_link ?? '');
@@ -670,6 +671,7 @@ export default function CustomFormDetailPage() {
       declaration_enabled: declarationEnabled,
       declaration_title: policyTitle || null,
       declaration_link: policyLink || null,
+      tags,
     };
     try {
       if (isNew) {

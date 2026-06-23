@@ -73,6 +73,7 @@ router.post('/', checkPermission('custom_forms:create'), checkUsage('forms'), as
     submit_label, redirect_url, thank_you_message,
     btn_color, btn_text_color, form_bg_color, form_text_color,
     declaration_enabled, declaration_title, declaration_link,
+    tags,
   } = req.body;
   if (!name) { res.status(400).json({ error: 'Form name required' }); return; }
 
@@ -98,8 +99,8 @@ router.post('/', checkPermission('custom_forms:create'), checkUsage('forms'), as
          (tenant_id, name, slug, fields, pipeline_id, stage_id,
           submit_label, redirect_url, thank_you_message,
           btn_color, btn_text_color, form_bg_color, form_text_color,
-          declaration_enabled, declaration_title, declaration_link)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+          declaration_enabled, declaration_title, declaration_link, tags)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        RETURNING *`,
       [
         tenantId, name, slug, JSON.stringify(fields ?? []),
@@ -114,6 +115,7 @@ router.post('/', checkPermission('custom_forms:create'), checkUsage('forms'), as
         declaration_enabled ?? false,
         declaration_title ?? null,
         declaration_link ?? null,
+        tags ?? [],
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -128,6 +130,7 @@ router.patch('/:id', checkPermission('custom_forms:edit'), async (req: AuthReque
     submit_label, redirect_url, thank_you_message,
     btn_color, btn_text_color, form_bg_color, form_text_color,
     declaration_enabled, declaration_title, declaration_link,
+    tags,
   } = req.body;
   try {
     const result = await query(
@@ -135,8 +138,9 @@ router.patch('/:id', checkPermission('custom_forms:edit'), async (req: AuthReque
          name=$1, fields=$2, pipeline_id=$3, stage_id=$4, is_active=$5,
          submit_label=$6, redirect_url=$7, thank_you_message=$8,
          btn_color=$9, btn_text_color=$10, form_bg_color=$11, form_text_color=$12,
-         declaration_enabled=$13, declaration_title=$14, declaration_link=$15
-       WHERE id=$16 AND tenant_id=$17
+         declaration_enabled=$13, declaration_title=$14, declaration_link=$15,
+         tags=$16
+       WHERE id=$17 AND tenant_id=$18
        RETURNING *`,
       [
         name, JSON.stringify(fields), pipeline_id ?? null, stage_id ?? null,
@@ -151,6 +155,7 @@ router.patch('/:id', checkPermission('custom_forms:edit'), async (req: AuthReque
         declaration_enabled ?? false,
         declaration_title ?? null,
         declaration_link ?? null,
+        tags ?? [],
         req.params.id, req.user!.tenantId,
       ]
     );
@@ -326,6 +331,30 @@ router.post('/:id/submit', async (req: AuthRequest, res: Response) => {
       }
       if (Object.keys(customFieldsData).length > 0) {
         await backfillCustomFields(lead.id, form.tenant_id, customFieldsData);
+      }
+
+      // Apply configured tags to the lead
+      const formTags: string[] = Array.isArray(form.tags) ? form.tags : [];
+      for (const tagName of formTags) {
+        try {
+          // Find or create the tag
+          let tagRow = (await query(
+            `SELECT id FROM tags WHERE tenant_id=$1 AND name=$2`,
+            [form.tenant_id, tagName]
+          )).rows[0];
+          if (!tagRow) {
+            tagRow = (await query(
+              `INSERT INTO tags (tenant_id, name, color) VALUES ($1, $2, '#6b7280') RETURNING id`,
+              [form.tenant_id, tagName]
+            )).rows[0];
+          }
+          if (tagRow) {
+            await query(
+              `INSERT INTO lead_tags (lead_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+              [lead.id, tagRow.id]
+            );
+          }
+        } catch { /* skip individual tag errors */ }
       }
 
       const leadWithForm = { ...lead, form_id: form.id, form_name: form.name };
