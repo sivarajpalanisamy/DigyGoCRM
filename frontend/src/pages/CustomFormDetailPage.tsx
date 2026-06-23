@@ -511,6 +511,7 @@ export default function CustomFormDetailPage() {
   // Fields
   const [fields, setFields] = useState<FormField[]>([
     { id: 'f1', label: 'Full Name', type: 'text', placeholder: 'Your name', required: true, mapTo: 'first_name' },
+    { id: 'f2', label: 'Phone', type: 'phone', placeholder: 'Your phone number', required: true, mapTo: 'phone' },
   ]);
 
   // Drag-and-drop sensors (distance constraint avoids conflict with inputs)
@@ -591,17 +592,26 @@ export default function CustomFormDetailPage() {
 
   const removeField = (fid: string) => {
     if (fields.length === 1) { toast.error('A form must have at least one field'); return; }
+    const target = fields.find((f) => f.id === fid);
+    if (target && (target.mapTo === 'phone' || target.mapTo === 'email')) {
+      const remaining = fields.filter((f) => f.id !== fid);
+      if (!remaining.some((f) => f.mapTo === 'phone' || f.mapTo === 'email')) {
+        toast.error('Form must have at least a Phone or Email field');
+        return;
+      }
+    }
     setFields(fields.filter((f) => f.id !== fid));
   };
 
   // Called from AddFieldPickerModal
   const handleAddFromPicker = (slug: string, name: string, type: FieldType) => {
+    const autoRequired = slug === 'email' || slug === 'phone';
     setFields((prev) => [...prev, {
       id: `nf-${Date.now()}`,
       label: name,
       type,
       placeholder: '',
-      required: false,
+      required: autoRequired ? true : false,
       mapTo: slug,
     }]);
   };
@@ -643,6 +653,8 @@ export default function CustomFormDetailPage() {
 
   const handleSave = async () => {
     if (!formName.trim()) { toast.error('Form name is required'); return; }
+    const hasPhoneOrEmail = fields.some((f) => f.mapTo === 'phone' || f.mapTo === 'email');
+    if (!hasPhoneOrEmail) { toast.error('Form must have at least a Phone or Email field'); return; }
     setSaving(true);
     const payload = {
       name: formName.trim(),
