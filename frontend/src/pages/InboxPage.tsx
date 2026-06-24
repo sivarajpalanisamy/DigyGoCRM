@@ -7,7 +7,7 @@ import {
   Search, Send, Paperclip, Check, CheckCheck, MessageCircle, Clock,
   ArrowLeft, StickyNote, Zap, ChevronDown, UserCheck, X, Smartphone, AlertCircle,
   Loader2, Download, Filter, FileText, RefreshCw, ListOrdered, MapPin, Contact,
-  Reply, File, Play, Volume2,
+  Reply, File, Play, Volume2, ChevronsDown,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -53,7 +53,7 @@ interface ApiMessage {
 
 // Renders WA media fetched with auth headers → blob URL
 // Detects media type (image, audio, video, document) for proper rendering
-function MediaMessage({ msgId, msgBody }: { msgId: string; msgBody?: string }) {
+function MediaMessage({ msgId, msgBody, onImageClick }: { msgId: string; msgBody?: string; onImageClick?: (src: string) => void }) {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mediaType, setMediaType] = useState<'image' | 'audio' | 'video' | 'document'>('document');
@@ -94,8 +94,19 @@ function MediaMessage({ msgId, msgBody }: { msgId: string; msgBody?: string }) {
   if (loading) return <div className="w-36 h-24 rounded-lg bg-black/10 animate-pulse" />;
   if (!src) return null;
 
+  const isSticker = msgBody === '[Sticker]';
+
   if (mediaType === 'image') {
-    return <img src={src} alt="media" className="max-w-[220px] rounded-lg cursor-pointer" onClick={() => window.open(src, '_blank')} />;
+    return (
+      <img
+        src={src} alt={isSticker ? 'Sticker' : 'media'}
+        className={cn(
+          'rounded-lg cursor-pointer hover:opacity-90 transition-opacity',
+          isSticker ? 'w-[120px] h-[120px] object-contain' : 'max-w-[220px]',
+        )}
+        onClick={() => onImageClick?.(src)}
+      />
+    );
   }
 
   if (mediaType === 'audio') {
@@ -131,6 +142,23 @@ function MediaMessage({ msgId, msgBody }: { msgId: string; msgBody?: string }) {
       </div>
       <Download className="w-3.5 h-3.5 text-[#7a6b5c] shrink-0" />
     </a>
+  );
+}
+
+// Image lightbox overlay
+function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
+      <button className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10" onClick={onClose}>
+        <X className="w-6 h-6" />
+      </button>
+      <img src={src} alt="Full size" className="max-w-full max-h-full object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+    </div>
   );
 }
 
@@ -197,6 +225,15 @@ export default function InboxPage() {
   const [showMsgSearch, setShowMsgSearch] = useState(false);
   const [highlightMsgId, setHighlightMsgId] = useState<string | null>(null);
 
+  // Image lightbox
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
+  // Drag-and-drop state
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Scroll-to-latest pill
+  const [showScrollPill, setShowScrollPill] = useState(false);
+
   // Keep ref in sync so socket handlers don't stale-close
   useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
 
@@ -228,9 +265,23 @@ export default function InboxPage() {
     return rows;
   }, []);
 
+  // Draft auto-save: save on text change
+  useEffect(() => {
+    if (!selectedId) return;
+    const key = `inbox_draft_${selectedId}`;
+    if (messageText.trim()) {
+      localStorage.setItem(key, messageText);
+    } else {
+      localStorage.removeItem(key);
+    }
+  }, [messageText, selectedId]);
+
   // When conversation changes: load latest messages, mark read, scroll to bottom
   useEffect(() => {
     if (!selectedId) { setMessages([]); setHasMore(false); setReplyTo(null); setShowMsgSearch(false); setMsgSearch(''); setMsgSearchResults([]); return; }
+    // Restore draft
+    const draft = localStorage.getItem(`inbox_draft_${selectedId}`) ?? '';
+    setMessageText(draft);
     loadMessages(selectedId).then((rows) => {
       setMessages(rows);
       setHasMore(rows.length >= PAGE_SIZE);
@@ -242,11 +293,24 @@ export default function InboxPage() {
     );
   }, [selectedId, loadMessages]);
 
-  // Scroll to bottom on new outgoing message
+  // Scroll to bottom on new outgoing message; show pill for inbound when scrolled up
   useEffect(() => {
     const last = messages[messages.length - 1];
-    if (last?.sender === 'agent') {
+    if (!last) return;
+    if (last.sender === 'agent') {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setShowScrollPill(false);
+    } else {
+      // Check if user is scrolled up (not near bottom)
+      const container = messagesContainerRef.current;
+      if (container) {
+        const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+        if (distFromBottom > 150) {
+          setShowScrollPill(true);
+        } else {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
     }
   }, [messages.length]);
 
@@ -584,6 +648,7 @@ export default function InboxPage() {
         toast.error('Message saved but could not be delivered — check WhatsApp Personal connection');
       }
       setMessageText('');
+      if (selectedId) localStorage.removeItem(`inbox_draft_${selectedId}`);
       setIsNote(false);
       setReplyTo(null);
       setShowQuickReplies(false);
@@ -646,6 +711,42 @@ export default function InboxPage() {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  // Scroll listener to hide scroll pill when user reaches bottom
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distFromBottom < 80) setShowScrollPill(false);
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onScroll);
+  }, [selectedId]);
+
+  const scrollToLatest = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setShowScrollPill(false);
+  };
+
+  // Drag-and-drop file upload handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileUpload(file);
   };
 
   const handleNewChat = async () => {
@@ -1042,7 +1143,22 @@ export default function InboxPage() {
             )}
 
             {/* Messages */}
-            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#fdf9f7]">
+            <div
+              ref={messagesContainerRef}
+              className={cn('flex-1 overflow-y-auto p-4 space-y-3 bg-[#fdf9f7] relative', isDragging && 'ring-2 ring-primary/40 ring-inset bg-primary/5')}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {/* Drag overlay */}
+              {isDragging && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-primary/5 pointer-events-none">
+                  <div className="bg-white rounded-2xl shadow-xl px-6 py-4 flex items-center gap-3 border-2 border-dashed border-primary/40">
+                    <Paperclip className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-semibold text-primary">Drop file to send</span>
+                  </div>
+                </div>
+              )}
               {/* Load older messages */}
               {hasMore && (
                 <div className="flex justify-center py-2">
@@ -1082,8 +1198,12 @@ export default function InboxPage() {
                           <Reply className="w-3 h-3 text-[#7a6b5c]" />
                         </button>
                       )}
-                      <div className={cn('p-3 text-sm',
+                      <div className={cn('text-sm',
+                        msg.media_url && msg.body === '[Sticker]' && !isDeleted
+                          ? 'p-1'
+                          : 'p-3',
                         isDeleted                 ? 'bg-muted rounded-2xl'
+                          : msg.media_url && msg.body === '[Sticker]' && !msg.is_note ? 'rounded-2xl'
                           : msg.is_note           ? 'bg-yellow-50 border border-yellow-200 rounded-2xl'
                           : msg.sender === 'customer' ? 'bg-muted rounded-2xl rounded-tl-sm'
                           : msg.status === 'failed'   ? 'bg-red-500/80 text-white rounded-2xl rounded-tr-sm'
@@ -1117,7 +1237,7 @@ export default function InboxPage() {
                         {/* Media attachment (if downloaded) */}
                         {msg.media_url && !isDeleted && (
                           <div className="mb-1.5">
-                            <MediaMessage msgId={msg.id} msgBody={msg.body} />
+                            <MediaMessage msgId={msg.id} msgBody={msg.body} onImageClick={(src) => setLightboxSrc(src)} />
                           </div>
                         )}
 
@@ -1190,6 +1310,9 @@ export default function InboxPage() {
                               </div>
                             );
                           }
+                          // Suppress body for media-only placeholders when media is attached
+                          const isMediaPlaceholder = msg.media_url && /^\[(Sticker|Image|Video|Audio|Document:.+)\]$/.test(msg.body?.trim() ?? '');
+                          if (isMediaPlaceholder && !isDeleted) return null;
                           return (
                             <p className={cn(
                               'whitespace-pre-wrap',
@@ -1233,7 +1356,21 @@ export default function InboxPage() {
                 );
               })}
               <div ref={messagesEndRef} />
+
+              {/* Scroll to latest pill */}
+              {showScrollPill && (
+                <button
+                  onClick={scrollToLatest}
+                  className="sticky bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-lg hover:bg-primary/90 transition-colors"
+                >
+                  <ChevronsDown className="w-3.5 h-3.5" />
+                  New messages
+                </button>
+              )}
             </div>
+
+            {/* Image Lightbox */}
+            {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
 
             {/* Quick Replies */}
             {showQuickReplies && (
