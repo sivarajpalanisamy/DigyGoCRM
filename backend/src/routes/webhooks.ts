@@ -380,6 +380,10 @@ async function processWhatsAppMessage(payload: any) {
             ? (st.errors[0]?.title ?? st.errors[0]?.message ?? 'Delivery failed')
             : null;
 
+          // Check if the wamid exists at all before trying to update
+          const existsRes = await query('SELECT id, status FROM messages WHERE wamid=$1 AND tenant_id=$2', [wamid, tenantId]);
+          console.log('[WABA webhook] wamid lookup:', wamid.slice(0, 30) + '...', 'found:', existsRes.rows.length, existsRes.rows[0] ? `current=${existsRes.rows[0].status}` : 'NO MATCH');
+
           const updateRes = await query(
             `UPDATE messages SET status=$1, error_reason=COALESCE($5, error_reason), updated_at=NOW()
              WHERE wamid=$2 AND tenant_id=$3
@@ -390,6 +394,7 @@ async function processWhatsAppMessage(payload: any) {
              RETURNING id, conversation_id, status, broadcast_id`,
             [mapped, wamid, tenantId, rank, errorReason]
           );
+          console.log('[WABA webhook] update result:', updateRes.rows.length > 0 ? `updated to ${mapped}` : 'NO UPDATE (rank check or no match)');
 
           if (updateRes.rows[0]) {
             emitToTenant(tenantId, 'message:updated', {
