@@ -498,27 +498,46 @@ router.get('/:id/messages', checkAnyPermission('inbox:view_all','inbox:send'), a
     const before = req.query.before as string | undefined;
 
     const params: any[] = [req.params.id, req.user!.tenantId];
-    let sql = `SELECT * FROM messages WHERE conversation_id=$1 AND tenant_id=$2`;
+    let sql = `SELECT m.*, rm.body AS reply_to_body, rm.sender AS reply_to_sender
+     FROM messages m
+     LEFT JOIN messages rm ON rm.id = m.reply_to_id
+     WHERE m.conversation_id=$1 AND m.tenant_id=$2`;
 
     if (before) {
       params.push(before);
-      sql += ` AND created_at < $${params.length}::timestamptz`;
+      sql += ` AND m.created_at < $${params.length}::timestamptz`;
     }
 
     params.push(limit);
-    sql += ` ORDER BY created_at DESC LIMIT $${params.length}`;
+    sql += ` ORDER BY m.created_at DESC LIMIT $${params.length}`;
 
     const result = await query(sql, params);
     res.json(result.rows.reverse()); // return ascending (oldest first)
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+// GET /api/conversations/:id/messages/search?q=text — search within conversation
+router.get('/:id/messages/search', checkAnyPermission('inbox:view_all','inbox:send'), async (req: AuthRequest, res: Response) => {
+  const q = (req.query.q as string ?? '').trim();
+  if (!q) { res.json([]); return; }
+  try {
+    const result = await query(
+      `SELECT id, body, sender, created_at FROM messages
+       WHERE conversation_id=$1 AND tenant_id=$2 AND body ILIKE $3 AND is_deleted=FALSE
+       ORDER BY created_at DESC LIMIT 50`,
+      [req.params.id, req.user!.tenantId, `%${q}%`],
+    );
+    res.json(result.rows);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 // POST /api/conversations/:id/messages
 router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
-  const { body, is_note, template_id, template_params } = req.body as {
+  const { body, is_note, template_id, template_params, reply_to_id } = req.body as {
     body?: string; is_note?: boolean;
     template_id?: string;
     template_params?: Array<{ type: string; parameters: Array<{ type: string; text?: string }> }>;
+    reply_to_id?: string;
   };
   if (!template_id && !body?.trim()) { res.status(400).json({ error: 'body required' }); return; }
   try {
@@ -574,8 +593,20 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
               if (!messageBody) messageBody = `[Template: ${tpl.meta_name}] ${interpolateVars(tpl.body ?? '', leadCtx)}`;
             }
           } else {
-            // Send as plain text
-            const waResp = await sendWAMessage(phone_number_id, token, conv.lead_phone, messageBody);
+            // Send as plain text — include context if replying to a message
+            let replyWamid: string | null = null;
+            if (reply_to_id) {
+              const rr = await query('SELECT wamid FROM messages WHERE id=$1::uuid AND tenant_id=$2', [reply_to_id, req.user!.tenantId]);
+              replyWamid = rr.rows[0]?.wamid ?? null;
+            }
+            const textPayload: any = {
+              messaging_product: 'whatsapp',
+              to: conv.lead_phone.replace(/\D/g, ''),
+              type: 'text',
+              text: { body: messageBody },
+            };
+            if (replyWamid) textPayload.context = { message_id: replyWamid };
+            const waResp = await sendWARequest(phone_number_id, token, textPayload);
             wamid = waResp?.messages?.[0]?.id ?? null;
           }
         }
@@ -611,11 +642,28 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
     }
 
     const msgStatus = (is_note || !deliveryFailed) ? 'sent' : 'failed';
+
+    // Fetch reply context for storage + frontend display
+    let replyToBody: string | null = null;
+    let replyToSender: string | null = null;
+    if (reply_to_id) {
+      const rCtx = await query('SELECT body, sender FROM messages WHERE id=$1::uuid', [reply_to_id]);
+      if (rCtx.rows[0]) {
+        replyToBody = (rCtx.rows[0].body ?? '').slice(0, 200);
+        replyToSender = rCtx.rows[0].sender;
+      }
+    }
+
     const msgRes = await query(
-      `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, created_at)
-       VALUES ($1,$2,$3,'agent',$4,$5,$6,$7,'manual',NOW()) RETURNING *`,
-      [req.params.id, req.user!.tenantId, conv.lead_id ?? null, messageBody, is_note ?? false, wamid, msgStatus],
+      `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, reply_to_id, created_at)
+       VALUES ($1,$2,$3,'agent',$4,$5,$6,$7,'manual',$8::uuid,NOW()) RETURNING *`,
+      [req.params.id, req.user!.tenantId, conv.lead_id ?? null, messageBody, is_note ?? false, wamid, msgStatus, reply_to_id ?? null],
     );
+    // Attach reply context to the returned row for socket emission
+    if (msgRes.rows[0] && reply_to_id) {
+      msgRes.rows[0].reply_to_body = replyToBody;
+      msgRes.rows[0].reply_to_sender = replyToSender;
+    }
 
     if (!is_note) {
       await query(

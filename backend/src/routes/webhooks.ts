@@ -586,11 +586,30 @@ async function processWhatsAppMessage(payload: any) {
             }
           }
 
+          // Resolve reply context (customer replying to a specific message)
+          let replyToId: string | null = null;
+          let replyToBody: string | null = null;
+          let replyToSender: string | null = null;
+          const contextWamid = msg.context?.id;
+          if (contextWamid) {
+            const rCtx = await query('SELECT id, body, sender FROM messages WHERE wamid=$1 LIMIT 1', [contextWamid]);
+            if (rCtx.rows[0]) {
+              replyToId = rCtx.rows[0].id;
+              replyToBody = (rCtx.rows[0].body ?? '').slice(0, 200);
+              replyToSender = rCtx.rows[0].sender;
+            }
+          }
+
           const msgRes = await query(
-            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, media_url, status, sent_by, metadata, created_at)
-             VALUES ($1,$2,$3,'customer',$4,FALSE,$5,$6,'delivered','customer',$7::jsonb,NOW()) RETURNING *`,
-            [convId, tenantId, leadId, content, wamid, mediaPath, msgMetadata ? JSON.stringify(msgMetadata) : null]
+            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, media_url, status, sent_by, metadata, reply_to_id, created_at)
+             VALUES ($1,$2,$3,'customer',$4,FALSE,$5,$6,'delivered','customer',$7::jsonb,$8::uuid,NOW()) RETURNING *`,
+            [convId, tenantId, leadId, content, wamid, mediaPath, msgMetadata ? JSON.stringify(msgMetadata) : null, replyToId]
           );
+          // Attach reply context to emitted row
+          if (msgRes.rows[0] && replyToId) {
+            msgRes.rows[0].reply_to_body = replyToBody;
+            msgRes.rows[0].reply_to_sender = replyToSender;
+          }
 
           await query(
             `UPDATE conversations SET unread_count=unread_count+1, last_message=$1, last_message_at=NOW() WHERE id=$2`,

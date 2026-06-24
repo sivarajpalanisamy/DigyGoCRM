@@ -7,6 +7,7 @@ import {
   Search, Send, Paperclip, Check, CheckCheck, MessageCircle, Clock,
   ArrowLeft, StickyNote, Zap, ChevronDown, UserCheck, X, Smartphone, AlertCircle,
   Loader2, Download, Filter, FileText, RefreshCw, ListOrdered, MapPin, Contact,
+  Reply, File, Play, Volume2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -44,14 +45,18 @@ interface ApiMessage {
   metadata?: Record<string, any> | null;
   status: string;
   error_reason?: string | null;
+  reply_to_id?: string | null;
+  reply_to_body?: string | null;
+  reply_to_sender?: 'agent' | 'customer' | null;
   created_at: string;
 }
 
 // Renders WA media fetched with auth headers → blob URL
-function MediaMessage({ msgId }: { msgId: string }) {
+// Detects media type (image, audio, video, document) for proper rendering
+function MediaMessage({ msgId, msgBody }: { msgId: string; msgBody?: string }) {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isImg, setIsImg] = useState(false);
+  const [mediaType, setMediaType] = useState<'image' | 'audio' | 'video' | 'document'>('document');
 
   useEffect(() => {
     let mounted = true;
@@ -63,7 +68,12 @@ function MediaMessage({ msgId }: { msgId: string }) {
       .then((r) => {
         if (!r.ok || !mounted) return null;
         const ct = r.headers.get('content-type') ?? '';
-        if (mounted) setIsImg(ct.startsWith('image/'));
+        if (mounted) {
+          if (ct.startsWith('image/')) setMediaType('image');
+          else if (ct.startsWith('audio/')) setMediaType('audio');
+          else if (ct.startsWith('video/')) setMediaType('video');
+          else setMediaType('document');
+        }
         return r.blob();
       })
       .then((blob) => {
@@ -83,10 +93,43 @@ function MediaMessage({ msgId }: { msgId: string }) {
 
   if (loading) return <div className="w-36 h-24 rounded-lg bg-black/10 animate-pulse" />;
   if (!src) return null;
-  if (isImg) return <img src={src} alt="media" className="max-w-[220px] rounded-lg" />;
+
+  if (mediaType === 'image') {
+    return <img src={src} alt="media" className="max-w-[220px] rounded-lg cursor-pointer" onClick={() => window.open(src, '_blank')} />;
+  }
+
+  if (mediaType === 'audio') {
+    return (
+      <div className="flex items-center gap-2 min-w-[200px]">
+        <Volume2 className="w-4 h-4 shrink-0 opacity-60" />
+        <audio controls src={src} className="h-8 w-full max-w-[220px]" style={{ minWidth: 160 }} />
+      </div>
+    );
+  }
+
+  if (mediaType === 'video') {
+    return (
+      <div className="max-w-[260px] rounded-lg overflow-hidden">
+        <video controls src={src} className="w-full rounded-lg" style={{ maxHeight: 200 }} />
+      </div>
+    );
+  }
+
+  // Document: extract filename from body like "[Document: filename.pdf]"
+  const docMatch = msgBody?.match(/\[Document:\s*(.+?)\]/);
+  const fileName = docMatch?.[1] ?? 'File';
+  const ext = fileName.split('.').pop()?.toUpperCase() ?? 'FILE';
+
   return (
-    <a href={src} download className="flex items-center gap-2 text-sm underline">
-      <Download className="w-4 h-4" /> Download file
+    <a href={src} download={fileName} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-black/10 bg-white/50 hover:bg-white/80 transition-colors min-w-[180px]">
+      <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+        <File className="w-4 h-4 text-blue-600" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold text-[#1c1410] truncate">{fileName}</p>
+        <p className="text-[10px] text-[#7a6b5c]">{ext} document</p>
+      </div>
+      <Download className="w-3.5 h-3.5 text-[#7a6b5c] shrink-0" />
     </a>
   );
 }
@@ -145,8 +188,24 @@ export default function InboxPage() {
   const [newChatSending, setNewChatSending] = useState(false);
   const [waContactSuggestions, setWaContactSuggestions] = useState<{ id: string; name: string; phone: string }[]>([]);
 
+  // Reply state
+  const [replyTo, setReplyTo] = useState<{ id: string; body: string; sender: 'agent' | 'customer' } | null>(null);
+
+  // Message search state
+  const [msgSearch, setMsgSearch] = useState('');
+  const [msgSearchResults, setMsgSearchResults] = useState<Array<{ id: string; body: string; sender: string; created_at: string }>>([]);
+  const [showMsgSearch, setShowMsgSearch] = useState(false);
+  const [highlightMsgId, setHighlightMsgId] = useState<string | null>(null);
+
   // Keep ref in sync so socket handlers don't stale-close
   useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
+
+  // Clear message highlight after 2s
+  useEffect(() => {
+    if (!highlightMsgId) return;
+    const t = setTimeout(() => setHighlightMsgId(null), 2000);
+    return () => clearTimeout(t);
+  }, [highlightMsgId]);
 
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
 
@@ -171,7 +230,7 @@ export default function InboxPage() {
 
   // When conversation changes: load latest messages, mark read, scroll to bottom
   useEffect(() => {
-    if (!selectedId) { setMessages([]); setHasMore(false); return; }
+    if (!selectedId) { setMessages([]); setHasMore(false); setReplyTo(null); setShowMsgSearch(false); setMsgSearch(''); setMsgSearchResults([]); return; }
     loadMessages(selectedId).then((rows) => {
       setMessages(rows);
       setHasMore(rows.length >= PAGE_SIZE);
@@ -510,6 +569,7 @@ export default function InboxPage() {
       const msg = await api.post<ApiMessage>(`/api/conversations/${selectedId}/messages`, {
         body: messageText.trim(),
         is_note: isNote,
+        ...(replyTo ? { reply_to_id: replyTo.id } : {}),
       });
       setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
       if (!isNote) {
@@ -525,6 +585,7 @@ export default function InboxPage() {
       }
       setMessageText('');
       setIsNote(false);
+      setReplyTo(null);
       setShowQuickReplies(false);
       requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
     } catch {
@@ -868,6 +929,16 @@ export default function InboxPage() {
                   )
                 )}
 
+                {/* Message search toggle */}
+                <button
+                  onClick={() => { setShowMsgSearch(!showMsgSearch); if (showMsgSearch) { setMsgSearch(''); setMsgSearchResults([]); setHighlightMsgId(null); } }}
+                  className={cn('p-1.5 rounded-lg transition-colors',
+                    showMsgSearch ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-[var(--accent-tint)]')}
+                  title="Search messages"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+
                 {/* Assign dropdown */}
                 <div className="relative">
                   <Button variant="outline" size="sm" onClick={() => setShowAssign(!showAssign)} className="flex items-center gap-1 border-orange-200 hover:bg-[#fef3ea]">
@@ -915,6 +986,61 @@ export default function InboxPage() {
               </div>
             </div>
 
+            {/* Message Search Bar */}
+            {showMsgSearch && (
+              <div className="px-4 py-2 border-b border-orange-100 bg-[#faf4ef] relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-primary/50" />
+                  <input
+                    autoFocus
+                    className="w-full pl-9 pr-8 py-1.5 text-sm rounded-lg border border-orange-200 bg-white placeholder:text-[#b8a89a] focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="Search in this conversation..."
+                    value={msgSearch}
+                    onChange={(e) => {
+                      setMsgSearch(e.target.value);
+                      const q = e.target.value.trim();
+                      if (q.length >= 2 && selectedId) {
+                        api.get<any[]>(`/api/conversations/${selectedId}/messages/search?q=${encodeURIComponent(q)}`)
+                          .then(setMsgSearchResults).catch(() => setMsgSearchResults([]));
+                      } else {
+                        setMsgSearchResults([]);
+                      }
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { setShowMsgSearch(false); setMsgSearch(''); setMsgSearchResults([]); setHighlightMsgId(null); } }}
+                  />
+                  {msgSearch && (
+                    <button onClick={() => { setMsgSearch(''); setMsgSearchResults([]); setHighlightMsgId(null); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2">
+                      <X className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+                {msgSearchResults.length > 0 && (
+                  <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-black/10 rounded-xl shadow-lg z-30 max-h-52 overflow-y-auto">
+                    {msgSearchResults.map((r) => (
+                      <button key={r.id}
+                        onClick={() => {
+                          setHighlightMsgId(r.id);
+                          setMsgSearchResults([]);
+                          // Scroll to the message
+                          requestAnimationFrame(() => {
+                            const el = document.getElementById(`msg-${r.id}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          });
+                        }}
+                        className="w-full text-left px-3 py-2 border-b border-black/5 last:border-0 hover:bg-[#faf8f6] transition-colors">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-semibold text-primary">{r.sender === 'agent' ? 'You' : 'Customer'}</span>
+                          <span className="text-[10px] text-[#7a6b5c]">{format(new Date(r.created_at), 'MMM d, HH:mm')}</span>
+                        </div>
+                        <p className="text-xs text-[#1c1410] line-clamp-2 mt-0.5">{r.body}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Messages */}
             <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#fdf9f7]">
               {/* Load older messages */}
@@ -935,15 +1061,28 @@ export default function InboxPage() {
                 const showDate = i === 0 || formatMsgDate(msg.created_at) !== formatMsgDate(messages[i - 1].created_at);
                 const isDeleted = msg.is_deleted;
                 return (
-                  <div key={msg.id}>
+                  <div key={msg.id} id={`msg-${msg.id}`} className={cn(highlightMsgId === msg.id && 'animate-pulse bg-yellow-100/50 rounded-xl -mx-2 px-2 py-1')}>
                     {showDate && (
                       <div className="text-center my-4">
                         <span className="text-[11px] text-[#7a6b5c] bg-muted px-3 py-1 rounded-full">{formatMsgDate(msg.created_at)}</span>
                       </div>
                     )}
-                    <div className={cn('flex', msg.sender === 'agent' ? 'justify-end' : 'justify-start')}>
-                      <div className="relative">
-                      <div className={cn('max-w-[70%] p-3 text-sm',
+                    <div className={cn('flex group', msg.sender === 'agent' ? 'justify-end' : 'justify-start')}>
+                      <div className="relative max-w-[70%]">
+                      {/* Reply button on hover */}
+                      {!isDeleted && !msg.is_note && (
+                        <button
+                          onClick={() => setReplyTo({ id: msg.id, body: msg.body, sender: msg.sender })}
+                          className={cn(
+                            'absolute top-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full bg-white shadow border border-black/10 hover:bg-gray-50',
+                            msg.sender === 'agent' ? '-left-8' : '-right-8',
+                          )}
+                          title="Reply"
+                        >
+                          <Reply className="w-3 h-3 text-[#7a6b5c]" />
+                        </button>
+                      )}
+                      <div className={cn('p-3 text-sm',
                         isDeleted                 ? 'bg-muted rounded-2xl'
                           : msg.is_note           ? 'bg-yellow-50 border border-yellow-200 rounded-2xl'
                           : msg.sender === 'customer' ? 'bg-muted rounded-2xl rounded-tl-sm'
@@ -956,10 +1095,29 @@ export default function InboxPage() {
                           </p>
                         )}
 
+                        {/* Reply quote */}
+                        {msg.reply_to_body && !isDeleted && (
+                          <div className={cn(
+                            'mb-2 px-2.5 py-1.5 rounded-lg border-l-[3px] text-xs',
+                            msg.sender === 'agent'
+                              ? 'bg-white/15 border-l-white/40'
+                              : 'bg-black/5 border-l-primary/40',
+                          )}>
+                            <p className={cn('text-[10px] font-semibold mb-0.5',
+                              msg.sender === 'agent' ? 'text-primary-foreground/70' : 'text-primary')}>
+                              {msg.reply_to_sender === 'agent' ? 'You' : 'Customer'}
+                            </p>
+                            <p className={cn('line-clamp-2',
+                              msg.sender === 'agent' ? 'text-primary-foreground/60' : 'text-[#7a6b5c]')}>
+                              {msg.reply_to_body}
+                            </p>
+                          </div>
+                        )}
+
                         {/* Media attachment (if downloaded) */}
                         {msg.media_url && !isDeleted && (
                           <div className="mb-1.5">
-                            <MediaMessage msgId={msg.id} />
+                            <MediaMessage msgId={msg.id} msgBody={msg.body} />
                           </div>
                         )}
 
@@ -1098,6 +1256,19 @@ export default function InboxPage() {
 
             {/* Input */}
             <div className={cn('border-t border-orange-100 p-3 bg-[#faf4ef] relative', isNote && 'bg-yellow-50')}>
+              {/* Reply quote banner */}
+              {replyTo && (
+                <div className="mb-2 flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
+                  <Reply className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold text-blue-600">{replyTo.sender === 'agent' ? 'You' : 'Customer'}</p>
+                    <p className="text-xs text-[#4a3c30] line-clamp-2">{replyTo.body}</p>
+                  </div>
+                  <button onClick={() => setReplyTo(null)} className="p-0.5 rounded hover:bg-blue-100 shrink-0">
+                    <X className="w-3.5 h-3.5 text-blue-400" />
+                  </button>
+                </div>
+              )}
               {/* 24h window expired banner for WABA */}
               {forceTemplateMode && !isNote && !selectedTemplate && (() => {
                 const hasCustomerMsg = messages.some((m) => m.sender === 'customer');
