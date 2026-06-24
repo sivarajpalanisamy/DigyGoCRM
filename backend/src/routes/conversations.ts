@@ -1013,7 +1013,7 @@ router.get('/broadcasts', checkPermission('inbox:send'), async (req: AuthRequest
   try {
     let sql = `SELECT b.id, b.name, b.template_name, b.template_meta_name, b.total_leads,
                b.sent, b.failed, b.skipped, b.delivered, b.read_count, b.status,
-               b.created_at, b.completed_at, u.name AS created_by_name
+               b.created_at, b.completed_at, b.scheduled_at, u.name AS created_by_name
                FROM broadcasts b
                LEFT JOIN users u ON u.id = b.created_by
                WHERE b.tenant_id = $1`;
@@ -1072,8 +1072,8 @@ router.get('/broadcasts/:id', checkPermission('inbox:send'), async (req: AuthReq
 // POST /api/conversations/waba-single-send — send a WABA template to a single phone number
 router.post('/waba-single-send', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
-  const { phone, template_id, lead_id } = req.body as {
-    phone: string; template_id: string; lead_id?: string;
+  const { phone, template_id, lead_id, template_params } = req.body as {
+    phone: string; template_id: string; lead_id?: string; template_params?: Record<string, string>;
   };
   if (!phone?.trim()) { res.status(400).json({ error: 'phone is required' }); return; }
   if (!template_id) { res.status(400).json({ error: 'template_id is required' }); return; }
@@ -1111,6 +1111,17 @@ router.post('/waba-single-send', checkPermission('inbox:send'), async (req: Auth
 
     // Build components using saved var_mapping (handles body, header, and button URL variables)
     const autoComponents = buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx, tpl.header, tpl.meta_components);
+
+    // Apply manual template_params overrides (from Single Send UI)
+    if (template_params && typeof template_params === 'object') {
+      for (const comp of autoComponents) {
+        const section = comp.type; // 'header' or 'body'
+        comp.parameters.forEach((p, idx) => {
+          const key = `${section}_{{${idx + 1}}}`;
+          if (template_params[key]?.trim()) p.text = template_params[key].trim();
+        });
+      }
+    }
 
     const waResp = await sendWATemplate(phone_number_id, token, phone.trim(), tpl.meta_name, tpl.language ?? 'en', autoComponents);
     if (waResp?.error) {
@@ -1193,12 +1204,13 @@ router.post('/waba-single-send', checkPermission('inbox:send'), async (req: Auth
 // POST /api/conversations/broadcast — send a WABA template to multiple leads
 router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
-  const { template_id, lead_ids, template_params, filters, name: customName } = req.body as {
+  const { template_id, lead_ids, template_params, filters, name: customName, scheduled_at } = req.body as {
     template_id: string;
     lead_ids: string[];
     template_params?: Record<string, Array<{ type: string; text: string }>>;
     filters?: Record<string, any>;
     name?: string;
+    scheduled_at?: string;
   };
 
   if (!template_id || !lead_ids?.length) {
@@ -1226,16 +1238,30 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
     const tpl = tplRes.rows[0];
     if (!tpl?.meta_name) { res.status(400).json({ error: 'Template not found or not synced with Meta' }); return; }
 
+    // Determine if this is a scheduled broadcast
+    const isScheduled = scheduled_at && new Date(scheduled_at).getTime() > Date.now() + 60_000; // at least 1 min in future
+    const initialStatus = isScheduled ? 'scheduled' : 'sending';
+
     // Create broadcast record
     const now = new Date();
     const broadcastName = customName?.trim() || `${tpl.meta_name}-${now.toISOString().slice(0,10)}-${now.toTimeString().slice(0,8).replace(/:/g,'-')}`;
     const bcRes = await query(
-      `INSERT INTO broadcasts (tenant_id, name, template_id, template_name, template_meta_name, template_body, template_header, template_footer, total_leads, status, filters, created_by)
-       VALUES ($1,$2,$3::uuid,$4,$5,$6,$7,$8,$9,'sending',$10::jsonb,$11)
+      `INSERT INTO broadcasts (tenant_id, name, template_id, template_name, template_meta_name, template_body, template_header, template_footer, total_leads, status, filters, created_by, scheduled_at)
+       VALUES ($1,$2,$3::uuid,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$13)
        RETURNING id`,
-      [tenantId, broadcastName, template_id, tpl.name, tpl.meta_name, tpl.body, tpl.header ?? null, tpl.footer ?? null, lead_ids.length, JSON.stringify(filters ?? {}), userId],
+      [tenantId, broadcastName, template_id, tpl.name, tpl.meta_name, tpl.body, tpl.header ?? null, tpl.footer ?? null, lead_ids.length, initialStatus, JSON.stringify(filters ?? {}), userId, isScheduled ? new Date(scheduled_at!) : null],
     );
     const broadcastId = bcRes.rows[0].id;
+
+    // Store lead_ids in filters so the scheduler can pick them up later
+    if (isScheduled) {
+      await query(
+        `UPDATE broadcasts SET filters = filters || $1::jsonb WHERE id = $2::uuid`,
+        [JSON.stringify({ lead_ids }), broadcastId],
+      );
+      res.json({ id: broadcastId, scheduled: true, scheduled_at, total: lead_ids.length, sent: 0, failed: 0, skipped: 0, errors: [] });
+      return;
+    }
 
     // Fetch leads (include email for variable interpolation)
     const leadsRes = await query(
@@ -1333,5 +1359,137 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
     res.json({ id: broadcastId, sent, failed, skipped, total: leadsRes.rows.length, errors: errors.slice(0, 20) });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
+
+// DELETE /api/conversations/broadcasts/:id — cancel a scheduled broadcast
+router.delete('/broadcasts/:id', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { id } = req.params;
+  try {
+    const result = await query(
+      `UPDATE broadcasts SET status='cancelled', completed_at=NOW() WHERE id=$1::uuid AND tenant_id=$2::uuid AND status='scheduled' RETURNING id`,
+      [id, tenantId],
+    );
+    if (!result.rows[0]) { res.status(404).json({ error: 'Broadcast not found or not scheduled' }); return; }
+    res.json({ success: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Scheduled Broadcast Processor ──────────────────────────────────────────
+// Runs every 30s to pick up due scheduled broadcasts
+async function processScheduledBroadcasts() {
+  try {
+    const due = await query(
+      `SELECT b.id, b.tenant_id, b.template_id, b.filters
+       FROM broadcasts b
+       WHERE b.status = 'scheduled' AND b.scheduled_at <= NOW()
+       LIMIT 5`,
+      [],
+    );
+    for (const bc of due.rows) {
+      // Mark as sending to prevent re-pick
+      await query(`UPDATE broadcasts SET status='sending' WHERE id=$1::uuid AND status='scheduled'`, [bc.id]);
+
+      const leadIds: string[] = bc.filters?.lead_ids ?? [];
+      if (!leadIds.length) {
+        await query(`UPDATE broadcasts SET status='completed', completed_at=NOW() WHERE id=$1::uuid`, [bc.id]);
+        continue;
+      }
+
+      // Get WABA creds
+      const wabaRes = await query(
+        'SELECT phone_number_id, access_token FROM waba_integrations WHERE tenant_id=$1::uuid AND is_active=TRUE LIMIT 1',
+        [bc.tenant_id],
+      );
+      if (!wabaRes.rows[0]) {
+        await query(`UPDATE broadcasts SET status='failed', error_details='["WABA not connected"]'::jsonb, completed_at=NOW() WHERE id=$1::uuid`, [bc.id]);
+        continue;
+      }
+      const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
+      const waToken = decrypt(encToken);
+
+      // Get template
+      const tplRes = await query(
+        `SELECT meta_name, language, body, header, variables, meta_components FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid`,
+        [bc.template_id, bc.tenant_id],
+      );
+      const tpl = tplRes.rows[0];
+      if (!tpl?.meta_name) {
+        await query(`UPDATE broadcasts SET status='failed', error_details='["Template not found"]'::jsonb, completed_at=NOW() WHERE id=$1::uuid`, [bc.id]);
+        continue;
+      }
+
+      // Fetch leads
+      const leadsRes = await query(
+        `SELECT id, name, phone, email FROM leads WHERE id = ANY($1::uuid[]) AND tenant_id=$2::uuid AND is_deleted=FALSE`,
+        [leadIds, bc.tenant_id],
+      );
+
+      let sent = 0, failed = 0, skipped = 0;
+      const errors: string[] = [];
+
+      for (const lead of leadsRes.rows) {
+        if (!lead.phone) { skipped++; continue; }
+        try {
+          const leadCtx = { name: lead.name, phone: lead.phone, email: lead.email };
+          const resolvedComps = buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx, tpl.header, tpl.meta_components);
+          const payload: any = {
+            messaging_product: 'whatsapp',
+            to: lead.phone.replace(/\D/g, ''),
+            type: 'template',
+            template: { name: tpl.meta_name, language: { code: tpl.language ?? 'en' } },
+          };
+          const withParams = resolvedComps.filter((c) => c.parameters?.length > 0);
+          if (withParams.length > 0) payload.template.components = withParams;
+
+          const resp = await sendWARequest(phone_number_id, waToken, payload);
+          if (resp?.error) {
+            failed++;
+            errors.push(`${lead.name}: ${resp.error.message}`);
+          } else {
+            sent++;
+            const wamid = resp?.messages?.[0]?.id ?? null;
+            const msgBody = `[Template: ${tpl.meta_name}] ${interpolateVars(tpl.body ?? '', leadCtx)}`;
+            let convRes2 = await query(
+              `SELECT id FROM conversations WHERE lead_id=$1 AND channel='whatsapp' AND status<>'resolved' LIMIT 1`,
+              [lead.id],
+            );
+            let convId: string;
+            if (convRes2.rows[0]) {
+              convId = convRes2.rows[0].id;
+            } else {
+              const nc = await query(
+                `INSERT INTO conversations (tenant_id, lead_id, channel, status, unread_count, last_message, last_message_at)
+                 VALUES ($1,$2,'whatsapp','open',0,$3,NOW()) RETURNING id`,
+                [bc.tenant_id, lead.id, msgBody],
+              );
+              convId = nc.rows[0].id;
+            }
+            await query(
+              `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, broadcast_id, created_at)
+               VALUES ($1,$2,$3,'agent',$4,FALSE,$5,'sent','broadcast',$6::uuid,NOW())`,
+              [convId, bc.tenant_id, lead.id, msgBody, wamid, bc.id],
+            );
+            await query(`UPDATE conversations SET last_message=$1, last_message_at=NOW() WHERE id=$2`, [msgBody, convId]);
+          }
+          if (leadsRes.rows.length > 10) await new Promise((r) => setTimeout(r, 100));
+        } catch (err: any) {
+          failed++;
+          errors.push(`${lead.name}: ${err.message}`);
+        }
+      }
+
+      await query(
+        `UPDATE broadcasts SET sent=$1, failed=$2, skipped=$3, status='completed', completed_at=NOW(), error_details=$4::jsonb WHERE id=$5::uuid`,
+        [sent, failed, skipped, JSON.stringify(errors.slice(0, 50)), bc.id],
+      );
+      emitToTenant(bc.tenant_id, 'broadcast:completed', { id: bc.id, sent, failed, skipped, total: leadsRes.rows.length });
+    }
+  } catch (err) {
+    console.error('[Scheduled Broadcast] processor error:', err);
+  }
+}
+
+// Start the scheduler
+setInterval(processScheduledBroadcasts, 30_000);
 
 export default router;

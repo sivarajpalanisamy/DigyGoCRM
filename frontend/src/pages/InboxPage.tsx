@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import {
-  Search, Send, Paperclip, Check, CheckCheck, MessageCircle,
+  Search, Send, Paperclip, Check, CheckCheck, MessageCircle, Clock,
   ArrowLeft, StickyNote, Zap, ChevronDown, UserCheck, X, Smartphone, AlertCircle,
   Loader2, Download, Filter, FileText, RefreshCw, ListOrdered,
 } from 'lucide-react';
@@ -420,13 +420,44 @@ export default function InboxPage() {
   const isWaba = selectedConv?.channel === 'whatsapp';
   const isPersonalWa = selectedConv?.channel === 'personal_wa';
 
-  // Check if WABA 24h window is still open (last customer message within 24h)
+  // Compute last customer message time for window countdown
+  const lastCustomerMsgTime = useMemo(() => {
+    if (!isWaba) return null;
+    const lastCustMsg = [...messages].reverse().find((m) => m.sender === 'customer');
+    return lastCustMsg ? new Date(lastCustMsg.created_at).getTime() : null;
+  }, [isWaba, messages]);
+
+  // Live countdown ticker (updates every 30s)
+  const [windowTick, setWindowTick] = useState(Date.now());
+  useEffect(() => {
+    if (!isWaba || !lastCustomerMsgTime) return;
+    const remaining = (lastCustomerMsgTime + 24 * 60 * 60 * 1000) - Date.now();
+    if (remaining <= 0) return;
+    const timer = setInterval(() => setWindowTick(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, [isWaba, lastCustomerMsgTime]);
+
+  // Check if WABA 24h window is still open
   const wabaWindowOpen = (() => {
     if (!isWaba) return true;
-    const lastCustomerMsg = [...messages].reverse().find((m) => m.sender === 'customer');
-    if (!lastCustomerMsg) return false; // No customer message yet = window not opened
-    const diff = Date.now() - new Date(lastCustomerMsg.created_at).getTime();
-    return diff < 24 * 60 * 60 * 1000;
+    if (!lastCustomerMsgTime) return false;
+    return (lastCustomerMsgTime + 24 * 60 * 60 * 1000) > windowTick;
+  })();
+
+  // Remaining time in the window (ms)
+  const wabaWindowRemaining = (() => {
+    if (!isWaba || !lastCustomerMsgTime) return 0;
+    return Math.max(0, (lastCustomerMsgTime + 24 * 60 * 60 * 1000) - windowTick);
+  })();
+
+  // Format remaining time as "Xh Ym"
+  const windowCountdown = (() => {
+    if (wabaWindowRemaining <= 0) return '';
+    const totalMins = Math.floor(wabaWindowRemaining / 60_000);
+    const hrs = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    if (hrs > 0) return `${hrs}h ${mins}m`;
+    return `${mins}m`;
   })();
 
   // For WABA with expired window, force template-only mode
@@ -805,6 +836,26 @@ export default function InboxPage() {
                   selected.status === 'resolved' && 'bg-muted text-muted-foreground')}>
                   {selected.status}
                 </Badge>
+
+                {/* 24h window countdown for WABA */}
+                {isWaba && lastCustomerMsgTime && (
+                  wabaWindowOpen ? (
+                    <Badge variant="secondary" className={cn('text-[10px] gap-1 font-mono',
+                      wabaWindowRemaining < 2 * 60 * 60_000
+                        ? 'bg-red-50 text-red-600 border border-red-200'
+                        : wabaWindowRemaining < 6 * 60 * 60_000
+                        ? 'bg-amber-50 text-amber-600 border border-amber-200'
+                        : 'bg-emerald-50 text-emerald-600 border border-emerald-200')}>
+                      <Clock className="w-3 h-3" />
+                      {windowCountdown}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-[10px] bg-red-50 text-red-500 border border-red-200 gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      Expired
+                    </Badge>
+                  )
+                )}
 
                 {/* Assign dropdown */}
                 <div className="relative">

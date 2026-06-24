@@ -53,6 +53,7 @@ interface BroadcastSummary {
   created_at: string;
   completed_at: string | null;
   created_by_name: string | null;
+  scheduled_at: string | null;
 }
 
 interface BroadcastDetail extends BroadcastSummary {
@@ -72,6 +73,8 @@ interface BroadcastResult {
   skipped: number;
   total: number;
   errors: string[];
+  scheduled?: boolean;
+  scheduled_at?: string;
 }
 
 type View = 'list' | 'create';
@@ -127,6 +130,7 @@ export default function WABABroadcastPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<BroadcastResult | null>(null);
+  const [scheduledAt, setScheduledAt] = useState('');
 
   // ── Load broadcasts list ──
   const fetchBroadcasts = () => {
@@ -224,6 +228,7 @@ export default function WABABroadcastPage() {
         lead_ids: Array.from(selectedIds),
         name: broadcastName.trim() || undefined,
         filters: { pipeline: filterPipeline, stage: filterStage, tag: filterTag, group: filterGroup, from_date: filterFromDate, to_date: filterToDate },
+        scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
       });
       setResult(res);
       setStep('confirm');
@@ -236,7 +241,7 @@ export default function WABABroadcastPage() {
 
   const resetWizard = () => {
     setStep('leads'); setSelectedIds(new Set()); setSelectedTemplate(null); setResult(null);
-    setBroadcastName(''); clearFilters();
+    setBroadcastName(''); setScheduledAt(''); clearFilters();
   };
 
   const goBackToList = () => {
@@ -512,10 +517,42 @@ export default function WABABroadcastPage() {
                 {selectedTemplate.footer && <p className="text-xs text-[#7a6b5c] italic">{selectedTemplate.footer}</p>}
               </div>
             )}
+            {/* Schedule option */}
+            {selectedTemplate && (
+              <div className="bg-white rounded-2xl border border-black/5 p-4">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-4 h-4 text-[#7a6b5c]" />
+                  <span className="text-sm font-semibold text-[#1c1410]">Schedule for later</span>
+                  <span className="text-xs text-[#9e8e7e]">(optional)</span>
+                </div>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    type="datetime-local"
+                    value={scheduledAt}
+                    onChange={(e) => setScheduledAt(e.target.value)}
+                    min={new Date(Date.now() + 120_000).toISOString().slice(0, 16)}
+                    className="border border-black/10 rounded-lg px-3 py-2 text-sm bg-white focus:border-primary outline-none"
+                  />
+                  {scheduledAt && (
+                    <button onClick={() => setScheduledAt('')} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+                      <X className="w-3 h-3" /> Clear
+                    </button>
+                  )}
+                </div>
+                {scheduledAt && (
+                  <p className="text-xs text-emerald-600 mt-1.5">
+                    Broadcast will be sent on {new Date(scheduledAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-center">
               <Button onClick={handleBroadcast} disabled={!selectedTemplate || sending} className="px-8 py-2.5 text-base">
                 {sending ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending...</>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {scheduledAt ? 'Scheduling...' : 'Sending...'}</>
+                ) : scheduledAt ? (
+                  <><Clock className="w-4 h-4 mr-2" /> Schedule for {selectedIds.size} Lead{selectedIds.size !== 1 ? 's' : ''}</>
                 ) : (
                   <><Send className="w-4 h-4 mr-2" /> Send to {selectedIds.size} Lead{selectedIds.size !== 1 ? 's' : ''}</>
                 )}
@@ -529,14 +566,21 @@ export default function WABABroadcastPage() {
           <div className="space-y-5">
             <div className="bg-white rounded-2xl border border-black/5 p-8 text-center space-y-4">
               <div className={cn('w-16 h-16 rounded-full mx-auto flex items-center justify-center',
-                result.failed === 0 ? 'bg-emerald-100' : 'bg-amber-100')}>
-                {result.failed === 0
+                result.scheduled ? 'bg-blue-100' : result.failed === 0 ? 'bg-emerald-100' : 'bg-amber-100')}>
+                {result.scheduled
+                  ? <Clock className="w-8 h-8 text-blue-600" />
+                  : result.failed === 0
                   ? <Check className="w-8 h-8 text-emerald-600" />
                   : <Megaphone className="w-8 h-8 text-amber-600" />}
               </div>
-              <h2 className="text-lg font-bold text-[#1c1410]">Broadcast Complete</h2>
+              <h2 className="text-lg font-bold text-[#1c1410]">
+                {result.scheduled ? 'Broadcast Scheduled' : 'Broadcast Complete'}
+              </h2>
               <p className="text-sm text-[#7a6b5c]">
-                Template "{selectedTemplate?.name}" sent to {result.total} leads
+                {result.scheduled
+                  ? <>Template "{selectedTemplate?.name}" scheduled for {result.total} leads on <strong>{new Date(result.scheduled_at!).toLocaleString()}</strong></>
+                  : <>Template "{selectedTemplate?.name}" sent to {result.total} leads</>
+                }
               </p>
               <div className="flex items-center justify-center gap-8 py-4">
                 <div className="text-center">
@@ -712,8 +756,11 @@ function BroadcastDetailPanel({ bc, onRefresh }: { bc: BroadcastDetail; onRefres
           <div className="flex justify-between">
             <span className="text-[#7a6b5c]">Status</span>
             <Badge className={cn('border-0 text-[10px]',
-              bc.status === 'completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700')}>
-              {bc.status === 'completed' ? 'Completed' : 'Sending...'}
+              bc.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
+              bc.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
+              bc.status === 'cancelled' ? 'bg-gray-100 text-gray-500' :
+              'bg-amber-50 text-amber-700')}>
+              {bc.status === 'completed' ? 'Completed' : bc.status === 'scheduled' ? 'Scheduled' : bc.status === 'cancelled' ? 'Cancelled' : 'Sending...'}
             </Badge>
           </div>
           <div className="flex justify-between">

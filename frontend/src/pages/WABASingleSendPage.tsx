@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Send, Search, MessageSquare, X, Check, Loader2, ChevronDown, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -93,6 +93,28 @@ export default function WABASingleSendPage() {
 
   const selectedTemplate = templates.find((t) => t.id === templateId);
 
+  // Detect {{N}} variables in body and header
+  const templateVars = useMemo(() => {
+    if (!selectedTemplate) return [];
+    const vars: { key: string; label: string; section: 'header' | 'body' }[] = [];
+    const headerText = selectedTemplate.header ?? '';
+    const bodyText = selectedTemplate.body ?? '';
+    const headerMatches = headerText.match(/\{\{\d+\}\}/g) ?? [];
+    headerMatches.forEach((m) => {
+      vars.push({ key: `header_${m}`, label: `Header ${m}`, section: 'header' });
+    });
+    const bodyMatches = bodyText.match(/\{\{\d+\}\}/g) ?? [];
+    bodyMatches.forEach((m) => {
+      vars.push({ key: `body_${m}`, label: `Body ${m}`, section: 'body' });
+    });
+    return vars;
+  }, [selectedTemplate]);
+
+  const [varValues, setVarValues] = useState<Record<string, string>>({});
+
+  // Reset var values when template changes
+  useEffect(() => { setVarValues({}); }, [templateId]);
+
   const sendMessage = async () => {
     const phone = receiverPhone.trim();
     if (!phone) { toast.error('Select a receiver'); return; }
@@ -100,11 +122,17 @@ export default function WABASingleSendPage() {
 
     setSending(true);
     try {
-      await api.post('/api/conversations/waba-single-send', {
+      // Build template_params from varValues if any overrides exist
+      const hasOverrides = Object.values(varValues).some((v) => v.trim());
+      const payload: any = {
         phone,
         template_id: templateId,
         lead_id: receiverLeadId || undefined,
-      });
+      };
+      if (hasOverrides) {
+        payload.template_params = varValues;
+      }
+      await api.post('/api/conversations/waba-single-send', payload);
       setSent(true);
       toast.success(`Template sent to ${receiverName || phone}`);
       setTimeout(() => setSent(false), 3000);
@@ -273,6 +301,27 @@ export default function WABASingleSendPage() {
                 )}
               </div>
             </div>
+
+            {/* Variable inputs */}
+            {templateVars.length > 0 && (
+              <div className="mt-4 space-y-3">
+                <p className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider">
+                  Variable Overrides
+                  <span className="font-normal normal-case ml-1 text-[#9e8e7e]">— leave blank to use auto-filled lead data</span>
+                </p>
+                {templateVars.map((v) => (
+                  <div key={v.key} className="flex items-center gap-3">
+                    <span className="text-[12px] font-mono text-[#7a6b5c] w-28 shrink-0">{v.label}</span>
+                    <input
+                      className="flex-1 border border-black/10 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-emerald-500 transition-colors"
+                      placeholder={`Value for ${v.label}…`}
+                      value={varValues[v.key] ?? ''}
+                      onChange={(e) => setVarValues((prev) => ({ ...prev, [v.key]: e.target.value }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
