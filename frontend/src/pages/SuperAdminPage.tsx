@@ -377,7 +377,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header (fixed) */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100 shrink-0">
           <div>
             <h3 className="font-bold text-[#1c1410]">Edit Business</h3>
             <p className="text-[11px] text-[#7a6b5c] mt-0.5">{tenant.name}</p>
@@ -386,7 +386,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
         </div>
 
         {/* Body — horizontal 2-column grid, scrolls if it overflows */}
-        <div className="px-6 py-5 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+        <div className="px-4 sm:px-6 py-5 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
           {/* ── Business ── */}
           <div className="sm:col-span-2 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Business</div>
           <div>
@@ -473,7 +473,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
         </div>
 
         {/* Footer (fixed) */}
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 shrink-0">
+        <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-4 border-t border-gray-100 shrink-0">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
           <button onClick={handleSave} disabled={saving}
             className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-60">
@@ -608,7 +608,7 @@ export default function SuperAdminPage() {
     <div className="space-y-5 pb-10">
 
       {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {[
           { label: 'Total Accounts', value: tenants.length, icon: Building2, color: 'text-primary', bg: 'bg-primary/10' },
           { label: 'Total Users', value: totalUsers, icon: Users, color: 'text-purple-500', bg: 'bg-purple-50' },
@@ -632,17 +632,19 @@ export default function SuperAdminPage() {
         style={{ boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
 
         {/* Tabs + Create button */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 pt-4 pb-0">
           <div className="flex gap-2">
             <button onClick={() => setShowDeleted(false)}
-              className={cn('px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all',
+              className={cn('px-3 sm:px-4 py-1.5 rounded-full text-[12px] sm:text-[13px] font-semibold transition-all',
                 !showDeleted ? 'bg-primary text-white' : 'bg-transparent text-[#7a6b5c] hover:bg-gray-100')}>
-              Active White Label
+              Active
+              <span className="hidden sm:inline"> White Label</span>
             </button>
             <button onClick={() => setShowDeleted(true)}
-              className={cn('px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all border',
+              className={cn('px-3 sm:px-4 py-1.5 rounded-full text-[12px] sm:text-[13px] font-semibold transition-all border',
                 showDeleted ? 'bg-primary text-white border-primary' : 'border-gray-200 text-[#7a6b5c] hover:bg-gray-50')}>
-              Deleted White Label
+              Deleted
+              <span className="hidden sm:inline"> White Label</span>
             </button>
           </div>
           <div className="flex items-center gap-2">
@@ -651,15 +653,17 @@ export default function SuperAdminPage() {
               <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
             </button>
             <button onClick={() => navigate('/admin/create')}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-[13px] font-bold transition-all hover:opacity-90"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-white text-[13px] font-bold transition-all hover:opacity-90"
               style={{ background: 'linear-gradient(135deg,#c2410c 0%,#ea580c 55%,#f97316 100%)', boxShadow: '0 4px 14px rgba(234,88,12,.28)' }}>
-              <Plus className="w-4 h-4" /> CREATE WHITE LABEL
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">CREATE WHITE LABEL</span>
+              <span className="sm:hidden">CREATE</span>
             </button>
           </div>
         </div>
 
         {/* Sub-header */}
-        <div className="px-5 pt-4 pb-2 border-b border-gray-100">
+        <div className="px-4 sm:px-5 pt-4 pb-2 border-b border-gray-100">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-1 h-4 rounded-full bg-primary" />
             <h2 className="font-headline font-bold text-[#1c1410] text-[15px]">Business Accounts</h2>
@@ -668,12 +672,12 @@ export default function SuperAdminPage() {
         </div>
 
         {/* Filters */}
-        <div className="px-5 py-3 border-b border-gray-100 flex flex-wrap items-center gap-2">
+        <div className="px-4 sm:px-5 py-3 border-b border-gray-100 flex flex-wrap items-center gap-2">
           {/* Plan filter */}
           <div className="relative">
             <select value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)}
               className="pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 text-[12px] text-[#1c1410] outline-none bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors">
-              <option value="">Filter by Plan</option>
+              <option value="">Plan</option>
               <option value="monthly">Monthly</option>
               <option value="yearly">Yearly</option>
             </select>
@@ -683,7 +687,7 @@ export default function SuperAdminPage() {
           <div className="relative">
             <select value={filterSub} onChange={(e) => setFilterSub(e.target.value)}
               className="pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 text-[12px] text-[#1c1410] outline-none bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors">
-              <option value="">Filter by Subscription</option>
+              <option value="">Status</option>
               <option value="active">Active</option>
               <option value="expired">Expired</option>
               <option value="suspended">Suspended</option>
@@ -691,19 +695,19 @@ export default function SuperAdminPage() {
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
           </div>
-          {/* Search */}
-          <div className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 bg-white ml-auto">
-            <input value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search accounts…"
-              className="text-[12px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300 w-44" />
-            <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-          </div>
           {(filterPlan || filterSub || search) && (
             <button onClick={() => { setFilterPlan(''); setFilterSub(''); setSearch(''); }}
               className="text-[11px] text-primary font-medium hover:underline">
-              Clear filters
+              Clear
             </button>
           )}
+          {/* Search */}
+          <div className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 bg-white ml-auto w-full sm:w-auto">
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search accounts…"
+              className="text-[12px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300 flex-1 sm:w-44" />
+            <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          </div>
         </div>
 
         {/* Table */}
@@ -726,7 +730,75 @@ export default function SuperAdminPage() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          {/* ── Mobile card layout ── */}
+          <div className="sm:hidden divide-y divide-gray-50">
+            {filtered.map((t, idx) => {
+              const st = subState(t);
+              const tone = st.tone === 'green' ? 'text-green-700' : st.tone === 'amber' ? 'text-amber-600' : 'text-red-500';
+              return (
+                <div key={t.id} className="px-4 py-4 space-y-3">
+                  {/* Top row: avatar + name + actions */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center text-[11px] font-bold text-gray-400 shrink-0">
+                      {t.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-[#1c1410] text-[14px] truncate">{t.name}</p>
+                      <p className="text-[11px] text-[#7a6b5c] truncate">{t.admin_name ?? '—'} · {t.admin_email ?? t.email}</p>
+                    </div>
+                    <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0', CYCLE_BADGE[cycleOf(t)])}>
+                      {CYCLE_LABEL[cycleOf(t)]}
+                    </span>
+                  </div>
+                  {/* Subscription status */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      {st.tone === 'green'
+                        ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                        : <XCircle className={cn('w-3.5 h-3.5 shrink-0', st.tone === 'amber' ? 'text-amber-500' : 'text-red-400')} />}
+                      <span className={cn('text-[12px] font-semibold', tone)}>{st.label}</span>
+                      <span className="text-[11px] text-[#7a6b5c]">
+                        · {t.subscription_expires_at ? format(new Date(t.subscription_expires_at), 'MMM dd, yyyy') : 'No expiry'}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Info row */}
+                  <p className="text-[11px] text-[#7a6b5c]">
+                    {t.last_login_at
+                      ? `Last login: ${format(new Date(t.last_login_at), 'MMM dd hh:mm aa')}`
+                      : 'Never logged in'}
+                    {t.phone ? ` · ${t.phone}` : ''}
+                  </p>
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => handleImpersonate(t)} disabled={impersonatingId === t.id || !t.is_active}
+                      className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all',
+                        t.is_active ? 'border-gray-200 text-primary hover:bg-primary/5' : 'border-gray-100 text-gray-300 cursor-not-allowed')}>
+                      {impersonatingId === t.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <LogIn className="w-3 h-3" />}
+                      Login
+                    </button>
+                    <button onClick={() => setEditTenant(t)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-gray-200 text-[#7a6b5c] hover:bg-gray-50 transition-all">
+                      <Pencil className="w-3 h-3" /> Edit
+                    </button>
+                    <button onClick={() => setDomainTenant(t)}
+                      className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all',
+                        t.domain_status === 'ssl_active'
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                          : 'border-gray-200 text-[#7a6b5c] hover:bg-gray-50')}>
+                      <Globe className="w-3 h-3" /> Domain
+                    </button>
+                    <div className="ml-auto">
+                      <RowMenu tenant={t} onEdit={() => setEditTenant(t)} onRefresh={fetchTenants} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── Desktop table layout ── */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full min-w-[900px] text-[13px]">
               <thead>
                 <tr className="border-b border-gray-100">
@@ -809,25 +881,17 @@ export default function SuperAdminPage() {
                     {/* Actions */}
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-1">
-                        {/* Login as User */}
-                        <button
-                          onClick={() => handleImpersonate(t)}
-                          disabled={impersonatingId === t.id || !t.is_active}
-                          title="Login as User"
+                        <button onClick={() => handleImpersonate(t)} disabled={impersonatingId === t.id || !t.is_active} title="Login as User"
                           className={cn('w-8 h-8 flex items-center justify-center rounded-lg border transition-all',
                             t.is_active
                               ? 'border-gray-200 hover:border-primary hover:bg-primary/5 text-gray-400 hover:text-primary'
                               : 'border-gray-100 text-gray-200 cursor-not-allowed')}>
-                          {impersonatingId === t.id
-                            ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            : <LogIn className="w-3.5 h-3.5" />}
+                          {impersonatingId === t.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <LogIn className="w-3.5 h-3.5" />}
                         </button>
-                        {/* Edit */}
                         <button onClick={() => setEditTenant(t)} title="Edit"
                           className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:border-primary/50 hover:bg-primary/5 text-gray-400 hover:text-primary transition-all">
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
-                        {/* Custom Domain */}
                         <button onClick={() => setDomainTenant(t)} title="Custom Domain"
                           className={cn('w-8 h-8 flex items-center justify-center rounded-lg border transition-all',
                             t.domain_status === 'ssl_active'
@@ -835,12 +899,10 @@ export default function SuperAdminPage() {
                               : 'border-gray-200 hover:border-primary/50 hover:bg-primary/5 text-gray-400 hover:text-primary')}>
                           <Globe className="w-3.5 h-3.5" />
                         </button>
-                        {/* Email */}
                         <button onClick={() => window.location.href = `mailto:${t.admin_email ?? t.email}`} title="Email"
                           className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:border-red-300 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all">
                           <Mail className="w-3.5 h-3.5" />
                         </button>
-                        {/* More */}
                         <RowMenu tenant={t} onEdit={() => setEditTenant(t)} onRefresh={fetchTenants} />
                       </div>
                     </td>
@@ -853,7 +915,7 @@ export default function SuperAdminPage() {
 
         {/* Footer count */}
         {!loading && filtered.length > 0 && (
-          <div className="px-5 py-3 border-t border-gray-50 bg-[#faf8f6]">
+          <div className="px-4 sm:px-5 py-3 border-t border-gray-50 bg-[#faf8f6]">
             <p className="text-[11px] text-[#7a6b5c]">
               Showing <span className="font-semibold text-[#1c1410]">{filtered.length}</span> of{' '}
               <span className="font-semibold text-[#1c1410]">{tenants.length}</span> accounts
