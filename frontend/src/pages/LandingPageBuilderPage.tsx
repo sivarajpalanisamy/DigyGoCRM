@@ -517,7 +517,8 @@ export default function LandingPageBuilderPage() {
       .then((page) => {
         setPageName(page.title ?? 'Untitled Page');
         const content = typeof page.content === 'string' ? JSON.parse(page.content) : (page.content ?? {});
-        if (Array.isArray(content.blocks)) setBlocks(content.blocks);
+        // For existing pages: use saved blocks, or empty if none saved yet
+        setBlocks(Array.isArray(content.blocks) ? content.blocks : []);
         if (content.themeKey && THEMES[content.themeKey]) setThemeKey(content.themeKey);
       })
       .catch(() => { toast.error('Failed to load page'); setPageName('Untitled Page'); })
