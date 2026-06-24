@@ -730,7 +730,7 @@ export default function SuperAdminPage() {
             )}
           </div>
         ) : (
-          {/* ── Mobile card layout ── */}
+          <>
           <div className="sm:hidden divide-y divide-gray-50">
             {filtered.map((t, idx) => {
               const st = subState(t);
@@ -911,6 +911,7 @@ export default function SuperAdminPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {/* Footer count */}
