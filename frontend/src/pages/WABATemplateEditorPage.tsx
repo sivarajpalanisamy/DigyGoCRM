@@ -17,7 +17,7 @@ interface Template {
   id: string; name: string; template_type: string; category: string; language: string;
   status: string; body: string; header?: string | null; footer?: string | null;
   buttons: WABAButton[] | string; meta_template_id?: string | null;
-  file_path?: string | null; file_type?: string | null; file_name?: string | null;
+  variables?: any; file_path?: string | null; file_type?: string | null; file_name?: string | null;
 }
 
 const LANGUAGES = ['en', 'hi', 'ta', 'te', 'kn', 'mr'];
@@ -192,6 +192,12 @@ export default function WABATemplateEditorPage() {
     setFooter(t.footer ?? '');
     setButtons(parseButtons(t.buttons));
     if (t.file_name) setExistingFile({ name: t.file_name });
+    // Restore saved variable samples and mappings
+    const vars = typeof t.variables === 'string' ? (() => { try { return JSON.parse(t.variables); } catch { return null; } })() : t.variables;
+    if (vars) {
+      if (vars.body_examples) setBodyExamples(vars.body_examples);
+      if (vars.var_mapping) setVarMapping(vars.var_mapping);
+    }
   }
 
   // ── Button helpers ──
@@ -232,6 +238,7 @@ export default function WABATemplateEditorPage() {
           footer: footer.trim() || undefined,
           buttons: metaButtons.length ? metaButtons : undefined,
           body_examples: bodyExampleValues.length ? bodyExampleValues : undefined,
+          variables: { body_examples: bodyExamples, var_mapping: varMapping },
         });
         toast.success('Template submitted to Meta for approval');
       } else {
@@ -244,6 +251,7 @@ export default function WABATemplateEditorPage() {
         if (header.trim()) fd.append('header', header.trim());
         if (footer.trim()) fd.append('footer', footer.trim());
         fd.append('buttons', JSON.stringify(buttons));
+        fd.append('variables', JSON.stringify({ body_examples: bodyExamples, var_mapping: varMapping }));
         if (removeFile) fd.append('removeFile', 'true');
         if (file) fd.append('file', file);
         const tok = getAccessToken();

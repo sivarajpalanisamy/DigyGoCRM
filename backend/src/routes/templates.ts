@@ -232,11 +232,12 @@ function graphDelete(apiPath: string, token: string): Promise<any> {
 // POST /api/templates/submit-to-meta — create a template on Meta for approval
 router.post('/submit-to-meta', checkPermission('automation_templates:manage'), async (req: AuthRequest, res: Response) => {
   const tenantId = req.user!.tenantId!;
-  const { name, category, language, body, header, footer, buttons, body_examples } = req.body as {
+  const { name, category, language, body, header, footer, buttons, body_examples, variables } = req.body as {
     name: string; category: string; language: string; body: string;
     header?: string; footer?: string;
     buttons?: Array<{ type: string; text: string; url?: string; phone_number?: string }>;
     body_examples?: string[];
+    variables?: any;
   };
 
   if (!name?.trim() || !body?.trim()) {
@@ -316,18 +317,19 @@ router.post('/submit-to-meta', checkPermission('automation_templates:manage'), a
     // Store in local DB
     const result = await query(
       `INSERT INTO templates
-         (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, meta_name, meta_template_id, meta_components)
-       VALUES ($1::uuid,$2,'waba',$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11)
+         (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, variables, meta_name, meta_template_id, meta_components)
+       VALUES ($1::uuid,$2,'waba',$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12)
        ON CONFLICT (tenant_id, meta_name, language) WHERE meta_name IS NOT NULL DO UPDATE SET
          name=EXCLUDED.name, category=EXCLUDED.category, status='pending',
          body=EXCLUDED.body, header=EXCLUDED.header, footer=EXCLUDED.footer,
-         buttons=EXCLUDED.buttons, meta_template_id=EXCLUDED.meta_template_id,
+         buttons=EXCLUDED.buttons, variables=EXCLUDED.variables, meta_template_id=EXCLUDED.meta_template_id,
          meta_components=EXCLUDED.meta_components, updated_at=NOW()
        RETURNING *`,
       [
         tenantId, displayName, (category || 'UTILITY').toUpperCase(), language || 'en',
         body.trim(), header?.trim() ?? null, footer?.trim() ?? null,
-        JSON.stringify(buttons ?? []), metaName, metaTemplateId, JSON.stringify(components),
+        JSON.stringify(buttons ?? []), JSON.stringify(variables ?? null),
+        metaName, metaTemplateId, JSON.stringify(components),
       ],
     );
 
