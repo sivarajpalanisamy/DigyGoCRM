@@ -177,7 +177,7 @@ export default function WABATemplateEditorPage() {
       .then((list: Template[]) => {
         const found = Array.isArray(list) ? list.find((x) => x.id === id) : null;
         if (found) populate(found);
-        else { toast.error('Template not found'); navigate('/automation/templates'); }
+        else { toast.error('Template not found'); navigate('/automation/templates?tab=waba'); }
       })
       .catch(() => toast.error('Failed to load template'))
       .finally(() => setLoading(false));
@@ -265,7 +265,7 @@ export default function WABATemplateEditorPage() {
         if (!resp.ok) throw new Error(data.error || 'Request failed');
         toast.success(isEdit ? 'Template updated' : 'Template saved locally');
       }
-      navigate('/automation/templates');
+      navigate('/automation/templates?tab=waba');
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
 
@@ -302,7 +302,7 @@ export default function WABATemplateEditorPage() {
       <header className="bg-white border-b border-orange-100 px-5 py-0 flex items-center justify-between shrink-0 h-14">
         <div className="flex items-center gap-1.5 min-w-0">
           <button
-            onClick={() => navigate('/automation/templates')}
+            onClick={() => navigate('/automation/templates?tab=waba')}
             className="flex items-center gap-1.5 text-[13px] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors group shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
@@ -320,7 +320,7 @@ export default function WABATemplateEditorPage() {
         <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline" size="sm"
-            onClick={() => navigate('/automation/templates')}
+            onClick={() => navigate('/automation/templates?tab=waba')}
             className="h-8 text-[13px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
           >
             Cancel
