@@ -466,6 +466,7 @@ async function processWhatsAppMessage(payload: any) {
           const content: string =
             msg.text?.body
             ?? interactiveReply
+            ?? msg.button?.text
             ?? msg.image?.caption
             ?? (msg.document?.filename ? `[Document: ${msg.document.filename}]` : null)
             ?? (msgType === 'image' ? '[Image]' : null)
