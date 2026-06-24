@@ -100,16 +100,18 @@ function interpolateVars(text: string, lead: { name?: string | null; phone?: str
 
 // Resolve a single CRM field key to its value for a given lead context.
 function resolveVarKey(key: string, lead: { name?: string | null; phone?: string | null; email?: string | null }): string {
+  // Strip {%...%} wrapper if present
+  const cleanKey = key.replace(/^\{%\s*|\s*%\}$/g, '').trim();
   const fullName = (lead.name ?? '').trim();
   const parts = fullName.split(/\s+/);
-  switch (key) {
+  switch (cleanKey) {
     case 'first_name': return parts[0] ?? '';
     case 'last_name': return parts.slice(1).join(' ');
     case 'full_name': return fullName;
     case 'phone': return lead.phone ?? '';
     case 'email': return lead.email ?? '';
     case 'today': return new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    default: return `[${key}]`;
+    default: return fullName || '';
   }
 }
 
@@ -127,11 +129,25 @@ function buildComponentsFromMapping(
   const components: Array<{ type: string; sub_type?: string; index?: number; parameters: Array<{ type: string; text: string }> }> = [];
 
   // Helper: extract unique {{N}} numbers from text, sorted ascending
-  const extractVarNums = (text: string): string[] =>
-    Array.from(text.matchAll(/\{\{(\d+)\}\}/g))
+  // Also detects {%var_name%} CRM syntax and assigns sequential numbers
+  const extractVarNums = (text: string): string[] => {
+    const metaNums = Array.from(text.matchAll(/\{\{(\d+)\}\}/g))
       .map((m) => m[1])
       .filter((v, i, a) => a.indexOf(v) === i)
       .sort((a, b) => Number(a) - Number(b));
+    if (metaNums.length > 0) return metaNums;
+    // Fallback: detect {%key%} CRM syntax (stored when template was submitted, not yet synced from Meta)
+    const crmVars = Array.from(text.matchAll(/\{%(\w+)%\}/g))
+      .map((m) => m[1])
+      .filter((v, i, a) => a.indexOf(v) === i);
+    return crmVars.map((_, i) => String(i + 1));
+  };
+
+  // Extract CRM variable keys from {%key%} syntax for direct resolution
+  const extractCrmVarKeys = (text: string): string[] =>
+    Array.from(text.matchAll(/\{%(\w+)%\}/g))
+      .map((m) => m[1])
+      .filter((v, i, a) => a.indexOf(v) === i);
 
   // Use meta_components as source of truth for expected parameter count
   // (local body text may be out of sync with what Meta actually approved)
@@ -145,12 +161,15 @@ function buildComponentsFromMapping(
   const effectiveBodyText = metaBodyText ?? bodyText;
   const effectiveHeaderText = metaHeaderText ?? headerText;
 
-  // Header variables (e.g. "Hello {{1}}")
+  // Header variables (e.g. "Hello {{1}}" or "Hello {%full_name%}")
   if (effectiveHeaderText) {
     const headerNums = extractVarNums(effectiveHeaderText);
+    const headerCrmKeys = extractCrmVarKeys(effectiveHeaderText);
     if (headerNums.length > 0) {
-      const params = headerNums.map((n) => {
-        const crmKey = varMapping[`h${n}`] || varMapping[n];
+      const params = headerNums.map((n, idx) => {
+        // If CRM {%key%} syntax detected, use the key directly; else use var_mapping
+        const directKey = headerCrmKeys[idx];
+        const crmKey = directKey || varMapping[`h${n}`] || varMapping[n];
         return { type: 'text' as const, text: crmKey ? resolveVarKey(crmKey, lead) : resolveVarKey('full_name', lead) || 'there' };
       });
       components.push({ type: 'header', parameters: params });
@@ -159,9 +178,12 @@ function buildComponentsFromMapping(
 
   // Body variables — use Meta's body text to determine param count
   const bodyNums = extractVarNums(effectiveBodyText);
+  const bodyCrmKeys = extractCrmVarKeys(effectiveBodyText);
   if (bodyNums.length > 0) {
-    const params = bodyNums.map((n) => {
-      const crmKey = varMapping[n];
+    const params = bodyNums.map((n, idx) => {
+      // If CRM {%key%} syntax detected, use the key directly; else use var_mapping
+      const directKey = bodyCrmKeys[idx];
+      const crmKey = directKey || varMapping[n];
       const resolved = crmKey ? resolveVarKey(crmKey, lead) : resolveVarKey('full_name', lead) || 'there';
       return { type: 'text' as const, text: resolved };
     });
