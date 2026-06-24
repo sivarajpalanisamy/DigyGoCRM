@@ -6,7 +6,7 @@ import { getSocket } from '@/lib/socket';
 import {
   Search, Send, Paperclip, Check, CheckCheck, MessageCircle, Clock,
   ArrowLeft, StickyNote, Zap, ChevronDown, UserCheck, X, Smartphone, AlertCircle,
-  Loader2, Download, Filter, FileText, RefreshCw, ListOrdered,
+  Loader2, Download, Filter, FileText, RefreshCw, ListOrdered, MapPin, Contact,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,7 @@ interface ApiMessage {
   is_note: boolean;
   is_deleted?: boolean;
   media_url?: string | null;
+  metadata?: Record<string, any> | null;
   status: string;
   error_reason?: string | null;
   created_at: string;
@@ -263,12 +264,22 @@ export default function InboxPage() {
       });
     };
 
+    const onReaction = (data: { message_id: string; conversation_id: string; emoji: string | null }) => {
+      setMessages((prev) =>
+        prev.map((m) => m.id === data.message_id
+          ? { ...m, metadata: { ...m.metadata, reaction: data.emoji ?? undefined } }
+          : m),
+      );
+    };
+
     socket.on('message:new',     onNewMessage);
     socket.on('message:updated', onMessageUpdated);
+    socket.on('message:reaction', onReaction);
     socket.on('conversation:updated', onConvUpdated);
     return () => {
       socket.off('message:new',     onNewMessage);
       socket.off('message:updated', onMessageUpdated);
+      socket.off('message:reaction', onReaction);
       socket.off('conversation:updated', onConvUpdated);
     };
   }, []);
@@ -931,6 +942,7 @@ export default function InboxPage() {
                       </div>
                     )}
                     <div className={cn('flex', msg.sender === 'agent' ? 'justify-end' : 'justify-start')}>
+                      <div className="relative">
                       <div className={cn('max-w-[70%] p-3 text-sm',
                         isDeleted                 ? 'bg-muted rounded-2xl'
                           : msg.is_note           ? 'bg-yellow-50 border border-yellow-200 rounded-2xl'
@@ -948,6 +960,54 @@ export default function InboxPage() {
                         {msg.media_url && !isDeleted && (
                           <div className="mb-1.5">
                             <MediaMessage msgId={msg.id} />
+                          </div>
+                        )}
+
+                        {/* Location message */}
+                        {msg.metadata?.type === 'location' && !isDeleted && (
+                          <a
+                            href={`https://maps.google.com/?q=${msg.metadata.latitude},${msg.metadata.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block mb-1.5 rounded-lg overflow-hidden border border-black/10 hover:opacity-90 transition-opacity"
+                          >
+                            <img
+                              src={`https://maps.googleapis.com/maps/api/staticmap?center=${msg.metadata.latitude},${msg.metadata.longitude}&zoom=15&size=280x150&markers=color:red%7C${msg.metadata.latitude},${msg.metadata.longitude}&key=`}
+                              alt="Location"
+                              className="w-full h-[100px] object-cover bg-gray-100"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                            <div className="px-3 py-2 flex items-start gap-2">
+                              <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
+                              <div className="min-w-0">
+                                {msg.metadata.name && <p className="text-xs font-semibold text-[#1c1410] truncate">{msg.metadata.name}</p>}
+                                <p className="text-[11px] text-[#7a6b5c] truncate">
+                                  {msg.metadata.address || `${msg.metadata.latitude}, ${msg.metadata.longitude}`}
+                                </p>
+                              </div>
+                            </div>
+                          </a>
+                        )}
+
+                        {/* Contact card message */}
+                        {msg.metadata?.type === 'contacts' && !isDeleted && (
+                          <div className="mb-1.5 space-y-1.5">
+                            {(msg.metadata.contacts ?? []).map((ct: any, ci: number) => (
+                              <div key={ci} className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-black/10 bg-white/50">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                                  <Contact className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-[#1c1410] truncate">{ct.name}</p>
+                                  {ct.phones?.[0]?.phone && (
+                                    <p className="text-[11px] text-[#7a6b5c]">{ct.phones[0].phone}</p>
+                                  )}
+                                  {ct.emails?.[0]?.email && (
+                                    <p className="text-[11px] text-[#7a6b5c] truncate">{ct.emails[0].email}</p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
 
@@ -1001,6 +1061,14 @@ export default function InboxPage() {
                         {msg.sender === 'agent' && msg.status === 'failed' && msg.error_reason && (
                           <p className="text-[10px] text-red-300 mt-0.5">{msg.error_reason}</p>
                         )}
+                      </div>
+                      {/* Reaction emoji badge */}
+                      {msg.metadata?.reaction && (
+                        <div className={cn('absolute -bottom-2.5 bg-white border border-black/10 rounded-full px-1.5 py-0.5 shadow-sm text-sm leading-none',
+                          msg.sender === 'agent' ? 'left-1' : 'right-1')}>
+                          {msg.metadata.reaction}
+                        </div>
+                      )}
                       </div>
                     </div>
                   </div>

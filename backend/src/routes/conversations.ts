@@ -1269,8 +1269,20 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
       [lead_ids, tenantId],
     );
 
-    let sent = 0, failed = 0, skipped = 0;
+    // Deduplicate by normalized phone (last 10 digits) to prevent sending twice to same number
+    const seenPhones = new Set<string>();
+    const dedupedLeads = leadsRes.rows.filter((lead: any) => {
+      if (!lead.phone) return true; // keep — will be skipped later as "no phone"
+      const normalized = lead.phone.replace(/\D/g, '').slice(-10);
+      if (seenPhones.has(normalized)) return false;
+      seenPhones.add(normalized);
+      return true;
+    });
+    const dupCount = leadsRes.rows.length - dedupedLeads.length;
+
+    let sent = 0, failed = 0, skipped = dupCount; // count duplicates as skipped
     const errors: string[] = [];
+    if (dupCount > 0) errors.push(`${dupCount} duplicate phone number(s) skipped`);
 
     // Build template components from explicit params (if any)
     const explicitComponents: Array<{ type: string; parameters: Array<{ type: string; text: string }> }> = [];
@@ -1283,7 +1295,7 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
     }
     const hasExplicitParams = explicitComponents.length > 0;
 
-    for (const lead of leadsRes.rows) {
+    for (const lead of dedupedLeads) {
       if (!lead.phone) { skipped++; continue; }
       try {
         const leadCtx = { name: lead.name, phone: lead.phone, email: lead.email };
@@ -1339,7 +1351,7 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
           );
         }
         // Small delay to avoid rate limiting
-        if (leadsRes.rows.length > 10) await new Promise((r) => setTimeout(r, 100));
+        if (dedupedLeads.length > 10) await new Promise((r) => setTimeout(r, 100));
       } catch (err: any) {
         failed++;
         errors.push(`${lead.name}: ${err.message}`);

@@ -463,11 +463,28 @@ async function processWhatsAppMessage(payload: any) {
             ?? msg.interactive?.list_reply?.title
             ?? null;
 
+          // Build metadata for rich message types (location, contacts, reaction)
+          let msgMetadata: Record<string, any> | null = null;
+          if (msg.location) {
+            msgMetadata = { type: 'location', latitude: msg.location.latitude, longitude: msg.location.longitude, name: msg.location.name ?? null, address: msg.location.address ?? null };
+          } else if (msg.contacts && Array.isArray(msg.contacts) && msg.contacts.length > 0) {
+            msgMetadata = { type: 'contacts', contacts: msg.contacts.map((ct: any) => ({
+              name: ct.name?.formatted_name ?? ct.name?.first_name ?? 'Unknown',
+              phones: (ct.phones ?? []).map((p: any) => ({ phone: p.phone, type: p.type })),
+              emails: (ct.emails ?? []).map((e: any) => ({ email: e.email, type: e.type })),
+            }))};
+          } else if (msg.reaction) {
+            msgMetadata = { type: 'reaction', emoji: msg.reaction.emoji, reacted_message_id: msg.reaction.message_id };
+          }
+
           const content: string =
             msg.text?.body
             ?? interactiveReply
             ?? msg.button?.text
             ?? msg.image?.caption
+            ?? (msg.location ? `[Location: ${msg.location.name || msg.location.address || `${msg.location.latitude}, ${msg.location.longitude}`}]` : null)
+            ?? (msg.contacts?.length ? `[Contact: ${msg.contacts[0]?.name?.formatted_name ?? 'Shared contact'}]` : null)
+            ?? (msg.reaction ? `${msg.reaction.emoji}` : null)
             ?? (msg.document?.filename ? `[Document: ${msg.document.filename}]` : null)
             ?? (msgType === 'image' ? '[Image]' : null)
             ?? (msgType === 'video' ? '[Video]' : null)
@@ -475,6 +492,28 @@ async function processWhatsAppMessage(payload: any) {
             ?? (msgType === 'sticker' ? '[Sticker]' : null)
             ?? (msgType === 'interactive' ? (interactiveReply || '[Interactive]') : null)
             ?? `[${msgType}]`;
+
+          // Handle reactions: update existing message metadata instead of creating new message
+          if (msg.reaction) {
+            const reactedWamid = msg.reaction.message_id;
+            if (reactedWamid) {
+              const emoji = msg.reaction.emoji || null; // null = unreact
+              if (emoji) {
+                await query(
+                  `UPDATE messages SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('reaction', $1) WHERE wamid = $2`,
+                  [emoji, reactedWamid],
+                );
+              } else {
+                await query(`UPDATE messages SET metadata = metadata - 'reaction' WHERE wamid = $1`, [reactedWamid]);
+              }
+              // Emit reaction update to frontend
+              const reactedMsg = await query('SELECT id, conversation_id FROM messages WHERE wamid=$1 LIMIT 1', [reactedWamid]);
+              if (reactedMsg.rows[0]) {
+                emitToTenant(tenantId, 'message:reaction', { message_id: reactedMsg.rows[0].id, conversation_id: reactedMsg.rows[0].conversation_id, emoji });
+              }
+            }
+            continue; // Don't create a separate message for reactions
+          }
 
           // Dedup by wamid
           const dupMsg = await query('SELECT id FROM messages WHERE wamid=$1 LIMIT 1', [wamid]);
@@ -548,9 +587,9 @@ async function processWhatsAppMessage(payload: any) {
           }
 
           const msgRes = await query(
-            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, media_url, status, sent_by, created_at)
-             VALUES ($1,$2,$3,'customer',$4,FALSE,$5,$6,'delivered','customer',NOW()) RETURNING *`,
-            [convId, tenantId, leadId, content, wamid, mediaPath]
+            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, media_url, status, sent_by, metadata, created_at)
+             VALUES ($1,$2,$3,'customer',$4,FALSE,$5,$6,'delivered','customer',$7::jsonb,NOW()) RETURNING *`,
+            [convId, tenantId, leadId, content, wamid, mediaPath, msgMetadata ? JSON.stringify(msgMetadata) : null]
           );
 
           await query(
