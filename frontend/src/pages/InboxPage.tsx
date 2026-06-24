@@ -7,7 +7,7 @@ import {
   Search, Send, Paperclip, Check, CheckCheck, MessageCircle, Clock,
   ArrowLeft, StickyNote, Zap, ChevronDown, UserCheck, X, Smartphone, AlertCircle,
   Loader2, Download, Filter, FileText, RefreshCw, ListOrdered, MapPin, Contact,
-  Reply, File, Play, Volume2, ChevronsDown, Info, Tag, Plus, Trash2, User, Mail, Phone,
+  Reply, File, Play, Volume2, ChevronsDown, Info, Tag, Plus, Trash2, User, Mail, Phone, Archive,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { format, isToday, isYesterday } from 'date-fns';
 import { toast } from 'sonner';
 
-type FilterTab = 'all' | 'mine' | 'unread' | 'unassigned' | 'resolved';
+type FilterTab = 'all' | 'mine' | 'unread' | 'unassigned' | 'resolved' | 'archived';
 type ChannelFilter = 'all' | 'waba' | 'personal_wa';
 
 interface ApiConversation {
@@ -284,16 +284,25 @@ export default function InboxPage() {
     return () => clearTimeout(t);
   }, [highlightMsgId]);
 
-  const selected = conversations.find((c) => c.id === selectedId) ?? null;
+  const selected = conversations.find((c) => c.id === selectedId) ?? archivedConvs.find((c) => c.id === selectedId) ?? null;
 
   useEffect(() => {
     if (!selected && !showList) setShowList(true);
   }, [selected]);
 
+  const [archivedConvs, setArchivedConvs] = useState<ApiConversation[]>([]);
+  const [archivedLoaded, setArchivedLoaded] = useState(false);
+
   const loadConversations = useCallback(() => {
     api.get<ApiConversation[]>('/api/conversations')
       .then(setConversations)
       .catch(() => toast.error('Failed to load conversations'));
+  }, []);
+
+  const loadArchived = useCallback(() => {
+    api.get<ApiConversation[]>('/api/conversations?status=archived')
+      .then((rows) => { setArchivedConvs(rows); setArchivedLoaded(true); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
@@ -662,7 +671,13 @@ export default function InboxPage() {
     new Set(conversations.filter((c) => c.channel === 'personal_wa' && c.wa_account).map((c) => c.wa_account!))
   );
 
-  const filtered = conversations.filter((c) => {
+  // Load archived conversations on first tab switch
+  useEffect(() => {
+    if (filterTab === 'archived' && !archivedLoaded) loadArchived();
+  }, [filterTab, archivedLoaded, loadArchived]);
+
+  const baseList = filterTab === 'archived' ? archivedConvs : conversations;
+  const filtered = baseList.filter((c) => {
     if (search) {
       const q = search.toLowerCase();
       const matchName  = (c.lead_name  || '').toLowerCase().includes(q);
@@ -672,6 +687,7 @@ export default function InboxPage() {
     if (channelFilter === 'waba'        && c.channel !== 'whatsapp')    return false;
     if (channelFilter === 'personal_wa' && c.channel !== 'personal_wa') return false;
     if (waAccountFilter && c.wa_account !== waAccountFilter)            return false;
+    if (filterTab === 'archived')   return true; // already filtered by baseList
     if (filterTab === 'mine')       return c.assigned_to === currentUser?.id;
     if (filterTab === 'unread')     return c.unread_count > 0;
     if (filterTab === 'unassigned') return !c.assigned_to;
@@ -862,6 +878,30 @@ export default function InboxPage() {
     } catch { toast.error('Failed to update status'); }
   };
 
+  const handleArchive = async () => {
+    if (!selectedId || !selected) return;
+    const isArchived = selected.status === 'archived';
+    const newStatus = isArchived ? 'open' : 'archived';
+    try {
+      await api.patch(`/api/conversations/${selectedId}/status`, { status: newStatus });
+      if (newStatus === 'archived') {
+        // Move from active to archived
+        const conv = conversations.find((c) => c.id === selectedId);
+        if (conv) setArchivedConvs((prev) => [{ ...conv, status: 'archived' }, ...prev]);
+        setConversations((prev) => prev.filter((c) => c.id !== selectedId));
+        setSelectedId(null);
+        toast.success('Conversation archived');
+      } else {
+        // Move from archived to active
+        const conv = archivedConvs.find((c) => c.id === selectedId);
+        if (conv) setConversations((prev) => [{ ...conv, status: 'open' }, ...prev]);
+        setArchivedConvs((prev) => prev.filter((c) => c.id !== selectedId));
+        setSelectedId(null);
+        toast.success('Conversation unarchived');
+      }
+    } catch { toast.error('Failed to update'); }
+  };
+
   const handleSelectConversation = (id: string) => {
     setSelectedId(id);
     setShowList(false);
@@ -930,6 +970,7 @@ export default function InboxPage() {
     { key: 'unread', label: 'Unread', count: unreadCount },
     { key: 'unassigned', label: 'Unassigned' },
     { key: 'resolved', label: 'Resolved' },
+    { key: 'archived', label: 'Archived' },
   ];
 
   const assignedStaff = selected ? staff.find((s) => s.id === selected.assigned_to) : null;
@@ -1218,10 +1259,19 @@ export default function InboxPage() {
                   )}
                 </div>
 
-                {selected.status === 'resolved'
-                  ? <Button variant="outline" size="sm" onClick={() => handleStatus('open')}>Reopen</Button>
-                  : <Button variant="outline" size="sm" onClick={() => handleStatus('resolved')}>Resolve</Button>
-                }
+                {selected.status === 'archived' ? (
+                  <Button variant="outline" size="sm" onClick={handleArchive}>Unarchive</Button>
+                ) : (
+                  <>
+                    {selected.status === 'resolved'
+                      ? <Button variant="outline" size="sm" onClick={() => handleStatus('open')}>Reopen</Button>
+                      : <Button variant="outline" size="sm" onClick={() => handleStatus('resolved')}>Resolve</Button>
+                    }
+                    <button onClick={handleArchive} className="p-1.5 rounded-lg text-muted-foreground hover:bg-[var(--accent-tint)]" title="Archive">
+                      <Archive className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 

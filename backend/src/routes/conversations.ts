@@ -451,6 +451,7 @@ router.get('/', checkAnyPermission('inbox:view_all','inbox:send'), async (req: A
   }
 
   if (status)      { params.push(status);        sql += ` AND c.status = $${params.length}`; }
+  else             { sql += ` AND c.status != 'archived'`; } // Hide archived by default
   if (assigned_to) { params.push(assigned_to);   sql += ` AND c.assigned_to = $${params.length}`; }
   if (wa_account)  { params.push(wa_account);    sql += ` AND c.wa_account = $${params.length}`; }
   // Search by lead name OR anonymous phone
