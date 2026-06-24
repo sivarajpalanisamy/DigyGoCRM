@@ -157,9 +157,14 @@ function buildComponentsFromMapping(
   const metaBodyText = Array.isArray(parsed) ? (parsed.find((c: any) => c.type === 'BODY')?.text ?? null) : null;
   const metaHeaderText = Array.isArray(parsed) ? (parsed.find((c: any) => c.type === 'HEADER')?.text ?? null) : null;
 
-  // Determine actual variable counts from Meta's template (if available), else fall back to local text
-  const effectiveBodyText = metaBodyText ?? bodyText;
-  const effectiveHeaderText = metaHeaderText ?? headerText;
+  // If meta_components contains CRM {%var%} syntax, it was stored at submit time
+  // and is NOT from Meta's API — treat as stale and fall back to local text
+  const metaBodyIsStale = metaBodyText && /\{%\w+%\}/.test(metaBodyText);
+  const metaHeaderIsStale = metaHeaderText && /\{%\w+%\}/.test(metaHeaderText);
+
+  // Determine actual variable counts: trust meta_components only if it has real {{N}} syntax
+  const effectiveBodyText = metaBodyIsStale ? bodyText : (metaBodyText ?? bodyText);
+  const effectiveHeaderText = metaHeaderIsStale ? headerText : (metaHeaderText ?? headerText);
 
   // Header variables (e.g. "Hello {{1}}" or "Hello {%full_name%}")
   if (effectiveHeaderText) {
