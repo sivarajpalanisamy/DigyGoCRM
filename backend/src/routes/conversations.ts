@@ -97,6 +97,57 @@ function interpolateVars(text: string, lead: { name?: string | null; phone?: str
     .replace(/\{%?email%?\}/gi, lead.email ?? '');
 }
 
+// Resolve a single CRM field key to its value for a given lead context.
+function resolveVarKey(key: string, lead: { name?: string | null; phone?: string | null; email?: string | null }): string {
+  const fullName = (lead.name ?? '').trim();
+  const parts = fullName.split(/\s+/);
+  switch (key) {
+    case 'first_name': return parts[0] ?? '';
+    case 'last_name': return parts.slice(1).join(' ');
+    case 'full_name': return fullName;
+    case 'phone': return lead.phone ?? '';
+    case 'email': return lead.email ?? '';
+    case 'today': return new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    default: return `[${key}]`;
+  }
+}
+
+// Build Meta API body components from saved var_mapping.
+// var_mapping: { "1": "first_name", "2": "appointment_date" }
+// Returns components array with positional parameters for {{1}}, {{2}}, etc.
+function buildComponentsFromMapping(
+  bodyText: string,
+  variables: any,
+  lead: { name?: string | null; phone?: string | null; email?: string | null },
+): Array<{ type: string; parameters: Array<{ type: string; text: string }> }> {
+  const vars = typeof variables === 'string' ? (() => { try { return JSON.parse(variables); } catch { return null; } })() : variables;
+  const varMapping: Record<string, string> = vars?.var_mapping ?? {};
+  const components: Array<{ type: string; parameters: Array<{ type: string; text: string }> }> = [];
+
+  // Detect {{N}} variables in body
+  const bodyNums = Array.from(bodyText.matchAll(/\{\{(\d+)\}\}/g))
+    .map((m) => m[1])
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .sort((a, b) => Number(a) - Number(b));
+
+  if (bodyNums.length > 0) {
+    const params = bodyNums.map((n) => {
+      const crmKey = varMapping[n];
+      const resolved = crmKey ? resolveVarKey(crmKey, lead) : `[${n}]`;
+      return { type: 'text' as const, text: resolved };
+    });
+    components.push({ type: 'body', parameters: params });
+  } else {
+    // Fallback: if body uses {var} / {%var%} style (old templates), send interpolated body as {{1}}
+    const varPattern = /\{%?\w+%?\}/;
+    if (varPattern.test(bodyText)) {
+      components.push({ type: 'body', parameters: [{ type: 'text', text: interpolateVars(bodyText, lead) }] });
+    }
+  }
+
+  return components;
+}
+
 function interpolateComponents(
   components: Array<{ type: string; parameters: Array<{ type: string; text?: string }> }>,
   lead: { name?: string | null; phone?: string | null; email?: string | null },
@@ -415,12 +466,15 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
           if (template_id) {
             // Send as template message
             const tplRes = await query(
-              'SELECT meta_name, language, body, header FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+              'SELECT meta_name, language, body, header, variables FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
               [template_id, req.user!.tenantId],
             );
             const tpl = tplRes.rows[0];
             if (tpl?.meta_name) {
-              const resolvedParams = interpolateComponents(template_params ?? [], leadCtx);
+              // Use explicit template_params if provided, else build from saved var_mapping
+              const resolvedParams = (template_params && template_params.length > 0)
+                ? interpolateComponents(template_params, leadCtx)
+                : buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx);
               const waResp = await sendWATemplate(
                 phone_number_id, token, conv.lead_phone,
                 tpl.meta_name, tpl.language ?? 'en',
@@ -995,7 +1049,7 @@ router.post('/waba-single-send', checkPermission('inbox:send'), async (req: Auth
     const token = decrypt(encToken);
 
     const tplRes = await query(
-      'SELECT meta_name, language, body, header FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+      'SELECT meta_name, language, body, header, variables FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
       [template_id, tenantId],
     );
     const tpl = tplRes.rows[0];
@@ -1016,14 +1070,8 @@ router.post('/waba-single-send', checkPermission('inbox:send'), async (req: Auth
       if (lr.rows[0]) leadCtx = lr.rows[0];
     }
 
-    // Build body components with interpolated variables if template body has {variables}
-    const bodyText = tpl.body ?? '';
-    const varPattern = /\{%?\w+%?\}/;
-    const autoComponents: Array<{ type: string; parameters: Array<{ type: string; text?: string }> }> = [];
-    if (varPattern.test(bodyText)) {
-      // Template body contains CRM variables — send the interpolated body as {{1}}
-      autoComponents.push({ type: 'body', parameters: [{ type: 'text', text: interpolateVars(bodyText, leadCtx) }] });
-    }
+    // Build body components using saved var_mapping (or fallback to old interpolation)
+    const autoComponents = buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx);
 
     const waResp = await sendWATemplate(phone_number_id, token, phone.trim(), tpl.meta_name, tpl.language ?? 'en', autoComponents);
     if (waResp?.error) {
@@ -1133,7 +1181,7 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
 
     // Get template
     const tplRes = await query(
-      `SELECT id, name, meta_name, language, body, header, footer FROM templates WHERE id=$1::uuid AND tenant_id=$2 AND template_type='waba'`,
+      `SELECT id, name, meta_name, language, body, header, footer, variables FROM templates WHERE id=$1::uuid AND tenant_id=$2 AND template_type='waba'`,
       [template_id, tenantId],
     );
     const tpl = tplRes.rows[0];
@@ -1159,22 +1207,25 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
     let sent = 0, failed = 0, skipped = 0;
     const errors: string[] = [];
 
-    // Build template components
-    const components: Array<{ type: string; parameters: Array<{ type: string; text: string }> }> = [];
+    // Build template components from explicit params (if any)
+    const explicitComponents: Array<{ type: string; parameters: Array<{ type: string; text: string }> }> = [];
     if (template_params) {
       for (const [compType, params] of Object.entries(template_params)) {
         if (Array.isArray(params) && params.length > 0) {
-          components.push({ type: compType, parameters: params });
+          explicitComponents.push({ type: compType, parameters: params });
         }
       }
     }
+    const hasExplicitParams = explicitComponents.length > 0;
 
     for (const lead of leadsRes.rows) {
       if (!lead.phone) { skipped++; continue; }
       try {
         const leadCtx = { name: lead.name, phone: lead.phone, email: lead.email };
-        // Interpolate CRM variables in component parameters per-lead
-        const resolvedComps = interpolateComponents(components as any, leadCtx);
+        // Use explicit params if provided, else build from saved var_mapping per-lead
+        const resolvedComps = hasExplicitParams
+          ? interpolateComponents(explicitComponents as any, leadCtx)
+          : buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx);
         const payload: any = {
           messaging_product: 'whatsapp',
           to: lead.phone.replace(/\D/g, ''),

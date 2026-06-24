@@ -61,6 +61,10 @@ function parseButtons(b: WABAButton[] | string | undefined | null): WABAButton[]
   }));
 }
 
+// Meta character limits
+const LIMITS = { name: 512, header: 60, body: 1024, footer: 60, buttonLabel: 25 };
+const META_NAME_RE = /^[a-z0-9_]*$/;
+
 export default function WABATemplateEditorPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -81,6 +85,9 @@ export default function WABATemplateEditorPage() {
   const [loading, setLoading] = useState(isEdit);
   const [submitMeta, setSubmitMeta] = useState(!isEdit);
   const [bodyExamples, setBodyExamples] = useState<Record<string, string>>({});
+  const [testPhone, setTestPhone] = useState('');
+  const [testSending, setTestSending] = useState(false);
+  const [showTestPanel, setShowTestPanel] = useState(false);
   // Variable mapping: {{N}} → CRM field key (e.g. "1" → "first_name")
   const [varMapping, setVarMapping] = useState<Record<string, string>>({});
 
@@ -269,6 +276,23 @@ export default function WABATemplateEditorPage() {
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
 
+  // ── Test Send ──
+  const handleTestSend = async () => {
+    if (!testPhone.trim()) { toast.error('Enter a phone number'); return; }
+    if (!id) { toast.error('Save the template first before testing'); return; }
+    setTestSending(true);
+    try {
+      await api.post(`/api/templates/${id}/test-send`, { phone: testPhone.trim() });
+      toast.success('Test message sent! Check your WhatsApp.');
+    } catch (e: any) { toast.error(e.message ?? 'Test send failed'); }
+    finally { setTestSending(false); }
+  };
+
+  // Name validation
+  const metaName = name.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_|_$/g, '');
+  const nameValid = name.trim() === '' || META_NAME_RE.test(name.trim());
+  const nameWarning = !nameValid ? `Will be saved as "${metaName}"` : '';
+
   // ── WhatsApp preview renderer ──
   function renderPreview(text: string): string {
     if (!text) return '';
@@ -354,9 +378,16 @@ export default function WABATemplateEditorPage() {
                   <Input
                     value={name} onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. welcome_lead"
-                    className="border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7] font-mono text-sm"
+                    className={cn(
+                      'border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7] font-mono text-sm',
+                      !nameValid && 'border-amber-400 focus:border-amber-400'
+                    )}
                   />
-                  <p className="text-[11px] text-[#7a6b5c] mt-1">Lowercase, underscores only. This is the Meta template name.</p>
+                  {nameWarning ? (
+                    <p className="text-[11px] text-amber-600 mt-1">{nameWarning}</p>
+                  ) : (
+                    <p className="text-[11px] text-[#7a6b5c] mt-1">Lowercase, underscores only. No spaces or special characters.</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -371,6 +402,11 @@ export default function WABATemplateEditorPage() {
                       </select>
                       <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a6b5c] pointer-events-none" />
                     </div>
+                    <p className="text-[10px] text-[#7a6b5c] mt-1">
+                      {category === 'UTILITY' && 'Order updates, reminders, alerts. Higher delivery priority.'}
+                      {category === 'MARKETING' && 'Promotions, offers, newsletters. May be rate-limited by Meta.'}
+                      {category === 'AUTHENTICATION' && 'OTP / verification codes only. Special button type.'}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Language</label>
@@ -393,11 +429,20 @@ export default function WABATemplateEditorPage() {
               <SectionLabel n={2} title="Header" subtitle="optional" />
               <div className="bg-white rounded-2xl border border-orange-100 p-5 space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Header Text</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-sm font-medium text-[#1c1410]">Header Text</label>
+                    <span className={cn('text-[11px]', header.length > LIMITS.header ? 'text-red-500 font-medium' : 'text-[#7a6b5c]')}>
+                      {header.length}/{LIMITS.header}
+                    </span>
+                  </div>
                   <Input
                     value={header} onChange={(e) => setHeader(e.target.value)}
+                    maxLength={LIMITS.header}
                     placeholder="Bold header text displayed above body"
-                    className="border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7]"
+                    className={cn(
+                      'border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7]',
+                      header.length > LIMITS.header && 'border-red-400'
+                    )}
                   />
                   {headerVars.length > 0 && (
                     <p className="text-[11px] text-amber-600 mt-1.5">
@@ -532,10 +577,20 @@ export default function WABATemplateEditorPage() {
             <section>
               <SectionLabel n={4} title="Footer" subtitle="optional" />
               <div className="bg-white rounded-2xl border border-orange-100 p-5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-[#1c1410]">Footer Text</label>
+                  <span className={cn('text-[11px]', footer.length > LIMITS.footer ? 'text-red-500 font-medium' : 'text-[#7a6b5c]')}>
+                    {footer.length}/{LIMITS.footer}
+                  </span>
+                </div>
                 <Input
                   value={footer} onChange={(e) => setFooter(e.target.value)}
+                  maxLength={LIMITS.footer}
                   placeholder="e.g. Reply STOP to unsubscribe"
-                  className="border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7]"
+                  className={cn(
+                    'border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7]',
+                    footer.length > LIMITS.footer && 'border-red-400'
+                  )}
                 />
               </div>
             </section>
@@ -557,11 +612,17 @@ export default function WABATemplateEditorPage() {
                       </select>
                       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#7a6b5c] pointer-events-none" />
                     </div>
-                    <Input
-                      value={btn.label} onChange={(e) => upd(btn.id, 'label', e.target.value)}
-                      placeholder="Button label"
-                      className="flex-1 text-xs h-9 border-orange-100 bg-white"
-                    />
+                    <div className="flex-1 relative">
+                      <Input
+                        value={btn.label} onChange={(e) => upd(btn.id, 'label', e.target.value)}
+                        maxLength={LIMITS.buttonLabel}
+                        placeholder="Button label"
+                        className={cn('text-xs h-9 border-orange-100 bg-white pr-10', btn.label.length >= LIMITS.buttonLabel && 'border-red-300')}
+                      />
+                      <span className={cn('absolute right-2 top-1/2 -translate-y-1/2 text-[9px]', btn.label.length >= LIMITS.buttonLabel ? 'text-red-400' : 'text-[#7a6b5c]/50')}>
+                        {btn.label.length}/{LIMITS.buttonLabel}
+                      </span>
+                    </div>
                     {btn.type !== 'QUICK_REPLY' && (
                       <Input
                         value={btn.value} onChange={(e) => upd(btn.id, 'value', e.target.value)}
@@ -610,6 +671,44 @@ export default function WABATemplateEditorPage() {
                   </div>
                 </label>
               </div>
+            )}
+
+            {/* 6 - Test Send (only for saved templates with meta_template_id) */}
+            {isEdit && (
+              <section>
+                <SectionLabel n={6} title="Test Send" subtitle="send to your phone" />
+                <div className="bg-white rounded-2xl border border-orange-100 p-5 space-y-3">
+                  {!showTestPanel ? (
+                    <button
+                      onClick={() => setShowTestPanel(true)}
+                      className="flex items-center gap-2 text-sm text-orange-700 hover:text-orange-900 font-medium transition-colors"
+                    >
+                      <span className="w-6 h-6 rounded-lg bg-green-100 flex items-center justify-center text-green-600 text-xs">&#9654;</span>
+                      Send a test message to verify this template
+                    </button>
+                  ) : (
+                    <>
+                      <p className="text-[11px] text-[#7a6b5c]">
+                        Send this template to your phone with sample values. Template must be approved by Meta first.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={testPhone}
+                          onChange={(e) => setTestPhone(e.target.value)}
+                          placeholder="Phone with country code, e.g. 919876543210"
+                          className="flex-1 text-sm h-10 border-orange-100 bg-[#fffbf7] font-mono"
+                        />
+                        <Button
+                          size="sm" onClick={handleTestSend} disabled={testSending}
+                          className="h-10 px-5 bg-green-600 hover:bg-green-700 text-white border-0"
+                        >
+                          {testSending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Test'}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </section>
             )}
 
             <div className="h-8" />

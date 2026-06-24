@@ -454,4 +454,86 @@ router.post('/sync-waba', checkPermission('automation_templates:manage'), async 
   }
 });
 
+// POST /api/templates/:id/test-send — send a test message to a phone number
+router.post('/:id/test-send', checkPermission('automation_templates:manage'), async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId!;
+  const { phone } = req.body as { phone: string };
+  if (!phone?.trim()) { res.status(400).json({ error: 'Phone number is required' }); return; }
+
+  try {
+    const tplRes = await query(
+      'SELECT meta_name, language, body, variables FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+      [req.params.id, tenantId],
+    );
+    const tpl = tplRes.rows[0];
+    if (!tpl?.meta_name) { res.status(400).json({ error: 'Template not found or not synced to Meta' }); return; }
+
+    const wabaRes = await query(
+      'SELECT phone_number_id, access_token FROM waba_integrations WHERE tenant_id=$1::uuid AND is_active=TRUE LIMIT 1',
+      [tenantId],
+    );
+    if (!wabaRes.rows[0]) { res.status(400).json({ error: 'WABA not connected' }); return; }
+    const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
+    const token = decrypt(encToken);
+
+    // Build components from saved sample values (use samples, not live lead data)
+    const vars = typeof tpl.variables === 'string' ? (() => { try { return JSON.parse(tpl.variables); } catch { return null; } })() : tpl.variables;
+    const bodyExamples: Record<string, string> = vars?.body_examples ?? {};
+    const bodyText = tpl.body ?? '';
+    const bodyNums = Array.from(bodyText.matchAll(/\{\{(\d+)\}\}/g) as IterableIterator<RegExpMatchArray>)
+      .map((m) => m[1])
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort((a, b) => Number(a) - Number(b));
+
+    const components: any[] = [];
+    if (bodyNums.length > 0) {
+      components.push({
+        type: 'body',
+        parameters: bodyNums.map((n: string) => ({ type: 'text', text: bodyExamples[n] || `Sample ${n}` })),
+      });
+    }
+
+    // Send via Meta Cloud API
+    const cleanPhone = phone.trim().replace(/\D/g, '');
+    const payload = {
+      messaging_product: 'whatsapp',
+      to: cleanPhone,
+      type: 'template',
+      template: {
+        name: tpl.meta_name,
+        language: { code: tpl.language ?? 'en' },
+        ...(components.length > 0 ? { components } : {}),
+      },
+    };
+
+    const sendResp = await new Promise<any>((resolve) => {
+      const data = JSON.stringify(payload);
+      const req2 = https.request({
+        hostname: 'graph.facebook.com',
+        path: `/v21.0/${phone_number_id}/messages`,
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
+      }, (resp) => {
+        let body = '';
+        resp.on('data', (c: Buffer) => { body += c; });
+        resp.on('end', () => { try { resolve(JSON.parse(body)); } catch { resolve({ error: { message: body } }); } });
+      });
+      req2.on('error', (e) => resolve({ error: { message: e.message } }));
+      req2.write(data);
+      req2.end();
+    });
+
+    if (sendResp?.error) {
+      console.error('[Template test-send] error:', sendResp.error);
+      res.status(400).json({ error: `WhatsApp error: ${sendResp.error.error_user_msg || sendResp.error.message}` });
+      return;
+    }
+
+    res.json({ success: true, message_id: sendResp?.messages?.[0]?.id });
+  } catch (err: any) {
+    console.error('[Template test-send]', err);
+    res.status(500).json({ error: err.message ?? 'Failed to send test' });
+  }
+});
+
 export default router;
