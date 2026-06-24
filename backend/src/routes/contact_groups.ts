@@ -61,13 +61,16 @@ function sendWATemplate(
 }
 
 function interpolateBroadcast(template: string, member: { name: string | null; phone: string | null; email: string | null }): string {
-  const parts = (member.name ?? '').split(' ');
+  const fullName = (member.name ?? '').trim();
+  const parts = fullName.split(/\s+/);
   const firstName = parts[0] ?? '';
+  const lastName = parts.slice(1).join(' ');
   return template
-    .replace(/\{first_name\}/g, firstName)
-    .replace(/\{full_name\}/g, member.name ?? '')
-    .replace(/\{phone\}/g, member.phone ?? '')
-    .replace(/\{email\}/g, member.email ?? '');
+    .replace(/\{%?first_name%?\}/gi, firstName)
+    .replace(/\{%?last_name%?\}/gi, lastName)
+    .replace(/\{%?full_name%?\}/gi, fullName)
+    .replace(/\{%?phone%?\}/gi, member.phone ?? '')
+    .replace(/\{%?email%?\}/gi, member.email ?? '');
 }
 
 const router = Router();

@@ -81,6 +81,35 @@ function sendWATemplate(
   return sendWARequest(phoneNumberId, token, tplPayload);
 }
 
+// Interpolate CRM variables in template text and component parameters.
+// Supports {first_name}, {last_name}, {full_name}, {phone}, {email},
+// and the {%var%} variant users sometimes type.
+function interpolateVars(text: string, lead: { name?: string | null; phone?: string | null; email?: string | null }): string {
+  const fullName = (lead.name ?? '').trim();
+  const parts = fullName.split(/\s+/);
+  const firstName = parts[0] ?? '';
+  const lastName = parts.slice(1).join(' ');
+  return text
+    .replace(/\{%?first_name%?\}/gi, firstName)
+    .replace(/\{%?last_name%?\}/gi, lastName)
+    .replace(/\{%?full_name%?\}/gi, fullName)
+    .replace(/\{%?phone%?\}/gi, lead.phone ?? '')
+    .replace(/\{%?email%?\}/gi, lead.email ?? '');
+}
+
+function interpolateComponents(
+  components: Array<{ type: string; parameters: Array<{ type: string; text?: string }> }>,
+  lead: { name?: string | null; phone?: string | null; email?: string | null },
+): Array<{ type: string; parameters: Array<{ type: string; text?: string }> }> {
+  return components.map((c) => ({
+    ...c,
+    parameters: (c.parameters ?? []).map((p) => ({
+      ...p,
+      text: p.text ? interpolateVars(p.text, lead) : p.text,
+    })),
+  }));
+}
+
 function sendWAMedia(
   phoneNumberId: string, token: string, toPhone: string,
   mediaType: 'image' | 'document' | 'video' | 'audio',
@@ -359,7 +388,7 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
   if (!template_id && !body?.trim()) { res.status(400).json({ error: 'body required' }); return; }
   try {
     const convRes = await query(
-      `SELECT c.*, COALESCE(l.phone, c.phone) AS lead_phone
+      `SELECT c.*, COALESCE(l.phone, c.phone) AS lead_phone, l.name AS lead_name, l.email AS lead_email
        FROM conversations c
        LEFT JOIN leads l ON l.id = c.lead_id
        WHERE c.id=$1 AND c.tenant_id=$2`,
@@ -367,6 +396,7 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
     );
     if (!convRes.rows[0]) { res.status(404).json({ error: 'Conversation not found' }); return; }
     const conv = convRes.rows[0];
+    const leadCtx = { name: conv.lead_name, phone: conv.lead_phone, email: conv.lead_email };
 
     let wamid: string | null = null;
     let messageBody = body?.trim() ?? '';
@@ -390,10 +420,11 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
             );
             const tpl = tplRes.rows[0];
             if (tpl?.meta_name) {
+              const resolvedParams = interpolateComponents(template_params ?? [], leadCtx);
               const waResp = await sendWATemplate(
                 phone_number_id, token, conv.lead_phone,
                 tpl.meta_name, tpl.language ?? 'en',
-                template_params ?? [],
+                resolvedParams,
               );
               wamid = waResp?.messages?.[0]?.id ?? null;
               if (waResp?.error) {
@@ -402,7 +433,7 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
                 return;
               }
               // Build display body from template for message storage
-              if (!messageBody) messageBody = tpl.body ?? tpl.meta_name;
+              if (!messageBody) messageBody = interpolateVars(tpl.body ?? tpl.meta_name, leadCtx);
             }
           } else {
             // Send as plain text
@@ -970,7 +1001,31 @@ router.post('/waba-single-send', checkPermission('inbox:send'), async (req: Auth
     const tpl = tplRes.rows[0];
     if (!tpl?.meta_name) { res.status(400).json({ error: 'Template not found or not synced to Meta' }); return; }
 
-    const waResp = await sendWATemplate(phone_number_id, token, phone.trim(), tpl.meta_name, tpl.language ?? 'en', []);
+    // Fetch lead info for variable interpolation
+    let leadCtx: { name?: string | null; phone?: string | null; email?: string | null } = { phone: phone.trim() };
+    if (lead_id) {
+      const lr = await query('SELECT name, phone, email FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid', [lead_id, tenantId]);
+      if (lr.rows[0]) leadCtx = lr.rows[0];
+    } else {
+      const cleanPhone = phone.trim().replace(/\D/g, '');
+      const lr = await query(
+        `SELECT name, phone, email FROM leads WHERE tenant_id=$1::uuid AND is_deleted=FALSE
+         AND REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE '%' || RIGHT($2, 10) LIMIT 1`,
+        [tenantId, cleanPhone],
+      );
+      if (lr.rows[0]) leadCtx = lr.rows[0];
+    }
+
+    // Build body components with interpolated variables if template body has {variables}
+    const bodyText = tpl.body ?? '';
+    const varPattern = /\{%?\w+%?\}/;
+    const autoComponents: Array<{ type: string; parameters: Array<{ type: string; text?: string }> }> = [];
+    if (varPattern.test(bodyText)) {
+      // Template body contains CRM variables — send the interpolated body as {{1}}
+      autoComponents.push({ type: 'body', parameters: [{ type: 'text', text: interpolateVars(bodyText, leadCtx) }] });
+    }
+
+    const waResp = await sendWATemplate(phone_number_id, token, phone.trim(), tpl.meta_name, tpl.language ?? 'en', autoComponents);
     if (waResp?.error) {
       console.error('[WABA single send] error:', waResp.error);
       res.status(400).json({ error: `WhatsApp error: ${waResp.error.message}` });
@@ -978,7 +1033,7 @@ router.post('/waba-single-send', checkPermission('inbox:send'), async (req: Auth
     }
 
     const wamid = waResp?.messages?.[0]?.id ?? null;
-    const messageBody = tpl.body ?? tpl.meta_name;
+    const messageBody = interpolateVars(tpl.body ?? tpl.meta_name, leadCtx);
 
     // Find or create conversation + store message
     let leadId = lead_id ?? null;
@@ -1095,9 +1150,9 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
     );
     const broadcastId = bcRes.rows[0].id;
 
-    // Fetch leads
+    // Fetch leads (include email for variable interpolation)
     const leadsRes = await query(
-      `SELECT id, name, phone FROM leads WHERE id = ANY($1::uuid[]) AND tenant_id=$2 AND is_deleted=FALSE`,
+      `SELECT id, name, phone, email FROM leads WHERE id = ANY($1::uuid[]) AND tenant_id=$2 AND is_deleted=FALSE`,
       [lead_ids, tenantId],
     );
 
@@ -1117,6 +1172,9 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
     for (const lead of leadsRes.rows) {
       if (!lead.phone) { skipped++; continue; }
       try {
+        const leadCtx = { name: lead.name, phone: lead.phone, email: lead.email };
+        // Interpolate CRM variables in component parameters per-lead
+        const resolvedComps = interpolateComponents(components as any, leadCtx);
         const payload: any = {
           messaging_product: 'whatsapp',
           to: lead.phone.replace(/\D/g, ''),
@@ -1126,8 +1184,9 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
             language: { code: tpl.language ?? 'en' },
           },
         };
-        if (components.length > 0) {
-          payload.template.components = components;
+        const withParams = resolvedComps.filter((c) => c.parameters && c.parameters.length > 0);
+        if (withParams.length > 0) {
+          payload.template.components = withParams;
         }
         const resp = await sendWARequest(phone_number_id, waToken, payload);
         if (resp?.error) {
@@ -1137,7 +1196,7 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
           sent++;
           // Log to conversation with broadcast_id
           const wamid = resp?.messages?.[0]?.id ?? null;
-          const msgBody = `[Template: ${tpl.meta_name}] ${tpl.body ?? ''}`;
+          const msgBody = `[Template: ${tpl.meta_name}] ${interpolateVars(tpl.body ?? '', leadCtx)}`;
           let convRes2 = await query(
             `SELECT id FROM conversations WHERE lead_id=$1 AND channel='whatsapp' AND status<>'resolved' LIMIT 1`,
             [lead.id],
