@@ -2439,6 +2439,15 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     const remH = hrs % 24;
     return remH > 0 && days < 3 ? `${days}d ${remH}h` : `${days} day${days !== 1 ? 's' : ''}`;
   };
+  const loadEnquiries = () => {
+    if (enquiryData || enquiryLoading) return;
+    setEnquiryLoading(true);
+    api.get<{ enquiries: any[]; leads: any[] }>(`/api/contacts/journey/by-lead/${lead.id}`)
+      .then(setEnquiryData)
+      .catch(() => setEnquiryData({ enquiries: [], leads: [] }))
+      .finally(() => setEnquiryLoading(false));
+  };
+
   const [showWaDropdown, setShowWaDropdown] = useState(false);
   const [showWaSendModal, setShowWaSendModal] = useState(false);
   const [waMessage, setWaMessage] = useState('');
@@ -2446,6 +2455,9 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCustomFields, setShowCustomFields] = useState(false);
   const [showEditFields,   setShowEditFields]   = useState(false);
+  const [showEnquiries, setShowEnquiries] = useState(false);
+  const [enquiryData, setEnquiryData] = useState<{ enquiries: any[]; leads: any[] } | null>(null);
+  const [enquiryLoading, setEnquiryLoading] = useState(false);
   const [cfStatus, setCfStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   // Field values live in LOCAL state — the single source of truth for this panel's
   // "Additional Fields" display. This is deliberately NOT read from the global store:
@@ -2861,6 +2873,50 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                       <button onClick={loadFields} className="text-[12px] text-red-500 pl-1 italic hover:underline">Couldn't load fields — tap to retry</button>
                     ) : (
                       <p className="text-[12px] text-[#7a6b5c] pl-1 italic">No field values yet — click Edit Fields to add</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Enquiry Journey */}
+              <div>
+                <button
+                  onClick={() => { setShowEnquiries((v) => !v); loadEnquiries(); }}
+                  className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:text-[var(--brand-dark)] transition-colors"
+                >
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showEnquiries ? 'rotate-90' : ''}`} />
+                  Enquiry Journey {enquiryData && enquiryData.enquiries.length > 0 ? `(${enquiryData.enquiries.length})` : ''}
+                </button>
+                {showEnquiries && (
+                  <div className="mt-2 space-y-2 pl-1">
+                    {enquiryLoading ? (
+                      <p className="text-[12px] text-[#7a6b5c] pl-1 italic">Loading…</p>
+                    ) : !enquiryData || enquiryData.enquiries.length === 0 ? (
+                      <p className="text-[12px] text-[#7a6b5c] pl-1 italic">No enquiry history recorded yet</p>
+                    ) : (
+                      <>
+                        {enquiryData.leads.length > 1 && (
+                          <div className="text-[11px] text-[#7a6b5c] bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5 mb-1">
+                            This person has <span className="font-bold text-amber-700">{enquiryData.leads.length} leads</span> across different pipelines
+                          </div>
+                        )}
+                        {enquiryData.enquiries.map((e: any) => (
+                          <div key={e.id} className="flex items-start gap-2.5 group">
+                            <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: e.is_duplicate ? '#f59e0b' : 'var(--brand, #c2410c)' }} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[12px] font-semibold text-[#1c1410]">{e.form_name || e.form_type}</span>
+                                {e.is_duplicate && <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Re-enquiry</span>}
+                              </div>
+                              <p className="text-[11px] text-[#7a6b5c]">
+                                {e.pipeline_name ? `${e.pipeline_name}${e.stage_name ? ` → ${e.stage_name}` : ''}` : ''}
+                                {' · '}
+                                {format(new Date(e.created_at), 'dd MMM yyyy, hh:mm a')}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </>
                     )}
                   </div>
                 )}

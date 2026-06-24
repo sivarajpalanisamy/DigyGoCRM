@@ -148,15 +148,21 @@ async function processMetaWebhook(payload: any) {
         // Parse + normalize using shared utility
         const { name, email, phone, customValues } = parseMetaFieldData(fieldData, mapping);
 
-        // 4. Email/phone dedup
-        const existing = (email || phone) ? await query(
-          `SELECT id FROM leads WHERE tenant_id=$1 AND is_deleted=FALSE
-           AND (($2::text<>'' AND LOWER(email)=$2) OR ($3::text<>'' AND phone=$3)) LIMIT 1`,
-          [row.tenant_id, email, phone]
-        ) : { rows: [] };
+        // 4. Email/phone dedup — PIPELINE-SCOPED
+        const pipelineId = row.pipeline_id ?? null;
+        const dedupParams: any[] = [row.tenant_id, email, phone];
+        let dedupSql = `SELECT id FROM leads WHERE tenant_id=$1 AND is_deleted=FALSE
+           AND (($2::text<>'' AND LOWER(email)=$2) OR ($3::text<>'' AND phone=$3))`;
+        if (pipelineId) {
+          dedupParams.push(pipelineId);
+          dedupSql += ` AND pipeline_id=$${dedupParams.length}::uuid`;
+        }
+        dedupSql += ` LIMIT 1`;
+        const existing = (email || phone) ? await query(dedupSql, dedupParams) : { rows: [] };
 
         let leadId: string | null = null;
         let isNew = false;
+        const isDuplicate = !!existing.rows[0];
 
         if (existing.rows[0]) {
           leadId = existing.rows[0].id;
@@ -176,13 +182,35 @@ async function processMetaWebhook(payload: any) {
           const ins = await query(
             `INSERT INTO leads (tenant_id, name, email, phone, source, source_ref, pipeline_id, stage_id)
              VALUES ($1,$2,$3,$4,'meta_form',$5,$6,$7) RETURNING *`,
-            [row.tenant_id, name, email, phone, leadgenId, row.pipeline_id ?? null, row.stage_id ?? null]
+            [row.tenant_id, name, email, phone, leadgenId, pipelineId, row.stage_id ?? null]
           );
           leadId = ins.rows[0]?.id;
           if (ins.rows[0]) {
             emitToTenant(row.tenant_id, 'lead:created', ins.rows[0]);
             sendNewLeadNotification(row.tenant_id, ins.rows[0], null).catch(() => null);
           }
+        }
+
+        // Log to enquiry_log — every submission, even duplicates
+        if (leadId) {
+          // Fetch pipeline/stage names for the log
+          let pName: string | null = null;
+          let sName: string | null = null;
+          if (pipelineId) {
+            const pRes = await query('SELECT name FROM pipelines WHERE id=$1::uuid', [pipelineId]);
+            pName = pRes.rows[0]?.name ?? null;
+          }
+          if (row.stage_id) {
+            const sRes = await query('SELECT name FROM pipeline_stages WHERE id=$1::uuid', [row.stage_id]);
+            sName = sRes.rows[0]?.name ?? null;
+          }
+          await query(
+            `INSERT INTO enquiry_log (tenant_id, phone, email, lead_id, form_type, form_id, form_name, pipeline_id, pipeline_name, stage_id, stage_name, source, is_duplicate, raw_data)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+            [row.tenant_id, phone || null, email || null, leadId, 'meta_form', row.form_id, row.form_name,
+             pipelineId, pName, row.stage_id ?? null, sName, 'meta_form', isDuplicate,
+             JSON.stringify({ leadgen_id: leadgenId, field_data: fieldData })]
+          ).catch((e) => console.error('[enquiry_log meta]', e.message));
         }
 
         // 5. Store custom field values

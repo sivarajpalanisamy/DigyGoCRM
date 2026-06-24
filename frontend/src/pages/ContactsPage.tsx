@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   Users, UserCheck, UserPlus, Phone, Search, Mail, MoreVertical, User,
   MessageCircle, Pencil, Trash2, ArrowRightLeft, Filter, X, Download,
-  ChevronDown, Tag, FileText, Loader2, Zap, Settings,
+  ChevronDown, Tag, FileText, Loader2, Zap, Settings, History, ExternalLink,
 } from 'lucide-react';
 import { useCrmStore } from '@/store/crmStore';
 import { usePermission } from '@/hooks/usePermission';
@@ -56,8 +56,10 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
   const { pipelines, updateLead } = useCrmStore();
   const [fields, setFields] = useState<{ field_name: string; field_type: string; slug: string; value: string }[]>([]);
   const [loadingFields, setLoadingFields] = useState(true);
-  const [activeTab, setActiveTab] = useState<'opportunity' | 'additional'>('opportunity');
+  const [activeTab, setActiveTab] = useState<'opportunity' | 'additional' | 'journey'>('opportunity');
   const [saving, setSaving] = useState(false);
+  const [journey, setJourney] = useState<{ enquiries: any[]; leads: any[] } | null>(null);
+  const [loadingJourney, setLoadingJourney] = useState(false);
 
   const [form, setForm] = useState({
     opportunityName: `${lead.firstName} ${lead.lastName}`,
@@ -86,6 +88,15 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
     };
     loadFields().finally(() => setLoadingFields(false));
   }, [lead.id, lead.source]);
+
+  useEffect(() => {
+    if (activeTab !== 'journey' || journey) return;
+    setLoadingJourney(true);
+    api.get<{ enquiries: any[]; leads: any[] }>(`/api/contacts/journey/by-lead/${lead.id}`)
+      .then(setJourney)
+      .catch(() => setJourney({ enquiries: [], leads: [] }))
+      .finally(() => setLoadingJourney(false));
+  }, [activeTab, lead.id, journey]);
 
   const selectedPipeline = pipelines.find((p) => p.id === form.pipelineId);
   const selectedStages = selectedPipeline?.stages ?? [];
@@ -164,6 +175,20 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
               }}
             >
               Additional Data
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('journey')}
+              className="px-5 py-2 rounded-lg text-[13px] font-bold transition-all flex items-center gap-1.5"
+              style={{
+                background: activeTab === 'journey'
+                  ? 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)'
+                  : '#e5e7eb',
+                color: activeTab === 'journey' ? '#fff' : '#555',
+              }}
+            >
+              <History className="w-3.5 h-3.5" />
+              Journey
             </button>
           </div>
 
@@ -299,6 +324,120 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                       />
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Journey tab ── */}
+          {activeTab === 'journey' && (
+            <div>
+              {loadingJourney ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                </div>
+              ) : !journey || (journey.enquiries.length === 0 && journey.leads.length === 0) ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                  <div className="w-12 h-12 bg-[var(--app-bg)] rounded-2xl flex items-center justify-center">
+                    <History className="w-5 h-5 text-gray-300" />
+                  </div>
+                  <p className="text-[13px] font-semibold text-[#1c1410]">No journey data</p>
+                  <p className="text-[12px] text-[#b09e8d]">No enquiry history recorded for this contact yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {/* Summary */}
+                  <div className="flex items-center gap-4 p-3 bg-[var(--app-bg,#faf8f6)] rounded-xl">
+                    <div className="text-center">
+                      <p className="text-[18px] font-bold text-[#1c1410]">{journey.enquiries.length}</p>
+                      <p className="text-[11px] text-[#7a6b5c]">Enquiries</p>
+                    </div>
+                    <div className="w-px h-8 bg-gray-200" />
+                    <div className="text-center">
+                      <p className="text-[18px] font-bold text-[#1c1410]">{journey.leads.length}</p>
+                      <p className="text-[11px] text-[#7a6b5c]">Pipelines</p>
+                    </div>
+                    <div className="w-px h-8 bg-gray-200" />
+                    <div className="text-center">
+                      <p className="text-[18px] font-bold text-[#1c1410]">
+                        {journey.enquiries.length > 0
+                          ? format(new Date(journey.enquiries[journey.enquiries.length - 1].created_at), 'dd MMM yyyy')
+                          : '—'}
+                      </p>
+                      <p className="text-[11px] text-[#7a6b5c]">First seen</p>
+                    </div>
+                  </div>
+
+                  {/* Active leads across pipelines */}
+                  {journey.leads.length > 0 && (
+                    <div>
+                      <h4 className="text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2">Active Leads</h4>
+                      <div className="space-y-2">
+                        {journey.leads.map((l: any) => (
+                          <div key={l.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl">
+                            <div>
+                              <p className="text-[13px] font-semibold text-[#1c1410]">{l.pipeline_name || 'No pipeline'}</p>
+                              <p className="text-[11px] text-[#7a6b5c]">
+                                Stage: {l.stage_name || '—'}
+                                {l.assigned_name ? ` · Assigned: ${l.assigned_name}` : ''}
+                                {l.lead_quality ? ` · ${l.lead_quality}` : ''}
+                              </p>
+                            </div>
+                            <span className="text-[11px] text-[#b09e8d]">{format(new Date(l.created_at), 'dd MMM yyyy')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Enquiry timeline */}
+                  {journey.enquiries.length > 0 && (
+                    <div>
+                      <h4 className="text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2">Enquiry Timeline</h4>
+                      <div className="relative pl-4 border-l-2 border-gray-200 space-y-4">
+                        {journey.enquiries.map((e: any) => (
+                          <div key={e.id} className="relative">
+                            <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 border-white"
+                              style={{ backgroundColor: e.is_duplicate ? '#f59e0b' : 'var(--brand, #c2410c)' }} />
+                            <div className="p-3 bg-white border border-gray-100 rounded-xl">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[13px] font-semibold text-[#1c1410]">
+                                  {e.form_name || e.form_type}
+                                </span>
+                                <span className="text-[11px] text-[#b09e8d]">
+                                  {format(new Date(e.created_at), 'dd MMM yyyy, hh:mm a')}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={cn(
+                                  'px-2 py-0.5 rounded-full text-[10px] font-medium',
+                                  e.form_type === 'meta_form' ? 'bg-blue-50 text-blue-600' :
+                                  e.form_type === 'custom_form' ? 'bg-purple-50 text-purple-600' :
+                                  e.form_type === 'landing_page' ? 'bg-amber-50 text-amber-600' :
+                                  'bg-gray-100 text-gray-600'
+                                )}>
+                                  {e.form_type === 'meta_form' ? 'Meta Form' :
+                                   e.form_type === 'custom_form' ? 'Custom Form' :
+                                   e.form_type === 'landing_page' ? 'Landing Page' :
+                                   e.form_type}
+                                </span>
+                                {e.pipeline_name && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600">
+                                    {e.pipeline_name}{e.stage_name ? ` → ${e.stage_name}` : ''}
+                                  </span>
+                                )}
+                                {e.is_duplicate && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-600">
+                                    Re-enquiry
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

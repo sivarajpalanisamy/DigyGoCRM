@@ -283,4 +283,105 @@ router.delete('/:id', checkPermission('contacts:delete'), async (req: AuthReques
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
+// GET /api/contacts/:id/journey — full enquiry journey for a contact
+router.get('/:id/journey', checkPermission('contacts:read'), async (req: AuthRequest, res: Response) => {
+  try {
+    // Get contact's phone and email
+    const contactRes = await query(
+      'SELECT phone, email FROM contacts WHERE id=$1 AND tenant_id=$2',
+      [req.params.id, req.user!.tenantId]
+    );
+    if (!contactRes.rows[0]) { res.status(404).json({ error: 'Contact not found' }); return; }
+    const { phone, email } = contactRes.rows[0];
+
+    if (!phone && !email) { res.json({ enquiries: [], leads: [] }); return; }
+
+    // Fetch all enquiry log entries for this phone/email
+    const params: any[] = [req.user!.tenantId];
+    const conditions: string[] = [];
+    if (email) { params.push(email.toLowerCase()); conditions.push(`LOWER(el.email)=$${params.length}`); }
+    if (phone) { params.push(phone); conditions.push(`el.phone=$${params.length}`); }
+
+    const enquiries = await query(
+      `SELECT el.* FROM enquiry_log el
+       WHERE el.tenant_id=$1 AND (${conditions.join(' OR ')})
+       ORDER BY el.created_at DESC`,
+      params
+    );
+
+    // Fetch all leads for this person across pipelines
+    const leadParams: any[] = [req.user!.tenantId];
+    const leadConditions: string[] = [];
+    if (email) { leadParams.push(email.toLowerCase()); leadConditions.push(`LOWER(l.email)=$${leadParams.length}`); }
+    if (phone) { leadParams.push(phone); leadConditions.push(`l.phone=$${leadParams.length}`); }
+
+    const leads = await query(
+      `SELECT l.id, l.name, l.email, l.phone, l.source, l.pipeline_id, l.stage_id, l.status,
+              l.created_at, l.updated_at, l.deal_value,
+              l.custom_fields->>'lead_quality' AS lead_quality,
+              p.name AS pipeline_name, ps.name AS stage_name,
+              u.name AS assigned_name
+       FROM leads l
+       LEFT JOIN pipelines p ON p.id = l.pipeline_id
+       LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
+       LEFT JOIN users u ON u.id = l.assigned_to
+       WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND (${leadConditions.join(' OR ')})
+       ORDER BY l.created_at DESC`,
+      leadParams
+    );
+
+    res.json({ enquiries: enquiries.rows, leads: leads.rows });
+  } catch (err: any) {
+    console.error('[contact journey]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/contacts/journey/by-lead/:leadId — enquiry journey from a lead's phone/email
+router.get('/journey/by-lead/:leadId', checkPermission('contacts:read'), async (req: AuthRequest, res: Response) => {
+  try {
+    const leadRes = await query(
+      'SELECT phone, email FROM leads WHERE id=$1::uuid AND tenant_id=$2 AND is_deleted=FALSE',
+      [req.params.leadId, req.user!.tenantId]
+    );
+    if (!leadRes.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }
+    const { phone, email } = leadRes.rows[0];
+
+    if (!phone && !email) { res.json({ enquiries: [], leads: [] }); return; }
+
+    const params: any[] = [req.user!.tenantId];
+    const conditions: string[] = [];
+    if (email) { params.push(email.toLowerCase()); conditions.push(`LOWER(el.email)=$${params.length}`); }
+    if (phone) { params.push(phone); conditions.push(`el.phone=$${params.length}`); }
+
+    const enquiries = await query(
+      `SELECT el.* FROM enquiry_log el
+       WHERE el.tenant_id=$1 AND (${conditions.join(' OR ')})
+       ORDER BY el.created_at DESC`,
+      params
+    );
+
+    const leadParams: any[] = [req.user!.tenantId];
+    const leadConditions: string[] = [];
+    if (email) { leadParams.push(email.toLowerCase()); leadConditions.push(`LOWER(l.email)=$${leadParams.length}`); }
+    if (phone) { leadParams.push(phone); leadConditions.push(`l.phone=$${leadParams.length}`); }
+
+    const leads = await query(
+      `SELECT l.id, l.name, l.source, l.pipeline_id, l.stage_id,
+              l.created_at, p.name AS pipeline_name, ps.name AS stage_name
+       FROM leads l
+       LEFT JOIN pipelines p ON p.id = l.pipeline_id
+       LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
+       WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND (${leadConditions.join(' OR ')})
+       ORDER BY l.created_at DESC`,
+      leadParams
+    );
+
+    res.json({ enquiries: enquiries.rows, leads: leads.rows });
+  } catch (err: any) {
+    console.error('[lead journey]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;

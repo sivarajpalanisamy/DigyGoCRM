@@ -237,6 +237,27 @@ router.post('/forms/:slug/submit', async (req: Request, res: Response) => {
       [form.id, form.tenant_id, JSON.stringify(data)]
     );
 
+    // Log to enquiry_log — every submission, even duplicates
+    {
+      let pName: string | null = null;
+      let sName: string | null = null;
+      if (pipelineId) {
+        const pRes = await query('SELECT name FROM pipelines WHERE id=$1::uuid', [pipelineId]);
+        pName = pRes.rows[0]?.name ?? null;
+      }
+      if (form.stage_id) {
+        const sRes = await query('SELECT name FROM pipeline_stages WHERE id=$1::uuid', [form.stage_id]);
+        sName = sRes.rows[0]?.name ?? null;
+      }
+      await query(
+        `INSERT INTO enquiry_log (tenant_id, phone, email, lead_id, form_type, form_id, form_name, pipeline_id, pipeline_name, stage_id, stage_name, source, is_duplicate, raw_data)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        [form.tenant_id, phone || null, email || null, leadId, 'custom_form', form.id, form.name,
+         pipelineId, pName, form.stage_id ?? null, sName, `form:${form.name}`, !!dupRows[0],
+         JSON.stringify(data)]
+      ).catch((e: any) => console.error('[enquiry_log form]', e.message));
+    }
+
     const redirectUrl = form.redirect_url;
     const thankYou = form.thank_you_message ?? 'Thank you for your submission!';
     res.json({ success: true, message: thankYou, redirectUrl: redirectUrl || null });
@@ -759,68 +780,109 @@ router.post('/page/:slug/submit', pageSubmitLimiter, async (req: Request, res: R
     }
 
     // Dedup by phone or email within the pipeline
-    const dedupField = phone?.trim() ? 'phone' : email?.trim() ? 'email' : null;
-    if (dedupField) {
-      const dedupVal = dedupField === 'phone' ? phone.trim() : email.trim();
-      const existing = await query(
-        `SELECT id FROM leads WHERE tenant_id=$1 AND pipeline_id=$2 AND ${dedupField}=$3 AND is_deleted=FALSE`,
-        [page.tenant_id, pipelineId, dedupVal]
+    const normEmail = email?.trim()?.toLowerCase() || '';
+    const normPhone = phone?.trim() || '';
+    let isDuplicate = false;
+    let existingLeadId: string | null = null;
+
+    if (normEmail) {
+      const r = await query(
+        `SELECT id FROM leads WHERE tenant_id=$1 AND pipeline_id=$2 AND LOWER(email)=$3 AND is_deleted=FALSE LIMIT 1`,
+        [page.tenant_id, pipelineId, normEmail]
       );
-      if (existing.rows[0]) {
-        // Increment leads counter anyway
-        query('UPDATE landing_pages SET leads = leads + 1 WHERE id=$1', [page.id]).catch(() => {});
-        res.json({ success: true, duplicate: true });
-        return;
-      }
+      if (r.rows[0]) { isDuplicate = true; existingLeadId = r.rows[0].id; }
+    }
+    if (!isDuplicate && normPhone) {
+      const r = await query(
+        `SELECT id FROM leads WHERE tenant_id=$1 AND pipeline_id=$2 AND phone=$3 AND is_deleted=FALSE LIMIT 1`,
+        [page.tenant_id, pipelineId, normPhone]
+      );
+      if (r.rows[0]) { isDuplicate = true; existingLeadId = r.rows[0].id; }
     }
 
-    const firstName = (name?.trim() ?? '').split(' ')[0] || '';
-    const lastName = (name?.trim() ?? '').split(' ').slice(1).join(' ') || '';
+    const fullName = (name?.trim() || 'Unknown');
+    let leadId: string;
 
-    const leadResult = await query(
-      `INSERT INTO leads (tenant_id, first_name, last_name, email, phone, source, pipeline_id, stage_id, custom_fields)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [
-        page.tenant_id, firstName, lastName,
-        email?.trim() || null, phone?.trim() || null,
-        `Landing Page: ${page.title}`,
-        pipelineId, stageId,
-        JSON.stringify({ company: company?.trim() || '', message: message?.trim() || '', landing_page_slug: req.params.slug }),
-      ]
-    );
-    const lead = leadResult.rows[0];
-
-    // Increment leads counter
-    query('UPDATE landing_pages SET leads = leads + 1 WHERE id=$1', [page.id]).catch(() => {});
-
-    // Backfill custom fields
-    try { await backfillCustomFields(lead.id, page.tenant_id, {}); } catch {}
-
-    // Emit socket event
-    try {
-      const withJoin = await query(
-        'SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id = l.assigned_to WHERE l.id=$1',
-        [lead.id]
+    if (isDuplicate && existingLeadId) {
+      leadId = existingLeadId;
+      // Update missing fields on existing lead
+      await query(
+        `UPDATE leads SET
+           name  = CASE WHEN name  IS NULL OR name  = '' THEN $2 ELSE name  END,
+           email = CASE WHEN email IS NULL OR email = '' THEN $3 ELSE email END,
+           phone = CASE WHEN phone IS NULL OR phone = '' THEN $4 ELSE phone END,
+           updated_at = NOW()
+         WHERE id=$1`,
+        [leadId, fullName, normEmail || null, normPhone || null]
+      ).catch(() => null);
+      query('UPDATE landing_pages SET leads = leads + 1 WHERE id=$1', [page.id]).catch(() => {});
+    } else {
+      const leadResult = await query(
+        `INSERT INTO leads (tenant_id, name, email, phone, source, pipeline_id, stage_id, custom_fields)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [
+          page.tenant_id, fullName,
+          normEmail || null, normPhone || null,
+          `Landing Page: ${page.title}`,
+          pipelineId, stageId,
+          JSON.stringify({ company: company?.trim() || '', message: message?.trim() || '', landing_page_slug: req.params.slug }),
+        ]
       );
-      emitToTenant(page.tenant_id, 'lead:created', withJoin.rows[0] ?? lead);
-    } catch {}
+      const lead = leadResult.rows[0];
+      leadId = lead.id;
 
-    // Trigger workflows
-    try { await triggerWorkflows('lead_created', lead, page.tenant_id, lead.id); } catch {}
+      // Increment leads counter
+      query('UPDATE landing_pages SET leads = leads + 1 WHERE id=$1', [page.id]).catch(() => {});
 
-    // Upsert contact
-    const fullName = [firstName, lastName].filter(Boolean).join(' ');
-    try { await upsertContact(page.tenant_id, fullName, email?.trim() || null, phone?.trim() || null, lead.id); } catch {}
+      // Backfill custom fields
+      try { await backfillCustomFields(lead.id, page.tenant_id, {}); } catch {}
 
-    // Notify
-    try {
-      await sendNewLeadNotification(page.tenant_id, {
-        id: lead.id, name: fullName, source: lead.source,
-        pipeline_id: pipelineId!, stage_id: stageId!,
-      }, null);
-    } catch {}
+      // Emit socket event
+      try {
+        const withJoin = await query(
+          'SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id = l.assigned_to WHERE l.id=$1',
+          [lead.id]
+        );
+        emitToTenant(page.tenant_id, 'lead:created', withJoin.rows[0] ?? lead);
+      } catch {}
 
-    res.json({ success: true });
+      // Trigger workflows
+      try { await triggerWorkflows('lead_created', lead, page.tenant_id, lead.id); } catch {}
+
+      // Upsert contact
+      try { await upsertContact(page.tenant_id, fullName, normEmail || null, normPhone || null, lead.id); } catch {}
+
+      // Notify
+      try {
+        await sendNewLeadNotification(page.tenant_id, {
+          id: lead.id, name: fullName, source: lead.source,
+          pipeline_id: pipelineId!, stage_id: stageId!,
+        }, null);
+      } catch {}
+    }
+
+    // Log to enquiry_log
+    {
+      let pName: string | null = null;
+      let sName: string | null = null;
+      if (pipelineId) {
+        const pRes = await query('SELECT name FROM pipelines WHERE id=$1::uuid', [pipelineId]);
+        pName = pRes.rows[0]?.name ?? null;
+      }
+      if (stageId) {
+        const sRes = await query('SELECT name FROM pipeline_stages WHERE id=$1::uuid', [stageId]);
+        sName = sRes.rows[0]?.name ?? null;
+      }
+      await query(
+        `INSERT INTO enquiry_log (tenant_id, phone, email, lead_id, form_type, form_id, form_name, pipeline_id, pipeline_name, stage_id, stage_name, source, is_duplicate, raw_data)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        [page.tenant_id, normPhone || null, normEmail || null, leadId, 'landing_page', page.id, page.title,
+         pipelineId, pName, stageId, sName, `Landing Page: ${page.title}`, isDuplicate,
+         JSON.stringify({ name: name?.trim(), email: normEmail, phone: normPhone, company: company?.trim(), message: message?.trim() })]
+      ).catch((e: any) => console.error('[enquiry_log landing]', e.message));
+    }
+
+    res.json({ success: true, duplicate: isDuplicate });
   } catch (err: any) {
     console.error('[page submit]', err.message);
     res.status(500).json({ error: 'Server error' });
