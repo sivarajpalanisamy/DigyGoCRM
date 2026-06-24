@@ -23,7 +23,7 @@ interface Template {
   template_type: TemplateType;
   category: string;
   language: string;
-  status: 'approved' | 'pending' | 'rejected';
+  status: 'approved' | 'pending' | 'rejected' | 'draft';
   subject?: string | null;
   body: string;
   header?: string | null;
@@ -108,6 +108,7 @@ const statusColor: Record<string, string> = {
   approved: 'bg-green-100 text-green-700',
   pending: 'bg-yellow-100 text-yellow-700',
   rejected: 'bg-red-100 text-red-700',
+  draft: 'bg-orange-100 text-orange-700',
 };
 
 // ── Shared file attachment picker ─────────────────────────────────────────────

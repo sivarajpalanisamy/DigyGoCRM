@@ -134,6 +134,22 @@ router.patch('/:id', checkPermission('automation_templates:manage'), upload.sing
     ? parseJsonField(variables)
     : parseJsonField(ex.variables);
 
+  // If body/header/footer content changed on a Meta-synced template, reset status to 'draft'
+  // so the user knows it needs to be re-submitted to Meta for approval
+  const finalBody = body ?? ex.body;
+  const finalHeader = header !== undefined ? (header || null) : ex.header;
+  const finalFooter = footer !== undefined ? (footer || null) : ex.footer;
+
+  let finalStatus = status ?? ex.status;
+  if (ex.meta_name && !status) {
+    const bodyChanged = finalBody !== ex.body;
+    const headerChanged = finalHeader !== (ex.header ?? null);
+    const footerChanged = finalFooter !== (ex.footer ?? null);
+    if (bodyChanged || headerChanged || footerChanged) {
+      finalStatus = 'draft';
+    }
+  }
+
   try {
     const result = await query(
       `UPDATE templates SET
@@ -145,13 +161,13 @@ router.patch('/:id', checkPermission('automation_templates:manage'), upload.sing
        RETURNING *`,
       [
         name ?? ex.name,
-        body ?? ex.body,
+        finalBody,
         subject !== undefined ? (subject || null) : ex.subject,
-        header !== undefined ? (header || null) : ex.header,
-        footer !== undefined ? (footer || null) : ex.footer,
+        finalHeader,
+        finalFooter,
         JSON.stringify(finalButtons),
         JSON.stringify(finalVariables),
-        status ?? ex.status,
+        finalStatus,
         filePath, fileType, fileName,
         id, tenantId,
       ],
