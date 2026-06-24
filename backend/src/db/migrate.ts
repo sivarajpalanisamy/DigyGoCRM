@@ -111,6 +111,11 @@ const MIGRATIONS = [
   'migration_109_landing_pages_soft_delete.sql',
   'migration_110_enquiry_log.sql',
   'migration_111_sheets_pipeline.sql',
+  'migration_112_broadcast_scheduled.sql',
+  'migration_113_message_metadata.sql',
+  'migration_114_message_reply_to.sql',
+  'migration_115_canned_responses.sql',
+  'migration_116_conversation_tags.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.

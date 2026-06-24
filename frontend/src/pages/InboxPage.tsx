@@ -7,7 +7,7 @@ import {
   Search, Send, Paperclip, Check, CheckCheck, MessageCircle, Clock,
   ArrowLeft, StickyNote, Zap, ChevronDown, UserCheck, X, Smartphone, AlertCircle,
   Loader2, Download, Filter, FileText, RefreshCw, ListOrdered, MapPin, Contact,
-  Reply, File, Play, Volume2, ChevronsDown,
+  Reply, File, Play, Volume2, ChevronsDown, Info, Tag, Plus, Trash2, User, Mail, Phone,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,30 @@ interface ApiConversation {
   last_message_at: string;
   unread_count: number;
   wa_account: string | null;
+  tags?: string[];
+}
+
+interface CannedResponse {
+  id: string;
+  title: string;
+  shortcut: string | null;
+  content: string;
+}
+
+interface LeadInfo {
+  id: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  source: string | null;
+  quality: string | null;
+  created_at: string;
+  custom_fields: Record<string, any> | null;
+  stage_name: string | null;
+  pipeline_name: string | null;
+  assigned_name: string | null;
+  tags: { name: string; color: string }[];
+  recent_notes: { content: string; created_at: string }[];
 }
 
 interface ApiMessage {
@@ -165,7 +189,7 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
 const PAGE_SIZE = 50;
 
 export default function InboxPage() {
-  const { staff, quickReplies } = useCrmStore();
+  const { staff } = useCrmStore();
   const currentUser = useAuthStore((s) => s.currentUser);
 
   const [conversations, setConversations]   = useState<ApiConversation[]>([]);
@@ -234,6 +258,22 @@ export default function InboxPage() {
   // Scroll-to-latest pill
   const [showScrollPill, setShowScrollPill] = useState(false);
 
+  // Canned responses (replaces mock quickReplies)
+  const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>([]);
+  const [showAddCanned, setShowAddCanned] = useState(false);
+  const [newCannedTitle, setNewCannedTitle] = useState('');
+  const [newCannedShortcut, setNewCannedShortcut] = useState('');
+  const [newCannedContent, setNewCannedContent] = useState('');
+
+  // Conversation info panel (right sidebar)
+  const [showInfoPanel, setShowInfoPanel] = useState(false);
+  const [leadInfo, setLeadInfo] = useState<LeadInfo | null>(null);
+  const [loadingInfo, setLoadingInfo] = useState(false);
+
+  // Conversation tags
+  const [showTagInput, setShowTagInput] = useState(false);
+  const [newTagText, setNewTagText] = useState('');
+
   // Keep ref in sync so socket handlers don't stale-close
   useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
 
@@ -257,6 +297,21 @@ export default function InboxPage() {
   }, []);
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
+
+  // Load canned responses
+  useEffect(() => {
+    api.get<CannedResponse[]>('/api/conversations/canned-responses')
+      .then(setCannedResponses).catch(() => {});
+  }, []);
+
+  // Load lead info when info panel is opened
+  useEffect(() => {
+    if (!showInfoPanel || !selectedId) { setLeadInfo(null); return; }
+    setLoadingInfo(true);
+    api.get<LeadInfo>(`/api/conversations/${selectedId}/lead-info`)
+      .then((d) => setLeadInfo(d)).catch(() => setLeadInfo(null))
+      .finally(() => setLoadingInfo(false));
+  }, [showInfoPanel, selectedId]);
 
   // Load a page of messages; `before` is an ISO timestamp for the oldest visible message
   const loadMessages = useCallback(async (convId: string, before?: string) => {
@@ -817,6 +872,50 @@ export default function InboxPage() {
     setSelectedId(null);
   };
 
+  // Canned response handlers
+  const handleCreateCanned = async () => {
+    if (!newCannedTitle.trim() || !newCannedContent.trim()) return;
+    try {
+      const cr = await api.post<CannedResponse>('/api/conversations/canned-responses', {
+        title: newCannedTitle.trim(),
+        shortcut: newCannedShortcut.trim() || null,
+        content: newCannedContent.trim(),
+      });
+      setCannedResponses((prev) => [...prev, cr]);
+      setNewCannedTitle(''); setNewCannedShortcut(''); setNewCannedContent('');
+      setShowAddCanned(false);
+      toast.success('Canned response created');
+    } catch { toast.error('Failed to create canned response'); }
+  };
+
+  const handleDeleteCanned = async (id: string) => {
+    try {
+      await api.delete(`/api/conversations/canned-responses/${id}`);
+      setCannedResponses((prev) => prev.filter((c) => c.id !== id));
+    } catch { toast.error('Failed to delete'); }
+  };
+
+  // Conversation tag handlers
+  const handleAddTag = async () => {
+    if (!newTagText.trim() || !selectedId || !selected) return;
+    const updated = [...(selected.tags ?? []), newTagText.trim()];
+    try {
+      await api.patch(`/api/conversations/${selectedId}/tags`, { tags: updated });
+      setConversations((prev) => prev.map((c) => c.id === selectedId ? { ...c, tags: updated } : c));
+      setNewTagText('');
+      setShowTagInput(false);
+    } catch { toast.error('Failed to add tag'); }
+  };
+
+  const handleRemoveTag = async (tag: string) => {
+    if (!selectedId || !selected) return;
+    const updated = (selected.tags ?? []).filter((t) => t !== tag);
+    try {
+      await api.patch(`/api/conversations/${selectedId}/tags`, { tags: updated });
+      setConversations((prev) => prev.map((c) => c.id === selectedId ? { ...c, tags: updated } : c));
+    } catch { toast.error('Failed to remove tag'); }
+  };
+
   const formatMsgDate = (ts: string) => {
     const d = new Date(ts);
     if (isToday(d))     return 'Today';
@@ -973,6 +1072,14 @@ export default function InboxPage() {
                     {conv.last_message?.replace(/^\[Template:\s*[^\]]+\]\s*/, '') || conv.last_message}
                   </p>
                 </div>
+                {(conv.tags ?? []).length > 0 && (
+                  <div className="flex gap-1 mt-0.5 flex-wrap">
+                    {(conv.tags ?? []).slice(0, 3).map((tag) => (
+                      <span key={tag} className="px-1 py-0 rounded text-[9px] font-medium bg-violet-100 text-violet-600 leading-tight">{tag}</span>
+                    ))}
+                    {(conv.tags ?? []).length > 3 && <span className="text-[9px] text-violet-400">+{(conv.tags ?? []).length - 3}</span>}
+                  </div>
+                )}
               </div>
               {conv.unread_count > 0 && (
                 <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-semibold shrink-0 self-center">
@@ -997,9 +1104,30 @@ export default function InboxPage() {
                 </div>
                 <div>
                   <h3 className="font-headline font-bold text-[#1c1410]">{selected.lead_name || selected.lead_phone || 'Unknown'}</h3>
-                  {selected.lead_phone && (
-                    <a href={`tel:${selected.lead_phone}`} className="text-[11px] text-[#7a6b5c] hover:text-primary transition-colors">{selected.lead_phone}</a>
-                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {selected.lead_phone && (
+                      <a href={`tel:${selected.lead_phone}`} className="text-[11px] text-[#7a6b5c] hover:text-primary transition-colors">{selected.lead_phone}</a>
+                    )}
+                    {(selected.tags ?? []).length > 0 && <span className="text-[#7a6b5c] text-[10px]">·</span>}
+                    {(selected.tags ?? []).map((tag) => (
+                      <span key={tag} className="inline-flex items-center gap-0.5 px-1.5 py-0 rounded-full bg-violet-100 text-violet-700 text-[10px] font-medium">
+                        {tag}
+                        <button onClick={() => handleRemoveTag(tag)} className="hover:text-red-500 ml-0.5"><X className="w-2.5 h-2.5" /></button>
+                      </span>
+                    ))}
+                    {!showTagInput ? (
+                      <button onClick={() => setShowTagInput(true)} className="p-0.5 rounded hover:bg-violet-50 text-violet-400 hover:text-violet-600" title="Add tag">
+                        <Tag className="w-3 h-3" />
+                      </button>
+                    ) : (
+                      <form onSubmit={(e) => { e.preventDefault(); handleAddTag(); }} className="inline-flex items-center gap-1">
+                        <input autoFocus className="text-[10px] w-20 border border-violet-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-violet-300"
+                          placeholder="Tag name" value={newTagText} onChange={(e) => setNewTagText(e.target.value)}
+                          onBlur={() => { if (!newTagText.trim()) setShowTagInput(false); }} />
+                        <button type="submit" className="text-violet-600 hover:text-violet-800"><Plus className="w-3 h-3" /></button>
+                      </form>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1038,6 +1166,16 @@ export default function InboxPage() {
                   title="Search messages"
                 >
                   <Search className="w-4 h-4" />
+                </button>
+
+                {/* Info panel toggle */}
+                <button
+                  onClick={() => setShowInfoPanel(!showInfoPanel)}
+                  className={cn('p-1.5 rounded-lg transition-colors',
+                    showInfoPanel ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-[var(--accent-tint)]')}
+                  title="Lead info"
+                >
+                  <Info className="w-4 h-4" />
                 </button>
 
                 {/* Assign dropdown */}
@@ -1372,20 +1510,50 @@ export default function InboxPage() {
             {/* Image Lightbox */}
             {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
 
-            {/* Quick Replies */}
+            {/* Canned Responses */}
             {showQuickReplies && (
-              <div className="border-t border-black/5 bg-[var(--app-bg)] p-3 max-h-48 overflow-y-auto">
+              <div className="border-t border-black/5 bg-[var(--app-bg)] p-3 max-h-64 overflow-y-auto">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Quick Replies</p>
-                  <button onClick={() => setShowQuickReplies(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
-                </div>
-                <div className="space-y-1.5">
-                  {quickReplies.map((qr) => (
-                    <button key={qr.id} onClick={() => { setMessageText(qr.content); setShowQuickReplies(false); }}
-                      className="w-full text-left p-2 rounded-lg hover:bg-background border border-black/5 text-sm transition-colors">
-                      <p className="font-medium text-foreground text-xs">{qr.title}</p>
-                      <p className="text-muted-foreground text-xs truncate">{qr.content}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Canned Responses</p>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setShowAddCanned(!showAddCanned)} className="p-1 rounded hover:bg-black/5" title="Add new">
+                      <Plus className="w-3.5 h-3.5 text-primary" />
                     </button>
+                    <button onClick={() => setShowQuickReplies(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
+                  </div>
+                </div>
+                {showAddCanned && (
+                  <div className="mb-2 p-2 border border-orange-200 rounded-lg bg-white space-y-1.5">
+                    <input className="w-full text-xs border border-black/10 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      placeholder="Title" value={newCannedTitle} onChange={(e) => setNewCannedTitle(e.target.value)} />
+                    <input className="w-full text-xs border border-black/10 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      placeholder="Shortcut (optional, e.g. /hello)" value={newCannedShortcut} onChange={(e) => setNewCannedShortcut(e.target.value)} />
+                    <textarea className="w-full text-xs border border-black/10 rounded px-2 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      rows={2} placeholder="Message content..." value={newCannedContent} onChange={(e) => setNewCannedContent(e.target.value)} />
+                    <div className="flex justify-end gap-1">
+                      <button onClick={() => setShowAddCanned(false)} className="text-xs text-muted-foreground px-2 py-0.5 rounded hover:bg-black/5">Cancel</button>
+                      <button onClick={handleCreateCanned} disabled={!newCannedTitle.trim() || !newCannedContent.trim()}
+                        className="text-xs text-white bg-primary px-2 py-0.5 rounded disabled:opacity-50">Save</button>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  {cannedResponses.length === 0 && !showAddCanned && (
+                    <p className="text-xs text-muted-foreground text-center py-3">No canned responses yet. Click + to create one.</p>
+                  )}
+                  {cannedResponses.map((cr) => (
+                    <div key={cr.id} className="group relative w-full text-left p-2 rounded-lg hover:bg-background border border-black/5 text-sm transition-colors cursor-pointer"
+                      onClick={() => { setMessageText(cr.content); setShowQuickReplies(false); }}>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-foreground text-xs">{cr.title}</p>
+                        {cr.shortcut && <span className="text-[10px] text-primary/60 font-mono">{cr.shortcut}</span>}
+                      </div>
+                      <p className="text-muted-foreground text-xs truncate">{cr.content}</p>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteCanned(cr.id); }}
+                        className="absolute top-1.5 right-1.5 p-1 rounded hover:bg-red-50 text-transparent group-hover:text-red-400 hover:!text-red-600 transition-colors">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1716,6 +1884,115 @@ export default function InboxPage() {
           </div>
         )}
       </div>
+
+      {/* Lead Info Panel (right sidebar) */}
+      {showInfoPanel && selected && (
+        <div className="w-72 border-l border-orange-100 bg-[#faf8f6] flex flex-col overflow-y-auto hidden lg:flex">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-orange-100">
+            <h4 className="text-sm font-bold text-[#1c1410]">Lead Info</h4>
+            <button onClick={() => setShowInfoPanel(false)} className="p-1 rounded hover:bg-black/5"><X className="w-4 h-4 text-muted-foreground" /></button>
+          </div>
+          {loadingInfo ? (
+            <div className="flex-1 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+          ) : leadInfo ? (
+            <div className="p-4 space-y-4">
+              {/* Contact card */}
+              <div className="space-y-2">
+                <div className="w-14 h-14 rounded-full bg-primary mx-auto flex items-center justify-center text-primary-foreground text-lg font-bold">
+                  {getInitials(leadInfo.name, leadInfo.phone)}
+                </div>
+                <p className="text-center font-bold text-sm text-[#1c1410]">{leadInfo.name || 'Unknown'}</p>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-2 text-xs">
+                {leadInfo.phone && (
+                  <div className="flex items-center gap-2 text-[#4a3c30]">
+                    <Phone className="w-3.5 h-3.5 text-[#7a6b5c] shrink-0" />
+                    <span>{leadInfo.phone}</span>
+                  </div>
+                )}
+                {leadInfo.email && (
+                  <div className="flex items-center gap-2 text-[#4a3c30]">
+                    <Mail className="w-3.5 h-3.5 text-[#7a6b5c] shrink-0" />
+                    <span className="truncate">{leadInfo.email}</span>
+                  </div>
+                )}
+                {leadInfo.source && (
+                  <div className="flex items-center gap-2 text-[#4a3c30]">
+                    <Contact className="w-3.5 h-3.5 text-[#7a6b5c] shrink-0" />
+                    <span>Source: {leadInfo.source}</span>
+                  </div>
+                )}
+                {leadInfo.assigned_name && (
+                  <div className="flex items-center gap-2 text-[#4a3c30]">
+                    <User className="w-3.5 h-3.5 text-[#7a6b5c] shrink-0" />
+                    <span>Assigned: {leadInfo.assigned_name}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Pipeline & Stage */}
+              {(leadInfo.pipeline_name || leadInfo.stage_name) && (
+                <div className="border border-black/5 rounded-lg p-2.5 bg-white">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a6b5c] mb-1">Pipeline</p>
+                  {leadInfo.pipeline_name && <p className="text-xs font-medium text-[#1c1410]">{leadInfo.pipeline_name}</p>}
+                  {leadInfo.stage_name && <p className="text-[11px] text-[#7a6b5c]">Stage: {leadInfo.stage_name}</p>}
+                </div>
+              )}
+
+              {/* Quality */}
+              {leadInfo.quality && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#7a6b5c]">Quality:</span>
+                  <Badge variant="secondary" className={cn('text-[10px]',
+                    leadInfo.quality === 'Hot' && 'bg-red-100 text-red-700',
+                    leadInfo.quality === 'Warm' && 'bg-amber-100 text-amber-700',
+                    leadInfo.quality === 'Cold' && 'bg-blue-100 text-blue-700',
+                  )}>{leadInfo.quality}</Badge>
+                </div>
+              )}
+
+              {/* Tags */}
+              {leadInfo.tags.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a6b5c] mb-1.5">Tags</p>
+                  <div className="flex flex-wrap gap-1">
+                    {leadInfo.tags.map((t) => (
+                      <span key={t.name} className="px-1.5 py-0.5 rounded-full text-[10px] font-medium" style={{ backgroundColor: t.color + '20', color: t.color }}>
+                        {t.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Notes */}
+              {leadInfo.recent_notes.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a6b5c] mb-1.5">Recent Notes</p>
+                  <div className="space-y-1.5">
+                    {leadInfo.recent_notes.map((n, i) => (
+                      <div key={i} className="border border-black/5 rounded-lg p-2 bg-white">
+                        <p className="text-[11px] text-[#4a3c30] line-clamp-3">{n.content}</p>
+                        <p className="text-[10px] text-[#7a6b5c] mt-1">{format(new Date(n.created_at), 'MMM d, h:mm a')}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Created at */}
+              <p className="text-[10px] text-[#7a6b5c] text-center">Lead created {format(new Date(leadInfo.created_at), 'MMM d, yyyy')}</p>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-4">
+              <p className="text-xs text-muted-foreground text-center">No lead info available for this conversation.</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* New Chat Modal */}
       {showNewChat && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">

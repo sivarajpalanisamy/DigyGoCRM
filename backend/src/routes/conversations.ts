@@ -1597,4 +1597,114 @@ async function processScheduledBroadcasts() {
 // Start the scheduler
 setInterval(processScheduledBroadcasts, 30_000);
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Canned Responses CRUD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/canned-responses', checkAnyPermission('inbox:view_all', 'inbox:send'), async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      `SELECT id, title, shortcut, content, created_at FROM canned_responses
+       WHERE tenant_id = $1 ORDER BY title ASC`,
+      [req.user!.tenantId],
+    );
+    res.json(result.rows);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+router.post('/canned-responses', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { title, shortcut, content } = req.body as { title: string; shortcut?: string; content: string };
+  if (!title?.trim() || !content?.trim()) { res.status(400).json({ error: 'title and content required' }); return; }
+  try {
+    const result = await query(
+      `INSERT INTO canned_responses (tenant_id, title, shortcut, content, created_by)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [req.user!.tenantId, title.trim(), shortcut?.trim() || null, content.trim(), req.user!.userId],
+    );
+    res.status(201).json(result.rows[0]);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+router.patch('/canned-responses/:id', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { title, shortcut, content } = req.body as { title?: string; shortcut?: string; content?: string };
+  try {
+    const result = await query(
+      `UPDATE canned_responses SET
+         title = COALESCE($1, title), shortcut = $2, content = COALESCE($3, content), updated_at = NOW()
+       WHERE id = $4::uuid AND tenant_id = $5 RETURNING *`,
+      [title?.trim() || null, shortcut?.trim() || null, content?.trim() || null, req.params.id, req.user!.tenantId],
+    );
+    if (!result.rows[0]) { res.status(404).json({ error: 'Not found' }); return; }
+    res.json(result.rows[0]);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+router.delete('/canned-responses/:id', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  try {
+    await query('DELETE FROM canned_responses WHERE id = $1::uuid AND tenant_id = $2', [req.params.id, req.user!.tenantId]);
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Conversation Tags
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.patch('/:id/tags', checkAnyPermission('inbox:view_all', 'inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { tags } = req.body as { tags: string[] };
+  if (!Array.isArray(tags)) { res.status(400).json({ error: 'tags must be an array' }); return; }
+  try {
+    const result = await query(
+      `UPDATE conversations SET tags = $1 WHERE id = $2::uuid AND tenant_id = $3 RETURNING id, tags`,
+      [tags.filter(Boolean), req.params.id, req.user!.tenantId],
+    );
+    if (!result.rows[0]) { res.status(404).json({ error: 'Conversation not found' }); return; }
+    res.json(result.rows[0]);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// GET /api/conversations/:id/lead-info — lead details for conversation info panel
+router.get('/:id/lead-info', checkAnyPermission('inbox:view_all', 'inbox:send'), async (req: AuthRequest, res: Response) => {
+  try {
+    const conv = await query(
+      `SELECT lead_id FROM conversations WHERE id = $1::uuid AND tenant_id = $2`,
+      [req.params.id, req.user!.tenantId],
+    );
+    if (!conv.rows[0]?.lead_id) { res.json(null); return; }
+    const leadId = conv.rows[0].lead_id;
+
+    const lead = await query(
+      `SELECT l.id, l.name, l.phone, l.email, l.source, l.quality,
+              l.created_at, l.custom_fields,
+              ps.name AS stage_name, p.name AS pipeline_name,
+              u.name AS assigned_name
+       FROM leads l
+       LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
+       LEFT JOIN pipelines p ON p.id = l.pipeline_id
+       LEFT JOIN users u ON u.id = l.assigned_to
+       WHERE l.id = $1::uuid AND l.tenant_id = $2 AND l.is_deleted = FALSE`,
+      [leadId, req.user!.tenantId],
+    );
+    if (!lead.rows[0]) { res.json(null); return; }
+
+    // Get tags
+    const tags = await query(
+      `SELECT t.name, t.color FROM lead_tags lt JOIN tags t ON t.id = lt.tag_id WHERE lt.lead_id = $1`,
+      [leadId],
+    );
+
+    // Get recent notes
+    const notes = await query(
+      `SELECT content, created_at FROM lead_notes WHERE lead_id = $1 ORDER BY created_at DESC LIMIT 3`,
+      [leadId],
+    );
+
+    res.json({
+      ...lead.rows[0],
+      tags: tags.rows,
+      recent_notes: notes.rows,
+    });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
 export default router;
