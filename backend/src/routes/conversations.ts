@@ -133,9 +133,21 @@ function buildComponentsFromMapping(
       .filter((v, i, a) => a.indexOf(v) === i)
       .sort((a, b) => Number(a) - Number(b));
 
+  // Use meta_components as source of truth for expected parameter count
+  // (local body text may be out of sync with what Meta actually approved)
+  const parsed = metaComponents
+    ? (typeof metaComponents === 'string' ? (() => { try { return JSON.parse(metaComponents); } catch { return null; } })() : metaComponents)
+    : null;
+  const metaBodyText = Array.isArray(parsed) ? (parsed.find((c: any) => c.type === 'BODY')?.text ?? null) : null;
+  const metaHeaderText = Array.isArray(parsed) ? (parsed.find((c: any) => c.type === 'HEADER')?.text ?? null) : null;
+
+  // Determine actual variable counts from Meta's template (if available), else fall back to local text
+  const effectiveBodyText = metaBodyText ?? bodyText;
+  const effectiveHeaderText = metaHeaderText ?? headerText;
+
   // Header variables (e.g. "Hello {{1}}")
-  if (headerText) {
-    const headerNums = extractVarNums(headerText);
+  if (effectiveHeaderText) {
+    const headerNums = extractVarNums(effectiveHeaderText);
     if (headerNums.length > 0) {
       const params = headerNums.map((n) => {
         const crmKey = varMapping[`h${n}`] || varMapping[n];
@@ -145,8 +157,8 @@ function buildComponentsFromMapping(
     }
   }
 
-  // Body variables
-  const bodyNums = extractVarNums(bodyText);
+  // Body variables — use Meta's body text to determine param count
+  const bodyNums = extractVarNums(effectiveBodyText);
   if (bodyNums.length > 0) {
     const params = bodyNums.map((n) => {
       const crmKey = varMapping[n];
@@ -155,28 +167,23 @@ function buildComponentsFromMapping(
     });
     components.push({ type: 'body', parameters: params });
   }
-  // Note: old {var}/{%var%} style templates don't have Meta {{N}} variables,
-  // so we intentionally send NO body components for them (Meta expects 0 params).
 
   // Button URL variables (dynamic URL suffix)
-  if (metaComponents) {
-    const parsed = typeof metaComponents === 'string' ? (() => { try { return JSON.parse(metaComponents); } catch { return null; } })() : metaComponents;
-    if (Array.isArray(parsed)) {
-      const buttonsComp = parsed.find((c: any) => c.type === 'BUTTONS');
-      if (buttonsComp?.buttons) {
-        (buttonsComp.buttons as any[]).forEach((btn: any, idx: number) => {
-          if (btn.type === 'URL' && btn.url && /\{\{\d+\}\}/.test(btn.url)) {
-            components.push({
-              type: 'button', sub_type: 'url', index: idx,
-              parameters: [{ type: 'text', text: '' }],
-            });
-          }
-        });
-      }
+  if (Array.isArray(parsed)) {
+    const buttonsComp = parsed.find((c: any) => c.type === 'BUTTONS');
+    if (buttonsComp?.buttons) {
+      (buttonsComp.buttons as any[]).forEach((btn: any, idx: number) => {
+        if (btn.type === 'URL' && btn.url && /\{\{\d+\}\}/.test(btn.url)) {
+          components.push({
+            type: 'button', sub_type: 'url', index: idx,
+            parameters: [{ type: 'text', text: '' }],
+          });
+        }
+      });
     }
   }
 
-  console.log('[buildComponentsFromMapping] body vars:', bodyNums, 'header vars:', headerText ? extractVarNums(headerText) : [], 'components:', JSON.stringify(components));
+  console.log('[buildComponentsFromMapping] metaBody:', metaBodyText ? 'yes' : 'no', 'bodyVars:', extractVarNums(effectiveBodyText), 'localBodyVars:', extractVarNums(bodyText), 'components:', JSON.stringify(components));
   return components;
 }
 
