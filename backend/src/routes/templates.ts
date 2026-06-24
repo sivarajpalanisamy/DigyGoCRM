@@ -462,7 +462,7 @@ router.post('/:id/test-send', checkPermission('automation_templates:manage'), as
 
   try {
     const tplRes = await query(
-      'SELECT meta_name, language, body, variables FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+      'SELECT meta_name, language, body, header, variables, meta_components FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
       [req.params.id, tenantId],
     );
     const tpl = tplRes.rows[0];
@@ -476,21 +476,51 @@ router.post('/:id/test-send', checkPermission('automation_templates:manage'), as
     const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
     const token = decrypt(encToken);
 
+    // Helper to extract {{N}} numbers
+    const extractVarNums = (text: string): string[] =>
+      Array.from(text.matchAll(/\{\{(\d+)\}\}/g) as IterableIterator<RegExpMatchArray>)
+        .map((m) => m[1])
+        .filter((v, i, a) => a.indexOf(v) === i)
+        .sort((a, b) => Number(a) - Number(b));
+
     // Build components from saved sample values (use samples, not live lead data)
     const vars = typeof tpl.variables === 'string' ? (() => { try { return JSON.parse(tpl.variables); } catch { return null; } })() : tpl.variables;
     const bodyExamples: Record<string, string> = vars?.body_examples ?? {};
     const bodyText = tpl.body ?? '';
-    const bodyNums = Array.from(bodyText.matchAll(/\{\{(\d+)\}\}/g) as IterableIterator<RegExpMatchArray>)
-      .map((m) => m[1])
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .sort((a, b) => Number(a) - Number(b));
+    const bodyNums = extractVarNums(bodyText);
 
     const components: any[] = [];
+
+    // Header variables
+    if (tpl.header) {
+      const headerNums = extractVarNums(tpl.header);
+      if (headerNums.length > 0) {
+        components.push({
+          type: 'header',
+          parameters: headerNums.map((n: string) => ({ type: 'text', text: bodyExamples[`h${n}`] || `Sample Header ${n}` })),
+        });
+      }
+    }
+
+    // Body variables
     if (bodyNums.length > 0) {
       components.push({
         type: 'body',
         parameters: bodyNums.map((n: string) => ({ type: 'text', text: bodyExamples[n] || `Sample ${n}` })),
       });
+    }
+
+    // Button URL variables
+    const metaComps = typeof tpl.meta_components === 'string' ? (() => { try { return JSON.parse(tpl.meta_components); } catch { return null; } })() : tpl.meta_components;
+    if (Array.isArray(metaComps)) {
+      const buttonsComp = metaComps.find((c: any) => c.type === 'BUTTONS');
+      if (buttonsComp?.buttons) {
+        (buttonsComp.buttons as any[]).forEach((btn: any, idx: number) => {
+          if (btn.type === 'URL' && btn.url && /\{\{\d+\}\}/.test(btn.url)) {
+            components.push({ type: 'button', sub_type: 'url', index: idx, parameters: [{ type: 'text', text: '' }] });
+          }
+        });
+      }
     }
 
     // Send via Meta Cloud API
