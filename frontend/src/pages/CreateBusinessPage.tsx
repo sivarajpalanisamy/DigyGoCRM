@@ -72,12 +72,12 @@ export default function CreateBusinessPage() {
   const lbl = 'block text-[14px] font-semibold text-[#1c1410] mb-1.5';
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto px-1 sm:px-0">
 
       {/* Page title */}
-      <div className="mb-6">
-        <h2 className="font-headline font-bold text-[22px] text-[#1c1410]">Create New Business</h2>
-        <p className="text-[13px] text-[#7a6b5c] mt-1">Fill in the details to create a new business account.</p>
+      <div className="mb-4 sm:mb-6">
+        <h2 className="font-headline font-bold text-[18px] sm:text-[22px] text-[#1c1410]">Create New Business</h2>
+        <p className="text-[12px] sm:text-[13px] text-[#7a6b5c] mt-1">Fill in the details to create a new business account.</p>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -85,11 +85,11 @@ export default function CreateBusinessPage() {
           style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
 
           {/* ── LEFT: Seller Info ── */}
-          <div className="p-8 lg:border-r border-black/[0.06] space-y-5">
-            <h3 className="font-bold text-[18px] text-[#1c1410] mb-6">Owner Info</h3>
+          <div className="p-5 sm:p-8 lg:border-r border-black/[0.06] space-y-5">
+            <h3 className="font-bold text-[16px] sm:text-[18px] text-[#1c1410] mb-4 sm:mb-6">Owner Info</h3>
 
             {/* First + Last Name */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={lbl}>First Name <span className="text-red-500">*</span></label>
                 <input
@@ -195,8 +195,8 @@ export default function CreateBusinessPage() {
           </div>
 
           {/* ── RIGHT: General Info ── */}
-          <div className="p-8 space-y-5 bg-white">
-            <h3 className="font-bold text-[18px] text-[#1c1410] mb-6">General Info</h3>
+          <div className="p-5 sm:p-8 space-y-5 bg-white border-t lg:border-t-0 border-black/[0.06]">
+            <h3 className="font-bold text-[16px] sm:text-[18px] text-[#1c1410] mb-4 sm:mb-6">General Info</h3>
 
             {/* Business Name */}
             <div>
@@ -228,7 +228,7 @@ export default function CreateBusinessPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-8 py-3 rounded text-white text-[13px] font-bold uppercase tracking-wider transition-all disabled:opacity-60 hover:opacity-90 active:scale-[0.98]"
+                className="w-full sm:w-auto px-8 py-3 rounded text-white text-[13px] font-bold uppercase tracking-wider transition-all disabled:opacity-60 hover:opacity-90 active:scale-[0.98]"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
               >
                 {loading ? 'Creating…' : 'Create Business'}
