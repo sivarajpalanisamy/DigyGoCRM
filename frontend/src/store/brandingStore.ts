@@ -223,5 +223,9 @@ export const useBrandingStore = create<BrandingState>((set) => ({
       faviconUrl: null, bannerUrl: null, brandColor: DEFAULT_COLOR,
       loginBgColor: null, tabTitle: null, appBgColor: null, accentColor: null,
     });
+    // Restore default favicon and title
+    document.title = 'DigyGo CRM';
+    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
+    if (link) link.href = '/favicon.ico';
   },
 }));
