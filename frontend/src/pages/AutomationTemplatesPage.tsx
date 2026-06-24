@@ -635,6 +635,7 @@ export default function AutomationTemplatesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [preview, setPreview] = useState<Template | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [catFilter, setCatFilter] = useState<string>('all');
 
   const syncFromMeta = async () => {
     setSyncing(true);
@@ -679,12 +680,13 @@ export default function AutomationTemplatesPage() {
   }, []);
 
   const byType = (t: TemplateType) => templates.filter((x) => (x.template_type ?? 'waba') === t);
-  const waba = byType('waba');
+  const wabaAll = byType('waba');
+  const waba = catFilter === 'all' ? wabaAll : wabaAll.filter((t) => t.category === catFilter);
   const email = byType('email');
   const sms = byType('sms');
 
   const tabs = [
-    { key: 'waba' as TemplateType, label: 'WhatsApp (WABA)', count: waba.length },
+    { key: 'waba' as TemplateType, label: 'WhatsApp (WABA)', count: wabaAll.length },
     { key: 'email' as TemplateType, label: 'Email', count: email.length },
     { key: 'sms' as TemplateType, label: 'SMS', count: sms.length },
     { key: 'wa_personal' as TemplateType, label: 'WA Personal', count: waPersonalTemplates.length },
@@ -825,6 +827,23 @@ export default function AutomationTemplatesPage() {
           </button>
         ))}
       </div>
+
+      {/* Category filter for WABA tab */}
+      {tab === 'waba' && wabaAll.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-[#7a6b5c] font-medium">Category:</span>
+          {['all', ...WABA_CATS].map((c) => {
+            const count = c === 'all' ? wabaAll.length : wabaAll.filter((t) => t.category === c).length;
+            return (
+              <button key={c} onClick={() => setCatFilter(c)}
+                className={cn('px-2.5 py-1 text-xs rounded-full border transition-colors',
+                  catFilter === c ? 'bg-primary text-white border-primary' : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/30')}>
+                {c === 'all' ? 'All' : c.charAt(0) + c.slice(1).toLowerCase()} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* List */}
       {loading ? (

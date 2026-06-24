@@ -3,6 +3,7 @@ import {
   Send, Search, Loader2, X, Check, Users, Megaphone, Calendar,
   Filter, ChevronRight, ArrowLeft, Plus, RefreshCw, CheckCircle2,
   AlertTriangle, Eye, Clock, Mail, MailCheck, MailX, ChevronDown,
+  Download, Copy, RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -711,7 +712,19 @@ export default function WABABroadcastPage() {
               <p className="text-xs text-muted-foreground/70 mt-1">or create a new broadcast to get started</p>
             </div>
           ) : (
-            <BroadcastDetailPanel bc={selectedBc} onRefresh={() => loadDetail(selectedBc.id)} />
+            <BroadcastDetailPanel bc={selectedBc} onRefresh={() => loadDetail(selectedBc.id)} onDuplicate={(bc) => {
+              // Pre-populate create wizard with broadcast's template
+              setView('create');
+              setStep('template');
+              setBroadcastName(`${bc.name} (copy)`);
+              // Select the template if available
+              if (bc.template_meta_name) {
+                api.get<Template[]>('/api/templates?type=waba').then((tpls) => {
+                  const match = tpls.find((t) => t.meta_name === bc.template_meta_name);
+                  if (match) setSelectedTemplate(match);
+                }).catch(() => {});
+              }
+            }} />
           )}
         </div>
       </div>
@@ -720,7 +733,8 @@ export default function WABABroadcastPage() {
 }
 
 // ── Detail Panel Sub-component ───────────────────────────────────────────────
-function BroadcastDetailPanel({ bc, onRefresh }: { bc: BroadcastDetail; onRefresh: () => void }) {
+function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDetail; onRefresh: () => void; onDuplicate: (bc: BroadcastDetail) => void }) {
+  const [retrying, setRetrying] = useState(false);
   const ds = bc.delivery_stats ?? {};
   const sentCount = ds['sent'] ?? 0;
   const deliveredCount = ds['delivered'] ?? 0;
@@ -728,6 +742,36 @@ function BroadcastDetailPanel({ bc, onRefresh }: { bc: BroadcastDetail; onRefres
   const failedCount = ds['failed'] ?? 0;
   const pending = Math.max(0, bc.total_leads - (bc.sent + bc.failed + bc.skipped));
   const completePct = pct(bc.sent + bc.failed + bc.skipped, bc.total_leads);
+
+  const handleExport = () => {
+    const token = localStorage.getItem('dg_tok');
+    const url = `/api/conversations/broadcasts/${bc.id}/export`;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => {
+        if (!r.ok) throw new Error('Export failed');
+        return r.blob();
+      })
+      .then((blob) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `broadcast-${bc.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast.success('Export downloaded');
+      })
+      .catch(() => toast.error('Export failed'));
+  };
+
+  const handleRetry = async () => {
+    if (retrying) return;
+    setRetrying(true);
+    try {
+      const result = await api.post<{ retried: number; succeeded: number; failed: number }>(`/api/conversations/broadcasts/${bc.id}/retry`, {});
+      toast.success(`Retried ${result.retried}: ${result.succeeded} succeeded, ${result.failed} failed`);
+      onRefresh();
+    } catch { toast.error('Retry failed'); }
+    finally { setRetrying(false); }
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-3xl">
@@ -740,9 +784,22 @@ function BroadcastDetailPanel({ bc, onRefresh }: { bc: BroadcastDetail; onRefres
             {bc.created_by_name && ` by ${bc.created_by_name}`}
           </p>
         </div>
-        <button onClick={onRefresh} className="p-1.5 rounded-lg hover:bg-black/5" title="Refresh stats">
-          <RefreshCw className="w-4 h-4 text-[#7a6b5c]" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button onClick={handleExport} className="p-1.5 rounded-lg hover:bg-black/5" title="Export recipients CSV">
+            <Download className="w-4 h-4 text-[#7a6b5c]" />
+          </button>
+          <button onClick={() => onDuplicate(bc)} className="p-1.5 rounded-lg hover:bg-black/5" title="Duplicate broadcast">
+            <Copy className="w-4 h-4 text-[#7a6b5c]" />
+          </button>
+          {bc.status === 'completed' && bc.failed > 0 && (
+            <button onClick={handleRetry} disabled={retrying} className="p-1.5 rounded-lg hover:bg-black/5 disabled:opacity-50" title="Retry failed messages">
+              {retrying ? <Loader2 className="w-4 h-4 animate-spin text-[#7a6b5c]" /> : <RotateCcw className="w-4 h-4 text-[#7a6b5c]" />}
+            </button>
+          )}
+          <button onClick={onRefresh} className="p-1.5 rounded-lg hover:bg-black/5" title="Refresh stats">
+            <RefreshCw className="w-4 h-4 text-[#7a6b5c]" />
+          </button>
+        </div>
       </div>
 
       {/* Summary */}

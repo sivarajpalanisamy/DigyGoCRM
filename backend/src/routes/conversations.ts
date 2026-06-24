@@ -1162,6 +1162,122 @@ router.get('/broadcasts/:id', checkPermission('inbox:send'), async (req: AuthReq
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
+// GET /api/conversations/broadcasts/:id/export — CSV export of broadcast recipients with delivery status
+router.get('/broadcasts/:id/export', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { id } = req.params;
+  try {
+    // Verify broadcast belongs to tenant
+    const bRes = await query(`SELECT name FROM broadcasts WHERE id=$1::uuid AND tenant_id=$2`, [id, tenantId]);
+    if (!bRes.rows[0]) { res.status(404).json({ error: 'Broadcast not found' }); return; }
+
+    const rows = await query(
+      `SELECT l.name AS lead_name, l.phone AS lead_phone, l.email AS lead_email,
+              m.status AS delivery_status, m.error_reason, m.created_at AS sent_at
+       FROM messages m
+       LEFT JOIN leads l ON l.id = m.lead_id
+       WHERE m.broadcast_id = $1::uuid AND m.tenant_id = $2
+       ORDER BY m.created_at`,
+      [id, tenantId],
+    );
+
+    // Build CSV
+    const header = 'Name,Phone,Email,Status,Error,Sent At';
+    const csvRows = rows.rows.map((r: any) => {
+      const esc = (v: string | null) => {
+        if (!v) return '';
+        const s = String(v).replace(/"/g, '""');
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+      };
+      return [
+        esc(r.lead_name), esc(r.lead_phone), esc(r.lead_email),
+        esc(r.delivery_status), esc(r.error_reason),
+        r.sent_at ? new Date(r.sent_at).toISOString() : '',
+      ].join(',');
+    });
+
+    const csv = [header, ...csvRows].join('\n');
+    const filename = `broadcast-${bRes.rows[0].name.replace(/[^a-zA-Z0-9_-]/g, '_')}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
+// POST /api/conversations/broadcasts/:id/retry — retry failed messages in a broadcast
+router.post('/broadcasts/:id/retry', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { id } = req.params;
+  try {
+    // Get broadcast + WABA credentials
+    const bRes = await query(
+      `SELECT b.template_id, b.template_meta_name, t.language, t.meta_components
+       FROM broadcasts b
+       JOIN templates t ON t.id = b.template_id
+       WHERE b.id=$1::uuid AND b.tenant_id=$2 AND b.status='completed'`,
+      [id, tenantId],
+    );
+    if (!bRes.rows[0]) { res.status(404).json({ error: 'Broadcast not found or not completed' }); return; }
+    const { template_meta_name, language, meta_components } = bRes.rows[0];
+
+    const wabaRes = await query(
+      'SELECT phone_number_id, access_token FROM waba_integrations WHERE tenant_id=$1 AND is_active=TRUE LIMIT 1',
+      [tenantId],
+    );
+    if (!wabaRes.rows[0]) { res.status(400).json({ error: 'WABA not connected' }); return; }
+    const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
+    const waToken = decrypt(encToken);
+
+    // Get failed messages with lead phone
+    const failedRes = await query(
+      `SELECT m.id AS msg_id, m.conversation_id, l.phone
+       FROM messages m
+       JOIN leads l ON l.id = m.lead_id
+       WHERE m.broadcast_id=$1::uuid AND m.tenant_id=$2 AND m.status='failed' AND l.phone IS NOT NULL`,
+      [id, tenantId],
+    );
+    if (!failedRes.rows.length) { res.json({ retried: 0, succeeded: 0, failed: 0 }); return; }
+
+    // Build template components from meta_components
+    const components = Array.isArray(meta_components) ? meta_components.filter((c: any) => c.type !== 'HEADER' || c.format === 'TEXT') : [];
+
+    let succeeded = 0, failed = 0;
+    for (const row of failedRes.rows) {
+      const phone = row.phone.replace(/\D/g, '');
+      if (!phone) { failed++; continue; }
+      try {
+        const resp = await fetch(`https://graph.facebook.com/v21.0/${phone_number_id}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: phone,
+            type: 'template',
+            template: { name: template_meta_name, language: { code: language }, components },
+          }),
+        });
+        const json = await resp.json() as any;
+        if (json.messages?.[0]?.id) {
+          // Update existing message status + wamid
+          await query(
+            `UPDATE messages SET status='sent', error_reason=NULL, wamid=$1 WHERE id=$2::uuid`,
+            [json.messages[0].id, row.msg_id],
+          );
+          // Update broadcast counters: sent++, failed--
+          await query(`UPDATE broadcasts SET sent=sent+1, failed=GREATEST(failed-1,0) WHERE id=$1::uuid`, [id]);
+          succeeded++;
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+
+    res.json({ retried: failedRes.rows.length, succeeded, failed });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
 // POST /api/conversations/waba-single-send — send a WABA template to a single phone number
 router.post('/waba-single-send', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
