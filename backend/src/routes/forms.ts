@@ -387,6 +387,14 @@ router.post('/:id/submit', async (req: AuthRequest, res: Response) => {
         triggerWorkflows('opt_in_form', leadWithForm, form.tenant_id, '').catch(() => null);
         triggerWorkflows('lead_created', leadWithForm, form.tenant_id, '').catch(() => null);
       });
+
+      // Log to enquiry_log
+      query(
+        `INSERT INTO enquiry_log (tenant_id, phone, email, lead_id, form_type, form_id, form_name, pipeline_id, pipeline_name, stage_id, stage_name, source, is_duplicate, raw_data)
+         VALUES ($1,$2,$3,$4,'custom_form',$5,$6,$7,(SELECT name FROM pipelines WHERE id=$7::uuid),$8,(SELECT name FROM pipeline_stages WHERE id=$8::uuid),$9,$10,$11)`,
+        [form.tenant_id, phone || null, email || null, lead.id, form.id, form.name,
+         form.pipeline_id ?? null, form.stage_id ?? null, `form:${form.name}`, !!existingLead, JSON.stringify(data)]
+      ).catch((e: any) => console.error('[enquiry_log form auth]', e.message));
     }
 
     res.json({ success: true, message: form.thank_you_message ?? 'Thank you for your submission!' });

@@ -331,6 +331,13 @@ async function fetchAndInsertAllLeads(tenantId: string, token: string): Promise<
           if (Object.keys(customValues).length > 0) {
             await storeCustomValues(newLeadRow.id, tenantId, customValues).catch(() => null);
           }
+          // Log to enquiry_log
+          query(
+            `INSERT INTO enquiry_log (tenant_id, phone, email, lead_id, form_type, form_id, form_name, pipeline_id, pipeline_name, stage_id, stage_name, source, is_duplicate)
+             VALUES ($1,$2,$3,$4,'meta_form',$5,$6,$7,(SELECT name FROM pipelines WHERE id=$7::uuid),$8,(SELECT name FROM pipeline_stages WHERE id=$8::uuid),'meta_form',FALSE)`,
+            [tenantId, phone || null, email || null, newLeadRow.id, mf.form_id, mf.form_name ?? mf.name,
+             mf.pipeline_id ?? null, mf.stage_id ?? null]
+          ).catch(() => null);
           // Bulk historical import is SILENT: insert only — no automation replay, no notification.
           return 1;
         })
@@ -557,7 +564,18 @@ router.post('/meta/webhook', async (req: Request, res: Response) => {
             await storeCustomValues(leadId, mf.tenant_id, customValues).catch(() => null);
           }
 
-          // 6. Update form stats — only increment for new leads
+          // 6. Log to enquiry_log
+          if (leadId) {
+            query(
+              `INSERT INTO enquiry_log (tenant_id, phone, email, lead_id, form_type, form_id, form_name, pipeline_id, pipeline_name, stage_id, stage_name, source, is_duplicate, raw_data)
+               VALUES ($1,$2,$3,$4,'meta_form',$5,$6,$7,(SELECT name FROM pipelines WHERE id=$7::uuid),$8,(SELECT name FROM pipeline_stages WHERE id=$8::uuid),'meta_form',$9,$10)`,
+              [mf.tenant_id, phone || null, email || null, leadId, mf.form_id, mf.form_name ?? mf.name,
+               mf.pipeline_id ?? null, mf.stage_id ?? null, !isNew,
+               JSON.stringify({ leadgen_id: leadgenId, field_data: fieldData })]
+            ).catch((e: any) => console.error('[enquiry_log meta webhook]', e.message));
+          }
+
+          // 7. Update form stats — only increment for new leads
           if (isNew) {
             await query(`UPDATE meta_forms SET leads_count=leads_count+1, last_sync_at=NOW() WHERE id=$1`, [mf.id]).catch(() => null);
           } else {
@@ -1452,6 +1470,13 @@ router.post('/meta/forms/:formId/import', checkPermission('meta_forms:create'), 
         if (Object.keys(customValues).length > 0) {
           await storeCustomValues(newLeadRow.id as string, tenantId, customValues);
         }
+        // Log to enquiry_log
+        query(
+          `INSERT INTO enquiry_log (tenant_id, phone, email, lead_id, form_type, form_id, form_name, pipeline_id, pipeline_name, stage_id, stage_name, source, is_duplicate)
+           VALUES ($1,$2,$3,$4,'meta_form',$5,$6,$7,(SELECT name FROM pipelines WHERE id=$7::uuid),$8,(SELECT name FROM pipeline_stages WHERE id=$8::uuid),'meta_form',FALSE)`,
+          [tenantId, phone || null, email || null, newLeadRow.id, mf.form_id, mf.form_name ?? mf.name,
+           effectivePipelineId, effectiveStageId]
+        ).catch(() => null);
         // Historical import is SILENT: insert only — no automation replay and no new-lead
         // notification. Avoids assign/route/webhook/notification blasts on a bulk backlog.
       } catch (leadErr: any) {
@@ -1665,6 +1690,14 @@ router.post('/meta/forms/:formId/push-automation', checkPermission('meta_forms:e
           }
         }
         await upsertContact(tenantId, leadRow);
+        // Log to enquiry_log — isDuplicate if lead existed before this submission
+        const wasDuplicate = !!(existingRes.rows[0]);
+        query(
+          `INSERT INTO enquiry_log (tenant_id, phone, email, lead_id, form_type, form_id, form_name, pipeline_id, pipeline_name, stage_id, stage_name, source, is_duplicate)
+           VALUES ($1,$2,$3,$4,'meta_form',$5,$6,$7,(SELECT name FROM pipelines WHERE id=$7::uuid),$8,(SELECT name FROM pipeline_stages WHERE id=$8::uuid),'meta_form',$9)`,
+          [tenantId, phone || null, email || null, leadRow.id, mf.form_id, mf.form_name ?? mf.name,
+           mf.pipeline_id ?? null, mf.stage_id ?? null, wasDuplicate]
+        ).catch((e: any) => console.error('[enquiry_log meta push]', e.message));
         crmLeads.push({ ...leadRow, form_id: mf.form_id, form_name: mf.form_name });
       } catch (e: any) { console.error('[push-automation] lead error:', e.message); }
     }
@@ -2370,6 +2403,13 @@ export async function pollMetaLeads(): Promise<void> {
             } else {
               console.log(`[Meta poll] recovered old lead ${leadgenId} (age ~${Math.round(ageMs/3600000)}h) — inserted, automations suppressed`);
             }
+            // Log to enquiry_log
+            query(
+              `INSERT INTO enquiry_log (tenant_id, phone, email, lead_id, form_type, form_id, form_name, pipeline_id, pipeline_name, stage_id, stage_name, source, is_duplicate)
+               VALUES ($1,$2,$3,$4,'meta_form',$5,$6,$7,(SELECT name FROM pipelines WHERE id=$7::uuid),$8,(SELECT name FROM pipeline_stages WHERE id=$8::uuid),'meta_form',FALSE)`,
+              [mf.tenant_id, phone || null, email || null, leadId, mf.form_id, mf.form_name ?? mf.name,
+               mf.pipeline_id ?? null, mf.stage_id ?? null]
+            ).catch((e: any) => console.error('[enquiry_log meta poll]', e.message));
           }
         }
 
