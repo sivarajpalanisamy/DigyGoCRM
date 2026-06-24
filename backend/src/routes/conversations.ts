@@ -162,9 +162,27 @@ function buildComponentsFromMapping(
   const metaBodyIsStale = metaBodyText && /\{%\w+%\}/.test(metaBodyText);
   const metaHeaderIsStale = metaHeaderText && /\{%\w+%\}/.test(metaHeaderText);
 
-  // Determine actual variable counts: trust meta_components only if it has real {{N}} syntax
-  const effectiveBodyText = metaBodyIsStale ? bodyText : (metaBodyText ?? bodyText);
-  const effectiveHeaderText = metaHeaderIsStale ? headerText : (metaHeaderText ?? headerText);
+  // Count {{N}} vars in each source
+  const countMetaVars = (text: string | null) => text ? (text.match(/\{\{\d+\}\}/g) ?? []).length : 0;
+  const metaBodyVarCount = countMetaVars(metaBodyText);
+  const localBodyVarCount = countMetaVars(bodyText);
+  const metaHeaderVarCount = countMetaVars(metaHeaderText ?? null);
+  const localHeaderVarCount = countMetaVars(headerText ?? null);
+
+  // Use the LOWER variable count between meta_components and local body.
+  // - If user edited local body to remove a var, trust local (Meta was probably updated too).
+  // - If meta_components has CRM {%var%} syntax, it's stale — always fall back to local.
+  // - If meta_components is null, fall back to local.
+  const effectiveBodyText = metaBodyIsStale
+    ? bodyText
+    : (metaBodyText && localBodyVarCount < metaBodyVarCount)
+      ? bodyText
+      : (metaBodyText ?? bodyText);
+  const effectiveHeaderText = metaHeaderIsStale
+    ? headerText
+    : (metaHeaderText && localHeaderVarCount < metaHeaderVarCount)
+      ? headerText
+      : (metaHeaderText ?? headerText);
 
   // Header variables (e.g. "Hello {{1}}" or "Hello {%full_name%}")
   if (effectiveHeaderText) {
