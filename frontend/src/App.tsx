@@ -20,6 +20,7 @@ import AutomationPage from "./pages/AutomationPage";
 import AutomationTemplatesPage from "./pages/AutomationTemplatesPage";
 import WorkflowEditorPage from "./pages/WorkflowEditorPage";
 import WaPersonalTemplateEditorPage from "./pages/WaPersonalTemplateEditorPage";
+import WABATemplateEditorPage from "./pages/WABATemplateEditorPage";
 import WaPersonalOverviewPage from "./pages/WaPersonalOverviewPage";
 import WorkflowAnalyticsPage from "./pages/WorkflowAnalyticsPage";
 import InboxPage from "./pages/InboxPage";
@@ -143,9 +144,11 @@ const App = () => (
             <Route path="/admin/create" element={<CreateBusinessPage />} />
             <Route path="/admin/team" element={<SuperAdminTeamPage />} />
 
-            {/* WA Personal template editor — inside AppLayout (sidebar visible) */}
+            {/* Template editors — inside AppLayout (sidebar visible) */}
             <Route path="/automation/templates/wa-personal/new" element={<WaPersonalTemplateEditorPage />} />
             <Route path="/automation/templates/wa-personal/:id" element={<WaPersonalTemplateEditorPage />} />
+            <Route path="/automation/templates/waba/new" element={<WABATemplateEditorPage />} />
+            <Route path="/automation/templates/waba/:id" element={<WABATemplateEditorPage />} />
           </Route>
 
           {/* Full-screen editors — outside AppLayout but still protected */}

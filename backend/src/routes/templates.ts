@@ -232,10 +232,11 @@ function graphDelete(apiPath: string, token: string): Promise<any> {
 // POST /api/templates/submit-to-meta — create a template on Meta for approval
 router.post('/submit-to-meta', checkPermission('automation_templates:manage'), async (req: AuthRequest, res: Response) => {
   const tenantId = req.user!.tenantId!;
-  const { name, category, language, body, header, footer, buttons } = req.body as {
+  const { name, category, language, body, header, footer, buttons, body_examples } = req.body as {
     name: string; category: string; language: string; body: string;
     header?: string; footer?: string;
     buttons?: Array<{ type: string; text: string; url?: string; phone_number?: string }>;
+    body_examples?: string[];
   };
 
   if (!name?.trim() || !body?.trim()) {
@@ -266,7 +267,11 @@ router.post('/submit-to-meta', checkPermission('automation_templates:manage'), a
       components.push({ type: 'HEADER', format: 'TEXT', text: header.trim() });
     }
 
-    components.push({ type: 'BODY', text: body.trim() });
+    const bodyComponent: any = { type: 'BODY', text: body.trim() };
+    if (body_examples?.length) {
+      bodyComponent.example = { body_text: [body_examples] };
+    }
+    components.push(bodyComponent);
 
     if (footer?.trim()) {
       components.push({ type: 'FOOTER', text: footer.trim() });

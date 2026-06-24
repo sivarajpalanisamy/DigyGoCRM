@@ -160,6 +160,13 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
   const [removeFile, setRemoveFile] = useState(false);
   const [saving, setSaving] = useState(false);
   const [submitMeta, setSubmitMeta] = useState(!initial); // default ON for new templates
+  const [bodyExamples, setBodyExamples] = useState<Record<string, string>>({});
+
+  // Detect {{1}}, {{2}}, etc. in body text
+  const bodyVars = Array.from(body.matchAll(/\{\{(\d+)\}\}/g))
+    .map((m) => m[1])
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .sort((a, b) => Number(a) - Number(b));
 
   const addBtn = () => {
     if (buttons.length >= 3) { toast.error('Max 3 buttons allowed'); return; }
@@ -191,6 +198,8 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
           ...(b.type === 'URL' ? { url: b.value } : {}),
           ...(b.type === 'PHONE_NUMBER' ? { phone_number: b.value } : {}),
         }));
+        // Build ordered example values for body variables
+        const bodyExampleValues = bodyVars.map((v) => bodyExamples[v]?.trim() || `Sample ${v}`);
         const saved = await api.post<Template>('/api/templates/submit-to-meta', {
           name: name.trim(),
           category,
@@ -199,6 +208,7 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
           header: header.trim() || undefined,
           footer: footer.trim() || undefined,
           buttons: metaButtons.length ? metaButtons : undefined,
+          body_examples: bodyExampleValues.length ? bodyExampleValues : undefined,
         });
         toast.success('Template submitted to Meta for approval');
         onSaved(saved);
@@ -276,9 +286,28 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
             <textarea
               className="w-full border border-black/5 rounded-lg px-3 py-2 text-sm bg-card focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-none"
               rows={5} value={body} onChange={(e) => setBody(e.target.value)} maxLength={1024}
-              placeholder="Message body. Use {%first_name%}, {%assigned_to%}, etc."
+              placeholder="Hi {{1}}, thanks for reaching out! Your appointment is on {{2}}."
             />
-            <p className="text-[11px] text-[#7a6b5c] mt-1">Variables: {'{%first_name%} {%last_name%} {%assigned_to%} {%deal_value%} {%stage%}'}</p>
+            <p className="text-[11px] text-[#7a6b5c] mt-1">
+              Use {'{{1}}'}, {'{{2}}'}, etc. for variables. Meta requires sample values for approval.
+            </p>
+            {bodyVars.length > 0 && (
+              <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2.5">
+                <p className="text-xs font-medium text-amber-800">Samples for body content</p>
+                {bodyVars.map((v) => (
+                  <div key={v} className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-amber-700 shrink-0 w-12">{`{{${v}}}`}</span>
+                    <Input
+                      value={bodyExamples[v] ?? ''}
+                      onChange={(e) => setBodyExamples((prev) => ({ ...prev, [v]: e.target.value }))}
+                      placeholder={`Sample value for {{${v}}}`}
+                      className="flex-1 text-xs h-8 border-amber-200 bg-white focus:border-amber-400"
+                    />
+                  </div>
+                ))}
+                <p className="text-[10px] text-amber-600">These samples help Meta reviewers understand your template. At send time, real lead data will be used.</p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -775,7 +804,11 @@ export default function AutomationTemplatesPage() {
             </Button>
           )}
           {canManage && (
-            <Button onClick={() => tab === 'wa_personal' ? navigate('/automation/templates/wa-personal/new') : setShowCreate(true)}>
+            <Button onClick={() => {
+              if (tab === 'wa_personal') navigate('/automation/templates/wa-personal/new');
+              else if (tab === 'waba') navigate('/automation/templates/waba/new');
+              else setShowCreate(true);
+            }}>
               <Plus className="w-4 h-4 mr-1" />New Template
             </Button>
           )}
@@ -846,7 +879,11 @@ export default function AutomationTemplatesPage() {
             <p className="font-semibold text-foreground">{emptyLabel[tab]}</p>
             <p className="text-sm text-muted-foreground max-w-sm">{emptyDesc[tab]}</p>
             {canManage && (
-              <Button onClick={() => setShowCreate(true)}>
+              <Button onClick={() => {
+                if (tab === 'wa_personal') navigate('/automation/templates/wa-personal/new');
+                else if (tab === 'waba') navigate('/automation/templates/waba/new');
+                else setShowCreate(true);
+              }}>
                 <Plus className="w-4 h-4 mr-1" />Create First Template
               </Button>
             )}
@@ -906,7 +943,11 @@ export default function AutomationTemplatesPage() {
                       {canManage && tab === 'waba' && !t.meta_template_id && (
                         <button onClick={() => handleSubmitToMeta(t)} className="p-1.5 rounded-md hover:bg-emerald-50 text-muted-foreground hover:text-emerald-600 transition-colors" title="Submit to Meta for approval"><Send className="w-4 h-4" /></button>
                       )}
-                      {canManage && <button onClick={() => setEditItem(t)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-primary transition-colors" title="Edit"><Pencil className="w-4 h-4" /></button>}
+                      {canManage && <button onClick={() => {
+                        if (t.template_type === 'waba') navigate(`/automation/templates/waba/${t.id}`, { state: { template: t } });
+                        else if (t.template_type === 'wa_personal') navigate(`/automation/templates/wa-personal/${t.id}`, { state: { template: t } });
+                        else setEditItem(t);
+                      }} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-primary transition-colors" title="Edit"><Pencil className="w-4 h-4" /></button>}
                       {canManage && tab === 'waba' && t.meta_template_id ? (
                         <button onClick={() => handleDeleteFromMeta(t)} className="p-1.5 rounded-md hover:bg-red-50 text-muted-foreground hover:text-destructive transition-colors" title="Delete from Meta"><Trash2 className="w-4 h-4" /></button>
                       ) : canManage && (
@@ -922,13 +963,13 @@ export default function AutomationTemplatesPage() {
       })()}
 
       {/* Create modal */}
-      {showCreate && tab === 'waba'        && <WABAModal        onClose={() => setShowCreate(false)} onSaved={handleSaved} />}
+      {/* waba → full-page editor (navigate instead of modal) */}
       {showCreate && tab === 'email'       && <EmailModal       onClose={() => setShowCreate(false)} onSaved={handleSaved} />}
       {showCreate && tab === 'sms'         && <SMSModal         onClose={() => setShowCreate(false)} onSaved={handleSaved} />}
       {/* wa_personal → full-page editor (navigate instead of modal) */}
 
       {/* Edit modal */}
-      {editItem && editItem.template_type === 'waba'  && <WABAModal  initial={editItem} onClose={() => setEditItem(null)} onSaved={handleSaved} />}
+      {/* waba edit → full-page editor (navigate instead of modal) */}
       {editItem && editItem.template_type === 'email' && <EmailModal initial={editItem} onClose={() => setEditItem(null)} onSaved={handleSaved} />}
       {editItem && editItem.template_type === 'sms'   && <SMSModal   initial={editItem} onClose={() => setEditItem(null)} onSaved={handleSaved} />}
 
