@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, ChevronRight, ChevronDown, Plus, X, Loader2, Check,
@@ -18,6 +18,7 @@ interface Template {
   status: string; body: string; header?: string | null; footer?: string | null;
   buttons: WABAButton[] | string; meta_template_id?: string | null;
   variables?: any; file_path?: string | null; file_type?: string | null; file_name?: string | null;
+  meta_components?: any;
 }
 
 const LANGUAGES = ['en', 'hi', 'ta', 'te', 'kn', 'mr'];
@@ -74,6 +75,7 @@ export default function WABATemplateEditorPage() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<WABACategory>('UTILITY');
   const [language, setLanguage] = useState('en');
+  const [headerType, setHeaderType] = useState<'none' | 'text' | 'image' | 'video' | 'document'>('none');
   const [header, setHeader] = useState('');
   const [body, setBody] = useState('');
   const [footer, setFooter] = useState('');
@@ -204,6 +206,27 @@ export default function WABATemplateEditorPage() {
     if (vars) {
       if (vars.body_examples) setBodyExamples(vars.body_examples);
       if (vars.var_mapping) setVarMapping(vars.var_mapping);
+      if (vars.header_type) setHeaderType(vars.header_type);
+    }
+    // Detect header type from existing data if not explicitly stored
+    if (!vars?.header_type) {
+      // Check meta_components for header format (synced from Meta)
+      const comps = typeof t.meta_components === 'string'
+        ? (() => { try { return JSON.parse(t.meta_components); } catch { return []; } })()
+        : (t.meta_components ?? []);
+      const hdrComp = Array.isArray(comps) ? comps.find((c: any) => c.type === 'HEADER') : null;
+      if (hdrComp) {
+        const fmt = (hdrComp.format ?? '').toLowerCase();
+        if (fmt === 'image') setHeaderType('image');
+        else if (fmt === 'video') setHeaderType('video');
+        else if (fmt === 'document') setHeaderType('document');
+        else if (fmt === 'text') setHeaderType('text');
+        else setHeaderType('none');
+      } else if (t.file_type?.startsWith('image')) setHeaderType('image');
+      else if (t.file_type?.startsWith('video')) setHeaderType('video');
+      else if (t.file_name) setHeaderType('document');
+      else if (t.header) setHeaderType('text');
+      else setHeaderType('none');
     }
   }
 
@@ -220,6 +243,9 @@ export default function WABATemplateEditorPage() {
   const handleSave = async () => {
     if (!name.trim()) { toast.error('Template name required'); return; }
     if (!body.trim()) { toast.error('Body text required'); return; }
+    if (['image', 'video', 'document'].includes(headerType) && !file && !existingFile) {
+      if (submitMeta && !isEdit) { toast.error(`Upload a ${headerType} file for the header before submitting to Meta`); return; }
+    }
     const activeButtons = buttons.filter((b) => b.label.trim());
     const hasQR = activeButtons.some((b) => b.type === 'QUICK_REPLY');
     const hasCTA = activeButtons.some((b) => b.type === 'URL' || b.type === 'PHONE_NUMBER');
@@ -238,15 +264,34 @@ export default function WABATemplateEditorPage() {
           ...(b.type === 'PHONE_NUMBER' ? { phone_number: b.value } : {}),
         }));
         const bodyExampleValues = bodyVars.map((v) => bodyExamples[v]?.trim() || `Sample ${v}`);
-        await api.post('/api/templates/submit-to-meta', {
+        const submitPayload: any = {
           name: name.trim(), category, language,
           body: body.trim(),
-          header: header.trim() || undefined,
+          header: headerType === 'text' ? (header.trim() || undefined) : undefined,
+          header_type: headerType,
           footer: footer.trim() || undefined,
           buttons: metaButtons.length ? metaButtons : undefined,
           body_examples: bodyExampleValues.length ? bodyExampleValues : undefined,
-          variables: { body_examples: bodyExamples, var_mapping: varMapping },
-        });
+          variables: { body_examples: bodyExamples, var_mapping: varMapping, header_type: headerType },
+        };
+        // For media headers, use FormData to include the file
+        if ((headerType === 'image' || headerType === 'video' || headerType === 'document') && file) {
+          const fd = new FormData();
+          Object.entries(submitPayload).forEach(([k, v]) => {
+            if (v !== undefined) fd.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+          });
+          fd.append('header_file', file);
+          const tok = getAccessToken();
+          const resp = await fetch(`${BASE}/api/templates/submit-to-meta`, {
+            method: 'POST',
+            headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+            credentials: 'include', body: fd,
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || 'Submit failed');
+        } else {
+          await api.post('/api/templates/submit-to-meta', submitPayload);
+        }
         toast.success('Template submitted to Meta for approval');
       } else {
         const fd = new FormData();
@@ -258,7 +303,7 @@ export default function WABATemplateEditorPage() {
         if (header.trim()) fd.append('header', header.trim());
         if (footer.trim()) fd.append('footer', footer.trim());
         fd.append('buttons', JSON.stringify(buttons));
-        fd.append('variables', JSON.stringify({ body_examples: bodyExamples, var_mapping: varMapping }));
+        fd.append('variables', JSON.stringify({ body_examples: bodyExamples, var_mapping: varMapping, header_type: headerType }));
         if (removeFile) fd.append('removeFile', 'true');
         if (file) fd.append('file', file);
         const tok = getAccessToken();
@@ -287,6 +332,12 @@ export default function WABATemplateEditorPage() {
     } catch (e: any) { toast.error(e.message ?? 'Test send failed'); }
     finally { setTestSending(false); }
   };
+
+  // Preview blob URL for uploaded image file (avoids creating new blob URL every render)
+  const filePreviewUrl = useMemo(() => {
+    if (file && headerType === 'image') return URL.createObjectURL(file);
+    return null;
+  }, [file, headerType]);
 
   // Name validation
   const metaName = name.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_|_$/g, '');
@@ -429,55 +480,96 @@ export default function WABATemplateEditorPage() {
               <SectionLabel n={2} title="Header" subtitle="optional" />
               <div className="bg-white rounded-2xl border border-orange-100 p-5 space-y-4">
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-sm font-medium text-[#1c1410]">Header Text</label>
-                    <span className={cn('text-[11px]', header.length > LIMITS.header ? 'text-red-500 font-medium' : 'text-[#7a6b5c]')}>
-                      {header.length}/{LIMITS.header}
-                    </span>
+                  <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Header Type</label>
+                  <div className="relative">
+                    <select
+                      value={headerType}
+                      onChange={(e) => {
+                        const v = e.target.value as typeof headerType;
+                        const prev = headerType;
+                        setHeaderType(v);
+                        if (v === 'none') { setHeader(''); setFile(null); setRemoveFile(true); }
+                        else if (v === 'text') { setFile(null); setRemoveFile(true); }
+                        else { setHeader(''); }
+                        // Clear file when switching between different media types
+                        if (v !== prev && ['image', 'video', 'document'].includes(prev) && ['image', 'video', 'document'].includes(v)) {
+                          setFile(null);
+                        }
+                      }}
+                      className="w-full border border-orange-100 rounded-lg px-3 py-2.5 text-sm bg-[#fffbf7] focus:border-orange-300 outline-none appearance-none pr-8"
+                    >
+                      <option value="none">No Header</option>
+                      <option value="text">Text</option>
+                      <option value="image">Image</option>
+                      <option value="video">Video</option>
+                      <option value="document">Document</option>
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a6b5c] pointer-events-none" />
                   </div>
-                  <Input
-                    value={header} onChange={(e) => setHeader(e.target.value)}
-                    maxLength={LIMITS.header}
-                    placeholder="Bold header text displayed above body"
-                    className={cn(
-                      'border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7]',
-                      header.length > LIMITS.header && 'border-red-400'
-                    )}
-                  />
-                  {headerVars.length > 0 && (
-                    <p className="text-[11px] text-amber-600 mt-1.5">
-                      Header variables detected: {headerVars.map((v) => `{{${v}}}`).join(', ')}
-                    </p>
-                  )}
                 </div>
 
-                {/* Media header */}
-                <div>
-                  <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Media Header <span className="text-[#7a6b5c] font-normal text-xs">(optional)</span></label>
-                  {existingFile && !removeFile && !file && (
-                    <div className="flex items-center gap-2 text-sm text-[#7a6b5c] bg-orange-50 rounded-lg px-3 py-2 mb-2 border border-orange-100">
-                      <Paperclip className="w-4 h-4 shrink-0" />
-                      <span className="flex-1 truncate">{existingFile.name}</span>
-                      <button onClick={() => setRemoveFile(true)} className="text-xs text-red-500 hover:underline shrink-0">Remove</button>
+                {/* Text header input */}
+                {headerType === 'text' && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-sm font-medium text-[#1c1410]">Header Text</label>
+                      <span className={cn('text-[11px]', header.length > LIMITS.header ? 'text-red-500 font-medium' : 'text-[#7a6b5c]')}>
+                        {header.length}/{LIMITS.header}
+                      </span>
                     </div>
-                  )}
-                  {file && (
-                    <div className="flex items-center gap-2 text-sm text-[#7a6b5c] bg-orange-50 rounded-lg px-3 py-2 mb-2 border border-orange-200">
-                      <Paperclip className="w-4 h-4 shrink-0" />
-                      <span className="flex-1 truncate">{file.name}</span>
-                      <button onClick={() => setFile(null)} className="text-xs text-red-500 hover:underline shrink-0">Clear</button>
-                    </div>
-                  )}
-                  <label className="flex items-center gap-1.5 text-sm px-3 py-2 border border-orange-100 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer w-fit">
-                    <Upload className="w-4 h-4 text-[#7a6b5c]" />
-                    <span className="text-[#7a6b5c]">{file ? 'Replace' : 'Upload image, video or document'}</span>
-                    <input
-                      type="file" className="hidden"
-                      accept="image/*,video/*,.pdf,.doc,.docx"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFile(f); setRemoveFile(false); } e.target.value = ''; }}
+                    <Input
+                      value={header} onChange={(e) => setHeader(e.target.value)}
+                      maxLength={LIMITS.header}
+                      placeholder="Bold header text displayed above body"
+                      className={cn(
+                        'border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7]',
+                        header.length > LIMITS.header && 'border-red-400'
+                      )}
                     />
-                  </label>
-                </div>
+                    {headerVars.length > 0 && (
+                      <p className="text-[11px] text-amber-600 mt-1.5">
+                        Header variables detected: {headerVars.map((v) => `{{${v}}}`).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Media header upload (image / video / document) */}
+                {(headerType === 'image' || headerType === 'video' || headerType === 'document') && (
+                  <div>
+                    <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">
+                      Upload {headerType === 'image' ? 'Image' : headerType === 'video' ? 'Video' : 'Document'}
+                    </label>
+                    {existingFile && !removeFile && !file && (
+                      <div className="flex items-center gap-2 text-sm text-[#7a6b5c] bg-orange-50 rounded-lg px-3 py-2 mb-2 border border-orange-100">
+                        <Paperclip className="w-4 h-4 shrink-0" />
+                        <span className="flex-1 truncate">{existingFile.name}</span>
+                        <button onClick={() => setRemoveFile(true)} className="text-xs text-red-500 hover:underline shrink-0">Remove</button>
+                      </div>
+                    )}
+                    {file && (
+                      <div className="flex items-center gap-2 text-sm text-[#7a6b5c] bg-orange-50 rounded-lg px-3 py-2 mb-2 border border-orange-200">
+                        <Paperclip className="w-4 h-4 shrink-0" />
+                        <span className="flex-1 truncate">{file.name}</span>
+                        <button onClick={() => setFile(null)} className="text-xs text-red-500 hover:underline shrink-0">Clear</button>
+                      </div>
+                    )}
+                    <label className="flex items-center gap-1.5 text-sm px-3 py-2 border border-orange-100 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer w-fit">
+                      <Upload className="w-4 h-4 text-[#7a6b5c]" />
+                      <span className="text-[#7a6b5c]">{file ? 'Replace' : `Upload ${headerType}`}</span>
+                      <input
+                        type="file" className="hidden"
+                        accept={headerType === 'image' ? 'image/jpeg,image/png' : headerType === 'video' ? 'video/mp4' : '.pdf,.doc,.docx'}
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFile(f); setRemoveFile(false); } e.target.value = ''; }}
+                      />
+                    </label>
+                    <p className="text-[10px] text-[#7a6b5c] mt-1.5">
+                      {headerType === 'image' && 'Supported: JPEG, PNG. Max 5 MB.'}
+                      {headerType === 'video' && 'Supported: MP4. Max 16 MB.'}
+                      {headerType === 'document' && 'Supported: PDF, DOC, DOCX. Max 100 MB.'}
+                    </p>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -735,7 +827,7 @@ export default function WABATemplateEditorPage() {
 
               {/* Chat area */}
               <div className="min-h-[260px] p-3 flex flex-col gap-2" style={{ backgroundColor: '#efeae2' }}>
-                {!body.trim() && !header.trim() ? (
+                {!body.trim() && !header.trim() && headerType === 'none' ? (
                   <div className="flex-1 flex items-center justify-center py-10">
                     <p className="text-[12px] text-[#9e9e9e] text-center leading-relaxed">
                       Start typing your message<br />to see the preview here
@@ -745,9 +837,35 @@ export default function WABATemplateEditorPage() {
                   <div className="flex flex-col items-start">
                     <div className="max-w-[90%] bg-white rounded-2xl rounded-tl-sm shadow-sm overflow-hidden">
                       {/* Header */}
-                      {header.trim() && (
+                      {headerType === 'text' && header.trim() && (
                         <div className="px-3 pt-2.5 pb-0.5">
                           <p className="text-[13px] font-bold text-gray-900">{header}</p>
+                        </div>
+                      )}
+                      {headerType === 'image' && (
+                        <div className="bg-gray-100 flex items-center justify-center h-[140px]">
+                          {file ? (
+                            <img src={filePreviewUrl!} alt="Header" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="text-center">
+                              <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-1" />
+                              <p className="text-[10px] text-gray-400">Image header</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {headerType === 'video' && (
+                        <div className="bg-gray-800 flex items-center justify-center h-[140px]">
+                          <div className="text-center">
+                            <Film className="w-8 h-8 text-gray-400 mx-auto mb-1" />
+                            <p className="text-[10px] text-gray-400">{file ? file.name : 'Video header'}</p>
+                          </div>
+                        </div>
+                      )}
+                      {headerType === 'document' && (
+                        <div className="bg-gray-50 flex items-center gap-2 px-3 py-3 border-b border-gray-100">
+                          <FileText className="w-6 h-6 text-red-400 shrink-0" />
+                          <span className="text-[11px] text-gray-600 truncate">{file ? file.name : 'Document'}</span>
                         </div>
                       )}
                       {/* Body */}

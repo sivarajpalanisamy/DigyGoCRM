@@ -17,7 +17,7 @@ const TEMPLATES_DIR = process.env.WA_MEDIA_DIR
   ? path.join(process.env.WA_MEDIA_DIR, 'tpl_files')
   : path.join(process.cwd(), 'wa_media', 'tpl_files');
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
 function parseJsonField(val: any, fallback: any[] = []) {
   if (!val) return fallback;
@@ -145,7 +145,8 @@ router.patch('/:id', checkPermission('automation_templates:manage'), upload.sing
     const bodyChanged = finalBody !== ex.body;
     const headerChanged = finalHeader !== (ex.header ?? null);
     const footerChanged = finalFooter !== (ex.footer ?? null);
-    if (bodyChanged || headerChanged || footerChanged) {
+    const fileChanged = req.file != null || (removeFile === 'true' || removeFile === true);
+    if (bodyChanged || headerChanged || footerChanged || fileChanged) {
       finalStatus = 'draft';
     }
   }
@@ -245,20 +246,97 @@ function graphDelete(apiPath: string, token: string): Promise<any> {
   });
 }
 
+// Upload media to Meta and return the handle
+async function uploadMediaToMeta(token: string, appId: string, fileBuffer: Buffer, mimeType: string, fileName: string): Promise<string> {
+  // Step 1: Create upload session
+  const sessionResp = await graphPost(`/${appId}/uploads`, token, {
+    file_length: fileBuffer.length,
+    file_type: mimeType,
+    file_name: fileName,
+  });
+  if (!sessionResp.id) throw new Error('Failed to create upload session');
+  const sessionId = sessionResp.id;
+
+  // Step 2: Upload the file data
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'graph.facebook.com',
+      path: `/v21.0/${sessionId}`,
+      method: 'POST',
+      headers: {
+        Authorization: `OAuth ${token}`,
+        'Content-Type': mimeType,
+        file_offset: '0',
+        'Content-Length': fileBuffer.length,
+      },
+    }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.h) resolve(parsed.h);
+          else reject(new Error(parsed.error?.message || 'Upload failed'));
+        } catch { reject(new Error('Invalid upload response')); }
+      });
+    });
+    req.on('error', reject);
+    req.write(fileBuffer);
+    req.end();
+  });
+}
+
 // POST /api/templates/submit-to-meta — create a template on Meta for approval
-router.post('/submit-to-meta', checkPermission('automation_templates:manage'), async (req: AuthRequest, res: Response) => {
+router.post('/submit-to-meta', checkPermission('automation_templates:manage'), upload.single('header_file'), async (req: AuthRequest, res: Response) => {
   const tenantId = req.user!.tenantId!;
-  const { name, category, language, body, header, footer, buttons, body_examples, variables } = req.body as {
-    name: string; category: string; language: string; body: string;
-    header?: string; footer?: string;
-    buttons?: Array<{ type: string; text: string; url?: string; phone_number?: string }>;
-    body_examples?: string[];
-    variables?: any;
-  };
+  const raw = req.body;
+  // Parse JSON fields that may come as strings (when sent via FormData)
+  const name = raw.name as string;
+  const category = raw.category as string;
+  const language = raw.language as string;
+  const body = raw.body as string;
+  const header = raw.header as string | undefined;
+  const footer = raw.footer as string | undefined;
+  const header_type = (raw.header_type as string) || 'none';
+  const buttons: Array<{ type: string; text: string; url?: string; phone_number?: string }> | undefined =
+    typeof raw.buttons === 'string' ? (() => { try { return JSON.parse(raw.buttons); } catch { return undefined; } })() : raw.buttons;
+  const body_examples: string[] | undefined =
+    typeof raw.body_examples === 'string' ? (() => { try { return JSON.parse(raw.body_examples); } catch { return undefined; } })() : raw.body_examples;
+  const variables: any =
+    typeof raw.variables === 'string' ? (() => { try { return JSON.parse(raw.variables); } catch { return null; } })() : raw.variables;
 
   if (!name?.trim() || !body?.trim()) {
     res.status(400).json({ error: 'name and body are required' });
     return;
+  }
+
+  // Validate uploaded file matches declared header_type
+  if (req.file && ['image', 'video', 'document'].includes(header_type)) {
+    const mime = req.file.mimetype.toLowerCase();
+    const size = req.file.size;
+    if (header_type === 'image') {
+      if (!['image/jpeg', 'image/png'].includes(mime)) {
+        res.status(400).json({ error: 'Image header must be JPEG or PNG' }); return;
+      }
+      if (size > 5 * 1024 * 1024) {
+        res.status(400).json({ error: 'Image must be under 5 MB' }); return;
+      }
+    } else if (header_type === 'video') {
+      if (mime !== 'video/mp4') {
+        res.status(400).json({ error: 'Video header must be MP4' }); return;
+      }
+      if (size > 16 * 1024 * 1024) {
+        res.status(400).json({ error: 'Video must be under 16 MB' }); return;
+      }
+    } else if (header_type === 'document') {
+      const allowedDocMimes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedDocMimes.includes(mime)) {
+        res.status(400).json({ error: 'Document header must be PDF, DOC, or DOCX' }); return;
+      }
+      if (size > 100 * 1024 * 1024) {
+        res.status(400).json({ error: 'Document must be under 100 MB' }); return;
+      }
+    }
   }
 
   // Meta requires snake_case, lowercase name
@@ -280,8 +358,25 @@ router.post('/submit-to-meta', checkPermission('automation_templates:manage'), a
     // Build Meta template components
     const components: any[] = [];
 
-    if (header?.trim()) {
+    if (header_type === 'text' && header?.trim()) {
       components.push({ type: 'HEADER', format: 'TEXT', text: header.trim() });
+    } else if (['image', 'video', 'document'].includes(header_type)) {
+      const format = header_type.toUpperCase();
+      const headerComp: any = { type: 'HEADER', format };
+      // If a file was uploaded, upload to Meta to get a handle for the example
+      if (req.file) {
+        try {
+          const appId = process.env.META_APP_ID;
+          if (!appId) throw new Error('META_APP_ID not configured');
+          const handle = await uploadMediaToMeta(token, appId, req.file.buffer, req.file.mimetype, req.file.originalname);
+          headerComp.example = { header_handle: [handle] };
+        } catch (uploadErr: any) {
+          console.error('[WABA template] Media upload error:', uploadErr.message);
+          res.status(400).json({ error: `Media upload failed: ${uploadErr.message}` });
+          return;
+        }
+      }
+      components.push(headerComp);
     }
 
     const bodyComponent: any = { type: 'BODY', text: body.trim() };
