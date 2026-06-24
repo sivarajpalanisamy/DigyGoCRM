@@ -526,7 +526,7 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
                 return;
               }
               // Build display body from template for message storage
-              if (!messageBody) messageBody = interpolateVars(tpl.body ?? tpl.meta_name, leadCtx);
+              if (!messageBody) messageBody = `[Template: ${tpl.meta_name}] ${interpolateVars(tpl.body ?? '', leadCtx)}`;
             }
           } else {
             // Send as plain text
@@ -1120,7 +1120,7 @@ router.post('/waba-single-send', checkPermission('inbox:send'), async (req: Auth
     }
 
     const wamid = waResp?.messages?.[0]?.id ?? null;
-    const messageBody = interpolateVars(tpl.body ?? tpl.meta_name, leadCtx);
+    const messageBody = `[Template: ${tpl.meta_name}] ${interpolateVars(tpl.body ?? '', leadCtx)}`;
 
     // Find or create conversation + store message
     let leadId = lead_id ?? null;

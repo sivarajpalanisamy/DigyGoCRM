@@ -765,7 +765,9 @@ export default function InboxPage() {
                   {conv.channel === 'personal_wa'
                     ? <Smartphone className="w-3 h-3 text-teal-500 shrink-0" />
                     : <MessageCircle className="w-3 h-3 text-green-500 shrink-0" />}
-                  <p className="text-[11px] text-[#7a6b5c] truncate">{conv.last_message}</p>
+                  <p className="text-[11px] text-[#7a6b5c] truncate">
+                    {conv.last_message?.replace(/^\[Template:\s*[^\]]+\]\s*/, '') || conv.last_message}
+                  </p>
                 </div>
               </div>
               {conv.unread_count > 0 && (
@@ -898,12 +900,37 @@ export default function InboxPage() {
                           </div>
                         )}
 
-                        <p className={cn(
-                          msg.is_note && !isDeleted    ? 'text-yellow-800' : '',
-                          isDeleted                    ? 'text-muted-foreground italic text-xs' : '',
-                        )}>
-                          {msg.body}
-                        </p>
+                        {(() => {
+                          // Detect template messages: "[Template: name] body"
+                          const tplMatch = !isDeleted && !msg.is_note && msg.body?.match(/^\[Template:\s*([^\]]+)\]\s*([\s\S]*)$/);
+                          if (tplMatch) {
+                            const tplName = tplMatch[1].trim();
+                            const tplBody = tplMatch[2].trim();
+                            return (
+                              <div>
+                                <div className={cn(
+                                  'flex items-center gap-1.5 mb-1.5 pb-1.5 border-b',
+                                  msg.sender === 'agent' ? 'border-primary-foreground/20' : 'border-black/10',
+                                )}>
+                                  <FileText className={cn('w-3 h-3 shrink-0', msg.sender === 'agent' ? 'text-primary-foreground/70' : 'text-muted-foreground')} />
+                                  <span className={cn('text-[10px] font-semibold uppercase tracking-wide', msg.sender === 'agent' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+                                    Template: {tplName}
+                                  </span>
+                                </div>
+                                <p className="whitespace-pre-wrap">{tplBody}</p>
+                              </div>
+                            );
+                          }
+                          return (
+                            <p className={cn(
+                              'whitespace-pre-wrap',
+                              msg.is_note && !isDeleted    ? 'text-yellow-800' : '',
+                              isDeleted                    ? 'text-muted-foreground italic text-xs' : '',
+                            )}>
+                              {msg.body}
+                            </p>
+                          );
+                        })()}
 
                         <div className={cn('flex items-center gap-1 mt-1', msg.sender === 'agent' ? 'justify-end' : '')}>
                           <span className={cn('text-xs',

@@ -355,10 +355,12 @@ async function processWhatsAppMessage(payload: any) {
 
         // ── Handle delivery status updates ──────────────────────────────
         const statuses: any[] = value.statuses ?? [];
+        if (statuses.length > 0) console.log('[WABA webhook] status updates:', statuses.length, 'for tenant', tenantId);
         for (const st of statuses) {
           const wamid: string | undefined = st.id;
           const statusVal: string | undefined = st.status; // sent | delivered | read | failed
           if (!wamid || !statusVal) continue;
+          console.log('[WABA webhook] wamid:', wamid, 'status:', statusVal);
 
           // Map Meta status to our DB status
           const mapped = statusVal === 'read' ? 'read'
