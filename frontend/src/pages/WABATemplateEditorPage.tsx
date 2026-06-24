@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, ChevronRight, ChevronDown, Plus, X, Loader2, Check,
-  Upload, Paperclip, FileText, Image as ImageIcon, Film,
+  Upload, Paperclip, FileText, Image as ImageIcon, Film, Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,30 @@ interface Template {
 
 const LANGUAGES = ['en', 'hi', 'ta', 'te', 'kn', 'mr'];
 const WABA_CATS: WABACategory[] = ['MARKETING', 'UTILITY', 'AUTHENTICATION'];
+
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
+
+const STANDARD_VARS = [
+  { key: 'first_name', label: 'First Name', sample: 'Ravi' },
+  { key: 'last_name', label: 'Last Name', sample: 'Kumar' },
+  { key: 'full_name', label: 'Full Name', sample: 'Ravi Kumar' },
+  { key: 'phone', label: 'Phone', sample: '+91 98765 43210' },
+  { key: 'email', label: 'Email', sample: 'ravi@example.com' },
+  { key: 'source', label: 'Source', sample: 'Meta Form' },
+  { key: 'today', label: "Today's Date", sample: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) },
+];
+
+const CRM_VARS = [
+  { key: 'stage', label: 'Stage', sample: 'Qualified' },
+  { key: 'pipeline', label: 'Pipeline', sample: 'Sales' },
+  { key: 'assigned_staff', label: 'Assigned Staff', sample: 'Roshan' },
+  { key: 'appointment_date', label: 'Appointment Date', sample: '13 May 2026' },
+  { key: 'appointment_start_time', label: 'Start Time', sample: '10:30 AM' },
+  { key: 'appointment_end_time', label: 'End Time', sample: '11:00 AM' },
+  { key: 'appointment_timezone', label: 'Timezone', sample: 'Asia/Kolkata' },
+  { key: 'calendar_name', label: 'Calendar Name', sample: 'Discovery Call' },
+  { key: 'meeting_link', label: 'Meeting Link', sample: 'https://meet.google.com/abc-xyz' },
+];
 
 function parseButtons(b: WABAButton[] | string | undefined | null): WABAButton[] {
   if (!b) return [];
@@ -57,6 +81,30 @@ export default function WABATemplateEditorPage() {
   const [loading, setLoading] = useState(isEdit);
   const [submitMeta, setSubmitMeta] = useState(!isEdit);
   const [bodyExamples, setBodyExamples] = useState<Record<string, string>>({});
+  // Variable mapping: {{N}} → CRM field key (e.g. "1" → "first_name")
+  const [varMapping, setVarMapping] = useState<Record<string, string>>({});
+
+  // Variable picker state
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [pickerTab, setPickerTab] = useState<'Standard' | 'CRM' | 'Custom' | 'Values'>('Standard');
+  const [customFields, setCustomFields] = useState<Array<{ slug: string; name: string }>>([]);
+  const [valueTokens, setValueTokens] = useState<Array<{ name: string; replace_with: string }>>([]);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+
+  // Fetch custom fields + value tokens when picker opens
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const tok = getAccessToken();
+    const headers: Record<string, string> = tok ? { Authorization: `Bearer ${tok}` } : {};
+    Promise.all([
+      fetch(`${BASE}/api/fields/custom`, { headers, credentials: 'include' }).then((r) => r.json()).catch(() => []),
+      fetch(`${BASE}/api/fields/values`, { headers, credentials: 'include' }).then((r) => r.json()).catch(() => []),
+    ]).then(([cf, vt]) => {
+      if (Array.isArray(cf)) setCustomFields(cf.map((f: any) => ({ slug: f.slug, name: f.name })));
+      if (Array.isArray(vt)) setValueTokens(vt.map((v: any) => ({ name: v.name, replace_with: v.replace_with })));
+    });
+  }, [pickerOpen]);
 
   // Detect {{1}}, {{2}}, etc. in body text
   const bodyVars = Array.from(body.matchAll(/\{\{(\d+)\}\}/g))
@@ -69,6 +117,47 @@ export default function WABATemplateEditorPage() {
     .map((m) => m[1])
     .filter((v, i, a) => a.indexOf(v) === i)
     .sort((a, b) => Number(a) - Number(b));
+
+  // Build picker categories
+  type PickerField = { key: string; label: string; sample: string };
+  const pickerCategories: Record<'Standard' | 'CRM' | 'Custom' | 'Values', PickerField[]> = {
+    Standard: STANDARD_VARS.map((v) => ({ key: v.key, label: v.label, sample: v.sample })),
+    CRM: CRM_VARS.map((v) => ({ key: v.key, label: v.label, sample: v.sample })),
+    Custom: customFields.map((f) => ({ key: f.slug, label: f.name, sample: '' })),
+    Values: valueTokens.map((v) => ({ key: slugify(v.name), label: v.name, sample: v.replace_with })),
+  };
+  const allPickerFields = [...pickerCategories.Standard, ...pickerCategories.CRM, ...pickerCategories.Custom, ...pickerCategories.Values];
+
+  const pq = pickerSearch.trim().toLowerCase();
+  const pickerResults = pq
+    ? (['Standard', 'CRM', 'Custom', 'Values'] as const)
+        .map((cat) => ({ label: cat, items: pickerCategories[cat].filter((f) => f.label.toLowerCase().includes(pq) || f.key.toLowerCase().includes(pq)) }))
+        .filter((g) => g.items.length > 0)
+    : [{ label: pickerTab, items: pickerCategories[pickerTab] }];
+
+  // Insert a variable via picker: adds {{N}} at cursor and auto-fills sample + mapping
+  const insertPickerVar = (field: PickerField) => {
+    const el = bodyRef.current;
+    // Find next available {{N}} number
+    const usedNums = Array.from(body.matchAll(/\{\{(\d+)\}\}/g)).map((m) => Number(m[1]));
+    let nextNum = 1;
+    while (usedNums.includes(nextNum)) nextNum++;
+    const numStr = String(nextNum);
+    const token = `{{${numStr}}}`;
+
+    // Insert at cursor or end
+    const pos = el ? el.selectionStart : body.length;
+    const newBody = body.slice(0, pos) + token + body.slice(pos);
+    setBody(newBody);
+
+    // Auto-fill sample value and store mapping
+    setBodyExamples((prev) => ({ ...prev, [numStr]: field.sample || field.label }));
+    setVarMapping((prev) => ({ ...prev, [numStr]: field.key }));
+
+    setPickerOpen(false);
+    setPickerSearch('');
+    setTimeout(() => { if (el) { el.focus(); el.setSelectionRange(pos + token.length, pos + token.length); } }, 0);
+  };
 
   // Load existing template in edit mode
   useEffect(() => {
@@ -355,6 +444,7 @@ export default function WABATemplateEditorPage() {
 
                 <div className="px-4 pt-4 pb-2">
                   <textarea
+                    ref={bodyRef}
                     value={body} onChange={(e) => setBody(e.target.value)}
                     maxLength={1024} rows={7}
                     placeholder="Hi {{1}}, thanks for reaching out! Your appointment is on {{2}}."
@@ -362,9 +452,17 @@ export default function WABATemplateEditorPage() {
                   />
                 </div>
 
-                <div className="px-4 pb-4 pt-2 border-t border-orange-50">
+                <div className="px-4 pb-4 pt-2 border-t border-orange-50 flex items-center justify-between">
+                  <button
+                    onClick={() => { setPickerOpen(true); setPickerSearch(''); setPickerTab('Standard'); }}
+                    className="flex items-center gap-1.5 text-[12px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
+                  >
+                    <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[13px] leading-none">+</span>
+                    Insert Variable
+                    <span className="text-[10px] text-[#7a6b5c] font-normal ml-0.5">({allPickerFields.length} fields)</span>
+                  </button>
                   <p className="text-[11px] text-[#7a6b5c]">
-                    Use {'{{1}}'}, {'{{2}}'}, etc. for variables. Meta requires sample values for approval.
+                    or type {'{{1}}'}, {'{{2}}'} manually
                   </p>
                 </div>
               </div>
@@ -374,18 +472,49 @@ export default function WABATemplateEditorPage() {
                 <div className="mt-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
                   <p className="text-xs font-semibold text-amber-800">Samples for body content</p>
                   {bodyVars.map((v) => (
-                    <div key={v} className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-amber-700 bg-amber-100 px-2 py-1 rounded-lg shrink-0">{`{{${v}}}`}</span>
-                      <Input
-                        value={bodyExamples[v] ?? ''}
-                        onChange={(e) => setBodyExamples((prev) => ({ ...prev, [v]: e.target.value }))}
-                        placeholder={`Sample value for {{${v}}}, e.g. ${v === '1' ? 'Ravi' : v === '2' ? '10:30 AM' : `Value ${v}`}`}
-                        className="flex-1 text-xs h-9 border-amber-200 bg-white focus:border-amber-400 focus:ring-1 focus:ring-amber-200"
-                      />
+                    <div key={v} className="space-y-1.5" >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-mono text-amber-700 bg-amber-100 px-2 py-1 rounded-lg shrink-0">{`{{${v}}}`}</span>
+                        <div className="relative flex-1">
+                          <select
+                            value={varMapping[v] ?? ''}
+                            onChange={(e) => {
+                              const key = e.target.value;
+                              setVarMapping((prev) => ({ ...prev, [v]: key }));
+                              // Auto-fill sample from the selected field
+                              const field = allPickerFields.find((f) => f.key === key);
+                              if (field?.sample) setBodyExamples((prev) => ({ ...prev, [v]: field.sample }));
+                            }}
+                            className="w-full border border-amber-200 rounded-lg px-3 py-2 text-xs bg-white focus:border-amber-400 outline-none appearance-none pr-8"
+                          >
+                            <option value="">Select CRM field...</option>
+                            <optgroup label="Standard">
+                              {STANDARD_VARS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+                            </optgroup>
+                            <optgroup label="CRM">
+                              {CRM_VARS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+                            </optgroup>
+                            {customFields.length > 0 && (
+                              <optgroup label="Custom Fields">
+                                {customFields.map((f) => <option key={f.slug} value={f.slug}>{f.name}</option>)}
+                              </optgroup>
+                            )}
+                          </select>
+                          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-amber-500 pointer-events-none" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 pl-14">
+                        <Input
+                          value={bodyExamples[v] ?? ''}
+                          onChange={(e) => setBodyExamples((prev) => ({ ...prev, [v]: e.target.value }))}
+                          placeholder={`Sample value for {{${v}}}`}
+                          className="flex-1 text-xs h-8 border-amber-200 bg-white focus:border-amber-400 focus:ring-1 focus:ring-amber-200"
+                        />
+                      </div>
                     </div>
                   ))}
                   <p className="text-[10px] text-amber-600">
-                    These samples help Meta reviewers understand your template. At send time, real lead data will be used.
+                    Select a CRM field for each variable. The sample value is sent to Meta for review.
                   </p>
                 </div>
               )}
@@ -562,13 +691,22 @@ export default function WABATemplateEditorPage() {
             {bodyVars.length > 0 && (
               <div className="bg-white rounded-2xl border border-orange-100 p-4">
                 <h3 className="text-[10px] font-bold text-[#92400e] uppercase tracking-widest mb-3">Variable Mapping</h3>
-                <div className="space-y-1.5">
-                  {bodyVars.map((v) => (
-                    <div key={v} className="flex items-center justify-between text-[11px] gap-2">
-                      <span className="font-mono text-orange-600 shrink-0">{`{{${v}}}`}</span>
-                      <span className="text-[#7a6b5c] text-right truncate">{bodyExamples[v] || `[Sample ${v}]`}</span>
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  {bodyVars.map((v) => {
+                    const mappedKey = varMapping[v];
+                    const mappedField = mappedKey ? allPickerFields.find((f) => f.key === mappedKey) : null;
+                    return (
+                      <div key={v} className="flex items-center justify-between text-[11px] gap-2">
+                        <span className="font-mono text-orange-600 shrink-0">{`{{${v}}}`}</span>
+                        <div className="text-right min-w-0">
+                          {mappedField && (
+                            <p className="text-[10px] text-orange-500 font-medium">{mappedField.label}</p>
+                          )}
+                          <p className="text-[#7a6b5c] truncate">{bodyExamples[v] || `[Sample ${v}]`}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -586,6 +724,114 @@ export default function WABATemplateEditorPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Variable Picker Modal ── */}
+      {pickerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) { setPickerOpen(false); setPickerSearch(''); } }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-[520px] max-w-full max-h-[80vh] flex flex-col overflow-hidden">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-orange-100 shrink-0">
+              <div>
+                <h3 className="text-[14px] font-semibold text-[#1c1410]">Insert Variable</h3>
+                <p className="text-[11px] text-[#7a6b5c] mt-0.5">
+                  Click a field to insert <code className="bg-orange-50 px-1 rounded text-orange-700">{`{{N}}`}</code> at cursor with auto-filled sample
+                </p>
+              </div>
+              <button
+                onClick={() => { setPickerOpen(false); setPickerSearch(''); }}
+                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-orange-50 text-[#7a6b5c] hover:text-[#1c1410] transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="px-4 py-3 border-b border-orange-50 shrink-0">
+              <div className="flex items-center gap-2 bg-[#fffbf7] border border-orange-200 rounded-xl px-3 py-2">
+                <Search className="w-3.5 h-3.5 text-[#7a6b5c] shrink-0" />
+                <input
+                  autoFocus
+                  value={pickerSearch}
+                  onChange={(e) => setPickerSearch(e.target.value)}
+                  placeholder={`Search across ${allPickerFields.length} fields...`}
+                  className="flex-1 text-[12px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#7a6b5c]/50"
+                />
+                {pickerSearch && (
+                  <button onClick={() => setPickerSearch('')} className="text-[#7a6b5c] hover:text-[#1c1410]">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Tabs */}
+            {!pickerSearch && (
+              <div className="flex border-b border-orange-100 px-4 shrink-0 bg-white">
+                {(['Standard', 'CRM', 'Custom', 'Values'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setPickerTab(tab)}
+                    className={cn(
+                      'px-3 py-2.5 text-[12px] font-medium border-b-2 transition-colors whitespace-nowrap',
+                      pickerTab === tab
+                        ? 'border-[var(--brand)] text-[var(--brand)]'
+                        : 'border-transparent text-[#7a6b5c] hover:text-[#1c1410]'
+                    )}
+                  >
+                    {tab}
+                    <span className="ml-1.5 text-[10px] font-normal opacity-60">
+                      ({pickerCategories[tab].length})
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Field list */}
+            <div className="flex-1 overflow-y-auto">
+              {pickerResults.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mb-3">
+                    <Search className="w-4 h-4 text-orange-300" />
+                  </div>
+                  <p className="text-[13px] font-medium text-[#1c1410]">No fields found</p>
+                  <p className="text-[11px] text-[#7a6b5c] mt-1">Try a different search term</p>
+                </div>
+              ) : (
+                pickerResults.map((group) => (
+                  <div key={group.label}>
+                    {pickerSearch && (
+                      <div className="px-4 py-2 bg-orange-50/60 border-b border-orange-50 sticky top-0">
+                        <span className="text-[10px] font-bold text-[#92400e] uppercase tracking-widest">{group.label}</span>
+                      </div>
+                    )}
+                    {group.items.map((item) => (
+                      <button
+                        key={item.key}
+                        onClick={() => insertPickerVar(item)}
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-orange-50 transition-colors border-b border-orange-50/80 last:border-0 text-left gap-4 group"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium text-[#1c1410] truncate">{item.label}</p>
+                          {item.sample && (
+                            <p className="text-[11px] text-[#7a6b5c] mt-0.5 truncate">e.g. {item.sample}</p>
+                          )}
+                        </div>
+                        <span className="shrink-0 text-[11px] font-mono text-orange-700 bg-orange-50 border border-orange-200 px-2 py-1 rounded-lg group-hover:bg-orange-100 group-hover:border-orange-300 transition-colors">
+                          {`{{N}}`} = {item.key}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
