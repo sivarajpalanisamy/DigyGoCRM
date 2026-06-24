@@ -589,6 +589,9 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creatingHeader, setCreatingHeader] = useState<string | null>(null);
   const [saving, setSaving]   = useState(false);
+  const [sheetPipelineId, setSheetPipelineId] = useState<string>('');
+  const [sheetStageId, setSheetStageId] = useState<string>('');
+  const { pipelines } = useCrmStore();
 
   // Called after the rich field-creator persists a new custom field.
   const handleFieldCreated = (f: { name: string; slug: string }) => {
@@ -675,6 +678,8 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
     setEditingId(config.id);
     setUrl(config.spreadsheet_url ?? '');
     setName(config.spreadsheet_name ?? '');
+    setSheetPipelineId(config.pipeline_id ?? '');
+    setSheetStageId(config.stage_id ?? '');
     setView('add');
     loadColumns(config.spreadsheet_url ?? '', config.column_mapping ?? {});
   };
@@ -700,6 +705,7 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
 
   const resetAddState = () => {
     setUrl(''); setHeaders([]); setName(''); setColDest({}); setCustomFields([]); setEditingId(null);
+    setSheetPipelineId(''); setSheetStageId('');
   };
 
   const saveConfig = async () => {
@@ -733,6 +739,8 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
           spreadsheet_name: name.trim() || undefined,
           column_mapping:  { ...colMap, custom },
           create_fields:   createFields,
+          pipeline_id: sheetPipelineId || null,
+          stage_id: sheetStageId || null,
         });
         setConfigs((prev) => prev.map((c) => (c.id === editingId ? { ...c, ...result } : c)));
         toast.success('Sheet updated');
@@ -744,6 +752,8 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
           spreadsheet_name: name.trim() || undefined,
           column_mapping:  { ...colMap, custom },
           create_fields:   createFields,
+          pipeline_id: sheetPipelineId || undefined,
+          stage_id: sheetStageId || undefined,
         });
         setConfigs((prev) => [result, ...prev]);
         toast.success('Sheet connected! New rows will be synced every 5 minutes.');
@@ -872,6 +882,38 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                     />
                     <p className="text-[11px] text-[#9e8e7e] mt-1">Shown in your connected-sheets list. Auto-filled from the spreadsheet title — edit if you like.</p>
                   </div>
+                  {/* Pipeline & Stage selection */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Pipeline</label>
+                      <select
+                        className="w-full text-[12px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
+                        value={sheetPipelineId}
+                        onChange={(e) => { setSheetPipelineId(e.target.value); setSheetStageId(''); }}
+                      >
+                        <option value="">— Default —</option>
+                        {pipelines.map((p: any) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Stage</label>
+                      <select
+                        className="w-full text-[12px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
+                        value={sheetStageId}
+                        onChange={(e) => setSheetStageId(e.target.value)}
+                        disabled={!sheetPipelineId}
+                      >
+                        <option value="">— First stage —</option>
+                        {sheetPipelineId && (pipelines.find((p: any) => p.id === sheetPipelineId) as any)?.stages?.map((s: any) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-[#9e8e7e] -mt-1">Imported leads land in this pipeline. Duplicates are checked within the same pipeline only.</p>
+
                   <div className="flex items-center justify-between">
                     <p className="text-[12px] font-semibold text-[#1c1410]">Where should each column go?</p>
                     <button

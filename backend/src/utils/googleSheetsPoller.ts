@@ -75,32 +75,40 @@ async function processConfig(config: any): Promise<void> {
     }
     if (!claimed) continue;
 
+    const pipelineId = config.pipeline_id ?? null;
+    const stageId = config.stage_id ?? null;
+
     try {
       let existingLead: any = null;
       if (phone) {
         // Match by last-10 digits, not exact string — a lead stored as "9876543210" and one
         // normalized to "+919876543210" are the SAME person. Exact-match dedup created dups.
+        // Pipeline-scoped when config has a pipeline.
         const digits = phone.replace(/[^0-9]/g, '');
+        const pipeFilter = pipelineId ? ` AND pipeline_id=$3::uuid` : '';
+        const pipeParams = pipelineId ? [tenantId, digits.slice(-10), pipelineId] : [tenantId, digits.slice(-10)];
         const ex = digits.length >= 10
           ? await query(
               `SELECT * FROM leads WHERE tenant_id=$1 AND is_deleted=FALSE
-                 AND right(regexp_replace(phone,'[^0-9]','','g'),10)=$2 LIMIT 1`,
-              [tenantId, digits.slice(-10)]
+                 AND right(regexp_replace(phone,'[^0-9]','','g'),10)=$2${pipeFilter} LIMIT 1`,
+              pipeParams
             )
           : await query(
-              'SELECT * FROM leads WHERE tenant_id=$1 AND phone=$2 AND is_deleted=FALSE LIMIT 1',
-              [tenantId, phone]
+              `SELECT * FROM leads WHERE tenant_id=$1 AND phone=$2 AND is_deleted=FALSE${pipeFilter} LIMIT 1`,
+              pipelineId ? [tenantId, phone, pipelineId] : [tenantId, phone]
             );
         existingLead = ex.rows[0] ?? null;
       }
       if (!existingLead && email) {
+        const pipeFilter = pipelineId ? ` AND pipeline_id=$3::uuid` : '';
         const ex = await query(
-          'SELECT * FROM leads WHERE tenant_id=$1 AND email=$2 AND is_deleted=FALSE LIMIT 1',
-          [tenantId, email]
+          `SELECT * FROM leads WHERE tenant_id=$1 AND LOWER(email)=LOWER($2) AND is_deleted=FALSE${pipeFilter} LIMIT 1`,
+          pipelineId ? [tenantId, email, pipelineId] : [tenantId, email]
         );
         existingLead = ex.rows[0] ?? null;
       }
 
+      const isDuplicate = !!existingLead;
       let lead: any;
       if (existingLead) {
         const updates: string[] = ['updated_at=NOW()'];
@@ -116,14 +124,22 @@ async function processConfig(config: any): Promise<void> {
         emitToTenant(tenantId, 'lead:updated', lead);
       } else {
         const insRes = await query(
-          `INSERT INTO leads (tenant_id, name, email, phone, source)
-           VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-          [tenantId, name || email || phone, email || null, phone || null, source]
+          `INSERT INTO leads (tenant_id, name, email, phone, source, pipeline_id, stage_id)
+           VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+          [tenantId, name || email || phone, email || null, phone || null, source, pipelineId, stageId]
         );
         lead = insRes.rows[0];
         emitToTenant(tenantId, 'lead:created', lead);
         sendNewLeadNotification(tenantId, lead, null).catch(() => null);
       }
+
+      // Log to enquiry_log
+      query(
+        `INSERT INTO enquiry_log (tenant_id, phone, email, lead_id, form_type, form_id, form_name, pipeline_id, pipeline_name, stage_id, stage_name, source, is_duplicate)
+         VALUES ($1,$2,$3,$4,'google_sheets',$5,$6,$7,(SELECT name FROM pipelines WHERE id=$7::uuid),$8,(SELECT name FROM pipeline_stages WHERE id=$8::uuid),$9,$10)`,
+        [tenantId, phone || null, email || null, lead.id, config.id, config.spreadsheet_name ?? config.spreadsheet_id,
+         pipelineId, stageId, source, isDuplicate]
+      ).catch((e: any) => console.error('[enquiry_log sheets]', e.message));
 
       // Extra mapped columns → custom fields (slug → value).
       const customData: Record<string, string> = {};

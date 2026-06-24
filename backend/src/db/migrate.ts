@@ -110,6 +110,7 @@ const MIGRATIONS = [
   'migration_108_custom_forms_tags.sql',
   'migration_109_landing_pages_soft_delete.sql',
   'migration_110_enquiry_log.sql',
+  'migration_111_sheets_pipeline.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.

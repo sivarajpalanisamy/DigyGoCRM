@@ -185,7 +185,7 @@ router.post('/preview', requireAuth, requireTenant, checkPermission('integration
 
 // POST /api/integrations/sheets/configs — save a new sheet config
 router.post('/configs', requireAuth, requireTenant, checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
-  const { spreadsheet_url, spreadsheet_id, gid, spreadsheet_name, sheet_name, column_mapping, create_fields } = req.body;
+  const { spreadsheet_url, spreadsheet_id, gid, spreadsheet_name, sheet_name, column_mapping, create_fields, pipeline_id, stage_id } = req.body;
   if (!spreadsheet_url?.trim() || !spreadsheet_id?.trim()) {
     res.status(400).json({ error: 'spreadsheet_url and spreadsheet_id required' });
     return;
@@ -214,8 +214,8 @@ router.post('/configs', requireAuth, requireTenant, checkPermission('integration
 
     const result = await query(
       `INSERT INTO google_sheets_configs
-         (tenant_id, spreadsheet_url, spreadsheet_id, gid, spreadsheet_name, sheet_name, column_mapping, last_row_synced)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+         (tenant_id, spreadsheet_url, spreadsheet_id, gid, spreadsheet_name, sheet_name, column_mapping, last_row_synced, pipeline_id, stage_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [
         tenantId,
         spreadsheet_url.trim(),
@@ -225,6 +225,8 @@ router.post('/configs', requireAuth, requireTenant, checkPermission('integration
         (sheet_name ?? '').trim() || 'Sheet1',
         JSON.stringify(mapping),
         0,
+        pipeline_id ?? null,
+        stage_id ?? null,
       ]
     );
     const cfg = result.rows[0];
@@ -286,7 +288,7 @@ router.post('/configs', requireAuth, requireTenant, checkPermission('integration
 
 // PATCH /api/integrations/sheets/configs/:id
 router.patch('/configs/:id', requireAuth, requireTenant, checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
-  const { column_mapping, is_active, spreadsheet_name, create_fields } = req.body;
+  const { column_mapping, is_active, spreadsheet_name, create_fields, pipeline_id, stage_id } = req.body;
   const fields: string[] = [];
   const params: any[] = [];
 
@@ -298,6 +300,8 @@ router.patch('/configs/:id', requireAuth, requireTenant, checkPermission('integr
   if (column_mapping !== undefined)  { params.push(JSON.stringify(column_mapping)); fields.push(`column_mapping=$${params.length}`); }
   if (is_active !== undefined)       { params.push(is_active);                      fields.push(`is_active=$${params.length}`); }
   if (spreadsheet_name !== undefined){ params.push(spreadsheet_name);               fields.push(`spreadsheet_name=$${params.length}`); }
+  if (pipeline_id !== undefined)     { params.push(pipeline_id || null);            fields.push(`pipeline_id=$${params.length}`); }
+  if (stage_id !== undefined)        { params.push(stage_id || null);               fields.push(`stage_id=$${params.length}`); }
 
   if (!fields.length) { res.status(400).json({ error: 'Nothing to update' }); return; }
   fields.push('updated_at=NOW()');
