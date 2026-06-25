@@ -566,16 +566,17 @@ router.post('/:id/resubmit-to-meta', checkPermission('automation_templates:manag
     const newStatus = metaResp.success ? 'pending' : 'draft';
 
     // Update local DB
+    const finalCategory = raw.category ? (raw.category as string).toUpperCase() : ex.category;
     const result = await query(
       `UPDATE templates SET
          body=$1, header=$2, footer=$3, buttons=$4, variables=$5,
-         meta_components=$6, status=$7, updated_at=NOW()
-       WHERE id=$8::uuid AND tenant_id=$9::uuid
+         meta_components=$6, status=$7, category=$8, updated_at=NOW()
+       WHERE id=$9::uuid AND tenant_id=$10::uuid
        RETURNING *`,
       [
         body.trim(), header?.trim() ?? null, footer?.trim() ?? null,
         JSON.stringify(buttons ?? []), JSON.stringify(variables ?? null),
-        JSON.stringify(components), newStatus,
+        JSON.stringify(components), newStatus, finalCategory,
         id, tenantId,
       ],
     );
@@ -692,17 +693,19 @@ router.post('/sync-waba', checkPermission('automation_templates:manage'), async 
       const status = (tpl.status ?? 'PENDING').toLowerCase();
       const displayName = metaName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
 
+      const metaTemplateId = tpl.id ?? null;
       await query(
         `INSERT INTO templates
-           (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, meta_name, meta_components)
-         VALUES ($1::uuid,$2,'waba',$3,$4,$5,$6,$7,$8,$9,$10,$11)
+           (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, meta_name, meta_template_id, meta_components)
+         VALUES ($1::uuid,$2,'waba',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
          ON CONFLICT (tenant_id, meta_name, language) WHERE meta_name IS NOT NULL DO UPDATE SET
            name=EXCLUDED.name, category=EXCLUDED.category, status=EXCLUDED.status,
            body=EXCLUDED.body, header=EXCLUDED.header, footer=EXCLUDED.footer,
-           buttons=EXCLUDED.buttons, meta_components=EXCLUDED.meta_components,
+           buttons=EXCLUDED.buttons, meta_template_id=EXCLUDED.meta_template_id,
+           meta_components=EXCLUDED.meta_components,
            updated_at=NOW()`,
         [tenantId, displayName, category, lang, status, bodyText, headerText, footerText,
-         JSON.stringify(buttons), metaName, JSON.stringify(components)],
+         JSON.stringify(buttons), metaName, metaTemplateId, JSON.stringify(components)],
       );
       synced++;
     }

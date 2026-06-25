@@ -84,6 +84,7 @@ export default function WABATemplateEditorPage() {
   const [existingFile, setExistingFile] = useState<{ name: string } | null>(null);
   const [removeFile, setRemoveFile] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingToMeta, setSavingToMeta] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [submitMeta, setSubmitMeta] = useState(!isEdit);
   const [isMetaSynced, setIsMetaSynced] = useState(false);
@@ -258,6 +259,7 @@ export default function WABATemplateEditorPage() {
     }
 
     setSaving(true);
+    if (toMeta) setSavingToMeta(true);
     try {
       const shouldSubmitMeta = toMeta || (submitMeta && !isEdit);
       if (shouldSubmitMeta) {
@@ -294,8 +296,9 @@ export default function WABATemplateEditorPage() {
             headers: tok ? { Authorization: `Bearer ${tok}` } : {},
             credentials: 'include', body: fd,
           });
-          const data = await resp.json();
-          if (!resp.ok) throw new Error(data.error || 'Submit failed');
+          if (resp.status === 413) throw new Error('File too large — exceeds upload limit');
+          const data = resp.headers.get('content-type')?.includes('json') ? await resp.json() : null;
+          if (!resp.ok) throw new Error(data?.error || `Submit failed (${resp.status})`);
         } else {
           await api.post(endpoint, submitPayload);
         }
@@ -320,12 +323,13 @@ export default function WABATemplateEditorPage() {
           headers: tok ? { Authorization: `Bearer ${tok}` } : {},
           credentials: 'include', body: fd,
         });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || 'Request failed');
+        if (resp.status === 413) throw new Error('File too large — exceeds upload limit');
+        const data = resp.headers.get('content-type')?.includes('json') ? await resp.json() : null;
+        if (!resp.ok) throw new Error(data?.error || `Request failed (${resp.status})`);
         toast.success(isEdit ? 'Template updated locally' : 'Template saved locally');
       }
       navigate('/automation/templates?tab=waba');
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); setSavingToMeta(false); }
   };
 
   // ── Test Send ──
@@ -413,14 +417,14 @@ export default function WABATemplateEditorPage() {
                 variant="outline" size="sm" onClick={() => handleSave(false)} disabled={saving}
                 className="h-8 text-[13px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
               >
-                {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1.5" />}
+                {saving && !savingToMeta ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1.5" />}
                 Save Locally
               </Button>
               <Button
                 size="sm" onClick={() => handleSave(true)} disabled={saving}
                 className="h-8 text-[13px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
               >
-                {saving ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Submitting...</> : <><Send className="w-3.5 h-3.5 mr-1.5" />Submit to Meta</>}
+                {savingToMeta ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Submitting...</> : <><Send className="w-3.5 h-3.5 mr-1.5" />Submit to Meta</>}
               </Button>
             </>
           ) : (
