@@ -284,14 +284,14 @@ export default function InboxPage() {
     return () => clearTimeout(t);
   }, [highlightMsgId]);
 
+  const [archivedConvs, setArchivedConvs] = useState<ApiConversation[]>([]);
+  const [archivedLoaded, setArchivedLoaded] = useState(false);
+
   const selected = conversations.find((c) => c.id === selectedId) ?? archivedConvs.find((c) => c.id === selectedId) ?? null;
 
   useEffect(() => {
     if (!selected && !showList) setShowList(true);
   }, [selected]);
-
-  const [archivedConvs, setArchivedConvs] = useState<ApiConversation[]>([]);
-  const [archivedLoaded, setArchivedLoaded] = useState(false);
 
   const loadConversations = useCallback(() => {
     api.get<ApiConversation[]>('/api/conversations')
