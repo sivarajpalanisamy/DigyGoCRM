@@ -4,6 +4,7 @@ import {
   Filter, ChevronRight, ArrowLeft, Plus, RefreshCw, CheckCircle2,
   AlertTriangle, Eye, Clock, Mail, MailCheck, MailX, ChevronDown,
   Download, Copy, RotateCcw, Upload, FileText, Image, Video,
+  IndianRupee, ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,7 @@ interface Template {
   header?: string;
   footer?: string;
   status: string;
+  category: string;
   meta_components?: any;
   file_path?: string | null;
   file_name?: string | null;
@@ -103,6 +105,21 @@ function pct(n: number, total: number) {
   return Math.round((n / total) * 100);
 }
 
+// Meta WhatsApp Business API pricing per message (INR, India, as of 2025)
+const META_MSG_COST_INR: Record<string, number> = {
+  MARKETING: 0.7840,
+  UTILITY: 0.3500,
+  AUTHENTICATION: 0.3500,
+  SERVICE: 0.3136,
+};
+
+function estimateCost(category: string, count: number): { rate: number; total: number; label: string } {
+  const cat = (category || 'UTILITY').toUpperCase();
+  const rate = META_MSG_COST_INR[cat] ?? META_MSG_COST_INR['UTILITY'];
+  const label = cat.charAt(0) + cat.slice(1).toLowerCase();
+  return { rate, total: rate * count, label };
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 export default function WABABroadcastPage() {
   const [view, setView] = useState<View>('list');
@@ -136,6 +153,7 @@ export default function WABABroadcastPage() {
   const [result, setResult] = useState<BroadcastResult | null>(null);
   const [scheduledAt, setScheduledAt] = useState('');
   const [headerFile, setHeaderFile] = useState<File | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Detect media header format for selected template
   const mediaHeaderFormat = useMemo(() => {
@@ -639,16 +657,100 @@ export default function WABABroadcastPage() {
             )}
 
             <div className="flex justify-center">
-              <Button onClick={handleBroadcast} disabled={!selectedTemplate || sending} className="px-8 py-2.5 text-base">
-                {sending ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {scheduledAt ? 'Scheduling...' : 'Sending...'}</>
-                ) : scheduledAt ? (
-                  <><Clock className="w-4 h-4 mr-2" /> Schedule for {selectedIds.size} Lead{selectedIds.size !== 1 ? 's' : ''}</>
+              <Button onClick={() => {
+                if (needsHeaderFile && !headerFile) { toast.error(`Upload a ${mediaHeaderFormat} file for the template header`); return; }
+                setShowConfirmModal(true);
+              }} disabled={!selectedTemplate || sending} className="px-8 py-2.5 text-base">
+                {scheduledAt ? (
+                  <><Clock className="w-4 h-4 mr-2" /> Review & Schedule</>
                 ) : (
-                  <><Send className="w-4 h-4 mr-2" /> Send to {selectedIds.size} Lead{selectedIds.size !== 1 ? 's' : ''}</>
+                  <><Send className="w-4 h-4 mr-2" /> Review & Send</>
                 )}
               </Button>
             </div>
+
+            {/* ── Confirmation Modal ── */}
+            {showConfirmModal && selectedTemplate && (() => {
+              const cost = estimateCost(selectedTemplate.category, selectedIds.size);
+              return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !sending && setShowConfirmModal(false)}>
+                  <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                    {/* Modal Header */}
+                    <div className="bg-gradient-to-r from-primary/10 to-emerald-50 px-6 pt-6 pb-4 text-center">
+                      <div className="w-14 h-14 rounded-full bg-primary/10 mx-auto flex items-center justify-center mb-3">
+                        <ShieldCheck className="w-7 h-7 text-primary" />
+                      </div>
+                      <h3 className="text-lg font-bold text-[#1c1410]">Confirm Broadcast</h3>
+                      <p className="text-xs text-[#7a6b5c] mt-1">Please review before {scheduledAt ? 'scheduling' : 'sending'}</p>
+                    </div>
+
+                    {/* Modal Body */}
+                    <div className="px-6 py-5 space-y-4">
+                      {/* Recipients */}
+                      <div className="flex items-center gap-3 bg-blue-50 rounded-xl px-4 py-3">
+                        <Users className="w-5 h-5 text-blue-600 shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-blue-600 font-medium">Recipients</p>
+                          <p className="text-lg font-bold text-blue-800">{selectedIds.size} contact{selectedIds.size !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+
+                      {/* Template Info */}
+                      <div className="flex items-center gap-3 bg-[#faf8f6] rounded-xl px-4 py-3">
+                        <Megaphone className="w-5 h-5 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-[#7a6b5c] font-medium">Template</p>
+                          <p className="text-sm font-semibold text-[#1c1410] truncate">{selectedTemplate.name}</p>
+                          <p className="text-[11px] text-[#9e8e7e]">{cost.label} · {selectedTemplate.language}</p>
+                        </div>
+                      </div>
+
+                      {/* Estimated Cost */}
+                      <div className="flex items-center gap-3 bg-amber-50 rounded-xl px-4 py-3">
+                        <IndianRupee className="w-5 h-5 text-amber-600 shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs text-amber-600 font-medium">Estimated Cost ({cost.label})</p>
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-lg font-bold text-amber-800">₹{cost.total.toFixed(2)}</p>
+                            <span className="text-[11px] text-amber-600">@ ₹{cost.rate.toFixed(4)}/msg</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {scheduledAt && (
+                        <div className="flex items-center gap-3 bg-emerald-50 rounded-xl px-4 py-3">
+                          <Calendar className="w-5 h-5 text-emerald-600 shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-xs text-emerald-600 font-medium">Scheduled for</p>
+                            <p className="text-sm font-semibold text-emerald-800">{new Date(scheduledAt).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-[11px] text-[#9e8e7e] text-center">
+                        Cost is approximate and based on Meta's India pricing. Actual charges may vary.
+                      </p>
+                    </div>
+
+                    {/* Modal Footer */}
+                    <div className="px-6 pb-6 flex gap-3">
+                      <Button variant="outline" className="flex-1" onClick={() => setShowConfirmModal(false)} disabled={sending}>
+                        Cancel
+                      </Button>
+                      <Button className="flex-1" onClick={() => { setShowConfirmModal(false); handleBroadcast(); }} disabled={sending}>
+                        {sending ? (
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {scheduledAt ? 'Scheduling...' : 'Sending...'}</>
+                        ) : scheduledAt ? (
+                          <><Clock className="w-4 h-4 mr-2" /> Schedule Now</>
+                        ) : (
+                          <><Send className="w-4 h-4 mr-2" /> Send Broadcast</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -881,11 +983,6 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
           <button onClick={() => onDuplicate(bc)} className="p-1.5 rounded-lg hover:bg-black/5" title="Duplicate broadcast">
             <Copy className="w-4 h-4 text-[#7a6b5c]" />
           </button>
-          {bc.status === 'completed' && bc.failed > 0 && (
-            <button onClick={handleRetry} disabled={retrying} className="p-1.5 rounded-lg hover:bg-black/5 disabled:opacity-50" title="Retry failed messages">
-              {retrying ? <Loader2 className="w-4 h-4 animate-spin text-[#7a6b5c]" /> : <RotateCcw className="w-4 h-4 text-[#7a6b5c]" />}
-            </button>
-          )}
           <button onClick={onRefresh} className="p-1.5 rounded-lg hover:bg-black/5" title="Refresh stats">
             <RefreshCw className="w-4 h-4 text-[#7a6b5c]" />
           </button>
@@ -946,11 +1043,12 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
         </div>
       </div>
 
-      {/* Failure Report */}
+      {/* Failure Report + Retry */}
       {(bc.failure_breakdown?.length > 0 || bc.failed > 0) && (
         <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
-          <div className="px-5 py-3 border-b border-black/5">
+          <div className="px-5 py-3 border-b border-black/5 flex items-center justify-between">
             <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide">Failure Report</h3>
+            <span className="text-xs font-semibold text-red-500">{bc.failed} failed</span>
           </div>
           {bc.failure_breakdown?.length > 0 ? (
             <div className="grid grid-cols-2 gap-px bg-black/5">
@@ -964,6 +1062,33 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
           ) : (
             <div className="px-5 py-4">
               <p className="text-sm text-red-500 font-semibold">{bc.failed} message(s) failed</p>
+            </div>
+          )}
+          {/* Retry button */}
+          {bc.status === 'completed' && bc.failed > 0 && (
+            <div className="px-5 py-4 border-t border-black/5 bg-red-50/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-[#1c1410]">Retry failed messages</p>
+                  <p className="text-xs text-[#7a6b5c] mt-0.5">Resend to {bc.failed} contact{bc.failed !== 1 ? 's' : ''} that failed</p>
+                </div>
+                <button
+                  onClick={handleRetry}
+                  disabled={retrying}
+                  className={cn(
+                    'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all',
+                    retrying
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow',
+                  )}
+                >
+                  {retrying ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Retrying...</>
+                  ) : (
+                    <><RotateCcw className="w-4 h-4" /> Retry {bc.failed}</>
+                  )}
+                </button>
+              </div>
             </div>
           )}
         </div>
