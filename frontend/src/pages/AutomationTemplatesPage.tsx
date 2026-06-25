@@ -955,7 +955,7 @@ export default function AutomationTemplatesPage() {
                         )}
                         {tab === 'waba' && (() => {
                           const cooldownMs = t.last_meta_edit_at ? 24 * 60 * 60 * 1000 - (Date.now() - new Date(t.last_meta_edit_at).getTime()) : 0;
-                          const onCooldown = cooldownMs > 0;
+                          const onCooldown = cooldownMs > 0 && t.status !== 'approved';
                           const label = t.status === 'draft' && t.meta_name ? 'Modified'
                             : t.status === 'pending' ? 'Approval Pending'
                             : t.status;

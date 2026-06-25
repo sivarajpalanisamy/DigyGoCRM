@@ -168,6 +168,7 @@ export default function WABATemplateEditorPage() {
   const [submitMeta, setSubmitMeta] = useState(!isEdit);
   const [isMetaSynced, setIsMetaSynced] = useState(false);
   const [lastMetaEditAt, setLastMetaEditAt] = useState<string | null>(null);
+  const [templateStatus, setTemplateStatus] = useState<string>('');
   const [bodyExamples, setBodyExamples] = useState<Record<string, string>>({});
   const [testPhone, setTestPhone] = useState('');
   const [testSending, setTestSending] = useState(false);
@@ -285,6 +286,7 @@ export default function WABATemplateEditorPage() {
     if (t.file_name) setExistingFile({ name: t.file_name });
     if (t.meta_template_id) setIsMetaSynced(true);
     if (t.last_meta_edit_at) setLastMetaEditAt(t.last_meta_edit_at);
+    if (t.status) setTemplateStatus(t.status);
     // Restore saved variable samples and mappings
     const vars = typeof t.variables === 'string' ? (() => { try { return JSON.parse(t.variables); } catch { return null; } })() : t.variables;
     if (vars) {
@@ -385,6 +387,7 @@ export default function WABATemplateEditorPage() {
           } else {
             toast.success('Template submitted to Meta for approval');
             if (data?.last_meta_edit_at) setLastMetaEditAt(data.last_meta_edit_at);
+            if (data?.status) setTemplateStatus(data.status);
           }
         } else {
           const data = await api.post(endpoint, submitPayload) as any;
@@ -393,6 +396,7 @@ export default function WABATemplateEditorPage() {
           } else {
             toast.success('Template submitted to Meta for approval');
             if (data?.last_meta_edit_at) setLastMetaEditAt(data.last_meta_edit_at);
+            if (data?.status) setTemplateStatus(data.status);
           }
         }
       } else {
@@ -505,7 +509,7 @@ export default function WABATemplateEditorPage() {
           </Button>
           {isEdit && isMetaSynced ? (() => {
             const cooldownMs = lastMetaEditAt ? 24 * 60 * 60 * 1000 - (Date.now() - new Date(lastMetaEditAt).getTime()) : 0;
-            const onCooldown = cooldownMs > 0;
+            const onCooldown = cooldownMs > 0 && templateStatus !== 'approved';
             const cooldownLabel = onCooldown
               ? cooldownMs > 3600000 ? `${Math.ceil(cooldownMs / 3600000)}h cooldown` : `${Math.ceil(cooldownMs / 60000)}m cooldown`
               : '';
