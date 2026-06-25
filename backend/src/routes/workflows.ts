@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs';
 import { Router, Response } from 'express';
 import type { Router as RouterType } from 'express';
 import https from 'https';
@@ -1476,17 +1478,46 @@ export async function executeNodes(
           let sentBody = '';
           if (tplId) {
             const tplRes = await query(
-              'SELECT meta_name, language, body, header, meta_components FROM templates WHERE id=$1::uuid AND tenant_id=$2',
+              'SELECT meta_name, language, body, header, meta_components, file_path, file_type FROM templates WHERE id=$1::uuid AND tenant_id=$2',
               [tplId, tenantId]
             );
             const tpl = tplRes.rows[0];
             if (tpl?.meta_name) {
               // Build components from param mappings in node.config.params
               const paramMappings = (node.config.params ?? {}) as Record<string, Array<{ value: string }>>;
-              const tplComponents: Array<{ type: string; parameters: Array<{ type: string; text: string }> }> = [];
+              const tplComponents: Array<{ type: string; parameters: Array<{ type: string; [key: string]: any }> }> = [];
+
+              // Detect media header (DOCUMENT/IMAGE/VIDEO)
+              const metaCompsRaw = typeof tpl.meta_components === 'string' ? (() => { try { return JSON.parse(tpl.meta_components); } catch { return null; } })() : tpl.meta_components;
+              const metaHdr = Array.isArray(metaCompsRaw) ? metaCompsRaw.find((c: any) => c.type === 'HEADER') : null;
+              const hdrFmt = metaHdr ? (metaHdr.format ?? '').toUpperCase() : '';
+              if (['DOCUMENT', 'IMAGE', 'VIDEO'].includes(hdrFmt) && tpl.file_path) {
+                const FormData = (await import('form-data')).default;
+                const fullPath = path.resolve(process.cwd(), tpl.file_path);
+                if (fs.existsSync(fullPath)) {
+                  const form = new FormData();
+                  form.append('file', fs.createReadStream(fullPath));
+                  form.append('messaging_product', 'whatsapp');
+                  form.append('type', tpl.file_type || 'application/octet-stream');
+                  const mediaResp = await fetch(`https://graph.facebook.com/v21.0/${phone_number_id}/media`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${waToken}`, ...form.getHeaders() },
+                    body: form as any,
+                  });
+                  const mediaJson = await mediaResp.json() as any;
+                  if (mediaJson.id) {
+                    const fmt = hdrFmt.toLowerCase();
+                    const param: any = { type: fmt };
+                    param[fmt] = { id: mediaJson.id };
+                    tplComponents.push({ type: 'header', parameters: [param] });
+                  }
+                }
+              }
 
               for (const [compType, params] of Object.entries(paramMappings)) {
                 if (!Array.isArray(params) || params.length === 0) continue;
+                // Skip header if we already added a media header
+                if (compType === 'header' && tplComponents.some(c => c.type === 'header')) continue;
                 tplComponents.push({
                   type: compType,
                   parameters: params.map((p) => ({

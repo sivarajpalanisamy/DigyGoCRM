@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Send, Search, MessageSquare, X, Check, Loader2, ChevronDown, AlertTriangle } from 'lucide-react';
+import { Send, Search, MessageSquare, X, Check, Loader2, ChevronDown, AlertTriangle, Upload, FileText, Image, Video } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ type WABATemplate = {
   id: string; name: string; meta_name: string | null; body: string;
   header?: string | null; footer?: string | null; status: string;
   buttons?: any; language: string; category: string;
+  meta_components?: any; file_path?: string | null;
 };
 type ContactResult = { id: string; name: string; phone: string; type: 'lead' | 'contact' };
 
@@ -30,6 +31,7 @@ export default function WABASingleSendPage() {
 
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [headerFile, setHeaderFile] = useState<File | null>(null);
 
   // Load WABA templates + check connection
   useEffect(() => {
@@ -93,6 +95,22 @@ export default function WABASingleSendPage() {
 
   const selectedTemplate = templates.find((t) => t.id === templateId);
 
+  // Detect media header format from meta_components
+  const mediaHeaderFormat = useMemo(() => {
+    if (!selectedTemplate?.meta_components) return null;
+    const comps = typeof selectedTemplate.meta_components === 'string'
+      ? (() => { try { return JSON.parse(selectedTemplate.meta_components); } catch { return null; } })()
+      : selectedTemplate.meta_components;
+    if (!Array.isArray(comps)) return null;
+    const hdr = comps.find((c: any) => c.type === 'HEADER');
+    if (!hdr) return null;
+    const fmt = (hdr.format ?? '').toUpperCase();
+    return ['DOCUMENT', 'IMAGE', 'VIDEO'].includes(fmt) ? fmt.toLowerCase() : null;
+  }, [selectedTemplate]);
+
+  // Whether we need a file upload (media header + no stored file)
+  const needsHeaderFile = mediaHeaderFormat && !selectedTemplate?.file_path;
+
   // Detect {{N}} variables in body and header
   const templateVars = useMemo(() => {
     if (!selectedTemplate) return [];
@@ -112,27 +130,41 @@ export default function WABASingleSendPage() {
 
   const [varValues, setVarValues] = useState<Record<string, string>>({});
 
-  // Reset var values when template changes
-  useEffect(() => { setVarValues({}); }, [templateId]);
+  // Reset var values and header file when template changes
+  useEffect(() => { setVarValues({}); setHeaderFile(null); }, [templateId]);
 
   const sendMessage = async () => {
     const phone = receiverPhone.trim();
     if (!phone) { toast.error('Select a receiver'); return; }
     if (!templateId) { toast.error('Select a template'); return; }
+    if (needsHeaderFile && !headerFile) { toast.error(`Upload a ${mediaHeaderFormat} file for the template header`); return; }
 
     setSending(true);
     try {
-      // Build template_params from varValues if any overrides exist
       const hasOverrides = Object.values(varValues).some((v) => v.trim());
-      const payload: any = {
-        phone,
-        template_id: templateId,
-        lead_id: receiverLeadId || undefined,
-      };
-      if (hasOverrides) {
-        payload.template_params = varValues;
+
+      // Use FormData if we have a header file, otherwise JSON
+      if (headerFile || mediaHeaderFormat) {
+        const fd = new FormData();
+        fd.append('phone', phone);
+        fd.append('template_id', templateId);
+        if (receiverLeadId) fd.append('lead_id', receiverLeadId);
+        if (hasOverrides) fd.append('template_params', JSON.stringify(varValues));
+        if (headerFile) fd.append('header_file', headerFile);
+        await fetch('/api/conversations/waba-single-send', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('dg_tok') ?? ''}` },
+          body: fd,
+        }).then(async (r) => {
+          const json = await r.json();
+          if (!r.ok) throw new Error(json.error ?? 'Send failed');
+          return json;
+        });
+      } else {
+        const payload: any = { phone, template_id: templateId, lead_id: receiverLeadId || undefined };
+        if (hasOverrides) payload.template_params = varValues;
+        await api.post('/api/conversations/waba-single-send', payload);
       }
-      await api.post('/api/conversations/waba-single-send', payload);
       setSent(true);
       toast.success(`Template sent to ${receiverName || phone}`);
       setTimeout(() => setSent(false), 3000);
@@ -301,6 +333,39 @@ export default function WABASingleSendPage() {
                 )}
               </div>
             </div>
+
+            {/* Media header file upload */}
+            {mediaHeaderFormat && (
+              <div className="mt-4">
+                <p className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  {mediaHeaderFormat === 'document' && <FileText className="w-3.5 h-3.5" />}
+                  {mediaHeaderFormat === 'image' && <Image className="w-3.5 h-3.5" />}
+                  {mediaHeaderFormat === 'video' && <Video className="w-3.5 h-3.5" />}
+                  Header {mediaHeaderFormat} {needsHeaderFile ? '(required)' : '(stored)'}
+                </p>
+                {needsHeaderFile ? (
+                  <label className={cn(
+                    'flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-3 cursor-pointer transition-colors',
+                    headerFile ? 'border-emerald-300 bg-emerald-50' : 'border-black/10 hover:border-emerald-400 bg-white',
+                  )}>
+                    <Upload className="w-4 h-4 text-[#9e8e7e]" />
+                    <span className="text-[12px] text-[#7a6b5c]">
+                      {headerFile ? headerFile.name : `Upload ${mediaHeaderFormat} file…`}
+                    </span>
+                    <input type="file" className="hidden"
+                      accept={mediaHeaderFormat === 'image' ? 'image/*' : mediaHeaderFormat === 'video' ? 'video/*' : '*/*'}
+                      onChange={(e) => setHeaderFile(e.target.files?.[0] ?? null)} />
+                    {headerFile && (
+                      <button className="ml-auto text-[#9e8e7e] hover:text-red-500" onClick={(e) => { e.preventDefault(); setHeaderFile(null); }}>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </label>
+                ) : (
+                  <p className="text-[12px] text-emerald-600">File already stored — will be sent automatically.</p>
+                )}
+              </div>
+            )}
 
             {/* Variable inputs */}
             {templateVars.length > 0 && (

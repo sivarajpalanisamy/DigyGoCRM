@@ -115,6 +115,48 @@ function resolveVarKey(key: string, lead: { name?: string | null; phone?: string
   }
 }
 
+// Upload a local file to Meta's Media API and return the media_id.
+// Used at send time for templates with DOCUMENT/IMAGE/VIDEO headers.
+async function uploadMediaToMeta(
+  phoneNumberId: string, token: string, filePath: string, mimeType: string,
+): Promise<string | null> {
+  try {
+    const FormData = (await import('form-data')).default;
+    const fullPath = path.resolve(process.cwd(), filePath);
+    if (!fs.existsSync(fullPath)) { console.error('[uploadMediaToMeta] file not found:', fullPath); return null; }
+    const form = new FormData();
+    form.append('file', fs.createReadStream(fullPath));
+    form.append('messaging_product', 'whatsapp');
+    form.append('type', mimeType);
+    const resp = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/media`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, ...form.getHeaders() },
+      body: form as any,
+    });
+    const json = await resp.json() as any;
+    if (json.id) return json.id;
+    console.error('[uploadMediaToMeta] error:', json.error ?? json);
+    return null;
+  } catch (err) {
+    console.error('[uploadMediaToMeta]', err);
+    return null;
+  }
+}
+
+// Detect media header format from meta_components (DOCUMENT, IMAGE, VIDEO).
+// Returns null if header is TEXT or absent.
+function getMediaHeaderFormat(metaComponents: any): string | null {
+  const parsed = metaComponents
+    ? (typeof metaComponents === 'string' ? (() => { try { return JSON.parse(metaComponents); } catch { return null; } })() : metaComponents)
+    : null;
+  if (!Array.isArray(parsed)) return null;
+  const headerComp = parsed.find((c: any) => c.type === 'HEADER');
+  if (!headerComp) return null;
+  const fmt = (headerComp.format ?? '').toUpperCase();
+  if (['DOCUMENT', 'IMAGE', 'VIDEO'].includes(fmt)) return fmt.toLowerCase();
+  return null;
+}
+
 // Build Meta API send-time components from saved var_mapping and template texts.
 // Handles body, header, and button URL variables.
 function buildComponentsFromMapping(
@@ -123,7 +165,8 @@ function buildComponentsFromMapping(
   lead: { name?: string | null; phone?: string | null; email?: string | null },
   headerText?: string | null,
   metaComponents?: any,
-): Array<{ type: string; sub_type?: string; index?: number; parameters: Array<{ type: string; text: string }> }> {
+  mediaHeaderId?: string | null,
+): Array<{ type: string; sub_type?: string; index?: number; parameters: Array<{ type: string; [key: string]: any }> }> {
   const vars = typeof variables === 'string' ? (() => { try { return JSON.parse(variables); } catch { return null; } })() : variables;
   const varMapping: Record<string, string> = vars?.var_mapping ?? {};
   const components: Array<{ type: string; sub_type?: string; index?: number; parameters: Array<{ type: string; text: string }> }> = [];
@@ -184,13 +227,19 @@ function buildComponentsFromMapping(
       ? headerText
       : (metaHeaderText ?? headerText);
 
-  // Header variables (e.g. "Hello {{1}}" or "Hello {%full_name%}")
-  if (effectiveHeaderText) {
+  // Header: check if media header (DOCUMENT/IMAGE/VIDEO) first, then text
+  const mediaFormat = getMediaHeaderFormat(metaComponents);
+  if (mediaFormat && mediaHeaderId) {
+    // Media header — provide the uploaded media ID
+    const param: any = { type: mediaFormat };
+    param[mediaFormat] = { id: mediaHeaderId };
+    components.push({ type: 'header', parameters: [param] });
+  } else if (effectiveHeaderText) {
+    // Text header variables (e.g. "Hello {{1}}" or "Hello {%full_name%}")
     const headerNums = extractVarNums(effectiveHeaderText);
     const headerCrmKeys = extractCrmVarKeys(effectiveHeaderText);
     if (headerNums.length > 0) {
       const params = headerNums.map((n, idx) => {
-        // If CRM {%key%} syntax detected, use the key directly; else use var_mapping
         const directKey = headerCrmKeys[idx];
         const crmKey = directKey || varMapping[`h${n}`] || varMapping[n];
         return { type: 'text' as const, text: crmKey ? resolveVarKey(crmKey, lead) : resolveVarKey('full_name', lead) || 'there' };
@@ -570,15 +619,21 @@ router.post('/:id/messages', checkPermission('inbox:send'), async (req: AuthRequ
           if (template_id) {
             // Send as template message
             const tplRes = await query(
-              'SELECT meta_name, language, body, header, variables, meta_components FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+              'SELECT meta_name, language, body, header, variables, meta_components, file_path, file_type FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
               [template_id, req.user!.tenantId],
             );
             const tpl = tplRes.rows[0];
             if (tpl?.meta_name) {
+              // Upload media header if template has DOCUMENT/IMAGE/VIDEO header
+              let inboxMediaHeaderId: string | null = null;
+              const inboxMediaFmt = getMediaHeaderFormat(tpl.meta_components);
+              if (inboxMediaFmt && tpl.file_path) {
+                inboxMediaHeaderId = await uploadMediaToMeta(phone_number_id, token, tpl.file_path, tpl.file_type || 'application/octet-stream');
+              }
               // Use explicit template_params if provided, else build from saved var_mapping
               const resolvedParams = (template_params && template_params.length > 0)
                 ? interpolateComponents(template_params, leadCtx)
-                : buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx, tpl.header, tpl.meta_components);
+                : buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx, tpl.header, tpl.meta_components, inboxMediaHeaderId);
               const waResp = await sendWATemplate(
                 phone_number_id, token, conv.lead_phone,
                 tpl.meta_name, tpl.language ?? 'en',
@@ -1212,14 +1267,14 @@ router.post('/broadcasts/:id/retry', checkPermission('inbox:send'), async (req: 
   try {
     // Get broadcast + WABA credentials
     const bRes = await query(
-      `SELECT b.template_id, b.template_meta_name, t.language, t.meta_components
+      `SELECT b.template_id, b.template_meta_name, t.language, t.meta_components, t.body, t.header, t.variables, t.file_path, t.file_type
        FROM broadcasts b
        JOIN templates t ON t.id = b.template_id
        WHERE b.id=$1::uuid AND b.tenant_id=$2 AND b.status='completed'`,
       [id, tenantId],
     );
     if (!bRes.rows[0]) { res.status(404).json({ error: 'Broadcast not found or not completed' }); return; }
-    const { template_meta_name, language, meta_components } = bRes.rows[0];
+    const { template_meta_name, language, meta_components, body: tplBody, header: tplHeader, variables: tplVars, file_path: tplFilePath, file_type: tplFileType } = bRes.rows[0];
 
     const wabaRes = await query(
       'SELECT phone_number_id, access_token FROM waba_integrations WHERE tenant_id=$1 AND is_active=TRUE LIMIT 1',
@@ -1229,9 +1284,9 @@ router.post('/broadcasts/:id/retry', checkPermission('inbox:send'), async (req: 
     const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
     const waToken = decrypt(encToken);
 
-    // Get failed messages with lead phone
+    // Get failed messages with lead phone + name for variable interpolation
     const failedRes = await query(
-      `SELECT m.id AS msg_id, m.conversation_id, l.phone
+      `SELECT m.id AS msg_id, m.conversation_id, l.phone, l.name, l.email
        FROM messages m
        JOIN leads l ON l.id = m.lead_id
        WHERE m.broadcast_id=$1::uuid AND m.tenant_id=$2 AND m.status='failed' AND l.phone IS NOT NULL`,
@@ -1239,14 +1294,23 @@ router.post('/broadcasts/:id/retry', checkPermission('inbox:send'), async (req: 
     );
     if (!failedRes.rows.length) { res.json({ retried: 0, succeeded: 0, failed: 0 }); return; }
 
-    // Build template components from meta_components
-    const components = Array.isArray(meta_components) ? meta_components.filter((c: any) => c.type !== 'HEADER' || c.format === 'TEXT') : [];
+    // Upload media header once if needed
+    let retryMediaHeaderId: string | null = null;
+    const retryMediaFmt = getMediaHeaderFormat(meta_components);
+    if (retryMediaFmt && tplFilePath) {
+      retryMediaHeaderId = await uploadMediaToMeta(phone_number_id, waToken, tplFilePath, tplFileType || 'application/octet-stream');
+    }
 
     let succeeded = 0, failed = 0;
     for (const row of failedRes.rows) {
       const phone = row.phone.replace(/\D/g, '');
       if (!phone) { failed++; continue; }
       try {
+        // Build components per-lead for variable interpolation
+        const leadCtx = { name: row.name, phone: row.phone, email: row.email };
+        const resolvedComps = buildComponentsFromMapping(tplBody ?? '', tplVars, leadCtx, tplHeader, meta_components, retryMediaHeaderId);
+        const withParams = resolvedComps.filter((c) => c.parameters?.length > 0);
+
         const resp = await fetch(`https://graph.facebook.com/v21.0/${phone_number_id}/messages`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
@@ -1254,7 +1318,7 @@ router.post('/broadcasts/:id/retry', checkPermission('inbox:send'), async (req: 
             messaging_product: 'whatsapp',
             to: phone,
             type: 'template',
-            template: { name: template_meta_name, language: { code: language }, components },
+            template: { name: template_meta_name, language: { code: language }, ...(withParams.length > 0 ? { components: withParams } : {}) },
           }),
         });
         const json = await resp.json() as any;
@@ -1279,12 +1343,52 @@ router.post('/broadcasts/:id/retry', checkPermission('inbox:send'), async (req: 
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
 
+// Helper: upload a header media file to Meta Media API from either local file_path or in-memory buffer
+async function resolveMediaHeader(
+  phoneNumberId: string, token: string, metaComponents: any,
+  filePath: string | null, fileType: string | null,
+  uploadedFile?: { buffer: Buffer; mimetype: string } | null,
+): Promise<string | null> {
+  const mediaFormat = getMediaHeaderFormat(metaComponents);
+  if (!mediaFormat) return null;
+
+  // Priority 1: uploaded file from request
+  if (uploadedFile?.buffer) {
+    try {
+      const FormData = (await import('form-data')).default;
+      const form = new FormData();
+      form.append('file', uploadedFile.buffer, { filename: 'header_media', contentType: uploadedFile.mimetype });
+      form.append('messaging_product', 'whatsapp');
+      form.append('type', uploadedFile.mimetype);
+      const resp = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/media`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, ...form.getHeaders() },
+        body: form as any,
+      });
+      const json = await resp.json() as any;
+      if (json.id) return json.id;
+      console.error('[resolveMediaHeader] upload error:', json.error ?? json);
+    } catch (err) { console.error('[resolveMediaHeader]', err); }
+    return null;
+  }
+
+  // Priority 2: stored file on disk
+  if (filePath) {
+    return uploadMediaToMeta(phoneNumberId, token, filePath, fileType || 'application/octet-stream');
+  }
+
+  console.error('[resolveMediaHeader] template has media header but no file provided');
+  return null;
+}
+
 // POST /api/conversations/waba-single-send — send a WABA template to a single phone number
-router.post('/waba-single-send', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+router.post('/waba-single-send', checkPermission('inbox:send'), upload.single('header_file'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
-  const { phone, template_id, lead_id, template_params } = req.body as {
-    phone: string; template_id: string; lead_id?: string; template_params?: Record<string, string>;
+  const { phone, template_id, lead_id, template_params: rawParams } = req.body as {
+    phone: string; template_id: string; lead_id?: string; template_params?: string | Record<string, string>;
   };
+  // template_params may come as JSON string when sent via FormData
+  const template_params = typeof rawParams === 'string' ? (() => { try { return JSON.parse(rawParams); } catch { return undefined; } })() : rawParams;
   if (!phone?.trim()) { res.status(400).json({ error: 'phone is required' }); return; }
   if (!template_id) { res.status(400).json({ error: 'template_id is required' }); return; }
 
@@ -1298,11 +1402,28 @@ router.post('/waba-single-send', checkPermission('inbox:send'), async (req: Auth
     const token = decrypt(encToken);
 
     const tplRes = await query(
-      'SELECT meta_name, language, body, header, variables, meta_components FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+      'SELECT meta_name, language, body, header, variables, meta_components, file_path, file_type FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
       [template_id, tenantId],
     );
     const tpl = tplRes.rows[0];
     if (!tpl?.meta_name) { res.status(400).json({ error: 'Template not found or not synced to Meta' }); return; }
+
+    // Upload media header if template has DOCUMENT/IMAGE/VIDEO header
+    const uploadedFile = req.file ? { buffer: req.file.buffer, mimetype: req.file.mimetype } : null;
+    let mediaHeaderId = await resolveMediaHeader(phone_number_id, token, tpl.meta_components, tpl.file_path, tpl.file_type, uploadedFile);
+    const mediaFormat = getMediaHeaderFormat(tpl.meta_components);
+    if (mediaFormat && !mediaHeaderId) {
+      res.status(400).json({ error: `This template requires a ${mediaFormat} file for the header. Please upload one.` }); return;
+    }
+    // Save uploaded file to template record for future sends
+    if (uploadedFile && !tpl.file_path) {
+      const dir = path.join(process.cwd(), 'uploads', 'templates');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const ext = uploadedFile.mimetype.split('/')[1] || 'bin';
+      const fp = path.join('uploads', 'templates', `${template_id}.${ext}`);
+      fs.writeFileSync(path.join(process.cwd(), fp), uploadedFile.buffer);
+      await query('UPDATE templates SET file_path=$1, file_type=$2 WHERE id=$3::uuid', [fp, uploadedFile.mimetype, template_id]);
+    }
 
     // Fetch lead info for variable interpolation
     let leadCtx: { name?: string | null; phone?: string | null; email?: string | null } = { phone: phone.trim() };
@@ -1320,7 +1441,7 @@ router.post('/waba-single-send', checkPermission('inbox:send'), async (req: Auth
     }
 
     // Build components using saved var_mapping (handles body, header, and button URL variables)
-    const autoComponents = buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx, tpl.header, tpl.meta_components);
+    const autoComponents = buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx, tpl.header, tpl.meta_components, mediaHeaderId);
 
     // Apply manual template_params overrides (from Single Send UI)
     if (template_params && typeof template_params === 'object') {
@@ -1412,16 +1533,16 @@ router.post('/waba-single-send', checkPermission('inbox:send'), async (req: Auth
 });
 
 // POST /api/conversations/broadcast — send a WABA template to multiple leads
-router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+router.post('/broadcast', checkPermission('inbox:send'), upload.single('header_file'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
-  const { template_id, lead_ids, template_params, filters, name: customName, scheduled_at } = req.body as {
-    template_id: string;
-    lead_ids: string[];
-    template_params?: Record<string, Array<{ type: string; text: string }>>;
-    filters?: Record<string, any>;
-    name?: string;
-    scheduled_at?: string;
-  };
+  // When sent as FormData, JSON fields come as strings
+  const parseField = (v: any) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch { return v; } })() : v;
+  const template_id = req.body.template_id as string;
+  const lead_ids = parseField(req.body.lead_ids) as string[];
+  const template_params = parseField(req.body.template_params) as Record<string, Array<{ type: string; text: string }>> | undefined;
+  const filters = parseField(req.body.filters) as Record<string, any> | undefined;
+  const customName = req.body.name as string | undefined;
+  const scheduled_at = req.body.scheduled_at as string | undefined;
 
   if (!template_id || !lead_ids?.length) {
     res.status(400).json({ error: 'template_id and lead_ids are required' }); return;
@@ -1442,7 +1563,7 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
 
     // Get template
     const tplRes = await query(
-      `SELECT id, name, meta_name, language, body, header, footer, variables, meta_components FROM templates WHERE id=$1::uuid AND tenant_id=$2 AND template_type='waba'`,
+      `SELECT id, name, meta_name, language, body, header, footer, variables, meta_components, file_path, file_type FROM templates WHERE id=$1::uuid AND tenant_id=$2 AND template_type='waba'`,
       [template_id, tenantId],
     );
     const tpl = tplRes.rows[0];
@@ -1490,6 +1611,23 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
     });
     const dupCount = leadsRes.rows.length - dedupedLeads.length;
 
+    // Upload media header once if template has DOCUMENT/IMAGE/VIDEO header
+    const bcUploadedFile = req.file ? { buffer: req.file.buffer, mimetype: req.file.mimetype } : null;
+    let mediaHeaderId = await resolveMediaHeader(phone_number_id, waToken, tpl.meta_components, tpl.file_path, tpl.file_type, bcUploadedFile);
+    const bcMediaFormat = getMediaHeaderFormat(tpl.meta_components);
+    if (bcMediaFormat && !mediaHeaderId) {
+      res.status(400).json({ error: `This template requires a ${bcMediaFormat} file for the header. Please upload one.` }); return;
+    }
+    // Save uploaded file to template record for future retries/scheduled sends
+    if (bcUploadedFile && !tpl.file_path) {
+      const dir = path.join(process.cwd(), 'uploads', 'templates');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const ext = bcUploadedFile.mimetype.split('/')[1] || 'bin';
+      const fp = path.join('uploads', 'templates', `${template_id}.${ext}`);
+      fs.writeFileSync(path.join(process.cwd(), fp), bcUploadedFile.buffer);
+      await query('UPDATE templates SET file_path=$1, file_type=$2 WHERE id=$3::uuid', [fp, bcUploadedFile.mimetype, template_id]);
+    }
+
     let sent = 0, failed = 0, skipped = dupCount; // count duplicates as skipped
     const errors: string[] = [];
     if (dupCount > 0) errors.push(`${dupCount} duplicate phone number(s) skipped`);
@@ -1512,7 +1650,7 @@ router.post('/broadcast', checkPermission('inbox:send'), async (req: AuthRequest
         // Use explicit params if provided, else build from saved var_mapping per-lead
         const resolvedComps = hasExplicitParams
           ? interpolateComponents(explicitComponents as any, leadCtx)
-          : buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx, tpl.header, tpl.meta_components);
+          : buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx, tpl.header, tpl.meta_components, mediaHeaderId);
         const payload: any = {
           messaging_product: 'whatsapp',
           to: lead.phone.replace(/\D/g, ''),
@@ -1631,13 +1769,20 @@ async function processScheduledBroadcasts() {
 
       // Get template
       const tplRes = await query(
-        `SELECT meta_name, language, body, header, variables, meta_components FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid`,
+        `SELECT meta_name, language, body, header, variables, meta_components, file_path, file_type FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid`,
         [bc.template_id, bc.tenant_id],
       );
       const tpl = tplRes.rows[0];
       if (!tpl?.meta_name) {
         await query(`UPDATE broadcasts SET status='failed', error_details='["Template not found"]'::jsonb, completed_at=NOW() WHERE id=$1::uuid`, [bc.id]);
         continue;
+      }
+
+      // Upload media header once if template has DOCUMENT/IMAGE/VIDEO header
+      let schedMediaHeaderId: string | null = null;
+      const schedMediaFmt = getMediaHeaderFormat(tpl.meta_components);
+      if (schedMediaFmt && tpl.file_path) {
+        schedMediaHeaderId = await uploadMediaToMeta(phone_number_id, waToken, tpl.file_path, tpl.file_type || 'application/octet-stream');
       }
 
       // Fetch leads
@@ -1653,7 +1798,7 @@ async function processScheduledBroadcasts() {
         if (!lead.phone) { skipped++; continue; }
         try {
           const leadCtx = { name: lead.name, phone: lead.phone, email: lead.email };
-          const resolvedComps = buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx, tpl.header, tpl.meta_components);
+          const resolvedComps = buildComponentsFromMapping(tpl.body ?? '', tpl.variables, leadCtx, tpl.header, tpl.meta_components, schedMediaHeaderId);
           const payload: any = {
             messaging_product: 'whatsapp',
             to: lead.phone.replace(/\D/g, ''),

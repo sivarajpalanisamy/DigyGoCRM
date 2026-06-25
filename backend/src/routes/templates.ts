@@ -746,7 +746,7 @@ router.post('/:id/test-send', checkPermission('automation_templates:manage'), as
 
   try {
     const tplRes = await query(
-      'SELECT meta_name, language, body, header, variables, meta_components FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+      'SELECT meta_name, language, body, header, variables, meta_components, file_path, file_type FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
       [req.params.id, tenantId],
     );
     const tpl = tplRes.rows[0];
@@ -775,8 +775,35 @@ router.post('/:id/test-send', checkPermission('automation_templates:manage'), as
 
     const components: any[] = [];
 
-    // Header variables
-    if (tpl.header) {
+    // Detect media header (DOCUMENT/IMAGE/VIDEO) from meta_components
+    const metaCompsRaw = typeof tpl.meta_components === 'string' ? (() => { try { return JSON.parse(tpl.meta_components); } catch { return null; } })() : tpl.meta_components;
+    const metaHeaderComp = Array.isArray(metaCompsRaw) ? metaCompsRaw.find((c: any) => c.type === 'HEADER') : null;
+    const mediaFmt = metaHeaderComp ? (metaHeaderComp.format ?? '').toUpperCase() : '';
+
+    if (['DOCUMENT', 'IMAGE', 'VIDEO'].includes(mediaFmt) && tpl.file_path) {
+      // Upload file to Meta Media API for media header
+      const FormData = (await import('form-data')).default;
+      const fullPath = path.resolve(process.cwd(), tpl.file_path);
+      if (fs.existsSync(fullPath)) {
+        const form = new FormData();
+        form.append('file', fs.createReadStream(fullPath));
+        form.append('messaging_product', 'whatsapp');
+        form.append('type', tpl.file_type || 'application/octet-stream');
+        const mediaResp = await fetch(`https://graph.facebook.com/v21.0/${phone_number_id}/media`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, ...form.getHeaders() },
+          body: form as any,
+        });
+        const mediaJson = await mediaResp.json() as any;
+        if (mediaJson.id) {
+          const fmt = mediaFmt.toLowerCase();
+          const param: any = { type: fmt };
+          param[fmt] = { id: mediaJson.id };
+          components.push({ type: 'header', parameters: [param] });
+        }
+      }
+    } else if (tpl.header) {
+      // Text header variables
       const headerNums = extractVarNums(tpl.header);
       if (headerNums.length > 0) {
         components.push({
@@ -795,9 +822,8 @@ router.post('/:id/test-send', checkPermission('automation_templates:manage'), as
     }
 
     // Button URL variables
-    const metaComps = typeof tpl.meta_components === 'string' ? (() => { try { return JSON.parse(tpl.meta_components); } catch { return null; } })() : tpl.meta_components;
-    if (Array.isArray(metaComps)) {
-      const buttonsComp = metaComps.find((c: any) => c.type === 'BUTTONS');
+    if (Array.isArray(metaCompsRaw)) {
+      const buttonsComp = metaCompsRaw.find((c: any) => c.type === 'BUTTONS');
       if (buttonsComp?.buttons) {
         (buttonsComp.buttons as any[]).forEach((btn: any, idx: number) => {
           if (btn.type === 'URL' && btn.url && /\{\{\d+\}\}/.test(btn.url)) {

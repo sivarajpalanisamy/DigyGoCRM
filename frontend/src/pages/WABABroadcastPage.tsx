@@ -3,7 +3,7 @@ import {
   Send, Search, Loader2, X, Check, Users, Megaphone, Calendar,
   Filter, ChevronRight, ArrowLeft, Plus, RefreshCw, CheckCircle2,
   AlertTriangle, Eye, Clock, Mail, MailCheck, MailX, ChevronDown,
-  Download, Copy, RotateCcw,
+  Download, Copy, RotateCcw, Upload, FileText, Image, Video,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,8 @@ interface Template {
   header?: string;
   footer?: string;
   status: string;
+  meta_components?: any;
+  file_path?: string | null;
 }
 
 interface Pipeline { id: string; name: string; stages: { id: string; name: string }[]; }
@@ -132,6 +134,21 @@ export default function WABABroadcastPage() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<BroadcastResult | null>(null);
   const [scheduledAt, setScheduledAt] = useState('');
+  const [headerFile, setHeaderFile] = useState<File | null>(null);
+
+  // Detect media header format for selected template
+  const mediaHeaderFormat = useMemo(() => {
+    if (!selectedTemplate?.meta_components) return null;
+    const comps = typeof selectedTemplate.meta_components === 'string'
+      ? (() => { try { return JSON.parse(selectedTemplate.meta_components); } catch { return null; } })()
+      : selectedTemplate.meta_components;
+    if (!Array.isArray(comps)) return null;
+    const hdr = comps.find((c: any) => c.type === 'HEADER');
+    if (!hdr) return null;
+    const fmt = (hdr.format ?? '').toUpperCase();
+    return ['DOCUMENT', 'IMAGE', 'VIDEO'].includes(fmt) ? fmt.toLowerCase() : null;
+  }, [selectedTemplate]);
+  const needsHeaderFile = mediaHeaderFormat && !selectedTemplate?.file_path;
 
   // ── Load broadcasts list ──
   const fetchBroadcasts = () => {
@@ -221,16 +238,37 @@ export default function WABABroadcastPage() {
 
   const handleBroadcast = async () => {
     if (!selectedTemplate || selectedIds.size === 0) return;
+    if (needsHeaderFile && !headerFile) { toast.error(`Upload a ${mediaHeaderFormat} file for the template header`); return; }
     setSending(true);
     setResult(null);
     try {
-      const res = await api.post<BroadcastResult>('/api/conversations/broadcast', {
-        template_id: selectedTemplate.id,
-        lead_ids: Array.from(selectedIds),
-        name: broadcastName.trim() || undefined,
-        filters: { pipeline: filterPipeline, stage: filterStage, tag: filterTag, group: filterGroup, from_date: filterFromDate, to_date: filterToDate },
-        scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
-      });
+      let res: BroadcastResult;
+      if (headerFile || mediaHeaderFormat) {
+        // Use FormData for multipart upload
+        const fd = new FormData();
+        fd.append('template_id', selectedTemplate.id);
+        fd.append('lead_ids', JSON.stringify(Array.from(selectedIds)));
+        if (broadcastName.trim()) fd.append('name', broadcastName.trim());
+        fd.append('filters', JSON.stringify({ pipeline: filterPipeline, stage: filterStage, tag: filterTag, group: filterGroup, from_date: filterFromDate, to_date: filterToDate }));
+        if (scheduledAt) fd.append('scheduled_at', new Date(scheduledAt).toISOString());
+        if (headerFile) fd.append('header_file', headerFile);
+        const raw = await fetch('/api/conversations/broadcast', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('dg_tok') ?? ''}` },
+          body: fd,
+        });
+        const json = await raw.json();
+        if (!raw.ok) throw new Error(json.error ?? 'Broadcast failed');
+        res = json;
+      } else {
+        res = await api.post<BroadcastResult>('/api/conversations/broadcast', {
+          template_id: selectedTemplate.id,
+          lead_ids: Array.from(selectedIds),
+          name: broadcastName.trim() || undefined,
+          filters: { pipeline: filterPipeline, stage: filterStage, tag: filterTag, group: filterGroup, from_date: filterFromDate, to_date: filterToDate },
+          scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+        });
+      }
       setResult(res);
       setStep('confirm');
     } catch (e: any) {
@@ -242,7 +280,7 @@ export default function WABABroadcastPage() {
 
   const resetWizard = () => {
     setStep('leads'); setSelectedIds(new Set()); setSelectedTemplate(null); setResult(null);
-    setBroadcastName(''); setScheduledAt(''); clearFilters();
+    setBroadcastName(''); setScheduledAt(''); setHeaderFile(null); clearFilters();
   };
 
   const goBackToList = () => {
@@ -516,6 +554,38 @@ export default function WABABroadcastPage() {
                 {selectedTemplate.header && <p className="text-sm font-bold text-[#1c1410]">{selectedTemplate.header}</p>}
                 <p className="text-sm text-[#4a3c30] whitespace-pre-line">{selectedTemplate.body}</p>
                 {selectedTemplate.footer && <p className="text-xs text-[#7a6b5c] italic">{selectedTemplate.footer}</p>}
+                {/* Media header file upload */}
+                {mediaHeaderFormat && (
+                  <div className="pt-2 border-t border-emerald-200">
+                    <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      {mediaHeaderFormat === 'document' && <FileText className="w-3.5 h-3.5" />}
+                      {mediaHeaderFormat === 'image' && <Image className="w-3.5 h-3.5" />}
+                      {mediaHeaderFormat === 'video' && <Video className="w-3.5 h-3.5" />}
+                      Header {mediaHeaderFormat} {needsHeaderFile ? '(required)' : '(stored)'}
+                    </p>
+                    {needsHeaderFile ? (
+                      <label className={cn(
+                        'flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-3 cursor-pointer transition-colors',
+                        headerFile ? 'border-emerald-400 bg-emerald-100' : 'border-emerald-300 hover:border-emerald-400 bg-white',
+                      )}>
+                        <Upload className="w-4 h-4 text-emerald-600" />
+                        <span className="text-[12px] text-emerald-800">
+                          {headerFile ? headerFile.name : `Upload ${mediaHeaderFormat} file…`}
+                        </span>
+                        <input type="file" className="hidden"
+                          accept={mediaHeaderFormat === 'image' ? 'image/*' : mediaHeaderFormat === 'video' ? 'video/*' : '*/*'}
+                          onChange={(e) => setHeaderFile(e.target.files?.[0] ?? null)} />
+                        {headerFile && (
+                          <button className="ml-auto text-emerald-600 hover:text-red-500" onClick={(e) => { e.preventDefault(); setHeaderFile(null); }}>
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </label>
+                    ) : (
+                      <p className="text-[12px] text-emerald-700">File stored — will be sent automatically.</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             {/* Schedule option */}
