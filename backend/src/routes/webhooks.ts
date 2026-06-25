@@ -13,6 +13,22 @@ import https from 'https';
 
 const WA_MEDIA_DIR = process.env.WA_MEDIA_DIR || path.join(process.cwd(), 'wa_media');
 
+/** Log an activity to ALL leads matching a phone number (across pipelines) */
+async function logActivityToAllLeads(tenantId: string, phone: string, type: string, title: string, detail?: string | null) {
+  try {
+    const cleanDigits = phone.replace(/\D/g, '');
+    if (cleanDigits.length < 10) return;
+    await query(
+      `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+       SELECT id, $1::uuid, $3, $4, $5, NULL
+       FROM leads
+       WHERE tenant_id = $1::uuid AND is_deleted = FALSE
+         AND REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE '%' || RIGHT($2, 10)`,
+      [tenantId, cleanDigits, type, title, detail ?? null]
+    );
+  } catch { /* non-critical */ }
+}
+
 const router = Router();
 
 function graphGet(path: string, token: string): Promise<any> {
@@ -634,6 +650,10 @@ async function processWhatsAppMessage(payload: any) {
             ).catch(() => null)
           );
 
+          // Log inbound message to all leads with this phone
+          const msgPreview = content.length > 80 ? content.slice(0, 80) + '…' : content;
+          logActivityToAllLeads(tenantId, waPhone, 'wa_message_in', `WhatsApp received: ${msgPreview}`);
+
           // Fire template_button_clicked for Quick Reply button taps (msg.type === 'button')
           // and interactive button replies (msg.interactive?.button_reply)
           const buttonPayload = msg.button?.text ?? msg.button?.payload
@@ -657,6 +677,13 @@ async function processWhatsAppMessage(payload: any) {
               triggerWorkflows('template_button_clicked', lead, tenantId, 'webhook',
                 { triggerContext: { buttonPayload: String(buttonPayload), templateName, channel: 'whatsapp', messageBody: content, waPhone: wabaPhone } }
               ).catch(() => null)
+            );
+
+            // Log button click to all leads with this phone
+            logActivityToAllLeads(
+              tenantId, waPhone, 'wa_button_click',
+              `Button clicked: ${buttonPayload}`,
+              templateName ? `Template: ${templateName}` : null
             );
           }
         }

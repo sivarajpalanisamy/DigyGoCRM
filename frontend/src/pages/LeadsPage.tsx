@@ -16,7 +16,7 @@ import {
   Mail, Pencil, CheckSquare, RotateCcw, LayoutGrid, List, EyeOff, Eye,
   Star, ChevronRight, ArrowLeft, ArrowRight, Settings, Download, Package, Zap, Copy, ArrowUpDown, Layers,
   CalendarPlus, MoreHorizontal, UserX, ArrowLeftRight, UserCheck, UserPlus, Circle, Clock, Users, Smartphone,
-  PhoneIncoming, PhoneOutgoing, PhoneMissed, Play, Pause,
+  PhoneIncoming, PhoneOutgoing, PhoneMissed, Play, Pause, Send, Megaphone, MousePointerClick,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -2675,6 +2675,10 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
       case 'tag_added': return { Icon: Tag, bg: 'bg-pink-100', color: 'text-pink-600' };
       case 'assigned': return { Icon: UserCheck, bg: 'bg-teal-100', color: 'text-teal-600' };
       case 'created': return { Icon: UserPlus, bg: 'bg-orange-100', color: 'text-primary' };
+      case 'wa_broadcast': return { Icon: Megaphone, bg: 'bg-emerald-100', color: 'text-emerald-600' };
+      case 'wa_template_sent': return { Icon: Send, bg: 'bg-emerald-100', color: 'text-emerald-600' };
+      case 'wa_message_in': return { Icon: MessageCircle, bg: 'bg-emerald-100', color: 'text-emerald-600' };
+      case 'wa_button_click': return { Icon: MousePointerClick, bg: 'bg-violet-100', color: 'text-violet-600' };
       default: return { Icon: Circle, bg: 'bg-gray-100', color: 'text-gray-500' };
     }
   };

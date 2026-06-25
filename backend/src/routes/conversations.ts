@@ -1540,6 +1540,28 @@ router.post('/waba-single-send', checkPermission('inbox:send'), upload.single('h
       );
     }
 
+    // Log to activity timeline for all leads with this phone
+    if (leadId) {
+      await query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+         VALUES ($1, $2::uuid, 'wa_template_sent', $3, $4, $5)`,
+        [leadId, tenantId, `Template sent: ${tpl.name}`, `Template: ${tpl.meta_name}`, userId]
+      ).catch(() => null);
+    }
+    // Also log to other leads with same phone (different pipelines)
+    if (phone) {
+      const cleanDigits = phone.replace(/\D/g, '');
+      await query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+         SELECT id, $1::uuid, 'wa_template_sent', $3, $4, $5
+         FROM leads
+         WHERE tenant_id = $1::uuid AND is_deleted = FALSE
+           AND ($6::uuid IS NULL OR id != $6::uuid)
+           AND REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE '%' || RIGHT($2, 10)`,
+        [tenantId, cleanDigits, `Template sent: ${tpl.name}`, `Template: ${tpl.meta_name}`, userId, leadId]
+      ).catch(() => null);
+    }
+
     res.json({ success: true, wamid, conversation_id: convId });
   } catch (err: any) {
     console.error('[WABA single send]', err);
@@ -1713,6 +1735,16 @@ router.post('/broadcast', checkPermission('inbox:send'), upload.single('header_f
             `UPDATE conversations SET last_message=$1, last_message_at=NOW() WHERE id=$2`,
             [msgBody, convId],
           );
+          // Log to activity timeline for this lead + all other leads with same phone
+          const cleanDigits = lead.phone.replace(/\D/g, '');
+          await query(
+            `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+             SELECT id, $1::uuid, 'wa_broadcast', $3, $4, $5
+             FROM leads
+             WHERE tenant_id = $1::uuid AND is_deleted = FALSE
+               AND REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE '%' || RIGHT($2, 10)`,
+            [tenantId, cleanDigits, `Broadcast sent: ${tpl.name}`, `Template: ${tpl.meta_name}`, userId]
+          ).catch(() => null);
         }
         // Small delay to avoid rate limiting
         if (dedupedLeads.length > 10) await new Promise((r) => setTimeout(r, 100));

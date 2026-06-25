@@ -2290,6 +2290,9 @@ export async function executeNodes(
       } else if (node.actionType === 'create_followup') {
         actType = 'followup';
         actTitle = message;
+      } else if (node.actionType === 'send_whatsapp') {
+        actType = 'wa_template_sent';
+        actTitle = message;
       }
       if (actType) {
         await query(
