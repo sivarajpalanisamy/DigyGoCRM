@@ -35,6 +35,7 @@ interface Template {
   status: string;
   meta_components?: any;
   file_path?: string | null;
+  file_name?: string | null;
 }
 
 interface Pipeline { id: string; name: string; stages: { id: string; name: string }[]; }
@@ -561,7 +562,7 @@ export default function WABABroadcastPage() {
                       {mediaHeaderFormat === 'document' && <FileText className="w-3.5 h-3.5" />}
                       {mediaHeaderFormat === 'image' && <Image className="w-3.5 h-3.5" />}
                       {mediaHeaderFormat === 'video' && <Video className="w-3.5 h-3.5" />}
-                      Header {mediaHeaderFormat} {needsHeaderFile ? '(required)' : '(stored)'}
+                      Header {mediaHeaderFormat} {needsHeaderFile ? '(required)' : headerFile ? '(replacing)' : '(stored)'}
                     </p>
                     {needsHeaderFile ? (
                       <label className={cn(
@@ -581,8 +582,27 @@ export default function WABABroadcastPage() {
                           </button>
                         )}
                       </label>
+                    ) : headerFile ? (
+                      <div className="flex items-center gap-3 border border-emerald-300 bg-emerald-50 rounded-xl px-4 py-3">
+                        <Upload className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="text-[12px] text-emerald-800 truncate flex-1">{headerFile.name}</span>
+                        <button className="text-emerald-600 hover:text-red-500 shrink-0" onClick={() => setHeaderFile(null)}>
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     ) : (
-                      <p className="text-[12px] text-emerald-700">File stored — will be sent automatically.</p>
+                      <div className="flex items-center gap-3 border border-emerald-200 bg-emerald-50/50 rounded-xl px-4 py-3">
+                        <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="text-[12px] text-emerald-700 truncate flex-1">
+                          {selectedTemplate?.file_name || 'Saved file'} — will be sent automatically
+                        </span>
+                        <label className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 cursor-pointer shrink-0">
+                          Replace
+                          <input type="file" className="hidden"
+                            accept={mediaHeaderFormat === 'image' ? 'image/*' : mediaHeaderFormat === 'video' ? 'video/*' : '*/*'}
+                            onChange={(e) => setHeaderFile(e.target.files?.[0] ?? null)} />
+                        </label>
+                      </div>
                     )}
                   </div>
                 )}
