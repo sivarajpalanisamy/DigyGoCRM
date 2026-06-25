@@ -1478,7 +1478,7 @@ export async function executeNodes(
           let sentBody = '';
           if (tplId) {
             const tplRes = await query(
-              'SELECT meta_name, language, body, header, meta_components, file_path, file_type FROM templates WHERE id=$1::uuid AND tenant_id=$2',
+              'SELECT meta_name, language, body, header, meta_components, file_path, file_type, file_name FROM templates WHERE id=$1::uuid AND tenant_id=$2',
               [tplId, tenantId]
             );
             const tpl = tplRes.rows[0];
@@ -1517,6 +1517,9 @@ export async function executeNodes(
                     const fmt = hdrFmt.toLowerCase();
                     const param: any = { type: fmt };
                     param[fmt] = { id: mediaJson.id };
+                    if (fmt === 'document' && tpl.file_name) {
+                      param[fmt].filename = tpl.file_name;
+                    }
                     tplComponents.push({ type: 'header', parameters: [param] });
                   }
                 }

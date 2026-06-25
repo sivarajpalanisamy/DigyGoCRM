@@ -806,7 +806,7 @@ router.post('/:id/test-send', checkPermission('automation_templates:manage'), as
         if (mediaJson.id) {
           const fmt = mediaFmt.toLowerCase();
           const param: any = { type: fmt };
-          param[fmt] = { id: mediaJson.id };
+          param[fmt] = { id: mediaJson.id, ...(fmt === 'document' && tpl.file_name ? { filename: tpl.file_name } : {}) };
           components.push({ type: 'header', parameters: [param] });
         }
       }
