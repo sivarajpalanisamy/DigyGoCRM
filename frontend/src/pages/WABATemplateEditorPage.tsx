@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
-  ArrowLeft, ChevronRight, ChevronDown, Plus, X, Loader2, Check,
+  ArrowLeft, ChevronRight, ChevronDown, Plus, X, Loader2, Check, Send,
   Upload, Paperclip, FileText, Image as ImageIcon, Film, Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ interface WABAButton { id: string; type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER';
 interface Template {
   id: string; name: string; template_type: string; category: string; language: string;
   status: string; body: string; header?: string | null; footer?: string | null;
-  buttons: WABAButton[] | string; meta_template_id?: string | null;
+  buttons: WABAButton[] | string; meta_template_id?: string | null; meta_name?: string | null;
   variables?: any; file_path?: string | null; file_type?: string | null; file_name?: string | null;
   meta_components?: any;
 }
@@ -86,6 +86,7 @@ export default function WABATemplateEditorPage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [submitMeta, setSubmitMeta] = useState(!isEdit);
+  const [isMetaSynced, setIsMetaSynced] = useState(false);
   const [bodyExamples, setBodyExamples] = useState<Record<string, string>>({});
   const [testPhone, setTestPhone] = useState('');
   const [testSending, setTestSending] = useState(false);
@@ -201,6 +202,7 @@ export default function WABATemplateEditorPage() {
     setFooter(t.footer ?? '');
     setButtons(parseButtons(t.buttons));
     if (t.file_name) setExistingFile({ name: t.file_name });
+    if (t.meta_template_id) setIsMetaSynced(true);
     // Restore saved variable samples and mappings
     const vars = typeof t.variables === 'string' ? (() => { try { return JSON.parse(t.variables); } catch { return null; } })() : t.variables;
     if (vars) {
@@ -240,11 +242,11 @@ export default function WABATemplateEditorPage() {
   const del = (bid: string) => setButtons(buttons.filter((b) => b.id !== bid));
 
   // ── Save ──
-  const handleSave = async () => {
+  const handleSave = async (toMeta = false) => {
     if (!name.trim()) { toast.error('Template name required'); return; }
     if (!body.trim()) { toast.error('Body text required'); return; }
     if (['image', 'video', 'document'].includes(headerType) && !file && !existingFile) {
-      if (submitMeta && !isEdit) { toast.error(`Upload a ${headerType} file for the header before submitting to Meta`); return; }
+      if (toMeta || (submitMeta && !isEdit)) { toast.error(`Upload a ${headerType} file for the header before submitting to Meta`); return; }
     }
     const activeButtons = buttons.filter((b) => b.label.trim());
     const hasQR = activeButtons.some((b) => b.type === 'QUICK_REPLY');
@@ -257,7 +259,8 @@ export default function WABATemplateEditorPage() {
 
     setSaving(true);
     try {
-      if (submitMeta && !isEdit) {
+      const shouldSubmitMeta = toMeta || (submitMeta && !isEdit);
+      if (shouldSubmitMeta) {
         const metaButtons = activeButtons.map((b) => ({
           type: b.type, text: b.label,
           ...(b.type === 'URL' ? { url: b.value } : {}),
@@ -274,6 +277,10 @@ export default function WABATemplateEditorPage() {
           body_examples: bodyExampleValues.length ? bodyExampleValues : undefined,
           variables: { body_examples: bodyExamples, var_mapping: varMapping, header_type: headerType },
         };
+        // Determine endpoint: resubmit for existing Meta templates, submit-to-meta for new
+        const endpoint = isEdit && isMetaSynced
+          ? `/api/templates/${id}/resubmit-to-meta`
+          : '/api/templates/submit-to-meta';
         // For media headers, use FormData to include the file
         if ((headerType === 'image' || headerType === 'video' || headerType === 'document') && file) {
           const fd = new FormData();
@@ -282,7 +289,7 @@ export default function WABATemplateEditorPage() {
           });
           fd.append('header_file', file);
           const tok = getAccessToken();
-          const resp = await fetch(`${BASE}/api/templates/submit-to-meta`, {
+          const resp = await fetch(`${BASE}${endpoint}`, {
             method: 'POST',
             headers: tok ? { Authorization: `Bearer ${tok}` } : {},
             credentials: 'include', body: fd,
@@ -290,7 +297,7 @@ export default function WABATemplateEditorPage() {
           const data = await resp.json();
           if (!resp.ok) throw new Error(data.error || 'Submit failed');
         } else {
-          await api.post('/api/templates/submit-to-meta', submitPayload);
+          await api.post(endpoint, submitPayload);
         }
         toast.success('Template submitted to Meta for approval');
       } else {
@@ -315,7 +322,7 @@ export default function WABATemplateEditorPage() {
         });
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.error || 'Request failed');
-        toast.success(isEdit ? 'Template updated' : 'Template saved locally');
+        toast.success(isEdit ? 'Template updated locally' : 'Template saved locally');
       }
       navigate('/automation/templates?tab=waba');
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
@@ -400,14 +407,32 @@ export default function WABATemplateEditorPage() {
           >
             Cancel
           </Button>
-          <Button
-            size="sm" onClick={handleSave} disabled={saving}
-            className="h-8 text-[13px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
-          >
-            {saving
-              ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving...</>
-              : <><Check className="w-3.5 h-3.5 mr-1.5" />{isEdit ? 'Save Changes' : submitMeta ? 'Submit to Meta' : 'Save Locally'}</>}
-          </Button>
+          {isEdit && isMetaSynced ? (
+            <>
+              <Button
+                variant="outline" size="sm" onClick={() => handleSave(false)} disabled={saving}
+                className="h-8 text-[13px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
+              >
+                {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1.5" />}
+                Save Locally
+              </Button>
+              <Button
+                size="sm" onClick={() => handleSave(true)} disabled={saving}
+                className="h-8 text-[13px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
+              >
+                {saving ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Submitting...</> : <><Send className="w-3.5 h-3.5 mr-1.5" />Submit to Meta</>}
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="sm" onClick={() => handleSave(false)} disabled={saving}
+              className="h-8 text-[13px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
+            >
+              {saving
+                ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving...</>
+                : <><Check className="w-3.5 h-3.5 mr-1.5" />{submitMeta ? 'Submit to Meta' : 'Save Locally'}</>}
+            </Button>
+          )}
         </div>
       </header>
 

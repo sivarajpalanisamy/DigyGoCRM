@@ -108,7 +108,7 @@ const statusColor: Record<string, string> = {
   approved: 'bg-green-100 text-green-700',
   pending: 'bg-yellow-100 text-yellow-700',
   rejected: 'bg-red-100 text-red-700',
-  draft: 'bg-orange-100 text-orange-700',
+  draft: 'bg-amber-100 text-amber-700',
 };
 
 // ── Shared file attachment picker ─────────────────────────────────────────────
@@ -928,7 +928,9 @@ export default function AutomationTemplatesPage() {
                           <Badge className={cn('border-0 text-xs', catColor[t.category] ?? 'bg-gray-100 text-gray-700')}>{t.category}</Badge>
                         )}
                         {tab === 'waba' && (
-                          <Badge className={cn('border-0 text-xs capitalize', statusColor[t.status] ?? 'bg-gray-100 text-gray-700')}>{t.status}</Badge>
+                          <Badge className={cn('border-0 text-xs capitalize', statusColor[t.status] ?? 'bg-gray-100 text-gray-700')}>
+                            {t.status === 'draft' && t.meta_name ? 'Modified' : t.status === 'pending' ? 'Approval Pending' : t.status}
+                          </Badge>
                         )}
                         {tab === 'waba' && t.language && <span className="text-[11px] text-[#7a6b5c] uppercase">{t.language}</span>}
                         {t.file_name && (

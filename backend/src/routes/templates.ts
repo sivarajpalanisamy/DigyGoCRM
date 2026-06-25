@@ -32,7 +32,7 @@ router.get('/', checkPermission('automation_templates:read'), async (req: AuthRe
     const result = await query(
       `SELECT id, name, template_type, category, language, status, subject,
               body, header, footer, buttons, variables,
-              meta_name, meta_components,
+              meta_name, meta_template_id, meta_components,
               file_path, file_type, file_name, created_at, updated_at
        FROM templates WHERE tenant_id=$1::uuid ORDER BY created_at DESC`,
       [req.user!.tenantId],
@@ -448,6 +448,139 @@ router.post('/submit-to-meta', checkPermission('automation_templates:manage'), u
   } catch (err: any) {
     console.error('[Template submit to Meta]', err?.message ?? err);
     res.status(500).json({ error: 'Failed to submit template' });
+  }
+});
+
+// POST /api/templates/:id/resubmit-to-meta — edit an existing Meta template and resubmit for approval
+router.post('/:id/resubmit-to-meta', checkPermission('automation_templates:manage'), upload.single('header_file'), async (req: AuthRequest, res: Response) => {
+  const tenantId = req.user!.tenantId!;
+  const { id } = req.params;
+  const raw = req.body;
+
+  try {
+    // Load existing template
+    const tplRes = await query(
+      'SELECT * FROM templates WHERE id=$1::uuid AND tenant_id=$2::uuid',
+      [id, tenantId],
+    );
+    if (!tplRes.rows[0]) { res.status(404).json({ error: 'Template not found' }); return; }
+    const ex = tplRes.rows[0];
+    if (!ex.meta_template_id) { res.status(400).json({ error: 'Template has no Meta ID — use submit-to-meta instead' }); return; }
+
+    // Load WABA credentials
+    const wabaRes = await query(
+      'SELECT waba_id, access_token FROM waba_integrations WHERE tenant_id=$1::uuid AND is_active=TRUE LIMIT 1',
+      [tenantId],
+    );
+    if (!wabaRes.rows[0]) { res.status(400).json({ error: 'WABA not connected' }); return; }
+    const { access_token: encToken } = wabaRes.rows[0];
+    const token = decrypt(encToken);
+
+    // Parse fields from request
+    const body = (raw.body as string) ?? ex.body;
+    const header = raw.header !== undefined ? (raw.header as string) : ex.header;
+    const footer = raw.footer !== undefined ? (raw.footer as string) : ex.footer;
+    const header_type = (raw.header_type as string) || 'none';
+    const buttons: Array<{ type: string; text: string; url?: string; phone_number?: string }> | undefined =
+      typeof raw.buttons === 'string' ? (() => { try { return JSON.parse(raw.buttons); } catch { return undefined; } })() : raw.buttons;
+    const body_examples: string[] | undefined =
+      typeof raw.body_examples === 'string' ? (() => { try { return JSON.parse(raw.body_examples); } catch { return undefined; } })() : raw.body_examples;
+    const variables: any =
+      typeof raw.variables === 'string' ? (() => { try { return JSON.parse(raw.variables); } catch { return null; } })() : raw.variables;
+
+    // Build Meta components
+    const components: any[] = [];
+
+    if (header_type === 'text' && header?.trim()) {
+      components.push({ type: 'HEADER', format: 'TEXT', text: header.trim() });
+    } else if (['image', 'video', 'document'].includes(header_type)) {
+      const format = header_type.toUpperCase();
+      const headerComp: any = { type: 'HEADER', format };
+      if (req.file) {
+        try {
+          const appId = process.env.META_APP_ID;
+          if (!appId) throw new Error('META_APP_ID not configured');
+          const handle = await uploadMediaToMeta(token, appId, req.file.buffer, req.file.mimetype, req.file.originalname);
+          headerComp.example = { header_handle: [handle] };
+        } catch (uploadErr: any) {
+          console.error('[WABA resubmit] Media upload error:', uploadErr.message);
+          res.status(400).json({ error: `Media upload failed: ${uploadErr.message}` });
+          return;
+        }
+      }
+      components.push(headerComp);
+    }
+
+    const bodyComponent: any = { type: 'BODY', text: body.trim() };
+    if (body_examples?.length) {
+      bodyComponent.example = { body_text: [body_examples] };
+    }
+    components.push(bodyComponent);
+
+    if (footer?.trim()) {
+      components.push({ type: 'FOOTER', text: footer.trim() });
+    }
+
+    if (buttons?.length) {
+      const metaButtons = buttons.map((b) => {
+        if (b.type === 'QUICK_REPLY') return { type: 'QUICK_REPLY', text: b.text };
+        if (b.type === 'URL') return { type: 'URL', text: b.text, url: b.url };
+        if (b.type === 'PHONE_NUMBER') return { type: 'PHONE_NUMBER', text: b.text, phone_number: b.phone_number };
+        return { type: 'QUICK_REPLY', text: b.text };
+      });
+      components.push({ type: 'BUTTONS', buttons: metaButtons });
+    }
+
+    // Meta edit API: POST /{meta_template_id}
+    const payload: any = { components };
+    // Category can only be changed for UTILITY templates
+    if (raw.category) payload.category = (raw.category as string).toUpperCase();
+
+    console.log('[WABA resubmit] Editing template', ex.meta_template_id, JSON.stringify(payload));
+    const metaResp = await graphPost(`/${ex.meta_template_id}`, token, payload);
+
+    if (metaResp.error) {
+      console.error('[WABA resubmit] Meta error:', JSON.stringify(metaResp.error));
+      const detail = metaResp.error.error_user_msg || metaResp.error.message || 'Unknown error';
+      res.status(400).json({ error: `Meta API: ${detail}` });
+      return;
+    }
+
+    // Determine status from Meta response — metaResp.success means edit accepted
+    const newStatus = metaResp.success ? 'pending' : 'draft';
+
+    // Update local DB
+    const result = await query(
+      `UPDATE templates SET
+         body=$1, header=$2, footer=$3, buttons=$4, variables=$5,
+         meta_components=$6, status=$7, updated_at=NOW()
+       WHERE id=$8::uuid AND tenant_id=$9::uuid
+       RETURNING *`,
+      [
+        body.trim(), header?.trim() ?? null, footer?.trim() ?? null,
+        JSON.stringify(buttons ?? []), JSON.stringify(variables ?? null),
+        JSON.stringify(components), newStatus,
+        id, tenantId,
+      ],
+    );
+
+    // Also save file locally if uploaded
+    if (req.file) {
+      const dir = path.join(TEMPLATES_DIR, tenantId);
+      fs.mkdirSync(dir, { recursive: true });
+      const ext = path.extname(req.file.originalname) || '';
+      const stored = `${id}${ext}`;
+      fs.writeFileSync(path.join(dir, stored), req.file.buffer);
+      await query(
+        `UPDATE templates SET file_path=$1, file_type=$2, file_name=$3 WHERE id=$4::uuid`,
+        [path.join('wa_media', 'tpl_files', tenantId, stored), req.file.mimetype, req.file.originalname, id],
+      );
+    }
+
+    res.json({ ...result.rows[0], status: newStatus });
+  } catch (err: any) {
+    console.error('[Template resubmit to Meta]', err?.message ?? err);
+    res.status(500).json({ error: 'Failed to resubmit template' });
   }
 });
 
