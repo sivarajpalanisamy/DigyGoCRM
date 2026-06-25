@@ -21,7 +21,7 @@ const WA_MEDIA_DIR = process.env.WA_MEDIA_DIR || path.join(process.cwd(), 'wa_me
 // Multer: store uploads in memory (max 25 MB — WA limit)
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 },
+  limits: { fileSize: 100 * 1024 * 1024 },
 });
 
 function sendWARequest(phoneNumberId: string, token: string, payload: object): Promise<any> {

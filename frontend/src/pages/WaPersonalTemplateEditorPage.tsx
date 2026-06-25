@@ -224,11 +224,14 @@ export default function WaPersonalTemplateEditorPage() {
     }, 0);
   };
 
-  const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20 MB — matches nginx client_max_body_size
-
   const handleFile = (f: File) => {
-    if (f.size > MAX_FILE_BYTES) {
-      toast.error(`File too large — maximum is 20 MB (your file is ${(f.size / 1024 / 1024).toFixed(1)} MB)`);
+    const type = f.type;
+    const maxMB = type.startsWith('image/') ? 5
+      : type.startsWith('video/') ? 16
+      : type.startsWith('audio/') ? 16
+      : 100;
+    if (f.size > maxMB * 1024 * 1024) {
+      toast.error(`File too large — max ${maxMB} MB for ${type.startsWith('image/') ? 'images' : type.startsWith('video/') ? 'videos' : type.startsWith('audio/') ? 'audio' : 'documents'}`);
       return;
     }
     const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
@@ -260,7 +263,7 @@ export default function WaPersonalTemplateEditorPage() {
         credentials: 'include',
         body: fd,
       });
-      if (resp.status === 413) throw new Error('File too large — maximum upload size is 20 MB');
+      if (resp.status === 413) throw new Error('File too large — exceeds WhatsApp size limit');
       const isJson = resp.headers.get('content-type')?.includes('application/json');
       const data = isJson ? await resp.json() : null;
       if (!resp.ok) throw new Error(data?.error || `Save failed (${resp.status} ${resp.statusText})`);
@@ -520,7 +523,7 @@ export default function WaPersonalTemplateEditorPage() {
                     Drop file here or <span className="text-orange-600 underline underline-offset-2">browse</span>
                   </p>
                   <p className="text-[11px] text-[#7a6b5c] mt-1">
-                    Images · PDF · Word · Excel · Video · Max 20 MB
+                    Images (5 MB) · Video (16 MB) · Audio (16 MB) · Documents (100 MB)
                   </p>
                 </div>
                 <input

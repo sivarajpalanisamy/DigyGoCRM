@@ -750,9 +750,13 @@ export default function InboxPage() {
 
   const handleFileUpload = async (file: File) => {
     if (!selectedId || uploading) return;
-    const MAX_MB = 25;
-    if (file.size > MAX_MB * 1024 * 1024) {
-      toast.error(`File too large — max ${MAX_MB} MB`);
+    const type = file.type;
+    const maxMB = type.startsWith('image/') ? 5
+      : type.startsWith('video/') ? 16
+      : type.startsWith('audio/') ? 16
+      : 100; // documents
+    if (file.size > maxMB * 1024 * 1024) {
+      toast.error(`File too large — max ${maxMB} MB for ${type.startsWith('image/') ? 'images' : type.startsWith('video/') ? 'videos' : type.startsWith('audio/') ? 'audio' : 'documents'}`);
       return;
     }
     setUploading(true);

@@ -17,7 +17,7 @@ const TEMPLATES_DIR = process.env.WA_MEDIA_DIR
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 },
+  limits: { fileSize: 100 * 1024 * 1024 },
 });
 
 // GET /api/wa-personal-templates

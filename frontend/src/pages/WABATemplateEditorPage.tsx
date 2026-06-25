@@ -560,7 +560,15 @@ export default function WABATemplateEditorPage() {
                       <input
                         type="file" className="hidden"
                         accept={headerType === 'image' ? 'image/jpeg,image/png' : headerType === 'video' ? 'video/mp4' : '.pdf,.doc,.docx'}
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFile(f); setRemoveFile(false); } e.target.value = ''; }}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            const maxMB = headerType === 'image' ? 5 : headerType === 'video' ? 16 : 100;
+                            if (f.size > maxMB * 1024 * 1024) { toast.error(`File too large — max ${maxMB} MB for ${headerType}`); e.target.value = ''; return; }
+                            setFile(f); setRemoveFile(false);
+                          }
+                          e.target.value = '';
+                        }}
                       />
                     </label>
                     <p className="text-[10px] text-[#7a6b5c] mt-1.5">

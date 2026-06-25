@@ -143,7 +143,7 @@ function AttachRow({
         {picked && <button type="button" onClick={() => { setPicked(null); onFile(null); }} className="text-xs text-muted-foreground hover:underline">Clear</button>}
       </div>
       <input ref={ref} type="file" className="hidden" accept={accept} onChange={(e) => { const f = e.target.files?.[0] ?? null; setPicked(f); onFile(f); e.target.value = ''; }} />
-      <p className="text-xs text-muted-foreground mt-1">Max 25 MB.</p>
+      <p className="text-xs text-muted-foreground mt-1">Images (5 MB) · Video/Audio (16 MB) · Documents (100 MB)</p>
     </div>
   );
 }

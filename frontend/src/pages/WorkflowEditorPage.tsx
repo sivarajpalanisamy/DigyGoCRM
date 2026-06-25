@@ -1825,7 +1825,7 @@ function WaTemplatesModal({ onClose, onSelect }: { onClose: () => void; onSelect
                 {editFile && <button onClick={() => setEditFile(null)} className="text-xs text-muted-foreground hover:underline">Clear</button>}
               </div>
               <input ref={fileRef} type="file" className="hidden" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.mp4,.mp3" onChange={(e) => { setEditFile(e.target.files?.[0] ?? null); e.target.value = ''; }} />
-              <p className="text-xs text-muted-foreground mt-1">Supported: images, PDF, Word, Excel, PowerPoint, ZIP, video, audio. Max 25MB.</p>
+              <p className="text-xs text-muted-foreground mt-1">Images (5 MB) · Video/Audio (16 MB) · Documents (100 MB)</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" size="sm" onClick={() => setEditItem(null)}>Cancel</Button>
