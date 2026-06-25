@@ -1499,12 +1499,20 @@ export async function executeNodes(
                   form.append('file', fs.createReadStream(fullPath));
                   form.append('messaging_product', 'whatsapp');
                   form.append('type', tpl.file_type || 'application/octet-stream');
-                  const mediaResp = await fetch(`https://graph.facebook.com/v21.0/${phone_number_id}/media`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${waToken}`, ...form.getHeaders() },
-                    body: form as any,
+                  const mediaJson = await new Promise<any>((resolve, reject) => {
+                    const req2 = https.request({
+                      hostname: 'graph.facebook.com',
+                      path: `/v21.0/${phone_number_id}/media`,
+                      method: 'POST',
+                      headers: { Authorization: `Bearer ${waToken}`, ...form.getHeaders() },
+                    }, (res2) => {
+                      let data = '';
+                      res2.on('data', (chunk: string) => { data += chunk; });
+                      res2.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON')); } });
+                    });
+                    req2.on('error', reject);
+                    form.pipe(req2);
                   });
-                  const mediaJson = await mediaResp.json() as any;
                   if (mediaJson.id) {
                     const fmt = hdrFmt.toLowerCase();
                     const param: any = { type: fmt };

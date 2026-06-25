@@ -789,12 +789,20 @@ router.post('/:id/test-send', checkPermission('automation_templates:manage'), as
         form.append('file', fs.createReadStream(fullPath));
         form.append('messaging_product', 'whatsapp');
         form.append('type', tpl.file_type || 'application/octet-stream');
-        const mediaResp = await fetch(`https://graph.facebook.com/v21.0/${phone_number_id}/media`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, ...form.getHeaders() },
-          body: form as any,
+        const mediaJson = await new Promise<any>((resolve, reject) => {
+          const req = https.request({
+            hostname: 'graph.facebook.com',
+            path: `/v21.0/${phone_number_id}/media`,
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, ...form.getHeaders() },
+          }, (res) => {
+            let data = '';
+            res.on('data', (chunk) => { data += chunk; });
+            res.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON')); } });
+          });
+          req.on('error', reject);
+          form.pipe(req);
         });
-        const mediaJson = await mediaResp.json() as any;
         if (mediaJson.id) {
           const fmt = mediaFmt.toLowerCase();
           const param: any = { type: fmt };

@@ -128,13 +128,25 @@ async function uploadMediaToMeta(
     form.append('file', fs.createReadStream(fullPath));
     form.append('messaging_product', 'whatsapp');
     form.append('type', mimeType);
-    const resp = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/media`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, ...form.getHeaders() },
-      body: form as any,
+
+    // Use https module (not fetch) for compatibility with form-data streams
+    const json = await new Promise<any>((resolve, reject) => {
+      const headers = { Authorization: `Bearer ${token}`, ...form.getHeaders() };
+      const req = https.request({
+        hostname: 'graph.facebook.com',
+        path: `/v21.0/${phoneNumberId}/media`,
+        method: 'POST',
+        headers,
+      }, (res) => {
+        let data = '';
+        res.on('data', (chunk) => { data += chunk; });
+        res.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON from Meta Media API')); } });
+      });
+      req.on('error', reject);
+      form.pipe(req);
     });
-    const json = await resp.json() as any;
-    if (json.id) return json.id;
+
+    if (json.id) { console.log('[uploadMediaToMeta] success, media_id:', json.id); return json.id; }
     console.error('[uploadMediaToMeta] error:', json.error ?? json);
     return null;
   } catch (err) {
@@ -1352,22 +1364,17 @@ async function resolveMediaHeader(
   const mediaFormat = getMediaHeaderFormat(metaComponents);
   if (!mediaFormat) return null;
 
-  // Priority 1: uploaded file from request
+  // Priority 1: uploaded file from request — save to temp file then use stream-based upload
   if (uploadedFile?.buffer) {
     try {
-      const FormData = (await import('form-data')).default;
-      const form = new FormData();
-      form.append('file', uploadedFile.buffer, { filename: 'header_media', contentType: uploadedFile.mimetype });
-      form.append('messaging_product', 'whatsapp');
-      form.append('type', uploadedFile.mimetype);
-      const resp = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/media`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, ...form.getHeaders() },
-        body: form as any,
-      });
-      const json = await resp.json() as any;
-      if (json.id) return json.id;
-      console.error('[resolveMediaHeader] upload error:', json.error ?? json);
+      const tmpDir = path.join(process.cwd(), 'uploads', 'tmp');
+      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+      const ext = uploadedFile.mimetype.split('/')[1] || 'bin';
+      const tmpPath = path.join(tmpDir, `header_${Date.now()}.${ext}`);
+      fs.writeFileSync(tmpPath, uploadedFile.buffer);
+      const mediaId = await uploadMediaToMeta(phoneNumberId, token, tmpPath, uploadedFile.mimetype);
+      try { fs.unlinkSync(tmpPath); } catch {} // cleanup temp file
+      return mediaId;
     } catch (err) { console.error('[resolveMediaHeader]', err); }
     return null;
   }
