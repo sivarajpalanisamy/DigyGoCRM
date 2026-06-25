@@ -2532,9 +2532,10 @@ export async function triggerWorkflows(
         const cfgPayload  = (triggerNode.config?.button_payload  as string) ?? '';
         const cfgTemplate = (triggerNode.config?.template_name   as string) ?? '';
         const cfgWaPhone  = (triggerNode.config?.wa_phone        as string) ?? '';
-        if (cfgPayload  && cfgPayload.toLowerCase() !== (ctx.buttonPayload ?? '').toLowerCase()) continue;
-        if (cfgTemplate && cfgTemplate.toLowerCase() !== (ctx.templateName ?? '').toLowerCase()) continue;
-        if (cfgWaPhone && ctx.waPhone && !ctx.waPhone.includes(cfgWaPhone.replace(/\D/g, ''))) continue;
+        console.log(`[WF] template_button_clicked filter: cfgPayload="${cfgPayload}" ctxPayload="${ctx.buttonPayload}" cfgTemplate="${cfgTemplate}" ctxTemplate="${ctx.templateName}" cfgWaPhone="${cfgWaPhone}" ctxWaPhone="${ctx.waPhone}"`);
+        if (cfgPayload  && cfgPayload.toLowerCase() !== (ctx.buttonPayload ?? '').toLowerCase()) { console.log('[WF] → skipped: payload mismatch'); continue; }
+        if (cfgTemplate && cfgTemplate.toLowerCase() !== (ctx.templateName ?? '').toLowerCase()) { console.log('[WF] → skipped: template name mismatch'); continue; }
+        if (cfgWaPhone && ctx.waPhone && !ctx.waPhone.replace(/\D/g, '').includes(cfgWaPhone.replace(/\D/g, ''))) { console.log('[WF] → skipped: wa_phone mismatch'); continue; }
       }
 
       if (triggerType === 'call_answered' || triggerType === 'call_missed') {
