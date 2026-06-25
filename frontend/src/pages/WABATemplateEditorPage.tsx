@@ -21,7 +21,86 @@ interface Template {
   meta_components?: any; last_meta_edit_at?: string | null;
 }
 
-const LANGUAGES = ['en', 'hi', 'ta', 'te', 'kn', 'mr'];
+const LANGUAGES: { code: string; name: string }[] = [
+  // Indian languages
+  { code: 'en', name: 'English' },
+  { code: 'en_US', name: 'English (US)' },
+  { code: 'en_GB', name: 'English (UK)' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'ta', name: 'Tamil' },
+  { code: 'te', name: 'Telugu' },
+  { code: 'kn', name: 'Kannada' },
+  { code: 'mr', name: 'Marathi' },
+  { code: 'bn', name: 'Bengali' },
+  { code: 'gu', name: 'Gujarati' },
+  { code: 'ml', name: 'Malayalam' },
+  { code: 'pa', name: 'Punjabi' },
+  { code: 'ur', name: 'Urdu' },
+  { code: 'as', name: 'Assamese' },
+  { code: 'or', name: 'Odia' },
+  // Middle East & Africa
+  { code: 'ar', name: 'Arabic' },
+  { code: 'he', name: 'Hebrew' },
+  { code: 'fa', name: 'Persian' },
+  { code: 'sw', name: 'Swahili' },
+  { code: 'zu', name: 'Zulu' },
+  { code: 'af', name: 'Afrikaans' },
+  { code: 'ha', name: 'Hausa' },
+  // European
+  { code: 'es', name: 'Spanish' },
+  { code: 'es_AR', name: 'Spanish (Argentina)' },
+  { code: 'es_MX', name: 'Spanish (Mexico)' },
+  { code: 'pt_BR', name: 'Portuguese (Brazil)' },
+  { code: 'pt_PT', name: 'Portuguese (Portugal)' },
+  { code: 'fr', name: 'French' },
+  { code: 'de', name: 'German' },
+  { code: 'it', name: 'Italian' },
+  { code: 'nl', name: 'Dutch' },
+  { code: 'pl', name: 'Polish' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'uk', name: 'Ukrainian' },
+  { code: 'cs', name: 'Czech' },
+  { code: 'ro', name: 'Romanian' },
+  { code: 'hu', name: 'Hungarian' },
+  { code: 'el', name: 'Greek' },
+  { code: 'bg', name: 'Bulgarian' },
+  { code: 'sr', name: 'Serbian' },
+  { code: 'hr', name: 'Croatian' },
+  { code: 'sk', name: 'Slovak' },
+  { code: 'sl', name: 'Slovenian' },
+  { code: 'da', name: 'Danish' },
+  { code: 'fi', name: 'Finnish' },
+  { code: 'nb', name: 'Norwegian' },
+  { code: 'sv', name: 'Swedish' },
+  { code: 'lt', name: 'Lithuanian' },
+  { code: 'lv', name: 'Latvian' },
+  { code: 'et', name: 'Estonian' },
+  { code: 'ca', name: 'Catalan' },
+  { code: 'ga', name: 'Irish' },
+  // East & Southeast Asia
+  { code: 'zh_CN', name: 'Chinese (Simplified)' },
+  { code: 'zh_TW', name: 'Chinese (Traditional)' },
+  { code: 'zh_HK', name: 'Chinese (Hong Kong)' },
+  { code: 'ja', name: 'Japanese' },
+  { code: 'ko', name: 'Korean' },
+  { code: 'th', name: 'Thai' },
+  { code: 'vi', name: 'Vietnamese' },
+  { code: 'id', name: 'Indonesian' },
+  { code: 'ms', name: 'Malay' },
+  { code: 'fil', name: 'Filipino' },
+  { code: 'km', name: 'Khmer' },
+  { code: 'lo', name: 'Lao' },
+  { code: 'my', name: 'Burmese' },
+  // Central Asia & Turkic
+  { code: 'tr', name: 'Turkish' },
+  { code: 'az', name: 'Azerbaijani' },
+  { code: 'uz', name: 'Uzbek' },
+  { code: 'kk', name: 'Kazakh' },
+  { code: 'ka', name: 'Georgian' },
+  // Other
+  { code: 'ne', name: 'Nepali' },
+  { code: 'si', name: 'Sinhala' },
+];
 const WABA_CATS: WABACategory[] = ['MARKETING', 'UTILITY', 'AUTHENTICATION'];
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
@@ -518,7 +597,7 @@ export default function WABATemplateEditorPage() {
                         value={language} onChange={(e) => setLanguage(e.target.value)}
                         className="w-full border border-orange-100 rounded-lg px-3 py-2.5 text-sm bg-[#fffbf7] focus:border-orange-300 outline-none appearance-none pr-8"
                       >
-                        {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
+                        {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.name} ({l.code})</option>)}
                       </select>
                       <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a6b5c] pointer-events-none" />
                     </div>

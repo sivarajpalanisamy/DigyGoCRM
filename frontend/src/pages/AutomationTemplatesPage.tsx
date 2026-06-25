@@ -98,7 +98,32 @@ async function fetchWaPersonalApi(url: string, method: string, body: FormData): 
   return data as WaPersonalTemplate;
 }
 
-const LANGUAGES = ['en', 'hi', 'ta', 'te', 'kn', 'mr'];
+const LANGUAGES: { code: string; name: string }[] = [
+  { code: 'en', name: 'English' }, { code: 'en_US', name: 'English (US)' }, { code: 'en_GB', name: 'English (UK)' },
+  { code: 'hi', name: 'Hindi' }, { code: 'ta', name: 'Tamil' }, { code: 'te', name: 'Telugu' },
+  { code: 'kn', name: 'Kannada' }, { code: 'mr', name: 'Marathi' }, { code: 'bn', name: 'Bengali' },
+  { code: 'gu', name: 'Gujarati' }, { code: 'ml', name: 'Malayalam' }, { code: 'pa', name: 'Punjabi' },
+  { code: 'ur', name: 'Urdu' }, { code: 'as', name: 'Assamese' }, { code: 'or', name: 'Odia' },
+  { code: 'ar', name: 'Arabic' }, { code: 'he', name: 'Hebrew' }, { code: 'fa', name: 'Persian' },
+  { code: 'sw', name: 'Swahili' }, { code: 'zu', name: 'Zulu' }, { code: 'af', name: 'Afrikaans' }, { code: 'ha', name: 'Hausa' },
+  { code: 'es', name: 'Spanish' }, { code: 'es_AR', name: 'Spanish (AR)' }, { code: 'es_MX', name: 'Spanish (MX)' },
+  { code: 'pt_BR', name: 'Portuguese (BR)' }, { code: 'pt_PT', name: 'Portuguese (PT)' },
+  { code: 'fr', name: 'French' }, { code: 'de', name: 'German' }, { code: 'it', name: 'Italian' },
+  { code: 'nl', name: 'Dutch' }, { code: 'pl', name: 'Polish' }, { code: 'ru', name: 'Russian' },
+  { code: 'uk', name: 'Ukrainian' }, { code: 'cs', name: 'Czech' }, { code: 'ro', name: 'Romanian' },
+  { code: 'hu', name: 'Hungarian' }, { code: 'el', name: 'Greek' }, { code: 'bg', name: 'Bulgarian' },
+  { code: 'sr', name: 'Serbian' }, { code: 'hr', name: 'Croatian' }, { code: 'sk', name: 'Slovak' },
+  { code: 'sl', name: 'Slovenian' }, { code: 'da', name: 'Danish' }, { code: 'fi', name: 'Finnish' },
+  { code: 'nb', name: 'Norwegian' }, { code: 'sv', name: 'Swedish' }, { code: 'lt', name: 'Lithuanian' },
+  { code: 'lv', name: 'Latvian' }, { code: 'et', name: 'Estonian' }, { code: 'ca', name: 'Catalan' }, { code: 'ga', name: 'Irish' },
+  { code: 'zh_CN', name: 'Chinese (Simplified)' }, { code: 'zh_TW', name: 'Chinese (Traditional)' }, { code: 'zh_HK', name: 'Chinese (HK)' },
+  { code: 'ja', name: 'Japanese' }, { code: 'ko', name: 'Korean' }, { code: 'th', name: 'Thai' },
+  { code: 'vi', name: 'Vietnamese' }, { code: 'id', name: 'Indonesian' }, { code: 'ms', name: 'Malay' },
+  { code: 'fil', name: 'Filipino' }, { code: 'km', name: 'Khmer' }, { code: 'lo', name: 'Lao' }, { code: 'my', name: 'Burmese' },
+  { code: 'tr', name: 'Turkish' }, { code: 'az', name: 'Azerbaijani' }, { code: 'uz', name: 'Uzbek' },
+  { code: 'kk', name: 'Kazakh' }, { code: 'ka', name: 'Georgian' },
+  { code: 'ne', name: 'Nepali' }, { code: 'si', name: 'Sinhala' },
+];
 const WABA_CATS: WABACategory[] = ['MARKETING', 'UTILITY', 'AUTHENTICATION'];
 const catColor: Record<string, string> = {
   MARKETING: 'bg-purple-100 text-purple-700',
@@ -262,7 +287,7 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Language</label>
               <select className="w-full border border-black/5 rounded-lg px-3 py-2 text-sm bg-card focus:border-primary outline-none" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
+                {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.name} ({l.code})</option>)}
               </select>
             </div>
           </div>
