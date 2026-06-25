@@ -496,17 +496,33 @@ router.post('/:id/resubmit-to-meta', checkPermission('automation_templates:manag
     } else if (['image', 'video', 'document'].includes(header_type)) {
       const format = header_type.toUpperCase();
       const headerComp: any = { type: 'HEADER', format };
-      if (req.file) {
-        try {
-          const appId = process.env.META_APP_ID;
-          if (!appId) throw new Error('META_APP_ID not configured');
-          const handle = await uploadMediaToMeta(token, appId, req.file.buffer, req.file.mimetype, req.file.originalname);
-          headerComp.example = { header_handle: [handle] };
-        } catch (uploadErr: any) {
-          console.error('[WABA resubmit] Media upload error:', uploadErr.message);
-          res.status(400).json({ error: `Media upload failed: ${uploadErr.message}` });
-          return;
+      // Meta requires header example (handle) on every edit — upload new file or re-upload existing
+      const appId = process.env.META_APP_ID;
+      if (!appId) { res.status(400).json({ error: 'META_APP_ID not configured' }); return; }
+      try {
+        let fileBuffer: Buffer;
+        let fileMime: string;
+        let fileName: string;
+        if (req.file) {
+          fileBuffer = req.file.buffer;
+          fileMime = req.file.mimetype;
+          fileName = req.file.originalname;
+        } else if (ex.file_path) {
+          // Re-upload existing file from disk
+          const fullPath = path.resolve(process.cwd(), ex.file_path);
+          if (!fs.existsSync(fullPath)) { res.status(400).json({ error: 'Existing header file not found on disk — please re-upload' }); return; }
+          fileBuffer = fs.readFileSync(fullPath);
+          fileMime = ex.file_type || 'application/octet-stream';
+          fileName = ex.file_name || 'file';
+        } else {
+          res.status(400).json({ error: `Upload a ${header_type} file for the header` }); return;
         }
+        const handle = await uploadMediaToMeta(token, appId, fileBuffer, fileMime, fileName);
+        headerComp.example = { header_handle: [handle] };
+      } catch (uploadErr: any) {
+        console.error('[WABA resubmit] Media upload error:', uploadErr.message);
+        res.status(400).json({ error: `Media upload failed: ${uploadErr.message}` });
+        return;
       }
       components.push(headerComp);
     }
