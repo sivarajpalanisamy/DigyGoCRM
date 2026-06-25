@@ -32,7 +32,7 @@ router.get('/', checkPermission('automation_templates:read'), async (req: AuthRe
     const result = await query(
       `SELECT id, name, template_type, category, language, status, subject,
               body, header, footer, buttons, variables,
-              meta_name, meta_template_id, meta_components,
+              meta_name, meta_template_id, meta_components, last_meta_edit_at,
               file_path, file_type, file_name, created_at, updated_at
        FROM templates WHERE tenant_id=$1::uuid ORDER BY created_at DESC`,
       [req.user!.tenantId],
@@ -428,13 +428,13 @@ router.post('/submit-to-meta', checkPermission('automation_templates:manage'), u
     // Store in local DB
     const result = await query(
       `INSERT INTO templates
-         (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, variables, meta_name, meta_template_id, meta_components)
-       VALUES ($1::uuid,$2,'waba',$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12)
+         (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, variables, meta_name, meta_template_id, meta_components, last_meta_edit_at)
+       VALUES ($1::uuid,$2,'waba',$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,NOW())
        ON CONFLICT (tenant_id, meta_name, language) WHERE meta_name IS NOT NULL DO UPDATE SET
          name=EXCLUDED.name, category=EXCLUDED.category, status='pending',
          body=EXCLUDED.body, header=EXCLUDED.header, footer=EXCLUDED.footer,
          buttons=EXCLUDED.buttons, variables=EXCLUDED.variables, meta_template_id=EXCLUDED.meta_template_id,
-         meta_components=EXCLUDED.meta_components, updated_at=NOW()
+         meta_components=EXCLUDED.meta_components, last_meta_edit_at=NOW(), updated_at=NOW()
        RETURNING *`,
       [
         tenantId, displayName, (category || 'UTILITY').toUpperCase(), language || 'en',
@@ -555,22 +555,27 @@ router.post('/:id/resubmit-to-meta', checkPermission('automation_templates:manag
     console.log('[WABA resubmit] Editing template', ex.meta_template_id, JSON.stringify(payload));
     const metaResp = await graphPost(`/${ex.meta_template_id}`, token, payload);
 
+    let newStatus: string;
+    let metaWarning: string | null = null;
+
     if (metaResp.error) {
       console.error('[WABA resubmit] Meta error:', JSON.stringify(metaResp.error));
       const detail = metaResp.error.error_user_msg || metaResp.error.message || 'Unknown error';
-      res.status(400).json({ error: `Meta API: ${detail}` });
-      return;
+      // Save locally as draft even if Meta rejects — don't lose the user's edits
+      newStatus = 'draft';
+      metaWarning = detail;
+    } else {
+      newStatus = metaResp.success ? 'pending' : 'draft';
     }
 
-    // Determine status from Meta response — metaResp.success means edit accepted
-    const newStatus = metaResp.success ? 'pending' : 'draft';
-
-    // Update local DB
+    // Always update local DB with user's changes
     const finalCategory = raw.category ? (raw.category as string).toUpperCase() : ex.category;
     const result = await query(
       `UPDATE templates SET
          body=$1, header=$2, footer=$3, buttons=$4, variables=$5,
-         meta_components=$6, status=$7, category=$8, updated_at=NOW()
+         meta_components=$6, status=$7, category=$8,
+         last_meta_edit_at=${newStatus === 'pending' ? 'NOW()' : 'last_meta_edit_at'},
+         updated_at=NOW()
        WHERE id=$9::uuid AND tenant_id=$10::uuid
        RETURNING *`,
       [
@@ -594,7 +599,13 @@ router.post('/:id/resubmit-to-meta', checkPermission('automation_templates:manag
       );
     }
 
-    res.json({ ...result.rows[0], status: newStatus });
+    const row = result.rows[0];
+    if (metaWarning) {
+      // Return 200 with warning so frontend can show both "saved locally" and the Meta error
+      res.json({ ...row, status: newStatus, meta_warning: metaWarning });
+    } else {
+      res.json({ ...row, status: newStatus });
+    }
   } catch (err: any) {
     console.error('[Template resubmit to Meta]', err?.message ?? err);
     res.status(500).json({ error: 'Failed to resubmit template' });
@@ -694,14 +705,24 @@ router.post('/sync-waba', checkPermission('automation_templates:manage'), async 
       const displayName = metaName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
 
       const metaTemplateId = tpl.id ?? null;
+      // On conflict: update status + meta fields from Meta, but preserve local body/header/footer/buttons
+      // if the user has local edits (status = 'draft' or 'pending'). This prevents sync from
+      // overwriting the user's changes with Meta's old approved version.
       await query(
         `INSERT INTO templates
            (tenant_id, name, template_type, category, language, status, body, header, footer, buttons, meta_name, meta_template_id, meta_components)
          VALUES ($1::uuid,$2,'waba',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
          ON CONFLICT (tenant_id, meta_name, language) WHERE meta_name IS NOT NULL DO UPDATE SET
-           name=EXCLUDED.name, category=EXCLUDED.category, status=EXCLUDED.status,
-           body=EXCLUDED.body, header=EXCLUDED.header, footer=EXCLUDED.footer,
-           buttons=EXCLUDED.buttons, meta_template_id=EXCLUDED.meta_template_id,
+           name=EXCLUDED.name, category=EXCLUDED.category,
+           status = CASE
+             WHEN templates.status IN ('draft','pending') THEN templates.status
+             ELSE EXCLUDED.status
+           END,
+           body = CASE WHEN templates.status IN ('draft','pending') THEN templates.body ELSE EXCLUDED.body END,
+           header = CASE WHEN templates.status IN ('draft','pending') THEN templates.header ELSE EXCLUDED.header END,
+           footer = CASE WHEN templates.status IN ('draft','pending') THEN templates.footer ELSE EXCLUDED.footer END,
+           buttons = CASE WHEN templates.status IN ('draft','pending') THEN templates.buttons ELSE EXCLUDED.buttons END,
+           meta_template_id=EXCLUDED.meta_template_id,
            meta_components=EXCLUDED.meta_components,
            updated_at=NOW()`,
         [tenantId, displayName, category, lang, status, bodyText, headerText, footerText,

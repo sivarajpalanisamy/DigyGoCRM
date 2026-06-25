@@ -32,6 +32,7 @@ interface Template {
   meta_name?: string | null;
   meta_template_id?: string | null;
   meta_components?: any[] | null;
+  last_meta_edit_at?: string | null;
   file_path?: string | null;
   file_type?: string | null;
   file_name?: string | null;
@@ -927,11 +928,23 @@ export default function AutomationTemplatesPage() {
                         {tab === 'waba' && t.category && !['EMAIL','SMS'].includes(t.category) && (
                           <Badge className={cn('border-0 text-xs', catColor[t.category] ?? 'bg-gray-100 text-gray-700')}>{t.category}</Badge>
                         )}
-                        {tab === 'waba' && (
-                          <Badge className={cn('border-0 text-xs capitalize', statusColor[t.status] ?? 'bg-gray-100 text-gray-700')}>
-                            {t.status === 'draft' && t.meta_name ? 'Modified' : t.status === 'pending' ? 'Approval Pending' : t.status}
-                          </Badge>
-                        )}
+                        {tab === 'waba' && (() => {
+                          const cooldownMs = t.last_meta_edit_at ? 24 * 60 * 60 * 1000 - (Date.now() - new Date(t.last_meta_edit_at).getTime()) : 0;
+                          const onCooldown = cooldownMs > 0;
+                          const label = t.status === 'draft' && t.meta_name ? 'Modified'
+                            : t.status === 'pending' ? 'Approval Pending'
+                            : t.status;
+                          return <>
+                            <Badge className={cn('border-0 text-xs capitalize', statusColor[t.status] ?? 'bg-gray-100 text-gray-700')}>
+                              {label}
+                            </Badge>
+                            {onCooldown && t.status !== 'pending' && (
+                              <span className="text-[10px] text-amber-600" title="Meta allows editing once per 24 hours">
+                                {cooldownMs > 3600000 ? `${Math.ceil(cooldownMs / 3600000)}h cooldown` : `${Math.ceil(cooldownMs / 60000)}m cooldown`}
+                              </span>
+                            )}
+                          </>;
+                        })()}
                         {tab === 'waba' && t.language && <span className="text-[11px] text-[#7a6b5c] uppercase">{t.language}</span>}
                         {t.file_name && (
                           <span className="flex items-center gap-1 text-[11px] text-teal-700 bg-teal-50 border border-teal-100 px-1.5 py-0.5 rounded-md">

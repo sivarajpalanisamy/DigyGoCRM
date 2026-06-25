@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
-  ArrowLeft, ChevronRight, ChevronDown, Plus, X, Loader2, Check, Send,
+  ArrowLeft, ChevronRight, ChevronDown, Plus, X, Loader2, Check, Send, Clock,
   Upload, Paperclip, FileText, Image as ImageIcon, Film, Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ interface Template {
   status: string; body: string; header?: string | null; footer?: string | null;
   buttons: WABAButton[] | string; meta_template_id?: string | null; meta_name?: string | null;
   variables?: any; file_path?: string | null; file_type?: string | null; file_name?: string | null;
-  meta_components?: any;
+  meta_components?: any; last_meta_edit_at?: string | null;
 }
 
 const LANGUAGES = ['en', 'hi', 'ta', 'te', 'kn', 'mr'];
@@ -88,6 +88,7 @@ export default function WABATemplateEditorPage() {
   const [loading, setLoading] = useState(isEdit);
   const [submitMeta, setSubmitMeta] = useState(!isEdit);
   const [isMetaSynced, setIsMetaSynced] = useState(false);
+  const [lastMetaEditAt, setLastMetaEditAt] = useState<string | null>(null);
   const [bodyExamples, setBodyExamples] = useState<Record<string, string>>({});
   const [testPhone, setTestPhone] = useState('');
   const [testSending, setTestSending] = useState(false);
@@ -204,6 +205,7 @@ export default function WABATemplateEditorPage() {
     setButtons(parseButtons(t.buttons));
     if (t.file_name) setExistingFile({ name: t.file_name });
     if (t.meta_template_id) setIsMetaSynced(true);
+    if (t.last_meta_edit_at) setLastMetaEditAt(t.last_meta_edit_at);
     // Restore saved variable samples and mappings
     const vars = typeof t.variables === 'string' ? (() => { try { return JSON.parse(t.variables); } catch { return null; } })() : t.variables;
     if (vars) {
@@ -299,10 +301,21 @@ export default function WABATemplateEditorPage() {
           if (resp.status === 413) throw new Error('File too large — exceeds upload limit');
           const data = resp.headers.get('content-type')?.includes('json') ? await resp.json() : null;
           if (!resp.ok) throw new Error(data?.error || `Submit failed (${resp.status})`);
+          if (data?.meta_warning) {
+            toast.warning(`Saved locally. Meta: ${data.meta_warning}`);
+          } else {
+            toast.success('Template submitted to Meta for approval');
+            if (data?.last_meta_edit_at) setLastMetaEditAt(data.last_meta_edit_at);
+          }
         } else {
-          await api.post(endpoint, submitPayload);
+          const data = await api.post(endpoint, submitPayload) as any;
+          if (data?.meta_warning) {
+            toast.warning(`Saved locally. Meta: ${data.meta_warning}`);
+          } else {
+            toast.success('Template submitted to Meta for approval');
+            if (data?.last_meta_edit_at) setLastMetaEditAt(data.last_meta_edit_at);
+          }
         }
-        toast.success('Template submitted to Meta for approval');
       } else {
         const fd = new FormData();
         fd.append('name', name.trim().toLowerCase().replace(/\s+/g, '_'));
@@ -411,8 +424,13 @@ export default function WABATemplateEditorPage() {
           >
             Cancel
           </Button>
-          {isEdit && isMetaSynced ? (
-            <>
+          {isEdit && isMetaSynced ? (() => {
+            const cooldownMs = lastMetaEditAt ? 24 * 60 * 60 * 1000 - (Date.now() - new Date(lastMetaEditAt).getTime()) : 0;
+            const onCooldown = cooldownMs > 0;
+            const cooldownLabel = onCooldown
+              ? cooldownMs > 3600000 ? `${Math.ceil(cooldownMs / 3600000)}h cooldown` : `${Math.ceil(cooldownMs / 60000)}m cooldown`
+              : '';
+            return <>
               <Button
                 variant="outline" size="sm" onClick={() => handleSave(false)} disabled={saving}
                 className="h-8 text-[13px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
@@ -421,13 +439,18 @@ export default function WABATemplateEditorPage() {
                 Save Locally
               </Button>
               <Button
-                size="sm" onClick={() => handleSave(true)} disabled={saving}
-                className="h-8 text-[13px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
+                size="sm" onClick={() => handleSave(true)} disabled={saving || onCooldown}
+                className="h-8 text-[13px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4 disabled:opacity-50"
+                title={onCooldown ? 'Meta allows editing a template only once per 24 hours' : ''}
               >
-                {savingToMeta ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Submitting...</> : <><Send className="w-3.5 h-3.5 mr-1.5" />Submit to Meta</>}
+                {savingToMeta
+                  ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Submitting...</>
+                  : onCooldown
+                    ? <><Clock className="w-3.5 h-3.5 mr-1.5" />{cooldownLabel}</>
+                    : <><Send className="w-3.5 h-3.5 mr-1.5" />Submit to Meta</>}
               </Button>
-            </>
-          ) : (
+            </>;
+          })() : (
             <Button
               size="sm" onClick={() => handleSave(false)} disabled={saving}
               className="h-8 text-[13px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
