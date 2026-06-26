@@ -1207,69 +1207,46 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
         </div>
       </div>
 
-      {/* Summary + Template Preview side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Summary */}
-        <div className="bg-white rounded-2xl border border-black/5 p-5">
-          <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide mb-3">Summary</h3>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-[#7a6b5c]">Attempted on</span>
-              <span className="font-semibold text-primary">{bc.total_leads} leads</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#7a6b5c]">Unique numbers</span>
-              <span className="font-semibold text-[#1c1410]">{bc.unique_numbers || bc.total_leads - bc.skipped}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#7a6b5c]">Current progress</span>
-              <button
-                onClick={() => openRecipients('all')}
-                className="font-semibold text-primary hover:underline cursor-pointer"
-              >
-                {progressDone} / {bc.total_leads}
-              </button>
-            </div>
-            {(bc.retry_count ?? 0) > 0 && (
-              <div className="flex justify-between">
-                <span className="text-[#7a6b5c]">Retries for failed messages</span>
-                <span className="font-semibold text-[#1c1410]">{bc.retry_count} completed</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span className="text-[#7a6b5c]">Status</span>
-              <Badge className={cn('border-0 text-[10px]',
-                bc.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
-                bc.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
-                bc.status === 'cancelled' ? 'bg-gray-100 text-gray-500' :
-                'bg-amber-50 text-amber-700')}>
-                {bc.status === 'completed' ? 'Completed' : bc.status === 'scheduled' ? 'Scheduled' : bc.status === 'cancelled' ? 'Cancelled' : 'Sending...'}
-              </Badge>
-            </div>
+      {/* Summary */}
+      <div className="bg-white rounded-2xl border border-black/5 p-5">
+        <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide mb-3">Summary</h3>
+        <div className="grid grid-cols-2 gap-y-3 gap-x-8 text-sm">
+          <div className="flex justify-between">
+            <span className="text-[#7a6b5c]">Attempted on</span>
+            <span className="font-semibold text-primary">{bc.total_leads} leads</span>
           </div>
-        </div>
-
-        {/* Template Preview — WhatsApp bubble style */}
-        <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
-          <div className="px-5 py-3 border-b border-black/5">
-            <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide">Template Sent</h3>
+          <div className="flex justify-between">
+            <span className="text-[#7a6b5c]">Unique numbers</span>
+            <span className="font-semibold text-[#1c1410]">{bc.unique_numbers || bc.total_leads - bc.skipped}</span>
           </div>
-          <div className="p-4">
-            <div className="bg-[#e7fed6] rounded-xl rounded-tr-sm px-4 py-3 max-w-[280px] ml-auto shadow-sm">
-              {bc.template_header && (
-                <p className="text-[13px] font-bold text-[#1c1410] mb-1">{bc.template_header}</p>
-              )}
-              <p className="text-[13px] text-[#1c1410] whitespace-pre-line leading-relaxed">{bc.template_body}</p>
-              {bc.template_footer && (
-                <p className="text-[11px] text-[#7a6b5c] mt-1.5 italic">{bc.template_footer}</p>
-              )}
-              <p className="text-[10px] text-[#7a6b5c] text-right mt-1">
-                {new Date(bc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
+          <div className="flex justify-between">
+            <span className="text-[#7a6b5c]">Current progress</span>
+            <button
+              onClick={() => openRecipients('all')}
+              className="font-semibold text-primary hover:underline cursor-pointer"
+            >
+              {progressDone} / {bc.total_leads}
+            </button>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[#7a6b5c]">Skipped (no phone)</span>
+            <span className="font-semibold text-[#1c1410]">{bc.skipped}</span>
+          </div>
+          {(bc.retry_count ?? 0) > 0 && (
+            <div className="flex justify-between">
+              <span className="text-[#7a6b5c]">Retries for failed messages</span>
+              <span className="font-semibold text-[#1c1410]">{bc.retry_count} completed</span>
             </div>
-            <div className="mt-2 text-center">
-              <p className="text-[10px] text-[#9e8e7e]">{bc.template_name} <span className="font-mono">({bc.template_meta_name})</span></p>
-            </div>
+          )}
+          <div className="flex justify-between">
+            <span className="text-[#7a6b5c]">Status</span>
+            <Badge className={cn('border-0 text-[10px]',
+              bc.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
+              bc.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
+              bc.status === 'cancelled' ? 'bg-gray-100 text-gray-500' :
+              'bg-amber-50 text-amber-700')}>
+              {bc.status === 'completed' ? 'Completed' : bc.status === 'scheduled' ? 'Scheduled' : bc.status === 'cancelled' ? 'Cancelled' : 'Sending...'}
+            </Badge>
           </div>
         </div>
       </div>
@@ -1381,6 +1358,30 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
           </ul>
         </details>
       )}
+
+      {/* Template Preview — WhatsApp bubble style (at bottom) */}
+      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
+        <div className="px-5 py-3 border-b border-black/5">
+          <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide">Template Sent</h3>
+        </div>
+        <div className="p-4">
+          <div className="bg-[#e7fed6] rounded-xl rounded-tr-sm px-4 py-3 max-w-[280px] ml-auto shadow-sm">
+            {bc.template_header && (
+              <p className="text-[13px] font-bold text-[#1c1410] mb-1">{bc.template_header}</p>
+            )}
+            <p className="text-[13px] text-[#1c1410] whitespace-pre-line leading-relaxed">{bc.template_body}</p>
+            {bc.template_footer && (
+              <p className="text-[11px] text-[#7a6b5c] mt-1.5 italic">{bc.template_footer}</p>
+            )}
+            <p className="text-[10px] text-[#7a6b5c] text-right mt-1">
+              {new Date(bc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
+          <div className="mt-2 text-center">
+            <p className="text-[10px] text-[#9e8e7e]">{bc.template_name} <span className="font-mono">({bc.template_meta_name})</span></p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
