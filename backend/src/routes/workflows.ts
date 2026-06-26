@@ -394,7 +394,7 @@ function sendWARequest(phoneNumberId: string, token: string, payload: object): P
     const body = JSON.stringify(payload);
     const options = {
       hostname: 'graph.facebook.com',
-      path: `/v17.0/${phoneNumberId}/messages`,
+      path: `/v21.0/${phoneNumberId}/messages`,
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -447,7 +447,8 @@ function sendWATemplate(
 
 // Log a WABA-sent message to conversations + messages so it appears in the Inbox.
 async function logWabaMessageToInbox(
-  tenantId: string, leadId: string, phone: string, body: string, wamid: string
+  tenantId: string, leadId: string, phone: string, body: string, wamid: string,
+  templateMetaName?: string
 ): Promise<void> {
   try {
     // Find or create an open WABA conversation for this lead
@@ -467,11 +468,14 @@ async function logWabaMessageToInbox(
       convId = newConv.rows[0].id;
     }
 
+    // Store template_meta_name in metadata for reliable button-click resolution
+    const metadata = templateMetaName ? JSON.stringify({ template_meta_name: templateMetaName }) : null;
+
     // Insert the outbound message
     const msgRes = await query(
-      `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, created_at)
-       VALUES ($1,$2,$3,'agent',$4,FALSE,$5,'sent','workflow',NOW()) RETURNING *`,
-      [convId, tenantId, leadId, body, wamid || null]
+      `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, metadata, created_at)
+       VALUES ($1,$2,$3,'agent',$4,FALSE,$5,'sent','workflow',$6::jsonb,NOW()) RETURNING *`,
+      [convId, tenantId, leadId, body, wamid || null, metadata]
     );
 
     await query(
@@ -1546,8 +1550,8 @@ export async function executeNodes(
               const wamid = waResp?.messages?.[0]?.id ?? '';
               message = `WhatsApp template "${tpl.meta_name}" sent to ${toPhone}${wamid ? ` (wamid: ${wamid})` : ''}`;
 
-              // Log to inbox
-              await logWabaMessageToInbox(tenantId, lead.id, toPhone, sentBody, wamid);
+              // Log to inbox with template_meta_name for reliable button-click resolution
+              await logWabaMessageToInbox(tenantId, lead.id, toPhone, sentBody, wamid, tpl.meta_name);
               break;
             }
           }

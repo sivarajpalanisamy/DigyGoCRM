@@ -1,6 +1,7 @@
 import { query } from '../../db';
 import { emitToTenant } from '../../socket';
 import { emitLeadCreated } from '../../utils/leadEvents';
+import { upsertContact } from '../../utils/contacts';
 import { normalizePhone, fromJID, isGroupJID } from './phoneUtils';
 
 /**
@@ -175,6 +176,13 @@ export async function handleInboundMessage(
           lead   = newLead.rows[0];
           leadId = newLead.rows[0].id;
           emitLeadCreated(tenantId, leadId).catch(() => null);
+          // Bug fix: trigger lead_created workflow (was missing for Personal WA)
+          try {
+            const { triggerWorkflows } = await import('../../routes/workflows');
+            triggerWorkflows('lead_created', newLead.rows[0], tenantId, 'system').catch(() => null);
+          } catch { /* ignore */ }
+          // Bug fix: create contact record (was missing for Personal WA)
+          upsertContact(tenantId, pushNameForLead, undefined, `+${phone}`, leadId).catch(() => null);
         }
       }
     } catch { /* best-effort */ }

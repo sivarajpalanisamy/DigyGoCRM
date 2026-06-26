@@ -1798,9 +1798,9 @@ router.post('/broadcast', checkPermission('inbox:send'), upload.single('header_f
             convId = nc.rows[0].id;
           }
           await query(
-            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, broadcast_id, created_at)
-             VALUES ($1,$2,$3,'agent',$4,FALSE,$5,'sent','broadcast',$6::uuid,NOW())`,
-            [convId, tenantId, lead.id, msgBody, wamid, broadcastId],
+            `INSERT INTO messages (conversation_id, tenant_id, lead_id, sender, body, is_note, wamid, status, sent_by, broadcast_id, metadata, created_at)
+             VALUES ($1,$2,$3,'agent',$4,FALSE,$5,'sent','broadcast',$6::uuid,$7::jsonb,NOW())`,
+            [convId, tenantId, lead.id, msgBody, wamid, broadcastId, JSON.stringify({ template_meta_name: tpl.meta_name })],
           );
           await query(
             `UPDATE conversations SET last_message=$1, last_message_at=NOW() WHERE id=$2`,

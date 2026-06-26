@@ -661,15 +661,21 @@ async function processWhatsAppMessage(payload: any) {
             ?? null;
           if (buttonPayload) {
             // Try to find which template was sent to this lead recently (last outbound template message)
+            // Prefer metadata.template_meta_name (stored reliably), fall back to body regex
             let templateName = '';
             try {
               const tplMsg = await query(
-                `SELECT body FROM messages WHERE lead_id=$1 AND tenant_id=$2 AND sender='agent' AND body LIKE '[Template:%' ORDER BY created_at DESC LIMIT 1`,
+                `SELECT body, metadata FROM messages WHERE lead_id=$1 AND tenant_id=$2 AND sender='agent' AND body LIKE '[Template:%' ORDER BY created_at DESC LIMIT 1`,
                 [leadId, tenantId]
               );
-              if (tplMsg.rows[0]?.body) {
-                const match = tplMsg.rows[0].body.match(/\[Template: ([^\]]+)\]/);
-                if (match) templateName = match[1];
+              if (tplMsg.rows[0]) {
+                const meta = tplMsg.rows[0].metadata;
+                if (meta?.template_meta_name) {
+                  templateName = meta.template_meta_name;
+                } else if (tplMsg.rows[0].body) {
+                  const match = tplMsg.rows[0].body.match(/\[Template: ([^\]]+)\]/);
+                  if (match) templateName = match[1];
+                }
               }
             } catch { /* ignore */ }
 
