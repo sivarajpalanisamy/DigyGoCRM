@@ -1254,8 +1254,16 @@ router.get('/broadcasts/:id/recipients', checkPermission('inbox:send'), async (r
     let where = `m.broadcast_id = $1::uuid AND m.tenant_id = $2`;
 
     if (status && status !== 'all') {
-      params.push(status);
-      where += ` AND m.status = $${params.length}`;
+      // "sent" means all successfully sent (sent+delivered+read)
+      // "delivered" means delivered+read
+      if (status === 'sent') {
+        where += ` AND m.status IN ('sent','delivered','read')`;
+      } else if (status === 'delivered') {
+        where += ` AND m.status IN ('delivered','read')`;
+      } else {
+        params.push(status);
+        where += ` AND m.status = $${params.length}`;
+      }
     }
     if (search?.trim()) {
       params.push(`%${search.trim().toLowerCase()}%`);
