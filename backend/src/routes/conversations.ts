@@ -226,16 +226,17 @@ function buildComponentsFromMapping(
   const localHeaderVarCount = countMetaVars(headerText ?? null);
 
   // Use the LOWER variable count between meta_components and local body.
+  // - If meta_components has CRM {%var%} syntax, it was stored at CRM submit time — Meta received
+  //   literal {%var%} text (no {{N}} params). We must send 0 params since Meta has no variables.
   // - If user edited local body to remove a var, trust local (Meta was probably updated too).
-  // - If meta_components has CRM {%var%} syntax, it's stale — always fall back to local.
   // - If meta_components is null, fall back to local.
   const effectiveBodyText = metaBodyIsStale
-    ? bodyText
+    ? ''  // Meta has literal text with no variables — send 0 params
     : (metaBodyText && localBodyVarCount < metaBodyVarCount)
       ? bodyText
       : (metaBodyText ?? bodyText);
   const effectiveHeaderText = metaHeaderIsStale
-    ? headerText
+    ? ''  // Same — Meta has literal text
     : (metaHeaderText && localHeaderVarCount < metaHeaderVarCount)
       ? headerText
       : (metaHeaderText ?? headerText);

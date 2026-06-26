@@ -355,11 +355,24 @@ router.post('/submit-to-meta', checkPermission('automation_templates:manage'), u
     const { waba_id, access_token: encToken } = wabaRes.rows[0];
     const token = decrypt(encToken);
 
+    // Convert CRM {%var%} syntax to Meta {{N}} positional params
+    const crmToMeta = (text: string): { converted: string; vars: string[] } => {
+      const crmVars = Array.from(text.matchAll(/\{%(\w+)%\}/g)).map(m => m[0]).filter((v, i, a) => a.indexOf(v) === i);
+      let converted = text;
+      crmVars.forEach((v, i) => { converted = converted.split(v).join(`{{${i + 1}}}`); });
+      return { converted, vars: crmVars };
+    };
+
     // Build Meta template components
     const components: any[] = [];
 
     if (header_type === 'text' && header?.trim()) {
-      components.push({ type: 'HEADER', format: 'TEXT', text: header.trim() });
+      const { converted: metaHeader, vars: headerVars } = crmToMeta(header.trim());
+      const headerComp: any = { type: 'HEADER', format: 'TEXT', text: metaHeader };
+      if (headerVars.length > 0) {
+        headerComp.example = { header_text: headerVars.map(() => 'Example') };
+      }
+      components.push(headerComp);
     } else if (['image', 'video', 'document'].includes(header_type)) {
       const format = header_type.toUpperCase();
       const headerComp: any = { type: 'HEADER', format };
@@ -379,8 +392,11 @@ router.post('/submit-to-meta', checkPermission('automation_templates:manage'), u
       components.push(headerComp);
     }
 
-    const bodyComponent: any = { type: 'BODY', text: body.trim() };
-    if (body_examples?.length) {
+    const { converted: metaBodyText, vars: bodyVars } = crmToMeta(body.trim());
+    const bodyComponent: any = { type: 'BODY', text: metaBodyText };
+    if (bodyVars.length > 0) {
+      bodyComponent.example = { body_text: [body_examples?.length ? body_examples : bodyVars.map(() => 'John')] };
+    } else if (body_examples?.length) {
       bodyComponent.example = { body_text: [body_examples] };
     }
     components.push(bodyComponent);
@@ -491,8 +507,21 @@ router.post('/:id/resubmit-to-meta', checkPermission('automation_templates:manag
     // Build Meta components
     const components: any[] = [];
 
+    // Convert CRM {%var%} syntax to Meta {{N}} positional params
+    const crmToMeta = (text: string): { converted: string; vars: string[] } => {
+      const crmVars = Array.from(text.matchAll(/\{%(\w+)%\}/g)).map(m => m[0]).filter((v, i, a) => a.indexOf(v) === i);
+      let converted = text;
+      crmVars.forEach((v, i) => { converted = converted.split(v).join(`{{${i + 1}}}`); });
+      return { converted, vars: crmVars };
+    };
+
     if (header_type === 'text' && header?.trim()) {
-      components.push({ type: 'HEADER', format: 'TEXT', text: header.trim() });
+      const { converted: metaHeader, vars: headerVars } = crmToMeta(header.trim());
+      const headerComp: any = { type: 'HEADER', format: 'TEXT', text: metaHeader };
+      if (headerVars.length > 0) {
+        headerComp.example = { header_text: headerVars.map(() => 'Example') };
+      }
+      components.push(headerComp);
     } else if (['image', 'video', 'document'].includes(header_type)) {
       const format = header_type.toUpperCase();
       const headerComp: any = { type: 'HEADER', format };
@@ -527,8 +556,11 @@ router.post('/:id/resubmit-to-meta', checkPermission('automation_templates:manag
       components.push(headerComp);
     }
 
-    const bodyComponent: any = { type: 'BODY', text: body.trim() };
-    if (body_examples?.length) {
+    const { converted: resubMetaBody, vars: resubBodyVars } = crmToMeta(body.trim());
+    const bodyComponent: any = { type: 'BODY', text: resubMetaBody };
+    if (resubBodyVars.length > 0) {
+      bodyComponent.example = { body_text: [body_examples?.length ? body_examples : resubBodyVars.map(() => 'John')] };
+    } else if (body_examples?.length) {
       bodyComponent.example = { body_text: [body_examples] };
     }
     components.push(bodyComponent);
