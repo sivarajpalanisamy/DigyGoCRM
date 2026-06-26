@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Send, Search, Loader2, X, Check, Users, Megaphone, Calendar,
   Filter, ChevronRight, ArrowLeft, Plus, RefreshCw, CheckCircle2,
   AlertTriangle, Eye, Clock, Mail, MailCheck, MailX, ChevronDown,
   Download, Copy, RotateCcw, Upload, FileText, Image, Video,
-  IndianRupee, ShieldCheck,
+  IndianRupee, ShieldCheck, ChevronLeft, ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,6 +60,8 @@ interface BroadcastSummary {
   completed_at: string | null;
   created_by_name: string | null;
   scheduled_at: string | null;
+  unique_numbers: number;
+  retry_count: number;
 }
 
 interface BroadcastDetail extends BroadcastSummary {
@@ -83,6 +85,25 @@ interface BroadcastResult {
   scheduled_at?: string;
 }
 
+interface Recipient {
+  message_id: string;
+  status: string;
+  error_reason: string | null;
+  sent_at: string;
+  lead_id: string;
+  name: string;
+  phone: string;
+  email: string | null;
+}
+
+interface RecipientsResponse {
+  recipients: Recipient[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 type View = 'list' | 'create';
 type Step = 'leads' | 'template' | 'confirm';
 
@@ -103,6 +124,10 @@ function timeAgo(dateStr: string) {
 function pct(n: number, total: number) {
   if (!total) return 0;
   return Math.round((n / total) * 100);
+}
+
+function initials(name: string) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
 // Meta WhatsApp Business API pricing per message (INR, India, as of 2025)
@@ -170,16 +195,16 @@ export default function WABABroadcastPage() {
   const needsHeaderFile = mediaHeaderFormat && !selectedTemplate?.file_path;
 
   // ── Load broadcasts list ──
-  const fetchBroadcasts = () => {
+  const fetchBroadcasts = useCallback(() => {
     setLoadingList(true);
     const qs = listSearch.trim() ? `?search=${encodeURIComponent(listSearch.trim())}` : '';
     api.get<BroadcastSummary[]>(`/api/conversations/broadcasts${qs}`)
       .then((data) => setBroadcasts(Array.isArray(data) ? data : []))
       .catch(() => toast.error('Failed to load broadcasts'))
       .finally(() => setLoadingList(false));
-  };
+  }, [listSearch]);
 
-  useEffect(() => { fetchBroadcasts(); }, [listSearch]);
+  useEffect(() => { fetchBroadcasts(); }, [fetchBroadcasts]);
 
   // Socket listener for real-time broadcast completion
   useEffect(() => {
@@ -188,7 +213,7 @@ export default function WABABroadcastPage() {
     const handler = () => fetchBroadcasts();
     s.on('broadcast:completed', handler);
     return () => { s.off('broadcast:completed', handler); };
-  }, []);
+  }, [fetchBroadcasts]);
 
   // ── Load broadcast detail ──
   const loadDetail = (id: string) => {
@@ -859,6 +884,8 @@ export default function WABABroadcastPage() {
             ) : broadcasts.map((bc) => {
               const completePct = pct(bc.sent + bc.failed + bc.skipped, bc.total_leads);
               const isSelected = selectedBc?.id === bc.id;
+              const hasFailures = bc.failed > 0;
+              const ringColor = completePct === 100 ? (hasFailures ? '#f59e0b' : '#10b981') : '#3b82f6';
               return (
                 <button key={bc.id} onClick={() => loadDetail(bc.id)}
                   className={cn('w-full text-left px-4 py-3 border-b border-black/5 transition-colors hover:bg-[#faf8f6]',
@@ -868,16 +895,23 @@ export default function WABABroadcastPage() {
                       <p className="text-sm font-semibold text-[#1c1410] truncate">{bc.name}</p>
                       <div className="flex items-center gap-3 mt-1 text-[11px] text-[#7a6b5c]">
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(bc.created_at)}</span>
-                        {bc.created_by_name && <span>{bc.created_by_name.split(' ')[0]}</span>}
+                        {bc.created_by_name && (
+                          <span className="flex items-center gap-1">
+                            <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-[8px] font-bold flex items-center justify-center shrink-0">
+                              {initials(bc.created_by_name)}
+                            </span>
+                            {bc.created_by_name.split(' ')[0]}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1"><Users className="w-3 h-3" />{bc.total_leads}</span>
                       </div>
                     </div>
-                    {/* Circular progress */}
+                    {/* Circular progress ring */}
                     <div className="relative w-10 h-10 shrink-0">
                       <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
                         <circle cx="18" cy="18" r="15" fill="none" stroke="#e5e7eb" strokeWidth="3" />
                         <circle cx="18" cy="18" r="15" fill="none"
-                          stroke={completePct === 100 ? (bc.failed === 0 ? '#10b981' : '#f59e0b') : '#3b82f6'}
+                          stroke={ringColor}
                           strokeWidth="3" strokeDasharray={`${completePct * 0.942} 100`} strokeLinecap="round" />
                       </svg>
                       <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-[#1c1410]">
@@ -924,9 +958,173 @@ export default function WABABroadcastPage() {
   );
 }
 
+// ── Recipients Drill-Down Modal ──────────────────────────────────────────────
+function RecipientsModal({
+  broadcastId, broadcastName, initialFilter, onClose,
+}: {
+  broadcastId: string; broadcastName: string; initialFilter: string; onClose: () => void;
+}) {
+  const [statusFilter, setStatusFilter] = useState(initialFilter);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<RecipientsResponse | null>(null);
+
+  const fetchRecipients = useCallback(() => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
+    if (search.trim()) params.set('search', search.trim());
+    params.set('page', String(page));
+    params.set('limit', '50');
+    api.get<RecipientsResponse>(`/api/conversations/broadcasts/${broadcastId}/recipients?${params}`)
+      .then(setData)
+      .catch(() => toast.error('Failed to load recipients'))
+      .finally(() => setLoading(false));
+  }, [broadcastId, statusFilter, search, page]);
+
+  useEffect(() => { fetchRecipients(); }, [fetchRecipients]);
+  useEffect(() => { setPage(1); }, [statusFilter, search]);
+
+  const statusTabs = [
+    { key: 'all', label: 'All', color: 'text-[#1c1410]' },
+    { key: 'sent', label: 'Sent', color: 'text-blue-600' },
+    { key: 'delivered', label: 'Delivered', color: 'text-emerald-600' },
+    { key: 'read', label: 'Read', color: 'text-emerald-700' },
+    { key: 'failed', label: 'Failed', color: 'text-red-500' },
+  ];
+
+  const statusBadge = (s: string) => {
+    const map: Record<string, string> = {
+      sent: 'bg-blue-50 text-blue-700',
+      delivered: 'bg-emerald-50 text-emerald-700',
+      read: 'bg-emerald-100 text-emerald-800',
+      failed: 'bg-red-50 text-red-600',
+    };
+    return map[s] || 'bg-gray-100 text-gray-600';
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[85vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-black/5 shrink-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-[#1c1410]">Broadcast Recipients</h3>
+              <p className="text-xs text-[#7a6b5c] mt-0.5">{broadcastName}</p>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-black/5">
+              <X className="w-5 h-5 text-[#7a6b5c]" />
+            </button>
+          </div>
+
+          {/* Status Tabs */}
+          <div className="flex items-center gap-1 mt-3">
+            {statusTabs.map((tab) => (
+              <button key={tab.key} onClick={() => setStatusFilter(tab.key)}
+                className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                  statusFilter === tab.key
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-[#7a6b5c] hover:bg-black/5'
+                )}>
+                {tab.label}
+              </button>
+            ))}
+            <div className="flex-1" />
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search name or phone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 pr-3 py-1.5 text-xs border border-black/10 rounded-lg focus:border-primary outline-none w-52"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : !data?.recipients.length ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Users className="w-8 h-8 text-muted-foreground/20 mb-2" />
+              <p className="text-sm text-muted-foreground">No recipients found</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-[#faf8f6] sticky top-0 z-10">
+                <tr>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-[#7a6b5c] uppercase tracking-wide">Name</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-[#7a6b5c] uppercase tracking-wide">Phone</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-[#7a6b5c] uppercase tracking-wide hidden md:table-cell">Email</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-[#7a6b5c] uppercase tracking-wide">Status</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-[#7a6b5c] uppercase tracking-wide hidden lg:table-cell">Sent At</th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-[#7a6b5c] uppercase tracking-wide hidden lg:table-cell">Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recipients.map((r) => (
+                  <tr key={r.message_id} className="border-t border-black/5 hover:bg-[#faf8f6]">
+                    <td className="px-4 py-2.5 font-medium text-[#1c1410]">{r.name || 'Unknown'}</td>
+                    <td className="px-4 py-2.5 text-[#7a6b5c] font-mono text-xs">{r.phone}</td>
+                    <td className="px-4 py-2.5 text-[#7a6b5c] text-xs hidden md:table-cell">{r.email || '-'}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold', statusBadge(r.status))}>
+                        {r.status === 'sent' && <Check className="w-3 h-3 mr-0.5" />}
+                        {r.status === 'delivered' && <MailCheck className="w-3 h-3 mr-0.5" />}
+                        {r.status === 'read' && <CheckCircle2 className="w-3 h-3 mr-0.5" />}
+                        {r.status === 'failed' && <MailX className="w-3 h-3 mr-0.5" />}
+                        {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-[#7a6b5c] text-xs hidden lg:table-cell">
+                      {r.sent_at ? new Date(r.sent_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-red-500 hidden lg:table-cell max-w-[200px] truncate" title={r.error_reason || ''}>
+                      {r.error_reason || '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {data && data.total_pages > 1 && (
+          <div className="px-6 py-3 border-t border-black/5 flex items-center justify-between shrink-0 bg-white">
+            <p className="text-xs text-[#7a6b5c]">
+              Showing {((data.page - 1) * data.page_size) + 1}–{Math.min(data.page * data.page_size, data.total)} of {data.total}
+            </p>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={data.page <= 1}
+                className="p-1.5 rounded-lg hover:bg-black/5 disabled:opacity-30">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs text-[#1c1410] font-medium px-2">Page {data.page} of {data.total_pages}</span>
+              <button onClick={() => setPage((p) => Math.min(data.total_pages, p + 1))} disabled={data.page >= data.total_pages}
+                className="p-1.5 rounded-lg hover:bg-black/5 disabled:opacity-30">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Detail Panel Sub-component ───────────────────────────────────────────────
 function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDetail; onRefresh: () => void; onDuplicate: (bc: BroadcastDetail) => void }) {
   const [retrying, setRetrying] = useState(false);
+  const [recipientsModal, setRecipientsModal] = useState<{ open: boolean; filter: string }>({ open: false, filter: 'all' });
+
   const ds = bc.delivery_stats ?? {};
   const sentCount = ds['sent'] ?? 0;
   const deliveredCount = ds['delivered'] ?? 0;
@@ -934,6 +1132,9 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
   const failedCount = ds['failed'] ?? 0;
   const pending = Math.max(0, bc.total_leads - (bc.sent + bc.failed + bc.skipped));
   const completePct = pct(bc.sent + bc.failed + bc.skipped, bc.total_leads);
+  const progressDone = bc.sent + bc.failed + bc.skipped;
+
+  const openRecipients = (filter: string) => setRecipientsModal({ open: true, filter });
 
   const handleExport = () => {
     const token = localStorage.getItem('dg_tok');
@@ -967,16 +1168,33 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
 
   return (
     <div className="p-6 space-y-6 max-w-3xl">
-      {/* Header */}
+      {/* Recipients Modal */}
+      {recipientsModal.open && (
+        <RecipientsModal
+          broadcastId={bc.id}
+          broadcastName={bc.name}
+          initialFilter={recipientsModal.filter}
+          onClose={() => setRecipientsModal({ open: false, filter: 'all' })}
+        />
+      )}
+
+      {/* Header with creator avatar */}
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-base font-bold text-[#1c1410] break-all">{bc.name}</h2>
           <p className="text-xs text-[#7a6b5c] mt-0.5">
             Created on: {new Date(bc.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-            {bc.created_by_name && ` by ${bc.created_by_name}`}
           </p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          {bc.created_by_name && (
+            <div className="flex items-center gap-1.5 mr-2">
+              <span className="text-xs text-[#7a6b5c]">{bc.created_by_name}</span>
+              <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
+                {initials(bc.created_by_name)}
+              </span>
+            </div>
+          )}
           <button onClick={handleExport} className="p-1.5 rounded-lg hover:bg-black/5" title="Export recipients CSV">
             <Download className="w-4 h-4 text-[#7a6b5c]" />
           </button>
@@ -989,33 +1207,79 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
         </div>
       </div>
 
-      {/* Summary */}
-      <div className="bg-white rounded-2xl border border-black/5 p-5">
-        <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide mb-3">Summary</h3>
-        <div className="grid grid-cols-2 gap-y-3 gap-x-8 text-sm">
-          <div className="flex justify-between">
-            <span className="text-[#7a6b5c]">Attempted on</span>
-            <span className="font-semibold text-primary">{bc.total_leads} leads</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[#7a6b5c]">Status</span>
-            <Badge className={cn('border-0 text-[10px]',
-              bc.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
-              bc.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
-              bc.status === 'cancelled' ? 'bg-gray-100 text-gray-500' :
-              'bg-amber-50 text-amber-700')}>
-              {bc.status === 'completed' ? 'Completed' : bc.status === 'scheduled' ? 'Scheduled' : bc.status === 'cancelled' ? 'Cancelled' : 'Sending...'}
-            </Badge>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[#7a6b5c]">Current progress</span>
-            <span className="font-semibold text-[#1c1410]">{bc.sent + bc.failed + bc.skipped} / {bc.total_leads}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[#7a6b5c]">Skipped (no phone)</span>
-            <span className="font-semibold text-[#1c1410]">{bc.skipped}</span>
+      {/* Summary + Template Preview side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Summary */}
+        <div className="bg-white rounded-2xl border border-black/5 p-5">
+          <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide mb-3">Summary</h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-[#7a6b5c]">Attempted on</span>
+              <span className="font-semibold text-primary">{bc.total_leads} leads</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#7a6b5c]">Unique numbers</span>
+              <span className="font-semibold text-[#1c1410]">{bc.unique_numbers || bc.total_leads - bc.skipped}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#7a6b5c]">Current progress</span>
+              <button
+                onClick={() => openRecipients('all')}
+                className="font-semibold text-primary hover:underline cursor-pointer"
+              >
+                {progressDone} / {bc.total_leads}
+              </button>
+            </div>
+            {(bc.retry_count ?? 0) > 0 && (
+              <div className="flex justify-between">
+                <span className="text-[#7a6b5c]">Retries for failed messages</span>
+                <span className="font-semibold text-[#1c1410]">{bc.retry_count} completed</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-[#7a6b5c]">Status</span>
+              <Badge className={cn('border-0 text-[10px]',
+                bc.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
+                bc.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
+                bc.status === 'cancelled' ? 'bg-gray-100 text-gray-500' :
+                'bg-amber-50 text-amber-700')}>
+                {bc.status === 'completed' ? 'Completed' : bc.status === 'scheduled' ? 'Scheduled' : bc.status === 'cancelled' ? 'Cancelled' : 'Sending...'}
+              </Badge>
+            </div>
           </div>
         </div>
+
+        {/* Template Preview — WhatsApp bubble style */}
+        <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
+          <div className="px-5 py-3 border-b border-black/5">
+            <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide">Template Sent</h3>
+          </div>
+          <div className="p-4">
+            <div className="bg-[#e7fed6] rounded-xl rounded-tr-sm px-4 py-3 max-w-[280px] ml-auto shadow-sm">
+              {bc.template_header && (
+                <p className="text-[13px] font-bold text-[#1c1410] mb-1">{bc.template_header}</p>
+              )}
+              <p className="text-[13px] text-[#1c1410] whitespace-pre-line leading-relaxed">{bc.template_body}</p>
+              {bc.template_footer && (
+                <p className="text-[11px] text-[#7a6b5c] mt-1.5 italic">{bc.template_footer}</p>
+              )}
+              <p className="text-[10px] text-[#7a6b5c] text-right mt-1">
+                {new Date(bc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+            <div className="mt-2 text-center">
+              <p className="text-[10px] text-[#9e8e7e]">{bc.template_name} <span className="font-mono">({bc.template_meta_name})</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Reports Section Header */}
+      <div className="flex items-center gap-2">
+        <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide">Reports</h3>
+        <button onClick={onRefresh} className="p-0.5 rounded hover:bg-black/5" title="Refresh reports">
+          <RefreshCw className="w-3 h-3 text-[#7a6b5c]" />
+        </button>
       </div>
 
       {/* Messaging Progress Report */}
@@ -1025,8 +1289,8 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
           <span className="text-xs text-[#7a6b5c]">{completePct}% complete</span>
         </div>
         <div className="grid grid-cols-3 divide-x divide-black/5">
-          <StatCard label="Sent" value={bc.sent} icon={<Mail className="w-4 h-4" />} color="text-blue-600" />
-          <StatCard label="Failed" value={bc.failed} icon={<MailX className="w-4 h-4" />} color="text-red-500" />
+          <ClickableStatCard label="Sent" value={bc.sent} icon={<Mail className="w-4 h-4" />} color="text-blue-600" onClick={() => openRecipients('sent')} />
+          <ClickableStatCard label="Failed" value={bc.failed} icon={<MailX className="w-4 h-4" />} color="text-red-500" onClick={() => openRecipients('failed')} />
           <StatCard label="Pending" value={pending} icon={<Clock className="w-4 h-4" />} color="text-gray-400" />
         </div>
       </div>
@@ -1037,9 +1301,9 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
           <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide">Delivery Report</h3>
         </div>
         <div className="grid grid-cols-3 divide-x divide-black/5">
-          <StatCard label="Sent" value={sentCount + deliveredCount + readCount} icon={<Check className="w-4 h-4" />} color="text-blue-600" sub="API accepted" />
-          <StatCard label="Delivered" value={deliveredCount + readCount} icon={<MailCheck className="w-4 h-4" />} color="text-emerald-600" sub="To device" />
-          <StatCard label="Read" value={readCount} icon={<CheckCircle2 className="w-4 h-4" />} color="text-emerald-600" sub="Blue ticks" />
+          <ClickableStatCard label="Sent" value={sentCount + deliveredCount + readCount} icon={<Check className="w-4 h-4" />} color="text-blue-600" sub="API accepted" onClick={() => openRecipients('sent')} />
+          <ClickableStatCard label="Delivered" value={deliveredCount + readCount} icon={<MailCheck className="w-4 h-4" />} color="text-emerald-600" sub="To device" onClick={() => openRecipients('delivered')} />
+          <ClickableStatCard label="Read" value={readCount} icon={<CheckCircle2 className="w-4 h-4" />} color="text-emerald-600" sub="Blue ticks" onClick={() => openRecipients('read')} />
         </div>
       </div>
 
@@ -1048,15 +1312,21 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
         <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
           <div className="px-5 py-3 border-b border-black/5 flex items-center justify-between">
             <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide">Failure Report</h3>
-            <span className="text-xs font-semibold text-red-500">{bc.failed} failed</span>
+            <button onClick={() => openRecipients('failed')} className="text-xs font-semibold text-red-500 hover:underline flex items-center gap-1">
+              {bc.failed} failed <ChevronRight className="w-3 h-3" />
+            </button>
           </div>
           {bc.failure_breakdown?.length > 0 ? (
             <div className="grid grid-cols-2 gap-px bg-black/5">
               {bc.failure_breakdown.map((f, i) => (
-                <div key={i} className="bg-white px-5 py-4">
+                <button key={i} onClick={() => openRecipients('failed')}
+                  className="bg-white px-5 py-4 text-left hover:bg-red-50/50 transition-colors group">
                   <p className="text-xs text-red-500 font-medium truncate" title={f.reason}>{f.reason}</p>
-                  <p className="text-2xl font-bold text-red-500 mt-1">{f.count}</p>
-                </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-2xl font-bold text-red-500">{f.count}</p>
+                    <ChevronRight className="w-4 h-4 text-red-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </button>
               ))}
             </div>
           ) : (
@@ -1070,7 +1340,10 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-[#1c1410]">Retry failed messages</p>
-                  <p className="text-xs text-[#7a6b5c] mt-0.5">Resend to {bc.failed} contact{bc.failed !== 1 ? 's' : ''} that failed</p>
+                  <p className="text-xs text-[#7a6b5c] mt-0.5">
+                    Resend to {bc.failed} contact{bc.failed !== 1 ? 's' : ''} that failed
+                    {(bc.retry_count ?? 0) > 0 && <span className="text-[#9e8e7e]"> · {bc.retry_count} retries completed</span>}
+                  </p>
                 </div>
                 <button
                   onClick={handleRetry}
@@ -1108,27 +1381,30 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
           </ul>
         </details>
       )}
-
-      {/* Template Preview */}
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
-        <div className="px-5 py-3 border-b border-black/5">
-          <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide">Template Used</h3>
-        </div>
-        <div className="px-5 py-4 space-y-2">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-[#1c1410]">{bc.template_name}</p>
-            <span className="text-xs text-[#7a6b5c] font-mono">({bc.template_meta_name})</span>
-          </div>
-          {bc.template_header && <p className="text-sm font-bold text-[#1c1410]">{bc.template_header}</p>}
-          <p className="text-sm text-[#4a3c30] whitespace-pre-line">{bc.template_body}</p>
-          {bc.template_footer && <p className="text-xs text-[#7a6b5c] italic">{bc.template_footer}</p>}
-        </div>
-      </div>
     </div>
   );
 }
 
-// ── Stat Card ────────────────────────────────────────────────────────────────
+// ── Clickable Stat Card ──────────────────────────────────────────────────────
+function ClickableStatCard({ label, value, icon, color, sub, onClick }: {
+  label: string; value: number; icon: React.ReactNode; color: string; sub?: string; onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick} className="px-5 py-4 text-center hover:bg-[#faf8f6] transition-colors group">
+      <div className={cn('flex items-center justify-center gap-1.5 text-xs font-medium mb-1', color)}>
+        {icon} {label}
+      </div>
+      <p className={cn('text-3xl font-bold', color)}>{value}</p>
+      {sub && <p className="text-[10px] text-[#7a6b5c] mt-0.5">{sub}</p>}
+      <div className="flex items-center justify-center gap-0.5 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="text-[10px] text-primary font-medium">View details</span>
+        <ChevronRight className="w-3 h-3 text-primary" />
+      </div>
+    </button>
+  );
+}
+
+// ── Static Stat Card ─────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, color, sub }: {
   label: string; value: number; icon: React.ReactNode; color: string; sub?: string;
 }) {

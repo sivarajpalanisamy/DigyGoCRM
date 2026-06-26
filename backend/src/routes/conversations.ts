@@ -1178,7 +1178,10 @@ router.get('/broadcasts', checkPermission('inbox:send'), async (req: AuthRequest
   try {
     let sql = `SELECT b.id, b.name, b.template_name, b.template_meta_name, b.total_leads,
                b.sent, b.failed, b.skipped, b.delivered, b.read_count, b.status,
-               b.created_at, b.completed_at, b.scheduled_at, u.name AS created_by_name
+               b.created_at, b.completed_at, b.scheduled_at,
+               COALESCE(b.unique_numbers, 0) AS unique_numbers,
+               COALESCE(b.retry_count, 0) AS retry_count,
+               u.name AS created_by_name
                FROM broadcasts b
                LEFT JOIN users u ON u.id = b.created_by
                WHERE b.tenant_id = $1`;
@@ -1230,6 +1233,59 @@ router.get('/broadcasts/:id', checkPermission('inbox:send'), async (req: AuthReq
       ...broadcast,
       delivery_stats: statusCounts,
       failure_breakdown: failRes.rows,
+    });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
+});
+
+// GET /api/conversations/broadcasts/:id/recipients — paginated recipients list with status filter
+router.get('/broadcasts/:id/recipients', checkPermission('inbox:send'), async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { id } = req.params;
+  const { status, search, page = '1', limit = '50' } = req.query as Record<string, string>;
+  try {
+    // Verify broadcast belongs to tenant
+    const bCheck = await query(`SELECT id FROM broadcasts WHERE id=$1::uuid AND tenant_id=$2`, [id, tenantId]);
+    if (!bCheck.rows[0]) { res.status(404).json({ error: 'Broadcast not found' }); return; }
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageSize = Math.min(100, Math.max(10, parseInt(limit) || 50));
+    const offset = (pageNum - 1) * pageSize;
+    const params: any[] = [id, tenantId];
+    let where = `m.broadcast_id = $1::uuid AND m.tenant_id = $2`;
+
+    if (status && status !== 'all') {
+      params.push(status);
+      where += ` AND m.status = $${params.length}`;
+    }
+    if (search?.trim()) {
+      params.push(`%${search.trim().toLowerCase()}%`);
+      where += ` AND (LOWER(l.name) LIKE $${params.length} OR l.phone LIKE $${params.length})`;
+    }
+
+    const countRes = await query(
+      `SELECT COUNT(*)::int AS total FROM messages m LEFT JOIN leads l ON l.id = m.lead_id WHERE ${where}`,
+      params,
+    );
+    const total = countRes.rows[0]?.total ?? 0;
+
+    params.push(pageSize, offset);
+    const dataRes = await query(
+      `SELECT m.id AS message_id, m.status, m.error_reason, m.created_at AS sent_at,
+              l.id AS lead_id, l.name, l.phone, l.email
+       FROM messages m
+       LEFT JOIN leads l ON l.id = m.lead_id
+       WHERE ${where}
+       ORDER BY m.created_at
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params,
+    );
+
+    res.json({
+      recipients: dataRes.rows,
+      total,
+      page: pageNum,
+      page_size: pageSize,
+      total_pages: Math.ceil(total / pageSize),
     });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
 });
@@ -1354,6 +1410,9 @@ router.post('/broadcasts/:id/retry', checkPermission('inbox:send'), async (req: 
         failed++;
       }
     }
+
+    // Increment retry count
+    await query(`UPDATE broadcasts SET retry_count = COALESCE(retry_count, 0) + 1 WHERE id=$1::uuid`, [id]);
 
     res.json({ retried: failedRes.rows.length, succeeded, failed });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Server error' }); }
@@ -1665,6 +1724,10 @@ router.post('/broadcast', checkPermission('inbox:send'), upload.single('header_f
       fs.writeFileSync(path.join(process.cwd(), fp), bcUploadedFile.buffer);
       await query('UPDATE templates SET file_path=$1, file_type=$2, file_name=$3 WHERE id=$4::uuid', [fp, bcUploadedFile.mimetype, req.file?.originalname ?? null, template_id]);
     }
+
+    // Store unique numbers count
+    const uniqueNumbers = dedupedLeads.filter((l: any) => l.phone).length;
+    await query(`UPDATE broadcasts SET unique_numbers=$1 WHERE id=$2::uuid`, [uniqueNumbers, broadcastId]);
 
     let sent = 0, failed = 0, skipped = dupCount; // count duplicates as skipped
     const errors: string[] = [];

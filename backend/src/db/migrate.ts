@@ -116,6 +116,8 @@ const MIGRATIONS = [
   'migration_114_message_reply_to.sql',
   'migration_115_canned_responses.sql',
   'migration_116_conversation_tags.sql',
+  'migration_117_template_meta_edit_at.sql',
+  'migration_118_broadcast_enhancements.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
