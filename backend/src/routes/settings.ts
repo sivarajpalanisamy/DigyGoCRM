@@ -51,6 +51,7 @@ export const FULL_PERMISSIONS: Record<string, boolean> = {
   'calendar:manage': true, 'calendar:view': true, 'pipeline:manage': true,
   'integrations:view': true, 'integrations:manage': true,
   'calls:view_all': true, 'calls:view_own': true, 'calls:recordings': true,
+  'devices:view': true, 'devices:manage': true,
 };
 
 // Default custom permissions for newly created staff (read-only access to most modules).
@@ -82,6 +83,7 @@ const CUSTOM_DEFAULT_PERMISSIONS: Record<string, boolean> = {
   'calendar:manage': false, 'calendar:view': true, 'pipeline:manage': false,
   'integrations:view': true, 'integrations:manage': false,
   'calls:view_all': false, 'calls:view_own': true, 'calls:recordings': false,
+  'devices:view': false, 'devices:manage': false,
 };
 
 // Reserved key (inside the permissions JSON) recording the admin's explicit choice

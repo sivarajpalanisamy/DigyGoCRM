@@ -1,0 +1,75 @@
+name: digygo_dialer
+description: "DigyGo Dialer - call + CRM sync"
+publish_to: 'none'
+
+version: 1.1.0+2
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Networking
+  dio: ^5.7.0
+
+  # Local storage / offline outbox
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  path_provider: ^2.1.4
+
+  # Secure token store (Android Keystore)
+  flutter_secure_storage: ^9.2.2
+
+  # Runtime permissions + default-dialer role helpers
+  permission_handler: ^11.3.1
+
+  # Phone number formatting (aligns with backend normalizePhone)
+  libphonenumber_plugin: ^0.3.3
+
+  # Device call log + contacts (the dialer's data source)
+  call_log: ^5.0.1
+  flutter_contacts: ^1.1.9+2
+
+  # Dial / SMS / WhatsApp intents
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # Branding generators
+  flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/branding/
+
+# ── Launcher icon (orange telephone handset) ────────────────────────────────────
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/branding/app_icon.png"
+  min_sdk_android: 24
+  adaptive_icon_background: "#ea580c"
+  adaptive_icon_foreground: "assets/branding/app_icon_fg.png"
+
+# ── Splash screen (padded wordmark on white, centered) ──────────────────────────
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/branding/splash.png
+  android_gravity: center
+  android_12:
+    color: "#ffffff"
+    image: assets/branding/splash.png

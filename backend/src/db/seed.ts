@@ -11,7 +11,7 @@ async function seed() {
     await client.query(`
       INSERT INTO users (email, password_hash, name, role)
       VALUES ($1, $2, $3, 'super_admin')
-      ON CONFLICT (email) DO NOTHING
+      ON CONFLICT DO NOTHING
     `, ['admin@digygocrm.com', superHash, 'DigyGo Admin']);
 
     // ── Demo tenant (a sample business) ──────────────────────────────────────
@@ -28,7 +28,7 @@ async function seed() {
     await client.query(`
       INSERT INTO users (tenant_id, email, password_hash, name, role)
       VALUES ($1, $2, $3, $4, 'admin')
-      ON CONFLICT (email) DO NOTHING
+      ON CONFLICT DO NOTHING
     `, [tenantId, 'saral@demo.com', tenantHash, 'Saral Bakery Admin']);
 
     // Company settings
@@ -60,7 +60,7 @@ async function seed() {
     await client.query(`
       INSERT INTO users (tenant_id, email, password_hash, name, role)
       VALUES ($1, $2, $3, $4, 'staff')
-      ON CONFLICT (email) DO NOTHING
+      ON CONFLICT DO NOTHING
     `, [tenantId, 'staff@demo.com', staffHash, 'Demo Staff']);
 
     const staffRes = await client.query(
@@ -127,9 +127,9 @@ async function seed() {
 
     // Sample booking link
     await client.query(`
-      INSERT INTO booking_links (tenant_id, created_by, name, slug, duration_mins, buffer_mins,
+      INSERT INTO booking_links (tenant_id, user_id, created_by, title, name, slug, duration_mins, buffer_mins,
                                   location, description, availability, is_active)
-      VALUES ($1, $2, '30-min Discovery Call', 'discovery-call', 30, 5,
+      VALUES ($1, $2, $2, '30-min Discovery Call', '30-min Discovery Call', 'discovery-call', 30, 5,
               'Google Meet', 'Book a free 30-minute call to discuss your needs.',
               '{"monday":{"enabled":true,"start":"09:00","end":"17:00"},
                 "tuesday":{"enabled":true,"start":"09:00","end":"17:00"},

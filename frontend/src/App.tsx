@@ -31,6 +31,7 @@ import SettingsPage from "./pages/SettingsPage";
 import CompanyDetailsPage from "./pages/CompanyDetailsPage";
 import BrandingPage from "./pages/BrandingPage";
 import SecurityPage from "./pages/SecurityPage";
+import DevicesPage from "./pages/DevicesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import AssignmentRulesPage from "./pages/AssignmentRulesPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
@@ -132,6 +133,7 @@ const App = () => (
             <Route path="/settings/company" element={<CompanyDetailsPage />} />
             <Route path="/settings/branding" element={<BrandingPage />} />
             <Route path="/settings/security" element={<SecurityPage />} />
+            <Route path="/settings/devices" element={<DevicesPage />} />
             <Route path="/settings/notifications" element={<NotificationsPage />} />
             <Route path="/settings/assignment-rules" element={<AssignmentRulesPage />} />
             <Route path="/settings/integrations" element={<IntegrationsPage />} />
