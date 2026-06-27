@@ -12,7 +12,7 @@ function sendWARequest(phoneNumberId: string, token: string, payload: object): P
     const body = JSON.stringify(payload);
     const req = https.request({
       hostname: 'graph.facebook.com',
-      path: `/v17.0/${phoneNumberId}/messages`,
+      path: `/v21.0/${phoneNumberId}/messages`,
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
