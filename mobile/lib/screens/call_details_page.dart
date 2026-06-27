@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 import '../theme.dart';
 import '../services/api.dart';
@@ -41,7 +42,15 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
   Map _lead = {};
   List<dynamic> _tags = [];
   List<dynamic> _activities = [];
+  List<dynamic> _calls = [];
   List<dynamic> _pipelines = [];
+  bool _canAssign = false;
+
+  // recording playback
+  final AudioPlayer _player = AudioPlayer();
+  String? _playingCallId;
+  String? _loadingCallId;
+  final Map<String, String> _recPath = {}; // callId -> local temp path
 
   // new-lead form
   final _nameCtrl = TextEditingController();
@@ -53,11 +62,13 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
   @override
   void initState() {
     super.initState();
+    _player.onPlayerComplete.listen((_) { if (mounted) setState(() => _playingCallId = null); });
     _load();
   }
 
   @override
   void dispose() {
+    _player.dispose();
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _notesCtrl.dispose();
@@ -82,6 +93,8 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           _lead = Map.from(d['lead'] ?? {});
           _tags = d['tags'] as List? ?? [];
           _activities = d['activities'] as List? ?? [];
+          _calls = d['calls'] as List? ?? [];
+          _canAssign = d['canAssign'] == true;
           _loading = false;
         });
       } else {
@@ -162,7 +175,10 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           _infoRow(Icons.phone, phone, trailing: _miniCall(phone)),
           if (email.isNotEmpty) _infoRow(Icons.email_outlined, email),
           _infoRow(Icons.layers_outlined, [pipeline, stage].where((s) => s.isNotEmpty).join(' · ').ifEmpty('No pipeline')),
-          _infoRow(Icons.person_outline, assigned.isNotEmpty ? assigned : 'Unassigned'),
+          _infoRow(Icons.person_outline, assigned.isNotEmpty ? assigned : 'Unassigned',
+              trailing: _canAssign
+                  ? TextButton(onPressed: _assignStaff, child: const Text('Assign', style: TextStyle(color: Brand.accent, fontWeight: FontWeight.w700)))
+                  : null),
           if (source.isNotEmpty) _infoRow(Icons.sell_outlined, source),
         ]),
         const SizedBox(height: 14),
@@ -197,6 +213,13 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           _quickAction(Icons.access_time, 'Follow-up', () => _openFollowupDialog()),
           _quickAction(Icons.event, 'Appointment', () => _openFollowupDialog(defaultTitle: 'Appointment')),
         ]),
+        const SizedBox(height: 18),
+        // Call recordings (with player)
+        _sectionTitle('Call Recordings'),
+        if (_calls.where((c) => c['has_recording'] == true).isEmpty)
+          const Text('No recordings yet', style: TextStyle(color: Brand.muted, fontSize: 13))
+        else
+          ..._calls.where((c) => c['has_recording'] == true).map(_recRow),
         const SizedBox(height: 18),
         // Activity timeline
         _sectionTitle('Activity Timeline'),
@@ -566,6 +589,96 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
         ),
       ]),
     );
+  }
+
+  // ── Recording player ─────────────────────────────────────────────────────────
+  Widget _recRow(dynamic c) {
+    final id = c['id'].toString();
+    final isOut = (c['direction'] ?? '').toString() == 'OUTBOUND';
+    final outcome = (c['outcome'] ?? '').toString();
+    final dur = (c['duration_seconds'] ?? 0) as int;
+    final playing = _playingCallId == id;
+    final loading = _loadingCallId == id;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0x12000000))),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        leading: loading
+            ? const SizedBox(width: 40, height: 40, child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))))
+            : IconButton(
+                icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_fill, color: Brand.accent, size: 38),
+                onPressed: () => _togglePlay(id),
+              ),
+        title: Text('${isOut ? 'Outgoing' : 'Incoming'} · $outcome', style: const TextStyle(fontWeight: FontWeight.w600, color: Brand.ink, fontSize: 13.5)),
+        subtitle: Text([_fmt(c['started_at']), if (dur > 0) _durStr(dur)].join('  ·  '), style: const TextStyle(color: Brand.muted, fontSize: 12)),
+      ),
+    );
+  }
+
+  Future<void> _togglePlay(String id) async {
+    if (_playingCallId == id) {
+      await _player.pause();
+      if (mounted) setState(() => _playingCallId = null);
+      return;
+    }
+    await _player.stop();
+    setState(() { _loadingCallId = id; _playingCallId = null; });
+    try {
+      final path = _recPath[id] ?? await Api.instance.downloadRecording(id);
+      _recPath[id] = path;
+      await _player.play(DeviceFileSource(path));
+      if (mounted) setState(() { _playingCallId = id; _loadingCallId = null; });
+    } catch (_) {
+      if (mounted) setState(() => _loadingCallId = null);
+      _toast('Could not play recording', error: true);
+    }
+  }
+
+  String _durStr(int s) => s >= 60 ? '${s ~/ 60}m ${s % 60}s' : '${s}s';
+
+  // ── Assign staff ─────────────────────────────────────────────────────────────
+  Future<void> _assignStaff() async {
+    List<dynamic> staff;
+    try { staff = await Api.instance.staff(); } catch (_) { _toast('Could not load staff', error: true); return; }
+    if (!mounted) return;
+    final cur = _lead['assigned_to']?.toString();
+    final picked = await showModalBottomSheet<Map<String, String?>>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (_, sc) => ListView(controller: sc, children: [
+          const Padding(padding: EdgeInsets.all(16), child: Text('Assign to', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
+          ListTile(
+            title: const Text('Unassigned'),
+            trailing: cur == null ? const Icon(Icons.check, color: Brand.accent) : null,
+            onTap: () => Navigator.pop(context, <String, String?>{'assignedTo': null}),
+          ),
+          ...staff.map((u) => ListTile(
+                leading: CircleAvatar(backgroundColor: const Color(0x14EA580C),
+                    child: Text(((u['name'] ?? '?').toString().isNotEmpty ? u['name'][0] : '?').toString().toUpperCase(), style: const TextStyle(color: Brand.accent, fontWeight: FontWeight.w700))),
+                title: Text((u['name'] ?? '').toString()),
+                subtitle: Text((u['email'] ?? '').toString(), style: const TextStyle(fontSize: 11.5)),
+                trailing: u['id'].toString() == cur ? const Icon(Icons.check, color: Brand.accent) : null,
+                onTap: () => Navigator.pop(context, <String, String?>{'assignedTo': u['id'].toString()}),
+              )),
+          const SizedBox(height: 12),
+        ]),
+      ),
+    );
+    if (picked == null) return;
+    try {
+      await Api.instance.assignLead(_lead['id'].toString(), picked['assignedTo']);
+      _toast('Lead assigned');
+      await _load();
+    } catch (_) {
+      _toast('Could not assign (check your permission)', error: true);
+    }
   }
 
   Widget _miniCall(String phone, {bool light = false}) => InkWell(
