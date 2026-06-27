@@ -268,10 +268,11 @@ class Api {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
-  /// Update an existing lead (move stage and/or add a note) from the post-call screen.
-  Future<Map<String, dynamic>> updateLead(String id, {String? stageId, String? note}) async {
+  /// Update an existing lead (move stage/pipeline and/or add a note).
+  Future<Map<String, dynamic>> updateLead(String id, {String? stageId, String? pipelineId, String? note}) async {
     final res = await _dio.post('/api/mobile/leads/$id/update', data: {
       if (stageId != null) 'stageId': stageId,
+      if (pipelineId != null) 'pipelineId': pipelineId,
       if (note != null && note.isNotEmpty) 'note': note,
     });
     return Map<String, dynamic>.from(res.data as Map);
