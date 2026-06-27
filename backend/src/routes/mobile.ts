@@ -666,10 +666,36 @@ router.get('/me/stats', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/mobile/leads — scoped lead list for the dialer (only_assigned aware)
+// GET /api/mobile/pipelines — pipelines with their stages (for the CRM Leads filter)
+router.get('/pipelines', async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  try {
+    const pls = await query(
+      'SELECT id, name FROM pipelines WHERE tenant_id=$1::uuid ORDER BY created_at',
+      [tenantId]
+    );
+    const stages = await query(
+      `SELECT id, pipeline_id, name, stage_order, color
+       FROM pipeline_stages WHERE tenant_id=$1::uuid ORDER BY stage_order`,
+      [tenantId]
+    );
+    const byPipe: Record<string, any[]> = {};
+    for (const s of stages.rows) {
+      (byPipe[s.pipeline_id] ||= []).push({ id: s.id, name: s.name, color: s.color });
+    }
+    const pipelines = pls.rows.map((p: any) => ({ id: p.id, name: p.name, stages: byPipe[p.id] || [] }));
+    res.json({ pipelines });
+  } catch (err: any) {
+    console.error('[mobile/pipelines]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/mobile/leads — scoped lead list for the dialer (only_assigned aware).
+// Optional filters: pipelineId, stageId, search.
 router.get('/leads', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { search, limit = '100' } = req.query as Record<string, string>;
+  const { search, limit = '200', pipelineId, stageId } = req.query as Record<string, string>;
 
   try {
     let viewAll = role === 'super_admin';
@@ -683,11 +709,14 @@ router.get('/leads', async (req: AuthRequest, res: Response) => {
     const params: any[] = [tenantId];
     const conds = ['l.tenant_id=$1::uuid', 'l.is_deleted=FALSE'];
     if (!viewAll) { params.push(userId); conds.push(`l.assigned_to=$${params.length}::uuid`); }
+    if (pipelineId) { params.push(pipelineId); conds.push(`l.pipeline_id=$${params.length}::uuid`); }
+    if (stageId) { params.push(stageId); conds.push(`l.stage_id=$${params.length}::uuid`); }
     if (search) { params.push(`%${search}%`); conds.push(`(l.name ILIKE $${params.length} OR l.phone ILIKE $${params.length})`); }
-    params.push(Math.min(parseInt(limit) || 100, 500));
+    params.push(Math.min(parseInt(limit) || 200, 500));
 
     const result = await query(
       `SELECT l.id, l.name, l.phone, l.email, l.source, l.assigned_to,
+              l.pipeline_id, l.stage_id,
               u.name AS assigned_name, s.name AS stage, p.name AS pipeline
        FROM leads l
        LEFT JOIN users u ON u.id = l.assigned_to

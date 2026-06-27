@@ -185,64 +185,103 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    // Known OEM call-recording folders (relative to external storage root).
+    // Known OEM call-recording folders (fast-path seeds). Auto-discovery below finds
+    // the rest, so OEM-specific paths (OnePlus/Oppo/ColorOS/Samsung/Xiaomi) don't all
+    // need to be listed.
     private val recordingDirs = listOf(
-        "Recordings/Call", "Recordings/Call Recordings", "Call recordings", "CallRecordings",
-        "Call", "Sounds/CallRecordings", "Music/Recordings/Call Recordings",
+        "Recordings/Call", "Recordings/Call Recordings", "Recordings/PhoneRecord",
+        "Call recordings", "Call Recordings", "CallRecordings", "Call",
+        "Sounds/CallRecordings", "Music/Recordings/Call Recordings",
         "MIUI/sound_recorder/call_rec", "MIUI/sound_recorder",
         "Record/Call", "Record/PhoneRecord", "PhoneRecord",
-        "Android/media/com.samsung.android.app.telephonyui/CallRecordings"
+        "Android/media/com.samsung.android.app.telephonyui/CallRecordings",
+        "Android/media/com.oneplus.soundrecorder/Recordings/Call Recordings",
+        "Android/media/com.oplus.soundrecorder/Recordings/Call Recordings",
+        "Android/media/com.coloros.soundrecorder/Recordings/Call Recordings"
     )
     private val audioExt = listOf(".mp3", ".m4a", ".amr", ".wav", ".aac", ".3gp", ".ogg")
+    // Directory-name hints that a folder may hold recordings (for auto-discovery).
+    private val recDirHints = listOf("call", "record", "voice", "sound", "recording")
 
-    // Returns audio files in OEM recording folders modified at/after sinceMs.
-    private fun scanRecordings(sinceMs: Long): List<Map<String, Any?>> {
-        val out = ArrayList<Map<String, Any?>>()
-        if (!hasAllFilesAccess()) return out
-        val root = Environment.getExternalStorageDirectory()
-        for (rel in recordingDirs) {
-            val dir = File(root, rel)
-            if (!dir.isDirectory) continue
-            collect(dir, sinceMs, out, 0)
-        }
-        return out
+    private fun looksLikeRecDir(name: String): Boolean {
+        val n = name.lowercase()
+        return recDirHints.any { n.contains(it) }
     }
 
-    private fun collect(dir: File, sinceMs: Long, out: ArrayList<Map<String, Any?>>, depth: Int) {
-        if (depth > 2) return
+    // Heuristic: does this file path look like a CALL recording (vs a voice memo)?
+    private fun looksLikeCallRecording(path: String): Boolean {
+        val p = path.lowercase()
+        return p.contains("call") || p.contains("phonerecord") || p.contains("/record/")
+    }
+
+    // Returns call-recording audio files modified at/after sinceMs. Combines the known
+    // seed folders with an auto-discovery walk so it works across OEMs (OnePlus etc.).
+    private fun scanRecordings(sinceMs: Long): List<Map<String, Any?>> {
+        if (!hasAllFilesAccess()) return emptyList()
+        val out = HashMap<String, Map<String, Any?>>()
+        val root = Environment.getExternalStorageDirectory()
+        // 1) Known folders — trusted, take any audio inside.
+        for (rel in recordingDirs) {
+            val dir = File(root, rel)
+            if (dir.isDirectory) collect(dir, sinceMs, out, 0, true)
+        }
+        // 2) Auto-discover call-recording audio anywhere under storage.
+        autoDiscover(root, sinceMs, out, 0)
+        // 3) Android/media/<pkg> is readable (unlike Android/data) — many OEMs store here.
+        File(root, "Android/media").listFiles()?.forEach { pkg ->
+            if (pkg.isDirectory) autoDiscover(pkg, sinceMs, out, 0)
+        }
+        return out.values.toList()
+    }
+
+    private fun collect(dir: File, sinceMs: Long, out: HashMap<String, Map<String, Any?>>, depth: Int, trusted: Boolean) {
+        if (depth > 3) return
         val files = dir.listFiles() ?: return
         for (f in files) {
-            if (f.isDirectory) { collect(f, sinceMs, out, depth + 1); continue }
+            if (f.isDirectory) { collect(f, sinceMs, out, depth + 1, trusted); continue }
             val lower = f.name.lowercase()
             if (audioExt.none { lower.endsWith(it) }) continue
             if (f.lastModified() < sinceMs) continue
-            out.add(hashMapOf(
-                "path" to f.absolutePath,
-                "name" to f.name,
-                "modified" to f.lastModified(),
-                "size" to f.length()
-            ))
+            if (!trusted && !looksLikeCallRecording(f.absolutePath)) continue
+            out[f.absolutePath] = hashMapOf(
+                "path" to f.absolutePath, "name" to f.name,
+                "modified" to f.lastModified(), "size" to f.length()
+            )
         }
     }
 
-    // Does this device have an OEM call-recording folder (i.e. the feature exists)?
+    // Walk the tree, descending into recording-like folders (and one level from the root),
+    // collecting audio whose path looks like a call recording.
+    private fun autoDiscover(dir: File, sinceMs: Long, out: HashMap<String, Map<String, Any?>>, depth: Int) {
+        if (depth > 5) return
+        val files = dir.listFiles() ?: return
+        for (f in files) {
+            if (f.isDirectory) {
+                if (depth == 0 && f.name.equals("Android", true)) continue // via Android/media
+                if (depth == 0 || looksLikeRecDir(f.name)) autoDiscover(f, sinceMs, out, depth + 1)
+            } else {
+                val lower = f.name.lowercase()
+                if (audioExt.none { lower.endsWith(it) }) continue
+                if (f.lastModified() < sinceMs) continue
+                if (!looksLikeCallRecording(f.absolutePath)) continue
+                out[f.absolutePath] = hashMapOf(
+                    "path" to f.absolutePath, "name" to f.name,
+                    "modified" to f.lastModified(), "size" to f.length()
+                )
+            }
+        }
+    }
+
+    // Does this device have any call recordings we can read (proof the feature works)?
     private fun recordingFolderExists(): Boolean {
         if (!hasAllFilesAccess()) return false
+        if (scanRecordings(0L).isNotEmpty()) return true
         val root = Environment.getExternalStorageDirectory()
         return recordingDirs.any { File(root, it).isDirectory }
     }
 
-    // How many recording files already exist (proof the built-in recorder is working).
-    private fun recordingFileCount(): Int {
-        val list = ArrayList<Map<String, Any?>>()
-        if (!hasAllFilesAccess()) return 0
-        val root = Environment.getExternalStorageDirectory()
-        for (rel in recordingDirs) {
-            val dir = File(root, rel)
-            if (dir.isDirectory) collect(dir, 0L, list, 0)
-        }
-        return list.size
-    }
+    // How many recording files we can see (proof the built-in recorder is working).
+    private fun recordingFileCount(): Int = scanRecordings(0L).size
 
     // Best-effort: open the default phone app so the user can toggle call recording.
     // Android exposes no universal deep link to the OEM call-recording setting.
@@ -285,21 +324,20 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    // Place the call through the phone's DEFAULT/system dialer (Callyzer-style).
-    // The OEM dialer shows its in-call UI and records the call; we harvest + log it.
-    // ACTION_CALL dials immediately; falls back to ACTION_DIAL if CALL_PHONE is missing.
+    // Show a chooser of ALL installed dialer apps so the agent can pick which one places
+    // (and records) the call. ACTION_CALL would dial directly through the default phone
+    // app with no chooser; ACTION_DIAL is handled by every dialer, so the chooser lists
+    // them all — the chosen app opens with the number ready to call.
     private fun placeCallSystem(number: String) {
         if (number.isBlank()) return
         val uri = Uri.parse("tel:" + Uri.encode(number))
+        val dial = Intent(Intent.ACTION_DIAL, uri)
         try {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                == PackageManager.PERMISSION_GRANTED) {
-                startActivity(Intent(Intent.ACTION_CALL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            } else {
-                startActivity(Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            }
-        } catch (e: SecurityException) {
-            startActivity(Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            val chooser = Intent.createChooser(dial, "Call using")
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(chooser)
+        } catch (e: Exception) {
+            try { startActivity(dial.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (e2: Exception) {}
         }
     }
 

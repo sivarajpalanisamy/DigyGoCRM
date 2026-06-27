@@ -6,6 +6,7 @@ import '../services/call_launcher.dart';
 import '../widgets/app_dialog.dart';
 import 'call_history_page.dart';
 import 'contacts_page.dart';
+import 'crm_leads_page.dart';
 import 'enable_recording_screen.dart';
 
 /// The dialer shell — a Callyzer-style call app. Tabs: Call History, Contacts,
@@ -25,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final List<Widget> _pages = [
     const CallHistoryPage(),
     const ContactsPage(),
+    const CrmLeadsPage(),
     _MorePage(onSignOut: widget.onSignOut),
   ];
 
@@ -62,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.call_outlined), selectedIcon: Icon(Icons.call), label: 'Call History'),
           NavigationDestination(icon: Icon(Icons.contacts_outlined), selectedIcon: Icon(Icons.contacts), label: 'Contacts'),
+          NavigationDestination(icon: Icon(Icons.people_alt_outlined), selectedIcon: Icon(Icons.people_alt), label: 'CRM Leads'),
           NavigationDestination(icon: Icon(Icons.menu), label: 'More'),
         ],
       ),

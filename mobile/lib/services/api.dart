@@ -215,11 +215,19 @@ class Api {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
-  Future<List<dynamic>> leads({String? search}) async {
+  Future<List<dynamic>> leads({String? search, String? pipelineId, String? stageId}) async {
     final res = await _dio.get('/api/mobile/leads', queryParameters: {
       if (search != null && search.isNotEmpty) 'search': search,
+      if (pipelineId != null && pipelineId.isNotEmpty) 'pipelineId': pipelineId,
+      if (stageId != null && stageId.isNotEmpty) 'stageId': stageId,
     });
     return (res.data['leads'] as List?) ?? [];
+  }
+
+  /// Pipelines with their stages, for the CRM Leads filter.
+  Future<List<dynamic>> pipelines() async {
+    final res = await _dio.get('/api/mobile/pipelines');
+    return (res.data['pipelines'] as List?) ?? [];
   }
 
   /// Post one or many calls (offline batch). Returns the ingest summary.
