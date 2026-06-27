@@ -266,7 +266,7 @@ router.get('/numbers', checkPermission('devices:view'), async (req: AuthRequest,
   try {
     const r = await query(
       `SELECT v.id, v.phone_number, v.verified, v.verified_at, v.created_at,
-              u.name AS user_name, u.email AS user_email
+              v.user_id, u.name AS user_name, u.email AS user_email
        FROM dialer_number_verifications v
        JOIN users u ON u.id = v.user_id
        WHERE v.tenant_id=$1::uuid

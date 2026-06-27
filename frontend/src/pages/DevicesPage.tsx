@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, ShieldCheck, Clock, Smartphone, Unplug } from 'lucide-react';
+import { ArrowLeft, Trash2, ShieldCheck, Clock, Smartphone, Unplug, Wifi, WifiOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ interface VerifiedNumber {
   verified: boolean;
   verified_at: string | null;
   created_at: string;
+  user_id: string;
   user_name: string;
   user_email: string;
 }
@@ -66,6 +67,16 @@ export default function DevicesPage() {
   };
 
   useEffect(() => { loadAll(); }, []);
+
+  // Staff who already have a verified number
+  const assignedStaffIds = new Set(numbers.filter((n) => n.verified).map((n) => n.user_id));
+
+  // Map phone number to connected device for merged display
+  const deviceByPhone = new Map<string, PairedDevice>();
+  for (const d of devices) {
+    const label = d.device_label ?? '';
+    if (label.startsWith('+')) deviceByPhone.set(label, d);
+  }
 
   const revokeDevice = async (id: string, userName: string) => {
     if (!confirm(`Unpair device for ${userName}? They will need to reinstall the app to reconnect.`)) return;
@@ -129,7 +140,7 @@ export default function DevicesPage() {
       {/* Verify a number + assign staff */}
       {canManage && (
         <section className="bg-white rounded-xl border border-black/5 p-5 mb-6">
-          <h2 className="font-semibold text-[#1c1410] text-[14px] mb-1">Verify a mobile number</h2>
+          <h2 className="font-semibold text-[#1c1410] text-[14px] mb-1">Add a new number</h2>
           <p className="text-[12px] text-[#7a6b5c] mb-4">
             Assign a staff member and verify their mobile number. Once verified, install the DigyGo Dialer app on that phone - it auto-connects and records calls under their name.
           </p>
@@ -142,8 +153,8 @@ export default function DevicesPage() {
             >
               <option value="">Assign to staff member...</option>
               {staffList.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}{s.is_owner ? ' (Owner)' : ''}
+                <option key={s.id} value={s.id} disabled={assignedStaffIds.has(s.id)}>
+                  {s.name}{s.is_owner ? ' (Owner)' : ''}{assignedStaffIds.has(s.id) ? ' - already assigned' : ''}
                 </option>
               ))}
             </select>
@@ -192,60 +203,62 @@ export default function DevicesPage() {
         </div>
       ) : (
         <>
-          {/* Verified numbers */}
-          <h3 className="text-[12px] font-bold uppercase tracking-wide text-[#7a6b5c] mb-2">Verified numbers ({numbers.length})</h3>
+          <h3 className="text-[12px] font-bold uppercase tracking-wide text-[#7a6b5c] mb-2">Assigned numbers ({numbers.length})</h3>
           {numbers.length === 0 ? (
-            <div className="bg-white rounded-xl border border-black/5 p-6 text-center text-[13px] text-[#7a6b5c] mb-6">
-              No numbers yet. Verify one above.
-            </div>
-          ) : (
-            <div className="space-y-2 mb-6">
-              {numbers.map((n) => (
-                <div key={n.id} className="bg-white rounded-xl border border-black/5 p-4 flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${n.verified ? 'bg-emerald-100 text-emerald-600' : 'bg-yellow-100 text-yellow-600'}`}>
-                    {n.verified ? <ShieldCheck className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[#1c1410] text-[14px]">{n.phone_number}</p>
-                    <p className="text-[12px] text-[#7a6b5c] truncate">Assigned to {n.user_name} · {n.verified ? 'Verified' : 'Pending OTP'}</p>
-                  </div>
-                  {canManage && (
-                    <button onClick={() => deleteNumber(n.id)} className="p-2 rounded-lg text-red-500 hover:bg-red-50 shrink-0" title="Remove">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Connected devices */}
-          <h3 className="text-[12px] font-bold uppercase tracking-wide text-[#7a6b5c] mb-2">Connected devices ({devices.length})</h3>
-          {devices.length === 0 ? (
             <div className="bg-white rounded-xl border border-black/5 p-6 text-center text-[13px] text-[#7a6b5c]">
-              No devices connected. Verify a number above, then install the DigyGo Dialer app on that phone.
+              No numbers yet. Add one above.
             </div>
           ) : (
             <div className="space-y-2">
-              {devices.map((d) => (
-                <div key={d.id} className="bg-white rounded-xl border border-black/5 p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 text-blue-600">
-                    <Smartphone className="w-5 h-5" />
+              {numbers.map((n) => {
+                const device = deviceByPhone.get(n.phone_number);
+                const connected = !!device;
+                return (
+                  <div key={n.id} className="bg-white rounded-xl border border-black/5 p-4 flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      !n.verified ? 'bg-yellow-100 text-yellow-600'
+                        : connected ? 'bg-emerald-100 text-emerald-600'
+                        : 'bg-blue-100 text-blue-600'
+                    }`}>
+                      {!n.verified ? <Clock className="w-5 h-5" />
+                        : connected ? <Smartphone className="w-5 h-5" />
+                        : <ShieldCheck className="w-5 h-5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-[#1c1410] text-[14px]">{n.user_name}</p>
+                        <span className="text-[11px] text-[#7a6b5c] font-mono">{n.phone_number}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {!n.verified ? (
+                          <span className="text-[11px] text-yellow-600 font-medium">Pending OTP</span>
+                        ) : connected ? (
+                          <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                            <Wifi className="w-3 h-3" /> Connected · Last seen {new Date(device!.last_seen_at!).toLocaleDateString()}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-blue-600 font-medium flex items-center gap-1">
+                            <WifiOff className="w-3 h-3" /> Verified - waiting for app install
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-0.5 shrink-0">
+                      {canManage && connected && (
+                        <button onClick={() => revokeDevice(device!.id, n.user_name)}
+                          className="p-2 rounded-lg text-orange-500 hover:bg-orange-50" title="Disconnect device">
+                          <Unplug className="w-4 h-4" />
+                        </button>
+                      )}
+                      {canManage && (
+                        <button onClick={() => deleteNumber(n.id)} className="p-2 rounded-lg text-red-500 hover:bg-red-50" title="Remove number">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[#1c1410] text-[14px]">{d.user_name}</p>
-                    <p className="text-[12px] text-[#7a6b5c] truncate">
-                      {d.device_label ?? d.platform ?? 'Device'} · {d.last_seen_at ? `Last seen ${new Date(d.last_seen_at).toLocaleDateString()}` : 'Never connected'}
-                    </p>
-                  </div>
-                  {canManage && (
-                    <button onClick={() => revokeDevice(d.id, d.user_name)}
-                      className="p-2 rounded-lg text-red-500 hover:bg-red-50 shrink-0" title="Unpair device">
-                      <Unplug className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
