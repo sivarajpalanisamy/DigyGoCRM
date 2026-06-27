@@ -2,19 +2,18 @@ import { Router, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { query } from '../db';
-import { requireAuth, requireTenant, requireSuperfone, AuthRequest } from '../middleware/auth';
+import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission, hasPermission } from '../middleware/permissions';
 import { RECORDINGS_DIR } from '../utils/recordingDownloader';
 
 const router = Router();
 router.use(requireAuth);
 router.use(requireTenant);
-router.use(requireSuperfone); // Calls module gated by the per-tenant Superfone flag
 
 // GET /api/calls — all calls for tenant with filters + pagination
 router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { direction, outcome, staff_name, date_from, date_to, page = '1', limit = '50' } = req.query as Record<string, string>;
+  const { direction, outcome, staff_name, date_from, date_to, source, page = '1', limit = '50' } = req.query as Record<string, string>;
 
   // Scope: owner/super_admin and calls:view_all → see all; calls:view_own only → own calls
   const isSuper = role === 'super_admin';
@@ -31,6 +30,8 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
 
   if (!viewAll) { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
 
+  // Source filter: 'mobile' = DigyGo Dialer, 'superfone' = Superfone integration
+  if (source)     { params.push(source);                   conditions.push(`cl.source=$${params.length}`); }
   if (direction)  { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
   if (outcome)    { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
   if (staff_name) { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
@@ -64,7 +65,7 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
 // GET /api/calls/export — Excel export
 router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { direction, outcome, staff_name, date_from, date_to } = req.query as Record<string, string>;
+  const { direction, outcome, staff_name, date_from, date_to, source } = req.query as Record<string, string>;
 
   const isSuper = role === 'super_admin';
   let viewAll = false;
@@ -80,6 +81,7 @@ router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest
 
   if (!viewAll) { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
 
+  if (source)     { params.push(source);                   conditions.push(`cl.source=$${params.length}`); }
   if (direction)  { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
   if (outcome)    { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
   if (staff_name) { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
