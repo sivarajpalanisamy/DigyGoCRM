@@ -791,6 +791,57 @@ router.get('/leads/lookup', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/mobile/followups — follow-ups ASSIGNED TO this device's staff user.
+// (The device is bound to a staff via their verified number, so req.user.userId is
+// that staff; we return the follow-ups assigned to them.) ?status=pending|completed|all
+router.get('/followups', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const status = (req.query.status ?? 'pending').toString();
+  try {
+    const conds = ['f.tenant_id=$1::uuid', 'f.assigned_to=$2::uuid', 'l.is_deleted=FALSE'];
+    if (status === 'pending') conds.push('f.completed=FALSE');
+    else if (status === 'completed') conds.push('f.completed=TRUE');
+    const r = await query(
+      `SELECT f.id, f.title, f.description, f.due_at, f.completed, f.completed_at,
+              f.lead_id, l.name AS lead_name, l.phone AS lead_phone,
+              p.name AS pipeline, s.name AS stage
+       FROM lead_followups f
+       JOIN leads l ON l.id = f.lead_id
+       LEFT JOIN pipelines p ON p.id = l.pipeline_id
+       LEFT JOIN pipeline_stages s ON s.id = l.stage_id
+       WHERE ${conds.join(' AND ')}
+       ORDER BY f.completed ASC, f.due_at ASC
+       LIMIT 300`,
+      [tenantId, userId]
+    );
+    res.json({ followups: r.rows });
+  } catch (err: any) {
+    console.error('[mobile/followups]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/mobile/followups/:id/complete — mark a follow-up done (or undo). Body: { completed? }
+router.post('/followups/:id/complete', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const id = req.params.id;
+  const completed = req.body?.completed !== false; // default true
+  try {
+    const r = await query(
+      `UPDATE lead_followups
+       SET completed=$1, completed_at=CASE WHEN $1 THEN NOW() ELSE NULL END
+       WHERE id=$2::uuid AND tenant_id=$3::uuid AND assigned_to=$4::uuid
+       RETURNING id`,
+      [completed, id, tenantId, userId]
+    );
+    if (!r.rows[0]) { res.status(404).json({ error: 'Follow-up not found' }); return; }
+    res.json({ ok: true, completed });
+  } catch (err: any) {
+    console.error('[mobile/followups/complete]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/mobile/leads/:id/details — full lead detail (mirrors the CRM Lead Details
 // panel): lead fields + tags + custom fields + activity timeline + this lead's calls.
 router.get('/leads/:id/details', async (req: AuthRequest, res: Response) => {

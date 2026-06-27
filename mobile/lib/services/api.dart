@@ -298,6 +298,17 @@ class Api {
     await _dio.post('/api/mobile/leads/$leadId/tag', data: {'tag': tag});
   }
 
+  /// Follow-ups assigned to this device's staff. status: pending | completed | all.
+  Future<List<dynamic>> followups({String status = 'pending'}) async {
+    final res = await _dio.get('/api/mobile/followups', queryParameters: {'status': status});
+    return (res.data['followups'] as List?) ?? [];
+  }
+
+  /// Mark a follow-up complete (or undo).
+  Future<void> completeFollowup(String id, {bool completed = true}) async {
+    await _dio.post('/api/mobile/followups/$id/complete', data: {'completed': completed});
+  }
+
   /// Post one or many calls (offline batch). Returns the ingest summary.
   Future<Map<String, dynamic>> postCalls(List<Map<String, dynamic>> calls) async {
     final res = await _dio.post('/api/mobile/calls', data: calls);
