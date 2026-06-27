@@ -855,6 +855,97 @@ router.post('/followups/:id/complete', async (req: AuthRequest, res: Response) =
   }
 });
 
+// GET /api/mobile/calls/:id/recording — stream a call recording (device auth).
+router.get('/calls/:id/recording', async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const id = req.params.id;
+  try {
+    const r = await query(
+      'SELECT recording_path, recording_url FROM call_logs WHERE id=$1::uuid AND tenant_id=$2::uuid',
+      [id, tenantId]
+    );
+    const row = r.rows[0];
+    if (!row) { res.status(404).json({ error: 'Not found' }); return; }
+    if (row.recording_path) {
+      const filePath = path.join(RECORDINGS_DIR, row.recording_path);
+      if (!fs.existsSync(filePath)) { res.status(404).json({ error: 'Recording file missing' }); return; }
+      const ext = path.extname(filePath).toLowerCase();
+      const mime = ext === '.mp3' ? 'audio/mpeg' : ext === '.wav' ? 'audio/wav'
+        : ext === '.ogg' ? 'audio/ogg' : ext === '.amr' ? 'audio/amr'
+        : ext === '.3gp' ? 'audio/3gpp' : 'audio/mp4';
+      const stat = fs.statSync(filePath);
+      res.setHeader('Content-Type', mime);
+      res.setHeader('Content-Length', stat.size);
+      res.setHeader('Accept-Ranges', 'bytes');
+      fs.createReadStream(filePath).pipe(res);
+      return;
+    }
+    if (row.recording_url) { res.redirect(302, row.recording_url); return; }
+    res.status(404).json({ error: 'No recording' });
+  } catch (err: any) {
+    console.error('[mobile/calls/recording]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/mobile/staff — active users in the tenant (for the assign-staff picker).
+router.get('/staff', async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  try {
+    const r = await query(
+      `SELECT id, name, email FROM users
+       WHERE tenant_id=$1::uuid AND is_active=TRUE
+       ORDER BY is_owner DESC NULLS LAST, name ASC`,
+      [tenantId]
+    );
+    res.json({ staff: r.rows });
+  } catch (err: any) {
+    console.error('[mobile/staff]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/mobile/leads/:id/assign — reassign a lead. Gated by leads:assign (or owner).
+// Body: { assignedTo }  (null/'' = unassign)
+router.post('/leads/:id/assign', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  const id = req.params.id;
+  const assignedTo = (req.body?.assignedTo || null) as string | null;
+  try {
+    let canAssign = role === 'super_admin';
+    if (!canAssign) {
+      const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+      canAssign = isOwner || await hasPermission(userId, 'leads:assign', tenantId);
+    }
+    if (!canAssign) { res.status(403).json({ error: 'You do not have permission to assign leads' }); return; }
+
+    const owns = await query('SELECT id FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE', [id, tenantId]);
+    if (!owns.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }
+
+    if (assignedTo) {
+      const u = await query('SELECT id FROM users WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_active=TRUE', [assignedTo, tenantId]);
+      if (!u.rows[0]) { res.status(400).json({ error: 'Staff not found in your organization' }); return; }
+    }
+
+    await query('UPDATE leads SET assigned_to=$1, updated_at=NOW() WHERE id=$2::uuid AND tenant_id=$3::uuid', [assignedTo, id, tenantId]);
+    await query(
+      `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
+       VALUES ($1,$2,'assignment','Lead reassigned from mobile dialer',$3)`,
+      [id, tenantId, userId]
+    ).catch(() => null);
+
+    const updated = await query(
+      `SELECT l.id, l.assigned_to, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
+      [id]
+    );
+    emitToTenant(tenantId!, 'lead:updated', updated.rows[0]);
+    res.json({ ok: true, lead: updated.rows[0] });
+  } catch (err: any) {
+    console.error('[mobile/leads/assign]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/mobile/leads/:id/details — full lead detail (mirrors the CRM Lead Details
 // panel): lead fields + tags + custom fields + activity timeline + this lead's calls.
 router.get('/leads/:id/details', async (req: AuthRequest, res: Response) => {
@@ -894,22 +985,32 @@ router.get('/leads/:id/details', async (req: AuthRequest, res: Response) => {
       [id]
     ).catch(() => ({ rows: [] as any[] }));
 
-    // Exclude call activities — calls live in their own section in the CRM, and their
-    // `detail` holds the call_log id (an internal UUID we must not surface).
+    // Full timeline incl. call activities (to match the CRM). For type='call' the
+    // `detail` holds the call_log id — exposed as call_id so the app can attach the
+    // recording player and never render the raw UUID.
     const activities = await query(
-      `SELECT a.type, a.title, a.detail, a.created_at, u.name AS by_name
+      `SELECT a.type, a.title, a.detail, a.created_at, u.name AS by_name,
+              CASE WHEN a.type='call' THEN a.detail ELSE NULL END AS call_id
        FROM lead_activities a LEFT JOIN users u ON u.id = a.created_by
-       WHERE a.lead_id=$1 AND a.type <> 'call' ORDER BY a.created_at DESC LIMIT 50`,
+       WHERE a.lead_id=$1 ORDER BY a.created_at DESC LIMIT 80`,
       [id]
     ).catch(() => ({ rows: [] as any[] }));
 
     const calls = await query(
-      `SELECT direction, outcome, duration_seconds, started_at
+      `SELECT id, direction, outcome, duration_seconds, started_at,
+              (recording_path IS NOT NULL OR recording_url IS NOT NULL) AS has_recording
        FROM call_logs WHERE lead_id=$1 AND tenant_id=$2::uuid ORDER BY started_at DESC LIMIT 50`,
       [id, tenantId]
     ).catch(() => ({ rows: [] as any[] }));
 
-    res.json({ lead, tags: tags.rows, activities: activities.rows, calls: calls.rows });
+    // Can the current user reassign this lead? (owner/super_admin or leads:assign)
+    let canAssign = role === 'super_admin';
+    if (!canAssign) {
+      const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+      canAssign = isOwner || await hasPermission(userId, 'leads:assign', tenantId);
+    }
+
+    res.json({ lead, tags: tags.rows, activities: activities.rows, calls: calls.rows, canAssign });
   } catch (err: any) {
     console.error('[mobile/leads/details]', err.message);
     res.status(500).json({ error: 'Server error' });

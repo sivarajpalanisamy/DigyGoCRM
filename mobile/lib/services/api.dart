@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'native.dart';
 
@@ -307,6 +309,27 @@ class Api {
   /// Mark a follow-up complete (or undo).
   Future<void> completeFollowup(String id, {bool completed = true}) async {
     await _dio.post('/api/mobile/followups/$id/complete', data: {'completed': completed});
+  }
+
+  /// Download a call recording (auth via interceptor) to a temp file; returns its path.
+  Future<String> downloadRecording(String callId) async {
+    final res = await _dio.get('/api/mobile/calls/$callId/recording',
+        options: Options(responseType: ResponseType.bytes));
+    final dir = await getTemporaryDirectory();
+    final f = File('${dir.path}/rec_$callId.audio');
+    await f.writeAsBytes(res.data as List<int>);
+    return f.path;
+  }
+
+  /// Active staff in the tenant (for the assign-staff picker).
+  Future<List<dynamic>> staff() async {
+    final res = await _dio.get('/api/mobile/staff');
+    return (res.data['staff'] as List?) ?? [];
+  }
+
+  /// Reassign a lead (assignedTo = null to unassign). Requires leads:assign in CRM.
+  Future<void> assignLead(String leadId, String? assignedTo) async {
+    await _dio.post('/api/mobile/leads/$leadId/assign', data: {'assignedTo': assignedTo});
   }
 
   /// Post one or many calls (offline batch). Returns the ingest summary.

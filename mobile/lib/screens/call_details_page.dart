@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 import '../theme.dart';
 import '../services/api.dart';
@@ -41,7 +42,15 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
   Map _lead = {};
   List<dynamic> _tags = [];
   List<dynamic> _activities = [];
+  List<dynamic> _calls = [];
   List<dynamic> _pipelines = [];
+  bool _canAssign = false;
+
+  // recording playback
+  final AudioPlayer _player = AudioPlayer();
+  String? _playingCallId;
+  String? _loadingCallId;
+  final Map<String, String> _recPath = {}; // callId -> local temp path
 
   // new-lead form
   final _nameCtrl = TextEditingController();
@@ -53,11 +62,13 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
   @override
   void initState() {
     super.initState();
+    _player.onPlayerComplete.listen((_) { if (mounted) setState(() => _playingCallId = null); });
     _load();
   }
 
   @override
   void dispose() {
+    _player.dispose();
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _notesCtrl.dispose();
@@ -82,6 +93,8 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           _lead = Map.from(d['lead'] ?? {});
           _tags = d['tags'] as List? ?? [];
           _activities = d['activities'] as List? ?? [];
+          _calls = d['calls'] as List? ?? [];
+          _canAssign = d['canAssign'] == true;
           _loading = false;
         });
       } else {
@@ -162,7 +175,10 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           _infoRow(Icons.phone, phone, trailing: _miniCall(phone)),
           if (email.isNotEmpty) _infoRow(Icons.email_outlined, email),
           _infoRow(Icons.layers_outlined, [pipeline, stage].where((s) => s.isNotEmpty).join(' · ').ifEmpty('No pipeline')),
-          _infoRow(Icons.person_outline, assigned.isNotEmpty ? assigned : 'Unassigned'),
+          _infoRow(Icons.person_outline, assigned.isNotEmpty ? assigned : 'Unassigned',
+              trailing: _canAssign
+                  ? TextButton(onPressed: _assignStaff, child: const Text('Assign', style: TextStyle(color: Brand.accent, fontWeight: FontWeight.w700)))
+                  : null),
           if (source.isNotEmpty) _infoRow(Icons.sell_outlined, source),
         ]),
         const SizedBox(height: 14),
@@ -198,7 +214,7 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           _quickAction(Icons.event, 'Appointment', () => _openFollowupDialog(defaultTitle: 'Appointment')),
         ]),
         const SizedBox(height: 18),
-        // Activity timeline
+        // Activity timeline (full, incl. calls — recordings play inline on call rows)
         _sectionTitle('Activity Timeline'),
         if (_activities.isEmpty)
           const Text('No activity yet', style: TextStyle(color: Brand.muted, fontSize: 13))
@@ -549,13 +565,24 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
       );
 
   Widget _activityItem(dynamic a) {
+    final type = (a['type'] ?? '').toString();
     final title = (a['title'] ?? '').toString();
-    final detail = (a['detail'] ?? '').toString();
     final by = (a['by_name'] ?? '').toString();
+    final isCall = type == 'call';
+    // For call rows, `detail` is the call_log id (used only for the player) — never shown.
+    final callId = isCall ? (a['call_id'] ?? a['detail'] ?? '').toString() : '';
+    final detail = isCall ? '' : (a['detail'] ?? '').toString();
+    final hasRec = isCall && _callHasRec(callId);
+    final playing = _playingCallId == callId;
+    final loading = _loadingCallId == callId;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Padding(padding: EdgeInsets.only(top: 3), child: Icon(Icons.circle, size: 8, color: Brand.accent)),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(isCall ? Icons.call : Icons.circle, size: isCall ? 14 : 8, color: Brand.accent),
+        ),
         const SizedBox(width: 10),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -564,8 +591,83 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
             Text([_fmt(a['created_at']), if (by.isNotEmpty) '- $by'].join('  '), style: const TextStyle(color: Brand.muted, fontSize: 11)),
           ]),
         ),
+        if (hasRec)
+          loading
+              ? const Padding(padding: EdgeInsets.all(8), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
+              : IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_fill, color: Brand.accent, size: 30),
+                  onPressed: () => _togglePlay(callId),
+                ),
       ]),
     );
+  }
+
+  bool _callHasRec(String id) =>
+      id.isNotEmpty && _calls.any((c) => c['id'].toString() == id && c['has_recording'] == true);
+
+  // ── Recording player ─────────────────────────────────────────────────────────
+  Future<void> _togglePlay(String id) async {
+    if (_playingCallId == id) {
+      await _player.pause();
+      if (mounted) setState(() => _playingCallId = null);
+      return;
+    }
+    await _player.stop();
+    setState(() { _loadingCallId = id; _playingCallId = null; });
+    try {
+      final path = _recPath[id] ?? await Api.instance.downloadRecording(id);
+      _recPath[id] = path;
+      await _player.play(DeviceFileSource(path));
+      if (mounted) setState(() { _playingCallId = id; _loadingCallId = null; });
+    } catch (_) {
+      if (mounted) setState(() => _loadingCallId = null);
+      _toast('Could not play recording', error: true);
+    }
+  }
+
+  // ── Assign staff ─────────────────────────────────────────────────────────────
+  Future<void> _assignStaff() async {
+    List<dynamic> staff;
+    try { staff = await Api.instance.staff(); } catch (_) { _toast('Could not load staff', error: true); return; }
+    if (!mounted) return;
+    final cur = _lead['assigned_to']?.toString();
+    final picked = await showModalBottomSheet<Map<String, String?>>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (_, sc) => ListView(controller: sc, children: [
+          const Padding(padding: EdgeInsets.all(16), child: Text('Assign to', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
+          ListTile(
+            title: const Text('Unassigned'),
+            trailing: cur == null ? const Icon(Icons.check, color: Brand.accent) : null,
+            onTap: () => Navigator.pop(context, <String, String?>{'assignedTo': null}),
+          ),
+          ...staff.map((u) => ListTile(
+                leading: CircleAvatar(backgroundColor: const Color(0x14EA580C),
+                    child: Text(((u['name'] ?? '?').toString().isNotEmpty ? u['name'][0] : '?').toString().toUpperCase(), style: const TextStyle(color: Brand.accent, fontWeight: FontWeight.w700))),
+                title: Text((u['name'] ?? '').toString()),
+                subtitle: Text((u['email'] ?? '').toString(), style: const TextStyle(fontSize: 11.5)),
+                trailing: u['id'].toString() == cur ? const Icon(Icons.check, color: Brand.accent) : null,
+                onTap: () => Navigator.pop(context, <String, String?>{'assignedTo': u['id'].toString()}),
+              )),
+          const SizedBox(height: 12),
+        ]),
+      ),
+    );
+    if (picked == null) return;
+    try {
+      await Api.instance.assignLead(_lead['id'].toString(), picked['assignedTo']);
+      _toast('Lead assigned');
+      await _load();
+    } catch (_) {
+      _toast('Could not assign (check your permission)', error: true);
+    }
   }
 
   Widget _miniCall(String phone, {bool light = false}) => InkWell(
