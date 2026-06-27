@@ -18,8 +18,9 @@ class CrmLeadsPage extends StatefulWidget {
 class _Pipeline {
   final String id;
   final String name;
+  final int leadCount;
   final List<_Stage> stages;
-  _Pipeline(this.id, this.name, this.stages);
+  _Pipeline(this.id, this.name, this.leadCount, this.stages);
 }
 
 class _Stage {
@@ -72,7 +73,8 @@ class _CrmLeadsPageState extends State<CrmLeadsPage> {
         final stages = ((p['stages'] as List?) ?? [])
             .map<_Stage>((s) => _Stage(s['id'].toString(), (s['name'] ?? '').toString()))
             .toList();
-        return _Pipeline(p['id'].toString(), (p['name'] ?? '').toString(), stages);
+        final count = (p['leadCount'] is int) ? p['leadCount'] as int : int.tryParse('${p['leadCount']}') ?? 0;
+        return _Pipeline(p['id'].toString(), (p['name'] ?? '').toString(), count, stages);
       }).toList();
       if (!mounted) return;
       setState(() {
@@ -226,7 +228,7 @@ class _CrmLeadsPageState extends State<CrmLeadsPage> {
                         items: [
                           const DropdownMenuItem<String?>(value: null, child: Text('All Pipelines')),
                           ..._pipelines.map((p) =>
-                              DropdownMenuItem<String?>(value: p.id, child: Text(p.name, overflow: TextOverflow.ellipsis))),
+                              DropdownMenuItem<String?>(value: p.id, child: Text('${p.name} (${p.leadCount})', overflow: TextOverflow.ellipsis))),
                         ],
                         onChanged: _selectPipeline,
                       ),

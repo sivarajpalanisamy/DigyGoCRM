@@ -667,7 +667,8 @@ router.get('/me/stats', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/mobile/pipelines — pipelines with their stages (for the CRM Leads filter)
+// GET /api/mobile/pipelines — pipelines with their stages + lead counts (per pipeline
+// and per stage), for the CRM Leads filter and the lead-details pipeline/stage mover.
 router.get('/pipelines', async (req: AuthRequest, res: Response) => {
   const { tenantId } = req.user!;
   try {
@@ -680,11 +681,25 @@ router.get('/pipelines', async (req: AuthRequest, res: Response) => {
        FROM pipeline_stages WHERE tenant_id=$1::uuid ORDER BY stage_order`,
       [tenantId]
     );
+    const counts = await query(
+      `SELECT pipeline_id, stage_id, COUNT(*)::int AS n
+       FROM leads WHERE tenant_id=$1::uuid AND is_deleted=FALSE
+       GROUP BY pipeline_id, stage_id`,
+      [tenantId]
+    );
+    const stageCount: Record<string, number> = {};
+    const pipeCount: Record<string, number> = {};
+    for (const r of counts.rows) {
+      if (r.stage_id) stageCount[r.stage_id] = (stageCount[r.stage_id] || 0) + r.n;
+      if (r.pipeline_id) pipeCount[r.pipeline_id] = (pipeCount[r.pipeline_id] || 0) + r.n;
+    }
     const byPipe: Record<string, any[]> = {};
     for (const s of stages.rows) {
-      (byPipe[s.pipeline_id] ||= []).push({ id: s.id, name: s.name, color: s.color });
+      (byPipe[s.pipeline_id] ||= []).push({ id: s.id, name: s.name, color: s.color, count: stageCount[s.id] || 0 });
     }
-    const pipelines = pls.rows.map((p: any) => ({ id: p.id, name: p.name, stages: byPipe[p.id] || [] }));
+    const pipelines = pls.rows.map((p: any) => ({
+      id: p.id, name: p.name, leadCount: pipeCount[p.id] || 0, stages: byPipe[p.id] || [],
+    }));
     res.json({ pipelines });
   } catch (err: any) {
     console.error('[mobile/pipelines]', err.message);
@@ -785,6 +800,57 @@ router.get('/leads/lookup', async (req: AuthRequest, res: Response) => {
     res.json({ found: true, lead, notes: notes.rows });
   } catch (err: any) {
     console.error('[mobile/leads/lookup]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/mobile/followups — follow-ups ASSIGNED TO this device's staff user.
+// (The device is bound to a staff via their verified number, so req.user.userId is
+// that staff; we return the follow-ups assigned to them.) ?status=pending|completed|all
+router.get('/followups', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const status = (req.query.status ?? 'pending').toString();
+  try {
+    const conds = ['f.tenant_id=$1::uuid', 'f.assigned_to=$2::uuid', 'l.is_deleted=FALSE'];
+    if (status === 'pending') conds.push('f.completed=FALSE');
+    else if (status === 'completed') conds.push('f.completed=TRUE');
+    const r = await query(
+      `SELECT f.id, f.title, f.description, f.due_at, f.completed, f.completed_at,
+              f.lead_id, l.name AS lead_name, l.phone AS lead_phone,
+              p.name AS pipeline, s.name AS stage
+       FROM lead_followups f
+       JOIN leads l ON l.id = f.lead_id
+       LEFT JOIN pipelines p ON p.id = l.pipeline_id
+       LEFT JOIN pipeline_stages s ON s.id = l.stage_id
+       WHERE ${conds.join(' AND ')}
+       ORDER BY f.completed ASC, f.due_at ASC
+       LIMIT 300`,
+      [tenantId, userId]
+    );
+    res.json({ followups: r.rows });
+  } catch (err: any) {
+    console.error('[mobile/followups]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/mobile/followups/:id/complete — mark a follow-up done (or undo). Body: { completed? }
+router.post('/followups/:id/complete', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const id = req.params.id;
+  const completed = req.body?.completed !== false; // default true
+  try {
+    const r = await query(
+      `UPDATE lead_followups
+       SET completed=$1, completed_at=CASE WHEN $1 THEN NOW() ELSE NULL END
+       WHERE id=$2::uuid AND tenant_id=$3::uuid AND assigned_to=$4::uuid
+       RETURNING id`,
+      [completed, id, tenantId, userId]
+    );
+    if (!r.rows[0]) { res.status(404).json({ error: 'Follow-up not found' }); return; }
+    res.json({ ok: true, completed });
+  } catch (err: any) {
+    console.error('[mobile/followups/complete]', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -982,18 +1048,23 @@ router.post('/leads', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/mobile/leads/:id/update — from the post-call screen for an EXISTING lead:
-// optionally move stage and/or add a note. Body: { stageId?, note? }
+// optionally move stage/pipeline and/or add a note. Body: { stageId?, pipelineId?, note? }
 router.post('/leads/:id/update', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
   const id = req.params.id;
   const stageId = req.body?.stageId || req.body?.stage_id || null;
+  const pipelineId = req.body?.pipelineId || req.body?.pipeline_id || null;
   const note = (req.body?.note ?? '').toString().trim();
   try {
     const owns = await query('SELECT id, pipeline_id FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE', [id, tenantId]);
     if (!owns.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }
 
     if (stageId) {
-      await query('UPDATE leads SET stage_id=$1 WHERE id=$2::uuid AND tenant_id=$3::uuid', [stageId, id, tenantId]);
+      if (pipelineId) {
+        await query('UPDATE leads SET pipeline_id=$1, stage_id=$2 WHERE id=$3::uuid AND tenant_id=$4::uuid', [pipelineId, stageId, id, tenantId]);
+      } else {
+        await query('UPDATE leads SET stage_id=$1 WHERE id=$2::uuid AND tenant_id=$3::uuid', [stageId, id, tenantId]);
+      }
       await query(
         `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
          VALUES ($1,$2,'stage','Stage changed from mobile dialer',$3)`,

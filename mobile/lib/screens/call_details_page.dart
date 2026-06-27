@@ -219,31 +219,74 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
 
   // ── Actions ─────────────────────────────────────────────────────────────────
   Future<void> _changeStage() async {
-    final stages = _stagesFor(_lead['pipeline_id']?.toString());
-    if (stages.isEmpty) { _toast('This lead has no pipeline stages', error: true); return; }
-    String? sel = _lead['stage_id']?.toString();
-    final picked = await showModalBottomSheet<String>(
+    if (_pipelines.isEmpty) { _toast('No pipelines found', error: true); return; }
+    final curPipe = _lead['pipeline_id']?.toString();
+    final curStage = _lead['stage_id']?.toString();
+
+    final result = await showModalBottomSheet<Map<String, String>>(
       context: context,
       backgroundColor: Colors.white,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Padding(padding: EdgeInsets.all(16), child: Text('Move to stage', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
-          ...stages.map((s) => ListTile(
-                title: Text((s['name'] ?? '').toString()),
-                trailing: s['id'].toString() == sel ? const Icon(Icons.check, color: Brand.accent) : null,
-                onTap: () => Navigator.pop(context, s['id'].toString()),
-              )),
-          const SizedBox(height: 8),
-        ]),
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        maxChildSize: 0.92,
+        builder: (_, sc) => ListView(
+          controller: sc,
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 24),
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(12, 4, 12, 8),
+              child: Text('Move to pipeline / stage', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            ),
+            ..._pipelines.map((p) {
+              final pid = p['id'].toString();
+              final stages = (p['stages'] as List? ?? []);
+              return ExpansionTile(
+                initiallyExpanded: pid == curPipe,
+                tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+                title: Row(children: [
+                  Expanded(child: Text((p['name'] ?? '').toString(),
+                      style: const TextStyle(fontWeight: FontWeight.w700, color: Brand.ink))),
+                  _countBadge(p['leadCount'] ?? 0),
+                ]),
+                children: stages.isEmpty
+                    ? [const Padding(padding: EdgeInsets.all(12), child: Text('No stages', style: TextStyle(color: Brand.muted)))]
+                    : stages.map<Widget>((s) {
+                        final sid = s['id'].toString();
+                        return ListTile(
+                          contentPadding: const EdgeInsets.only(left: 28, right: 16),
+                          title: Text((s['name'] ?? '').toString()),
+                          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                            if (pid == curPipe && sid == curStage)
+                              const Padding(padding: EdgeInsets.only(right: 6), child: Icon(Icons.check, color: Brand.accent, size: 18)),
+                            _countBadge(s['count'] ?? 0),
+                          ]),
+                          onTap: () => Navigator.pop(context, {'pipelineId': pid, 'stageId': sid}),
+                        );
+                      }).toList(),
+              );
+            }),
+          ],
+        ),
       ),
     );
-    if (picked == null) return;
+    if (result == null) return;
     setState(() => _busy = true);
-    try { await Api.instance.updateLead(_lead['id'].toString(), stageId: picked); _toast('Stage updated'); await _load(); }
-    catch (_) { _toast('Could not update stage', error: true); }
+    try {
+      await Api.instance.updateLead(_lead['id'].toString(), stageId: result['stageId'], pipelineId: result['pipelineId']);
+      _toast('Lead moved');
+      await _load();
+    } catch (_) { _toast('Could not move lead', error: true); }
     if (mounted) setState(() => _busy = false);
   }
+
+  Widget _countBadge(dynamic n) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(color: const Color(0x14EA580C), borderRadius: BorderRadius.circular(20)),
+        child: Text('$n', style: const TextStyle(color: Brand.accent, fontSize: 12, fontWeight: FontWeight.w700)),
+      );
 
   Future<void> _addTag() async {
     final ctrl = TextEditingController();

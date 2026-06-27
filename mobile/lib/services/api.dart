@@ -268,10 +268,11 @@ class Api {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
-  /// Update an existing lead (move stage and/or add a note) from the post-call screen.
-  Future<Map<String, dynamic>> updateLead(String id, {String? stageId, String? note}) async {
+  /// Update an existing lead (move stage/pipeline and/or add a note).
+  Future<Map<String, dynamic>> updateLead(String id, {String? stageId, String? pipelineId, String? note}) async {
     final res = await _dio.post('/api/mobile/leads/$id/update', data: {
       if (stageId != null) 'stageId': stageId,
+      if (pipelineId != null) 'pipelineId': pipelineId,
       if (note != null && note.isNotEmpty) 'note': note,
     });
     return Map<String, dynamic>.from(res.data as Map);
@@ -295,6 +296,17 @@ class Api {
   /// Add a tag to a lead.
   Future<void> addTag(String leadId, String tag) async {
     await _dio.post('/api/mobile/leads/$leadId/tag', data: {'tag': tag});
+  }
+
+  /// Follow-ups assigned to this device's staff. status: pending | completed | all.
+  Future<List<dynamic>> followups({String status = 'pending'}) async {
+    final res = await _dio.get('/api/mobile/followups', queryParameters: {'status': status});
+    return (res.data['followups'] as List?) ?? [];
+  }
+
+  /// Mark a follow-up complete (or undo).
+  Future<void> completeFollowup(String id, {bool completed = true}) async {
+    await _dio.post('/api/mobile/followups/$id/complete', data: {'completed': completed});
   }
 
   /// Post one or many calls (offline batch). Returns the ingest summary.
