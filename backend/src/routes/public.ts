@@ -705,7 +705,7 @@ router.get('/page/:slug', pageLimiter, async (req: Request, res: Response) => {
   try {
     const result = await query(
       `SELECT lp.id, lp.title, lp.slug, lp.content, lp.tenant_id,
-              t.name AS company_name, t.branding
+              t.name AS company_name
        FROM landing_pages lp
        JOIN tenants t ON t.id = lp.tenant_id
        WHERE lp.slug=$1 AND lp.status='published' AND lp.is_deleted=FALSE`,
