@@ -277,6 +277,26 @@ class Api {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
+  /// Full lead detail: {lead, tags, activities, calls}.
+  Future<Map<String, dynamic>> leadDetails(String id) async {
+    final res = await _dio.get('/api/mobile/leads/$id/details');
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  /// Schedule a follow-up. dueAt is an ISO-8601 timestamp.
+  Future<void> addFollowup(String leadId, {required String dueAt, String? title, String? note}) async {
+    await _dio.post('/api/mobile/leads/$leadId/followup', data: {
+      'dueAt': dueAt,
+      if (title != null) 'title': title,
+      if (note != null && note.isNotEmpty) 'note': note,
+    });
+  }
+
+  /// Add a tag to a lead.
+  Future<void> addTag(String leadId, String tag) async {
+    await _dio.post('/api/mobile/leads/$leadId/tag', data: {'tag': tag});
+  }
+
   /// Post one or many calls (offline batch). Returns the ingest summary.
   Future<Map<String, dynamic>> postCalls(List<Map<String, dynamic>> calls) async {
     final res = await _dio.post('/api/mobile/calls', data: calls);

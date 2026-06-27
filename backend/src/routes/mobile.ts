@@ -776,6 +776,111 @@ router.get('/leads/lookup', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/mobile/leads/:id/details — full lead detail (mirrors the CRM Lead Details
+// panel): lead fields + tags + custom fields + activity timeline + this lead's calls.
+router.get('/leads/:id/details', async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const id = req.params.id;
+  try {
+    const r = await query(
+      `SELECT l.id, l.name, l.phone, l.email, l.source, l.notes, l.deal_value,
+              l.pipeline_id, l.stage_id, l.assigned_to, l.custom_fields,
+              l.created_at, l.updated_at,
+              p.name AS pipeline, s.name AS stage, u.name AS assigned_name
+       FROM leads l
+       LEFT JOIN pipelines p ON p.id = l.pipeline_id
+       LEFT JOIN pipeline_stages s ON s.id = l.stage_id
+       LEFT JOIN users u ON u.id = l.assigned_to
+       WHERE l.id=$1::uuid AND l.tenant_id=$2::uuid AND l.is_deleted=FALSE`,
+      [id, tenantId]
+    );
+    const lead = r.rows[0];
+    if (!lead) { res.status(404).json({ error: 'Lead not found' }); return; }
+
+    const tags = await query(
+      `SELECT t.id, t.name, t.color FROM lead_tags lt JOIN tags t ON t.id = lt.tag_id WHERE lt.lead_id=$1`,
+      [id]
+    ).catch(() => ({ rows: [] as any[] }));
+
+    const activities = await query(
+      `SELECT a.type, a.title, a.detail, a.created_at, u.name AS by_name
+       FROM lead_activities a LEFT JOIN users u ON u.id = a.created_by
+       WHERE a.lead_id=$1 ORDER BY a.created_at DESC LIMIT 50`,
+      [id]
+    ).catch(() => ({ rows: [] as any[] }));
+
+    const calls = await query(
+      `SELECT direction, outcome, duration_seconds, started_at
+       FROM call_logs WHERE lead_id=$1 AND tenant_id=$2::uuid ORDER BY started_at DESC LIMIT 50`,
+      [id, tenantId]
+    ).catch(() => ({ rows: [] as any[] }));
+
+    res.json({ lead, tags: tags.rows, activities: activities.rows, calls: calls.rows });
+  } catch (err: any) {
+    console.error('[mobile/leads/details]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/mobile/leads/:id/followup — schedule a follow-up. Body: { dueAt, title?, note? }
+router.post('/leads/:id/followup', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const id = req.params.id;
+  const dueAt = req.body?.dueAt;
+  const title = (req.body?.title ?? 'Follow-up').toString();
+  const note = (req.body?.note ?? '').toString() || null;
+  if (!dueAt) { res.status(400).json({ error: 'dueAt required' }); return; }
+  try {
+    const owns = await query('SELECT assigned_to FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE', [id, tenantId]);
+    if (!owns.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }
+    const assignee = owns.rows[0].assigned_to || userId;
+    await query(
+      `INSERT INTO lead_followups (lead_id, tenant_id, title, description, due_at, assigned_to, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [id, tenantId, title, note, dueAt, assignee, userId]
+    );
+    await query(
+      `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
+       VALUES ($1,$2,'followup','Follow-up scheduled from mobile dialer',$3)`,
+      [id, tenantId, userId]
+    ).catch(() => null);
+    res.json({ created: true });
+  } catch (err: any) {
+    console.error('[mobile/leads/followup]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/mobile/leads/:id/tag — add a tag to the lead. Body: { tag }
+router.post('/leads/:id/tag', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const id = req.params.id;
+  const tag = (req.body?.tag ?? '').toString().trim();
+  if (!tag) { res.status(400).json({ error: 'tag required' }); return; }
+  try {
+    const owns = await query('SELECT id FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE', [id, tenantId]);
+    if (!owns.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }
+    let tagId: string;
+    const existing = await query('SELECT id FROM tags WHERE tenant_id=$1::uuid AND LOWER(name)=LOWER($2) LIMIT 1', [tenantId, tag]);
+    if (existing.rows[0]) {
+      tagId = existing.rows[0].id;
+    } else {
+      const ins = await query('INSERT INTO tags (tenant_id, name, color) VALUES ($1::uuid,$2,$3) RETURNING id', [tenantId, tag, '#6b7280']);
+      tagId = ins.rows[0].id;
+    }
+    await query('INSERT INTO lead_tags (lead_id, tag_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [id, tagId]);
+    await query(
+      `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+       VALUES ($1,$2,'tag','Tag added from mobile dialer',$3,$4)`,
+      [id, tenantId, tag, userId]
+    ).catch(() => null);
+    res.json({ added: true });
+  } catch (err: any) {
+    console.error('[mobile/leads/tag]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /api/mobile/leads — create a lead from the post-call screen.
 // Body: { name, phone, pipelineId, stageId, email?, notes?, source? }
 router.post('/leads', async (req: AuthRequest, res: Response) => {
