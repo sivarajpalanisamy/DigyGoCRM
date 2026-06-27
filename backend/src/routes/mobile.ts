@@ -985,12 +985,14 @@ router.get('/leads/:id/details', async (req: AuthRequest, res: Response) => {
       [id]
     ).catch(() => ({ rows: [] as any[] }));
 
-    // Exclude call activities — calls live in their own section in the CRM, and their
-    // `detail` holds the call_log id (an internal UUID we must not surface).
+    // Full timeline incl. call activities (to match the CRM). For type='call' the
+    // `detail` holds the call_log id — exposed as call_id so the app can attach the
+    // recording player and never render the raw UUID.
     const activities = await query(
-      `SELECT a.type, a.title, a.detail, a.created_at, u.name AS by_name
+      `SELECT a.type, a.title, a.detail, a.created_at, u.name AS by_name,
+              CASE WHEN a.type='call' THEN a.detail ELSE NULL END AS call_id
        FROM lead_activities a LEFT JOIN users u ON u.id = a.created_by
-       WHERE a.lead_id=$1 AND a.type <> 'call' ORDER BY a.created_at DESC LIMIT 50`,
+       WHERE a.lead_id=$1 ORDER BY a.created_at DESC LIMIT 80`,
       [id]
     ).catch(() => ({ rows: [] as any[] }));
 

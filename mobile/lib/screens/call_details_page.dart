@@ -214,14 +214,7 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           _quickAction(Icons.event, 'Appointment', () => _openFollowupDialog(defaultTitle: 'Appointment')),
         ]),
         const SizedBox(height: 18),
-        // Call recordings (with player)
-        _sectionTitle('Call Recordings'),
-        if (_calls.where((c) => c['has_recording'] == true).isEmpty)
-          const Text('No recordings yet', style: TextStyle(color: Brand.muted, fontSize: 13))
-        else
-          ..._calls.where((c) => c['has_recording'] == true).map(_recRow),
-        const SizedBox(height: 18),
-        // Activity timeline
+        // Activity timeline (full, incl. calls — recordings play inline on call rows)
         _sectionTitle('Activity Timeline'),
         if (_activities.isEmpty)
           const Text('No activity yet', style: TextStyle(color: Brand.muted, fontSize: 13))
@@ -572,13 +565,24 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
       );
 
   Widget _activityItem(dynamic a) {
+    final type = (a['type'] ?? '').toString();
     final title = (a['title'] ?? '').toString();
-    final detail = (a['detail'] ?? '').toString();
     final by = (a['by_name'] ?? '').toString();
+    final isCall = type == 'call';
+    // For call rows, `detail` is the call_log id (used only for the player) — never shown.
+    final callId = isCall ? (a['call_id'] ?? a['detail'] ?? '').toString() : '';
+    final detail = isCall ? '' : (a['detail'] ?? '').toString();
+    final hasRec = isCall && _callHasRec(callId);
+    final playing = _playingCallId == callId;
+    final loading = _loadingCallId == callId;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Padding(padding: EdgeInsets.only(top: 3), child: Icon(Icons.circle, size: 8, color: Brand.accent)),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(isCall ? Icons.call : Icons.circle, size: isCall ? 14 : 8, color: Brand.accent),
+        ),
         const SizedBox(width: 10),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -587,35 +591,22 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
             Text([_fmt(a['created_at']), if (by.isNotEmpty) '- $by'].join('  '), style: const TextStyle(color: Brand.muted, fontSize: 11)),
           ]),
         ),
+        if (hasRec)
+          loading
+              ? const Padding(padding: EdgeInsets.all(8), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
+              : IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_fill, color: Brand.accent, size: 30),
+                  onPressed: () => _togglePlay(callId),
+                ),
       ]),
     );
   }
 
-  // ── Recording player ─────────────────────────────────────────────────────────
-  Widget _recRow(dynamic c) {
-    final id = c['id'].toString();
-    final isOut = (c['direction'] ?? '').toString() == 'OUTBOUND';
-    final outcome = (c['outcome'] ?? '').toString();
-    final dur = (c['duration_seconds'] ?? 0) as int;
-    final playing = _playingCallId == id;
-    final loading = _loadingCallId == id;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0x12000000))),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        leading: loading
-            ? const SizedBox(width: 40, height: 40, child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))))
-            : IconButton(
-                icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_fill, color: Brand.accent, size: 38),
-                onPressed: () => _togglePlay(id),
-              ),
-        title: Text('${isOut ? 'Outgoing' : 'Incoming'} · $outcome', style: const TextStyle(fontWeight: FontWeight.w600, color: Brand.ink, fontSize: 13.5)),
-        subtitle: Text([_fmt(c['started_at']), if (dur > 0) _durStr(dur)].join('  ·  '), style: const TextStyle(color: Brand.muted, fontSize: 12)),
-      ),
-    );
-  }
+  bool _callHasRec(String id) =>
+      id.isNotEmpty && _calls.any((c) => c['id'].toString() == id && c['has_recording'] == true);
 
+  // ── Recording player ─────────────────────────────────────────────────────────
   Future<void> _togglePlay(String id) async {
     if (_playingCallId == id) {
       await _player.pause();
@@ -634,8 +625,6 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
       _toast('Could not play recording', error: true);
     }
   }
-
-  String _durStr(int s) => s >= 60 ? '${s ~/ 60}m ${s % 60}s' : '${s}s';
 
   // ── Assign staff ─────────────────────────────────────────────────────────────
   Future<void> _assignStaff() async {
