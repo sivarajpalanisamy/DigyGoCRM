@@ -196,16 +196,9 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
         Row(children: [
           _quickAction(Icons.layers, 'Stage', _changeStage),
           _quickAction(Icons.chat, 'WhatsApp', () => DialerData.instance.whatsapp(phone)),
-          _quickAction(Icons.access_time, 'Follow-up', () => _scheduleFollowup('Follow-up')),
-          _quickAction(Icons.event, 'Appointment', () => _scheduleFollowup('Appointment')),
+          _quickAction(Icons.access_time, 'Follow-up', () => _openFollowupDialog()),
+          _quickAction(Icons.event, 'Appointment', () => _openFollowupDialog(defaultTitle: 'Appointment')),
         ]),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: _addNote,
-          icon: const Icon(Icons.note_add_outlined, size: 18),
-          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46), foregroundColor: Brand.ink),
-          label: const Text('Add note'),
-        ),
         const SizedBox(height: 18),
         // Activity timeline
         _sectionTitle('Activity Timeline'),
@@ -252,14 +245,6 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
     if (mounted) setState(() => _busy = false);
   }
 
-  Future<void> _addNote() async {
-    final ctrl = TextEditingController();
-    final ok = await _inputSheet('Add note', 'Write a note…', ctrl, lines: 4);
-    if (ok != true || ctrl.text.trim().isEmpty) return;
-    try { await Api.instance.updateLead(_lead['id'].toString(), note: ctrl.text.trim()); _toast('Note added'); await _load(); }
-    catch (_) { _toast('Could not add note', error: true); }
-  }
-
   Future<void> _addTag() async {
     final ctrl = TextEditingController();
     final ok = await _inputSheet('Add tag', 'Tag name', ctrl);
@@ -268,22 +253,116 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
     catch (_) { _toast('Could not add tag', error: true); }
   }
 
-  Future<void> _scheduleFollowup(String title) async {
-    final date = await showDatePicker(
+  // "Set Follow-Up" popup matching the CRM web: title (required), notes, due date+time,
+  // and a "Save as note instead of follow-up" toggle.
+  Future<void> _openFollowupDialog({String defaultTitle = ''}) async {
+    final titleCtrl = TextEditingController(text: defaultTitle);
+    final notesCtrl = TextEditingController();
+    bool saveAsNote = false;
+    DateTime? due;
+
+    final ok = await showDialog<bool>(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) {
+        Future<void> pickDue() async {
+          final d = await showDatePicker(
+            context: ctx,
+            initialDate: DateTime.now().add(const Duration(days: 1)),
+            firstDate: DateTime.now().subtract(const Duration(days: 1)),
+            lastDate: DateTime.now().add(const Duration(days: 365)),
+          );
+          if (d == null) return;
+          final t = await showTimePicker(context: ctx, initialTime: const TimeOfDay(hour: 10, minute: 0));
+          if (t == null) return;
+          setLocal(() => due = DateTime(d.year, d.month, d.day, t.hour, t.minute));
+        }
+
+        InputDecoration dec(String hint) => InputDecoration(
+              hintText: hint, isDense: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            );
+
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+          title: Row(children: [
+            const Expanded(child: Text('Set Follow-Up', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18))),
+            InkWell(onTap: () => Navigator.pop(ctx, false), child: const Icon(Icons.close, color: Brand.muted)),
+          ]),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              InkWell(
+                onTap: () => setLocal(() => saveAsNote = !saveAsNote),
+                child: Row(children: [
+                  Checkbox(value: saveAsNote, activeColor: Brand.accent, onChanged: (v) => setLocal(() => saveAsNote = v ?? false)),
+                  const Expanded(child: Text('Save as note instead of follow-up', style: TextStyle(fontSize: 13))),
+                ]),
+              ),
+              const SizedBox(height: 8),
+              const Text.rich(TextSpan(children: [
+                TextSpan(text: 'Title ', style: TextStyle(fontWeight: FontWeight.w700)),
+                TextSpan(text: '*', style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w700)),
+              ])),
+              const SizedBox(height: 6),
+              TextField(controller: titleCtrl, decoration: dec('e.g. Call back for pre-sales pitch')),
+              const SizedBox(height: 14),
+              const Text('Notes', style: TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              TextField(controller: notesCtrl, maxLines: 3, decoration: dec('Add any notes...')),
+              if (!saveAsNote) ...[
+                const SizedBox(height: 14),
+                const Text('Due Date & Time', style: TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: pickDue,
+                  child: InputDecorator(
+                    decoration: dec('').copyWith(suffixIcon: const Icon(Icons.calendar_today, size: 18, color: Brand.muted)),
+                    child: Text(
+                      due == null ? 'dd-mm-yyyy --:--' : _fmt(due!.toIso8601String()),
+                      style: TextStyle(color: due == null ? Brand.muted : Brand.ink),
+                    ),
+                  ),
+                ),
+              ],
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: Brand.muted))),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Brand.accent),
+              onPressed: () {
+                if (titleCtrl.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Title is required')));
+                  return;
+                }
+                if (!saveAsNote && due == null) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Pick a due date & time')));
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              child: Text(saveAsNote ? 'Save note' : 'Schedule'),
+            ),
+          ],
+        );
+      }),
     );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 10, minute: 0));
-    if (time == null) return;
-    final due = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+
+    if (ok != true) return;
+    final id = _lead['id'].toString();
     try {
-      await Api.instance.addFollowup(_lead['id'].toString(), dueAt: due.toUtc().toIso8601String(), title: title);
-      _toast('$title scheduled');
+      if (saveAsNote) {
+        final noteText = [titleCtrl.text.trim(), notesCtrl.text.trim()].where((s) => s.isNotEmpty).join('\n');
+        await Api.instance.updateLead(id, note: noteText);
+        _toast('Note saved');
+      } else {
+        await Api.instance.addFollowup(id, dueAt: due!.toUtc().toIso8601String(), title: titleCtrl.text.trim(), note: notesCtrl.text.trim());
+        _toast('Follow-up scheduled');
+      }
       await _load();
-    } catch (_) { _toast('Could not schedule', error: true); }
+    } catch (_) {
+      _toast('Could not save', error: true);
+    }
   }
 
   Future<bool?> _inputSheet(String title, String hint, TextEditingController ctrl, {int lines = 1}) {
