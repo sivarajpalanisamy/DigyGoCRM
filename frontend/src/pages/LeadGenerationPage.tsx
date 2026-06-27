@@ -237,7 +237,7 @@ function ExpandedRow({ form }: { form: FormRow }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-semibold text-[#1c1410] truncate">{lead.name}</p>
-                    <p className="text-[10px] text-[#9a8a7a] truncate">{lead.phone || lead.email || '—'}</p>
+                    <p className="text-[10px] text-[#9a8a7a] truncate">{lead.phone || lead.email || '-'}</p>
                   </div>
                   <span className="text-[10px] text-[#b09e8d] shrink-0 whitespace-nowrap">
                     {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
@@ -392,7 +392,7 @@ export default function LeadGenerationPage() {
           <KpiCard label="Leads Today"   value={summary.leads_today}        sub="Across all forms"      icon={TrendingUp} />
           <KpiCard
             label="Best This Month"
-            value={summary.best_form ? summary.best_form.name : '—'}
+            value={summary.best_form ? summary.best_form.name : '-'}
             sub={summary.best_form ? `${summary.best_form.count} leads` : 'No data yet'}
             icon={Star}
           />
@@ -464,7 +464,7 @@ export default function LeadGenerationPage() {
           <div className="py-16 text-center">
             <Zap className="w-8 h-8 text-[#e8d5c4] mx-auto mb-2" />
             <p className="text-[13px] text-[#b09e8d]">
-              {search ? 'No forms match your search.' : 'No forms yet — connect Meta or create a custom form.'}
+              {search ? 'No forms match your search.' : 'No forms yet - connect Meta or create a custom form.'}
             </p>
           </div>
         ) : (

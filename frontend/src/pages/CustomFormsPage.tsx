@@ -58,9 +58,9 @@ function SubmissionRow({ sub }: { sub: Submission }) {
 
   const name =
     data['Full Name'] ?? data['Name'] ?? data['first_name'] ?? data['name'] ??
-    data[keys.find((k) => /name/i.test(k)) ?? ''] ?? '—';
+    data[keys.find((k) => /name/i.test(k)) ?? ''] ?? '-';
   const phone =
-    data['Phone'] ?? data['phone'] ?? data[keys.find((k) => /phone/i.test(k)) ?? ''] ?? '—';
+    data['Phone'] ?? data['phone'] ?? data[keys.find((k) => /phone/i.test(k)) ?? ''] ?? '-';
 
   return (
     <div className="border-b border-black/5 last:border-0">
@@ -89,7 +89,7 @@ function SubmissionRow({ sub }: { sub: Submission }) {
           {keys.map((k) => (
             <div key={k} className="flex items-start gap-2">
               <span className="text-[11px] font-semibold text-[#7a6b5c] w-28 shrink-0 pt-0.5">{k}</span>
-              <span className="text-[12px] text-[#1c1410] break-all flex-1">{data[k] || '—'}</span>
+              <span className="text-[12px] text-[#1c1410] break-all flex-1">{data[k] || '-'}</span>
             </div>
           ))}
         </div>
@@ -220,7 +220,7 @@ export default function CustomFormsPage() {
         inp = `<textarea class="dgf-input" data-label="${lbl}" placeholder="${ph}"${req}></textarea>`;
       } else if (f.type === 'dropdown') {
         const opts = (f.options ?? []).map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
-        inp = `<select class="dgf-input" data-label="${lbl}"${req}><option value="">— Select —</option>${opts}</select>`;
+        inp = `<select class="dgf-input" data-label="${lbl}"${req}><option value="">- Select -</option>${opts}</select>`;
       } else if (f.type === 'radio') {
         inp = (f.options ?? []).map((o) =>
           `<label class="dgf-radio"><input type="radio" name="${uid}_${f.id}" value="${esc(o)}" data-label="${lbl}"${req}> ${esc(o)}</label>`

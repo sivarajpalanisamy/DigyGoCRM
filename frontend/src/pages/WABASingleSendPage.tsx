@@ -85,7 +85,7 @@ export default function WABASingleSendPage() {
     setReceiverPhone(c.phone);
     setReceiverName(c.name);
     setReceiverLeadId(c.id);
-    setSearchQuery(c.name + ' — ' + c.phone);
+    setSearchQuery(c.name + ' - ' + c.phone);
     setShowDropdown(false);
   };
 
@@ -289,10 +289,10 @@ export default function WABASingleSendPage() {
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
               >
-                <option value="">— Select an approved template —</option>
+                <option value="">- Select an approved template -</option>
                 {templates.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.name} ({t.language}) — {t.category}
+                    {t.name} ({t.language}) - {t.category}
                   </option>
                 ))}
               </select>
@@ -373,7 +373,7 @@ export default function WABASingleSendPage() {
                   <div className="flex items-center gap-3 border border-emerald-200 bg-emerald-50/50 rounded-xl px-4 py-3">
                     <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span className="text-[12px] text-emerald-700 truncate flex-1">
-                      {selectedTemplate?.file_name || 'Saved file'} — will be sent automatically
+                      {selectedTemplate?.file_name || 'Saved file'} - will be sent automatically
                     </span>
                     <label className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 cursor-pointer shrink-0">
                       Replace
@@ -391,7 +391,7 @@ export default function WABASingleSendPage() {
               <div className="mt-4 space-y-3">
                 <p className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider">
                   Variable Overrides
-                  <span className="font-normal normal-case ml-1 text-[#9e8e7e]">— leave blank to use auto-filled lead data</span>
+                  <span className="font-normal normal-case ml-1 text-[#9e8e7e]">- leave blank to use auto-filled lead data</span>
                 </p>
                 {templateVars.map((v) => (
                   <div key={v.key} className="flex items-center gap-3">

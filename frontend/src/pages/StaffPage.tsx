@@ -315,7 +315,7 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
 
           {/* Staff ID */}
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Staff ID <span className="text-[#b09e8d] font-normal">(optional — your company reference ID)</span></label>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Staff ID <span className="text-[#b09e8d] font-normal">(optional - your company reference ID)</span></label>
             <input value={staffId} onChange={(e) => setStaffId(e.target.value)} placeholder="e.g. EMP-001" className={iCls()} />
           </div>
 
@@ -356,7 +356,7 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
                   ))}
                 </div>
                 <p className="text-[10px] text-[#7a6b5c] mt-1">
-                  {fullAccess ? 'All permissions granted — can be customised later' : 'Basic read-only defaults — edit permissions after adding'}
+                  {fullAccess ? 'All permissions granted - can be customised later' : 'Basic read-only defaults - edit permissions after adding'}
                 </p>
               </div>
             )}
@@ -375,7 +375,7 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
           {/* Login PIN (2FA) */}
           <div>
             <label className="text-xs font-semibold text-[#1c1410] mb-1 block">
-              Login PIN <span className="text-[#b09e8d] font-normal">(optional — used at login when 2FA is on)</span>
+              Login PIN <span className="text-[#b09e8d] font-normal">(optional - used at login when 2FA is on)</span>
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -383,7 +383,7 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
                 maxLength={4}
                 value={loginPin}
                 onChange={(e) => { setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setClearPin(false); }}
-                placeholder={isEdit && initial?.has_login_pin ? '•••• (PIN set — type to change)' : '4-digit PIN'}
+                placeholder={isEdit && initial?.has_login_pin ? '•••• (PIN set - type to change)' : '4-digit PIN'}
                 className={cn(iCls(errors.loginPin), 'flex-1 tracking-[0.3em]')}
               />
               <button type="button"
@@ -623,7 +623,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                 </div>
                 <p className="text-[10px] text-[#7a6b5c] mt-1.5">
                   {accessType === 'full'
-                    ? 'All permissions enabled — switch to Custom to restrict specific access.'
+                    ? 'All permissions enabled - switch to Custom to restrict specific access.'
                     : 'Configure individual permissions below, then click Save.'}
                 </p>
               </div>
@@ -643,7 +643,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-semibold text-[#1c1410]">Only Assigned Leads</p>
                     <p className="text-[11px] text-[#7a6b5c] mt-0.5 leading-relaxed">
-                      Staff can only view leads assigned to them — applies to Pipeline, Contacts &amp; Automation
+                      Staff can only view leads assigned to them - applies to Pipeline, Contacts &amp; Automation
                     </p>
                   </div>
                 </div>
@@ -653,7 +653,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                     className="flex items-center gap-2.5 cursor-pointer select-none group">
                     <PermCheckbox checked={permissions[MASK_PHONE_KEY] ?? false} onChange={() => togglePerm(MASK_PHONE_KEY)} />
                     <span className="text-[13px] text-[#1c1410] group-hover:text-primary transition-colors">Phone Number Masking</span>
-                    <span className="text-[11px] text-[#b09e8d]">— last digits hidden</span>
+                    <span className="text-[11px] text-[#b09e8d]">- last digits hidden</span>
                   </button>
                   <button type="button"
                     onClick={() => {
@@ -726,7 +726,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                                 <div key={j} className="flex justify-center">
                                   {key
                                     ? <PermCheckbox checked={permissions[key] ?? false} onChange={() => togglePerm(key)} />
-                                    : <span className="text-[#ddd4cc] text-sm leading-none">—</span>
+                                    : <span className="text-[#ddd4cc] text-sm leading-none">-</span>
                                   }
                                 </div>
                               ))}
@@ -871,8 +871,8 @@ export default function StaffPage() {
       setStaff((prev) => [...prev, newMember]);
       addStaff(newMember);
       setShowInviteModal(false);
-      const inviteNote = data.password ? '' : ' — invite email sent';
-      toast.success(`${data.name} added${inviteNote}${!data.full_access ? ' — customise their permissions below' : ''}`);
+      const inviteNote = data.password ? '' : ' - invite email sent';
+      toast.success(`${data.name} added${inviteNote}${!data.full_access ? ' - customise their permissions below' : ''}`);
       if (!data.full_access) navigate('/staff?tab=roles');
     } catch (err: any) {
       toast.error(err.message ?? 'Failed to add staff');

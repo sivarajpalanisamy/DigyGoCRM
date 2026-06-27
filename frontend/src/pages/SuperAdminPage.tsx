@@ -54,7 +54,7 @@ function subState(t: { subscription_status: string; subscription_expires_at: str
   const now = Date.now();
   const blocked = t.subscription_status === 'suspended' || t.subscription_status === 'expired' || (exp !== null && now >= exp);
   const daysLeft = exp !== null ? Math.ceil((exp - now) / 86_400_000) : null;
-  if (blocked) return { tone: 'red' as const, label: t.subscription_status === 'suspended' ? 'Suspended' : 'Blocked — expired' };
+  if (blocked) return { tone: 'red' as const, label: t.subscription_status === 'suspended' ? 'Suspended' : 'Blocked - expired' };
   if (daysLeft !== null && daysLeft <= 7) return { tone: 'amber' as const, label: `Expiring in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` };
   return { tone: 'green' as const, label: 'Active Subscription' };
 }
@@ -217,7 +217,7 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
                 <p className="text-[11px] text-amber-700">
                   {info?.domain_cert_attempts}/4 verification attempts used this week.
                   Let's Encrypt permanently blocks after 5 failures.
-                  {attemptsLeft === 0 && ' Limit reached — try again next Monday.'}
+                  {attemptsLeft === 0 && ' Limit reached - try again next Monday.'}
                 </p>
               </div>
             )}
@@ -408,7 +408,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
             <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Owner Email <span className="font-normal text-[#7a6b5c]">(login)</span></label>
             <input type="email" value={form.owner_email} onChange={(e) => setForm({ ...form, owner_email: e.target.value })} className={inp} />
           </div>
-          <p className="sm:col-span-2 -mt-1.5 text-[10px] text-[#b09e8d]">Changing the owner email changes how they sign in — both the old and new addresses are notified.</p>
+          <p className="sm:col-span-2 -mt-1.5 text-[10px] text-[#b09e8d]">Changing the owner email changes how they sign in - both the old and new addresses are notified.</p>
 
           {/* ── Subscription ── */}
           <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 flex items-center justify-between">
@@ -462,7 +462,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
           </div>
           <div className="flex items-end pb-1">
             <p className="text-[11px] text-[#7a6b5c]">
-              {form.email_credits === '-1' ? 'Unlimited emails' : Number(form.email_credits) === 0 ? 'No credits — sending blocked' : `${form.email_credits} emails remaining`}
+              {form.email_credits === '-1' ? 'Unlimited emails' : Number(form.email_credits) === 0 ? 'No credits - sending blocked' : `${form.email_credits} emails remaining`}
             </p>
           </div>
 
@@ -744,7 +744,7 @@ export default function SuperAdminPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-[#1c1410] text-[14px] truncate">{t.name}</p>
-                      <p className="text-[11px] text-[#7a6b5c] truncate">{t.admin_name ?? '—'} · {t.admin_email ?? t.email}</p>
+                      <p className="text-[11px] text-[#7a6b5c] truncate">{t.admin_name ?? '-'} · {t.admin_email ?? t.email}</p>
                     </div>
                     <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0', CYCLE_BADGE[cycleOf(t)])}>
                       {CYCLE_LABEL[cycleOf(t)]}
@@ -859,7 +859,7 @@ export default function SuperAdminPage() {
                           {(t.admin_name ?? t.name).slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-[#1c1410] text-[13px] truncate">{t.admin_name ?? '—'}</p>
+                          <p className="font-semibold text-[#1c1410] text-[13px] truncate">{t.admin_name ?? '-'}</p>
                           <p className="text-[11px] text-[#7a6b5c] truncate">{t.admin_email ?? t.email}</p>
                           {t.phone && <p className="text-[11px] text-[#7a6b5c]">{t.phone}</p>}
                         </div>

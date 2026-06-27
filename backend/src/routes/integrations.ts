@@ -523,11 +523,11 @@ router.post('/meta/webhook', async (req: Request, res: Response) => {
 
             // Always create a note so CRM staff can see re-submission history
             const noteTitle = changedFields.length > 0
-              ? `Re-submitted via "${mf.form_name}" — ${changedFields.length} field(s) changed`
+              ? `Re-submitted via "${mf.form_name}" - ${changedFields.length} field(s) changed`
               : `Re-submitted via "${mf.form_name}"`;
             const noteContent = changedFields.length > 0
               ? `Changed: ${changedFields.join(', ')}`
-              : `No field changes — same data as previous submission.`;
+              : `No field changes - same data as previous submission.`;
             await query(
               `INSERT INTO lead_notes (lead_id, tenant_id, title, content) VALUES ($1,$2,$3,$4)`,
               [leadId, mf.tenant_id, noteTitle, noteContent]
@@ -2293,7 +2293,7 @@ async function markMetaHealth(tenantId: string, ok: boolean, errMsg: string | nu
       await sendIntegrationAlert(
         tenantId,
         'Facebook lead capture disconnected',
-        'We can no longer pull leads from your Facebook page — the connection/token is no longer valid. New leads are NOT being captured. Please go to Integrations → Meta and reconnect to resume lead capture.'
+        'We can no longer pull leads from your Facebook page - the connection/token is no longer valid. New leads are NOT being captured. Please go to Integrations → Meta and reconnect to resume lead capture.'
       ).catch(() => {});
     }
   } catch (e: any) { console.error('[markMetaHealth]', e?.message); }

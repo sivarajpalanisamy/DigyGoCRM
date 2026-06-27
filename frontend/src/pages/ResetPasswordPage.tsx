@@ -18,7 +18,7 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) { toast.error('Invalid reset link — no token'); return; }
+    if (!token) { toast.error('Invalid reset link - no token'); return; }
     if (password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     if (password !== confirm) { toast.error('Passwords do not match'); return; }
     setLoading(true);

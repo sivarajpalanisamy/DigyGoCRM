@@ -12,7 +12,7 @@ import { useAuthStore } from '@/store/authStore';
 import { api } from '@/lib/api';
 
 const TIMEZONES = ['Asia/Kolkata (IST +5:30)', 'Asia/Dubai (GST +4:00)', 'Europe/London (GMT +0:00)', 'America/New_York (EST -5:00)', 'America/Los_Angeles (PST -8:00)'];
-const CURRENCIES = ['INR — Indian Rupee (₹)', 'USD — US Dollar ($)', 'EUR — Euro (€)', 'GBP — British Pound (£)', 'AED — UAE Dirham (د.إ)'];
+const CURRENCIES = ['INR - Indian Rupee (₹)', 'USD - US Dollar ($)', 'EUR - Euro (€)', 'GBP - British Pound (£)', 'AED - UAE Dirham (د.إ)'];
 const DATE_FORMATS = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'];
 
 const labelCls = 'block text-[11px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-1.5';

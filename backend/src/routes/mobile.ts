@@ -484,7 +484,7 @@ async function ingestOneCall(
       query(
         `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
          VALUES ($1::uuid,$2::uuid,'call',$3,$4,$5::uuid)`,
-        [leadId, tenantId, `${direction === 'OUTBOUND' ? 'Outgoing' : 'Incoming'} call — ${outcome}${durTxt}`,
+        [leadId, tenantId, `${direction === 'OUTBOUND' ? 'Outgoing' : 'Incoming'} call - ${outcome}${durTxt}`,
          call.notes ?? null, staffUserId]
       ).catch(() => null);
     }

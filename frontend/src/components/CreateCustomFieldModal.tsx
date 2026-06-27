@@ -106,10 +106,10 @@ export default function CreateCustomFieldModal({
             )}
             <div>
               <h3 className="font-bold text-[#1c1410] text-[15px] leading-tight">
-                {step === 'pick' ? 'Choose field type' : `New Field — ${dataType}`}
+                {step === 'pick' ? 'Choose field type' : `New Field - ${dataType}`}
               </h3>
               <p className="text-[11px] text-[#7a6b5c] mt-0.5">
-                {step === 'pick' ? 'Pick the type of data this field will capture' : "Name it — it'll be saved to your Fields page too"}
+                {step === 'pick' ? 'Pick the type of data this field will capture' : "Name it - it'll be saved to your Fields page too"}
               </p>
             </div>
           </div>

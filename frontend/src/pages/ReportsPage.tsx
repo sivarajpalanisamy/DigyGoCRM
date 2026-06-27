@@ -297,7 +297,7 @@ function StageFunnel({ stages }: { stages: StageRow[] }) {
                 <div className="flex items-center gap-1.5 my-1 pl-1">
                   <div className={`w-px h-3 ${isBottleneck ? 'bg-red-300' : 'bg-[#e5d5c5]'}`} />
                   <span className={`text-[10px] font-medium ${isBottleneck ? 'text-red-500 font-bold' : 'text-[#b0a090]'}`}>
-                    ↓ {dropPct}% drop-off{isBottleneck ? ' — bottleneck' : ''}
+                    ↓ {dropPct}% drop-off{isBottleneck ? ' - bottleneck' : ''}
                   </span>
                 </div>
               )}
@@ -863,7 +863,7 @@ function StaleList({ stale }: { stale: StaleShape }) {
         <div key={i} className="flex items-center justify-between p-3 bg-[#fef2f2] rounded-xl border border-[#fee2e2]">
           <div className="min-w-0">
             <p className="text-[12px] font-semibold text-[#1c1410] truncate">{l.name}</p>
-            <p className="text-[10px] text-[#9a8a7a] mt-0.5">{l.stage_name ?? '—'} · {l.assigned_name ?? 'Unassigned'}</p>
+            <p className="text-[10px] text-[#9a8a7a] mt-0.5">{l.stage_name ?? '-'} · {l.assigned_name ?? 'Unassigned'}</p>
           </div>
           <span className="text-[11px] font-bold text-[#ef4444] shrink-0 ml-3 bg-white px-2 py-1 rounded-lg border border-[#fecaca]">
             {l.days_stale}d
@@ -994,12 +994,12 @@ function OwnerReport() {
           <LeadBreakdown total={data.kpi.total_leads} won={data.kpi.won} active={data.kpi.active} />
 
           {/* Trend */}
-          <Card title="New Leads vs Won — Monthly" sub="Volume trend over the selected period">
+          <Card title="New Leads vs Won - Monthly" sub="Volume trend over the selected period">
             <TrendChart data={data.win_loss} />
           </Card>
 
           {/* Source ROI */}
-          <Card title="Source ROI — Volume, Contact Rate & Conversion" sub={`${data.sources.length} sources tracked · bars = volume, lines = rates`}>
+          <Card title="Source ROI - Volume, Contact Rate & Conversion" sub={`${data.sources.length} sources tracked · bars = volume, lines = rates`}>
             <SourceROIChart sources={data.sources} />
           </Card>
 
@@ -1009,7 +1009,7 @@ function OwnerReport() {
           </Card>
 
           {/* Staff Leaderboard */}
-          <Card title="Staff Leaderboard" sub="Team performance ranked by conversion — click headers to sort">
+          <Card title="Staff Leaderboard" sub="Team performance ranked by conversion - click headers to sort">
             <StaffLeaderboard staff={data.staff} />
           </Card>
 
@@ -1139,7 +1139,7 @@ function ManagerReport() {
           </Card>
 
           {/* Staff Leaderboard */}
-          <Card title="Staff Leaderboard" sub="Team performance ranked by conversion — click headers to sort">
+          <Card title="Staff Leaderboard" sub="Team performance ranked by conversion - click headers to sort">
             <StaffLeaderboard staff={data.staff} />
           </Card>
 

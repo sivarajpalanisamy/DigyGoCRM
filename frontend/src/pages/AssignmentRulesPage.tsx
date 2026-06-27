@@ -203,7 +203,7 @@ export default function AssignmentRulesPage() {
                 <p className="text-[11px] text-[#7a6b5c] mt-0.5">
                   {rule.method === 'round-robin'
                     ? 'Distribute evenly across all agents'
-                    : `${rule.method === 'source' ? 'Source' : rule.method === 'stage' ? 'Stage' : 'Condition'}: ${rule.condition || '—'} → ${rule.assign_to_name || 'Unassigned'}`}
+                    : `${rule.method === 'source' ? 'Source' : rule.method === 'stage' ? 'Stage' : 'Condition'}: ${rule.condition || '-'} → ${rule.assign_to_name || 'Unassigned'}`}
                 </p>
               </div>
               <Badge className={cn('border-0 text-xs shrink-0 capitalize', methodBadge[rule.method])}>

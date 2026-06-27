@@ -19,7 +19,7 @@ export default function ActivatePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) { toast.error('Invalid activation link — no token'); return; }
+    if (!token) { toast.error('Invalid activation link - no token'); return; }
     if (pin.trim().length !== 4) { toast.error('Enter the 4-digit PIN from your email'); return; }
     if (password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     if (password !== confirm) { toast.error('Passwords do not match'); return; }

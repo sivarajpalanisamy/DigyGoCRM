@@ -124,7 +124,7 @@ function DirBadge({ sender }: { sender: string }) {
 
 // ── Sent By badge ─────────────────────────────────────────────────────────
 function SentByBadge({ sentBy }: { sentBy?: string }) {
-  if (!sentBy) return <span className="text-[#b09e8d]">—</span>;
+  if (!sentBy) return <span className="text-[#b09e8d]">-</span>;
   const map: Record<string, { label: string; cls: string }> = {
     automation: { label: 'Automation', cls: 'bg-purple-50 text-purple-600' },
     manual:     { label: 'Manual',     cls: 'bg-[#f0ebe5] text-[#7a6b5c]'  },
@@ -456,7 +456,7 @@ export default function InboxOverviewPage() {
                         <span className="text-[10px] bg-[#f0ebe5] text-[#7a6b5c] rounded px-1.5 py-0.5 font-mono">
                           {row.wa_account.replace(/^91/, '+91 ').replace(/(\d{5})(\d{5})$/, '$1 $2')}
                         </span>
-                      ) : '—'}
+                      ) : '-'}
                     </td>
                     <td className="px-3 py-3">
                       <SentByBadge sentBy={row.sent_by} />
@@ -474,7 +474,7 @@ export default function InboxOverviewPage() {
                         )}>
                           {row.status}
                         </span>
-                      ) : '—'}
+                      ) : '-'}
                     </td>
                   </tr>
                 ))}

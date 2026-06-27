@@ -295,7 +295,7 @@ function ContactSidebar({
             <div>
               {filtered.map((log, idx) => {
                 const name       = (log.lead_name && log.lead_name.trim()) ? log.lead_name : '(deleted lead)';
-                const phone      = log.lead_phone ?? '—';
+                const phone      = log.lead_phone ?? '-';
                 const enrolledAt = log.enrolled_at ? format(new Date(log.enrolled_at), 'dd MMM yyyy, h:mm a') : '';
                 const initial    = (name as string).charAt(0)?.toUpperCase() || '?';
                 const ci         = idx % bgPalette.length;
@@ -520,7 +520,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
     : triggerNode.actionType === 'meta_form'           ? 'Trigger will fire when selected facebook form is submitted'
     : triggerNode.actionType === 'appointment_booked'  ? 'When an appointment is booked automation will trigger'
     : triggerNode.actionType === 'pipeline_stage_change' ? 'When a contact is added to selected pipeline automation will trigger'
-    : triggerNode.actionType === 'broadcast_to_group'  ? 'Broadcast to group — click Run Broadcast to start sending'
+    : triggerNode.actionType === 'broadcast_to_group'  ? 'Broadcast to group - click Run Broadcast to start sending'
     : triggerNode.label && triggerNode.label !== 'Select Trigger' ? triggerNode.label
     : 'No trigger configured'
     : 'No trigger configured';
@@ -562,7 +562,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
         </div>
         <p className="text-[11px] text-[#7a6b5c] mt-0.5 truncate">
           {wf.status === 'inactive'
-            ? 'Not published — toggle to activate'
+            ? 'Not published - toggle to activate'
             : triggerDesc}
         </p>
       </div>
@@ -571,7 +571,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
       <div className="w-32 flex items-center justify-center shrink-0 py-4" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onToggleReentry}
-          title={wf.allowReentry ? 'Re-entry allowed — click to disable' : 'Re-entry blocked — click to allow'}
+          title={wf.allowReentry ? 'Re-entry allowed - click to disable' : 'Re-entry blocked - click to allow'}
           className={cn(
             'w-4 h-4 rounded border-2 flex items-center justify-center transition-all',
             wf.allowReentry ? 'bg-primary border-primary' : 'border-gray-300 bg-white hover:border-primary/60'
@@ -734,7 +734,7 @@ export default function AutomationPage() {
             skipped,
             pending: Math.max(0, total - completed - completedWithErrors - failed),
             completedNodes: r.nodes?.filter((n: any) => n.type !== 'trigger').length ?? 0,
-            lastUpdated: r.updated_at ? format(new Date(r.updated_at), 'dd MMM') : '—',
+            lastUpdated: r.updated_at ? format(new Date(r.updated_at), 'dd MMM') : '-',
             status: r.status as 'active' | 'inactive',
             nodes: r.nodes ?? [],
             apiToken: r.api_token ?? '',
@@ -877,14 +877,14 @@ export default function AutomationPage() {
   const runBroadcast = async (wf: WFRecord) => {
     const triggerNode = wf.nodes.find((n) => n.type === 'trigger');
     if (!triggerNode?.config?.group_id) {
-      toast.error('No contact group configured — edit the workflow trigger first.');
+      toast.error('No contact group configured - edit the workflow trigger first.');
       return;
     }
     try {
       const result = await api.post<any>(`/api/workflows/${wf.id}/broadcast-group`);
       const mins = result.estimated_minutes ?? 0;
       toast.success(
-        `Broadcast started — ${result.queued} messages queued for "${result.group}". ${mins > 0 ? `Est. ${mins} min to complete.` : 'Sending now.'}`
+        `Broadcast started - ${result.queued} messages queued for "${result.group}". ${mins > 0 ? `Est. ${mins} min to complete.` : 'Sending now.'}`
       );
     } catch (err: any) {
       toast.error(err?.message ?? 'Failed to start broadcast');

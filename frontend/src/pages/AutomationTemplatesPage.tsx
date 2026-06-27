@@ -209,7 +209,7 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
     const activeButtons = buttons.filter((b) => b.label.trim());
     const hasQR = activeButtons.some((b) => b.type === 'QUICK_REPLY');
     const hasCTA = activeButtons.some((b) => b.type === 'URL' || b.type === 'PHONE_NUMBER');
-    if (hasQR && hasCTA) { toast.error('Cannot mix Quick Reply buttons with URL/Phone buttons — Meta requires all buttons to be the same type'); return; }
+    if (hasQR && hasCTA) { toast.error('Cannot mix Quick Reply buttons with URL/Phone buttons - Meta requires all buttons to be the same type'); return; }
     // URL buttons must have a valid URL
     for (const b of activeButtons) {
       if (b.type === 'URL' && !b.value.trim()) { toast.error(`Button "${b.label}" needs a URL`); return; }
@@ -299,7 +299,7 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
 
           <AttachRow
             accept="image/*,video/*,.pdf,.doc,.docx"
-            label="Media Header (optional) — image, video, PDF or document"
+            label="Media Header (optional) - image, video, PDF or document"
             existingName={initial?.file_name}
             onFile={setFile}
             onRemoveExisting={() => setRemoveFile(true)}
@@ -448,7 +448,7 @@ function EmailModal({ initial, onClose, onSaved }: { initial?: Template | null; 
           </div>
           <AttachRow
             accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.csv"
-            label="Attachment (optional) — image, PDF, Word, Excel, PowerPoint, ZIP, etc."
+            label="Attachment (optional) - image, PDF, Word, Excel, PowerPoint, ZIP, etc."
             existingName={initial?.file_name}
             onFile={setFile}
             onRemoveExisting={() => setRemoveFile(true)}
@@ -583,7 +583,7 @@ function WAPersonalModal({ initial, onClose, onSaved }: { initial?: WaPersonalTe
           </div>
           <AttachRow
             accept="image/*,.pdf,.doc,.docx"
-            label="Attachment (optional) — image, PDF or document"
+            label="Attachment (optional) - image, PDF or document"
             existingName={initial?.file_name}
             onFile={setFile}
             onRemoveExisting={() => setRemoveFile(true)}
@@ -806,7 +806,7 @@ export default function AutomationTemplatesPage() {
     wa_personal: 'No WA Personal templates yet',
   };
   const emptyDesc: Record<TemplateType, string> = {
-    waba: 'Create approved message templates — with images, videos or documents — for automated WhatsApp campaigns.',
+    waba: 'Create approved message templates - with images, videos or documents - for automated WhatsApp campaigns.',
     email: 'Build reusable email templates with file attachments for automated outreach.',
     sms: 'Create short SMS templates for quick automated notifications.',
     wa_personal: 'Create reusable message templates for your personal WhatsApp (QR-linked) number. Supports images, PDFs and documents.',

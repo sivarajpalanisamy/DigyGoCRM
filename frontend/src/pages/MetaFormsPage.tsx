@@ -194,7 +194,7 @@ function MapFieldsModal({ form, onClose }: { form: MetaFormRow; onClose: () => v
                       onChange={(e) => handleSelectChange(i, e.target.value)}
                       className="w-full border border-black/10 rounded-xl px-3 py-2.5 text-[13px] text-[#1c1410] bg-white outline-none focus:border-primary cursor-pointer"
                     >
-                      <option value="">— Select field —</option>
+                      <option value="">- Select field -</option>
                       <optgroup label="Standard Fields">
                         {STANDARD_CRM_FIELDS.map((f) => (
                           <option key={f.value} value={f.value}>{f.label}</option>
@@ -661,7 +661,7 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
                         <Link className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
                           <p className="text-[10px] text-[#7a6b5c] font-medium uppercase tracking-wide">{f.field_name}</p>
-                          <p className="text-[13px] text-[#1c1410] font-medium break-words">{f.value || '—'}</p>
+                          <p className="text-[13px] text-[#1c1410] font-medium break-words">{f.value || '-'}</p>
                         </div>
                       </div>
                     ))}
@@ -786,9 +786,9 @@ export default function MetaFormsPage() {
     const errorParam = searchParams.get('error');
     if (connectedParam === 'true') {
       if (needsTokenParam && Number(needsTokenParam) > 0) {
-        toast.success(`Meta connected! ${needsTokenParam} page${Number(needsTokenParam) !== 1 ? 's' : ''} need a token to connect — see below.`);
+        toast.success(`Meta connected! ${needsTokenParam} page${Number(needsTokenParam) !== 1 ? 's' : ''} need a token to connect - see below.`);
       } else {
-        toast.success('Meta connected — your pages are loading…');
+        toast.success('Meta connected - your pages are loading…');
       }
       // Clean URL so ?connected=true doesn't persist
       navigate('/lead-generation/meta-forms', { replace: true });
@@ -913,7 +913,7 @@ export default function MetaFormsPage() {
         setStatus({ connected: false });
         setForms([]);
         closeDetailPage();
-        toast.success('Meta disconnected — no pages remaining');
+        toast.success('Meta disconnected - no pages remaining');
       } else {
         setStatus((prev) => ({
           ...prev,
@@ -949,7 +949,7 @@ export default function MetaFormsPage() {
       setConnectBlockedPage(null);
       setBlockedToken('');
     } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to connect — check that the token is a valid Page Access Token');
+      toast.error(err?.message ?? 'Failed to connect - check that the token is a valid Page Access Token');
     } finally {
       setSavingBlockedToken(false);
     }
@@ -1002,12 +1002,12 @@ export default function MetaFormsPage() {
         const isArchived = form.meta_status && form.meta_status !== 'ACTIVE';
         toast.info(
           isArchived
-            ? `No leads found — this form is ${form.meta_status?.toLowerCase()} in Meta. Sync first or check Meta Ads Manager.`
+            ? `No leads found - this form is ${form.meta_status?.toLowerCase()} in Meta. Sync first or check Meta Ads Manager.`
             : `No ${type === 'old' ? 'historical' : 'new'} leads found in Meta for this form`
         );
       } else if (workflows.length === 0) {
         setPushResult({ formId: form.form_id, type, pushed, created, existing, workflows: [] });
-        toast.warning(`${pushed} lead${pushed !== 1 ? 's' : ''} added to CRM — no automation ran. Set up a workflow with a Meta Form trigger first.`);
+        toast.warning(`${pushed} lead${pushed !== 1 ? 's' : ''} added to CRM - no automation ran. Set up a workflow with a Meta Form trigger first.`);
       } else {
         setPushResult({ formId: form.form_id, type, pushed, created, existing, workflows });
         const parts = [`Done: ${done}`];
@@ -1015,9 +1015,9 @@ export default function MetaFormsPage() {
         if (failed > 0)  parts.push(`Failed: ${failed}`);
         const allSkipped = done === 0 && skipped > 0 && failed === 0;
         if (allSkipped) {
-          toast.warning(`${pushed} lead${pushed !== 1 ? 's' : ''} pushed — all skipped (already enrolled). Enable "Allow Re-entry" on the workflow to re-run.`);
+          toast.warning(`${pushed} lead${pushed !== 1 ? 's' : ''} pushed - all skipped (already enrolled). Enable "Allow Re-entry" on the workflow to re-run.`);
         } else {
-          toast.success(`${pushed} lead${pushed !== 1 ? 's' : ''} pushed — ${parts.join(', ')}`);
+          toast.success(`${pushed} lead${pushed !== 1 ? 's' : ''} pushed - ${parts.join(', ')}`);
         }
       }
       // Refresh from server for accurate count (backend recalculates from CRM leads)
@@ -1044,11 +1044,11 @@ export default function MetaFormsPage() {
       if (res.failed > 0 && res.errors.length > 0) {
         toast.error(`Sync issue: ${res.errors[0]}${res.errors.length > 1 ? ` (+${res.errors.length - 1} more)` : ''}`);
       } else if (res.forms.length === 0) {
-        toast.warning('No forms found — create a Lead Ad form in Meta Ads Manager first, then sync again.');
+        toast.warning('No forms found - create a Lead Ad form in Meta Ads Manager first, then sync again.');
       } else {
-        toast.success(`Forms synced — ${res.synced} form${res.synced !== 1 ? 's' : ''} found across all pages`);
+        toast.success(`Forms synced - ${res.synced} form${res.synced !== 1 ? 's' : ''} found across all pages`);
       }
-    } catch { toast.error('Sync failed — your Meta token may have expired. Reconnect to fix.'); }
+    } catch { toast.error('Sync failed - your Meta token may have expired. Reconnect to fix.'); }
     finally { setSyncing(false); }
   };
 
@@ -1128,7 +1128,7 @@ export default function MetaFormsPage() {
         is_active: !form.is_active,
       });
       setForms((prev) => prev.map((f) => f.id === form.id ? { ...f, is_active: updated.is_active } : f));
-      toast.success(`${form.form_name} ${updated.is_active ? 'auto-import ON — new leads will capture automatically' : 'auto-import OFF — manual import still works'}`);
+      toast.success(`${form.form_name} ${updated.is_active ? 'auto-import ON - new leads will capture automatically' : 'auto-import OFF - manual import still works'}`);
     } catch { toast.error('Failed to update'); }
   };
 
@@ -1262,7 +1262,7 @@ export default function MetaFormsPage() {
                 <p className="text-[12px] font-bold text-[#1c1410]">In the Facebook dialog that opens:</p>
                 <ol className="space-y-2.5">
                   {[
-                    { label: 'Click "Edit" next to the pages list', detail: 'Do not skip this — it shows all your pages' },
+                    { label: 'Click "Edit" next to the pages list', detail: 'Do not skip this - it shows all your pages' },
                     { label: 'Check EVERY page you want to connect', detail: 'Select all of them, not just a few' },
                     { label: 'Click "Continue" to confirm', detail: 'Then finish the authorization' },
                   ].map((step, i) => (
@@ -1356,7 +1356,7 @@ export default function MetaFormsPage() {
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold text-red-800">Meta token expired — leads are no longer syncing</p>
+              <p className="text-[13px] font-bold text-red-800">Meta token expired - leads are no longer syncing</p>
               <p className="text-[11px] text-red-700 mt-0.5">Reconnect your Facebook account to resume automatic lead capture.</p>
             </div>
             <button
@@ -1370,7 +1370,7 @@ export default function MetaFormsPage() {
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold text-red-800">Lead capture disconnected — new leads are NOT being captured</p>
+              <p className="text-[13px] font-bold text-red-800">Lead capture disconnected - new leads are NOT being captured</p>
               <p className="text-[11px] text-red-700 mt-0.5">
                 {status.lastError ? `Meta error: ${status.lastError}. ` : ''}Reconnect your Facebook account to resume.
                 {status.lastSuccessAt ? ` Last successful sync: ${new Date(status.lastSuccessAt).toLocaleString()}.` : ''}
@@ -1441,7 +1441,7 @@ export default function MetaFormsPage() {
                           onClick={(e) => { e.stopPropagation(); setMapForm(form); }}
                           className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
                         >
-                          Fields not mapped — click to map
+                          Fields not mapped - click to map
                         </button>
                       )}
                       {isMapped && (
@@ -1473,7 +1473,7 @@ export default function MetaFormsPage() {
                     <span className={`text-[11px] font-medium ${isActive ? 'text-emerald-600' : 'text-[#b09e8d]'}`}>
                       {isActive ? 'Auto' : 'Manual'}
                     </span>
-                    <span title={!isMapped ? 'Map fields first to enable auto-import' : isActive ? 'Auto ON — captures only NEW leads going forward. Does not import past leads.' : 'Enable to capture new leads from Meta ads in real time (past leads not imported)'}>
+                    <span title={!isMapped ? 'Map fields first to enable auto-import' : isActive ? 'Auto ON - captures only NEW leads going forward. Does not import past leads.' : 'Enable to capture new leads from Meta ads in real time (past leads not imported)'}>
                       <Switch
                         checked={isActive}
                         onCheckedChange={() => isMapped && toggleForm(form)}
@@ -1649,7 +1649,7 @@ export default function MetaFormsPage() {
                   onChange={(e) => setDownloadFormId(e.target.value)}
                   className="w-full appearance-none bg-[#f5f0eb] border border-black/8 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:ring-2 focus:ring-primary/20 pr-9 cursor-pointer"
                 >
-                  <option value="">— Choose a form —</option>
+                  <option value="">- Choose a form -</option>
                   {forms.filter((f) => f.page_id === detailPage.id).map((f) => (
                     <option key={f.form_id} value={f.form_id}>{f.form_name}</option>
                   ))}
@@ -1715,7 +1715,7 @@ export default function MetaFormsPage() {
                     onChange={(e) => setTriggerWorkflowId(e.target.value)}
                     className="w-full appearance-none bg-[#f5f0eb] border border-black/8 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:ring-2 focus:ring-primary/20 pr-9 cursor-pointer"
                   >
-                    <option value="">— Choose a workflow —</option>
+                    <option value="">- Choose a workflow -</option>
                     {triggerWorkflows.map((wf) => (
                       <option key={wf.id} value={wf.id}>{wf.name}</option>
                     ))}
@@ -2009,7 +2009,7 @@ export default function MetaFormsPage() {
                 <p className="text-[12px] font-bold text-[#1c1410]">In the Facebook dialog that opens:</p>
                 <ol className="space-y-2.5">
                   {[
-                    { label: 'Click "Edit" next to the pages list', detail: 'Do not skip this — it shows all your pages' },
+                    { label: 'Click "Edit" next to the pages list', detail: 'Do not skip this - it shows all your pages' },
                     { label: 'Check EVERY page you want to connect', detail: 'Select all of them, not just a few' },
                     { label: 'Click "Continue" to confirm', detail: 'Then finish the authorization' },
                   ].map((step, i) => (
@@ -2063,7 +2063,7 @@ export default function MetaFormsPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h3 className="text-[16px] font-bold text-[#1c1410] mb-2">Import Historical Leads?</h3>
             <p className="text-[13px] text-[#7a6b5c] mb-1">
-              This will import <strong>all leads ever submitted</strong> to <strong>{historicalImportTarget.form_name}</strong> from Meta — including leads from before you connected this form.
+              This will import <strong>all leads ever submitted</strong> to <strong>{historicalImportTarget.form_name}</strong> from Meta - including leads from before you connected this form.
             </p>
             <p className="text-[12px] text-[#9e8e7e] mb-5">Existing leads will be skipped. This is a one-time manual action and does not affect your Auto toggle.</p>
             <div className="flex gap-3">

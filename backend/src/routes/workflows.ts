@@ -575,12 +575,12 @@ export async function executeNodes(
           // Skip if lead already has a pipeline and "only_if_no_pipeline" is toggled
           if (node.config.only_if_no_pipeline && lead.pipeline_id) {
             status = 'skipped';
-            message = `add_to_crm: lead already in a pipeline — skipped (only_if_no_pipeline is ON)`;
+            message = `add_to_crm: lead already in a pipeline - skipped (only_if_no_pipeline is ON)`;
             break;
           }
           if (!lead.id) {
             status = 'failed';
-            message = 'add_to_crm: lead has no id — cannot update';
+            message = 'add_to_crm: lead has no id - cannot update';
             break;
           }
           const sets: string[] = ['updated_at=NOW()'];
@@ -631,7 +631,7 @@ export async function executeNodes(
             }
           } else {
             status = 'skipped';
-            message = 'add_to_crm: no pipeline_id or stage_id configured — select a pipeline and stage in the node config';
+            message = 'add_to_crm: no pipeline_id or stage_id configured - select a pipeline and stage in the node config';
           }
           break;
         }
@@ -1069,7 +1069,7 @@ export async function executeNodes(
           const groupId = (node.config.group_id ?? '') as string;
           if (!groupId) {
             if (node.config.targetList) {
-              status = 'failed'; message = 'remove_contact: action needs reconfiguration — open this node and select a Contact Group from the dropdown';
+              status = 'failed'; message = 'remove_contact: action needs reconfiguration - open this node and select a Contact Group from the dropdown';
             } else {
               status = 'skipped'; message = 'remove_contact: no group configured';
             }
@@ -1108,7 +1108,7 @@ export async function executeNodes(
           } else {
             status = 'skipped';
             message = lead.id?.startsWith('test-')
-              ? 'create_note: test contact is not a real CRM lead — use a contact from CRM to test this action'
+              ? 'create_note: test contact is not a real CRM lead - use a contact from CRM to test this action'
               : 'create_note: no lead ID';
           }
           break;
@@ -1146,7 +1146,7 @@ export async function executeNodes(
           } else {
             status = 'skipped';
             message = lead.id?.startsWith('test-')
-              ? 'create_followup: test contact is not a real CRM lead — use a contact from CRM to test this action'
+              ? 'create_followup: test contact is not a real CRM lead - use a contact from CRM to test this action'
               : 'create_followup: no lead ID';
           }
           break;
@@ -1353,13 +1353,13 @@ export async function executeNodes(
             const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
             const allowedDays: string[] = (node.config.time_days as string[]) ?? ['Mon','Tue','Wed','Thu','Fri'];
             if (!allowedDays.includes(dayName)) {
-              status = 'skipped'; message = `webhook_call: skipped — ${dayName} not in allowed days`; break;
+              status = 'skipped'; message = `webhook_call: skipped - ${dayName} not in allowed days`; break;
             }
             const hhmm = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
             const start = (node.config.time_start as string) ?? '09:00';
             const end   = (node.config.time_end   as string) ?? '18:00';
             if (hhmm < start || hhmm > end) {
-              status = 'skipped'; message = `webhook_call: skipped — current time ${hhmm} outside window ${start}–${end}`; break;
+              status = 'skipped'; message = `webhook_call: skipped - current time ${hhmm} outside window ${start}–${end}`; break;
             }
           }
 
@@ -1471,7 +1471,7 @@ export async function executeNodes(
             [tenantId]
           );
           if (!wabaRes.rows[0]) {
-            throw new Error('send_whatsapp: WABA integration not configured or inactive — set it up under Integrations → WhatsApp');
+            throw new Error('send_whatsapp: WABA integration not configured or inactive - set it up under Integrations → WhatsApp');
           }
           const { phone_number_id, access_token: encToken } = wabaRes.rows[0];
           const waToken = decrypt(encToken);
@@ -1612,7 +1612,7 @@ export async function executeNodes(
           const { toJID } = await import('../services/whatsapp/phoneUtils');
           const waSessionId = (node.config.session_id as string) || undefined;
           if (!getSession(tenantId, waSessionId)) {
-            status = 'failed'; message = 'send_whatsapp_personal: WhatsApp Personal session not connected — scan QR under Integrations'; break;
+            status = 'failed'; message = 'send_whatsapp_personal: WhatsApp Personal session not connected - scan QR under Integrations'; break;
           }
 
           let msgText = '';
@@ -1667,7 +1667,7 @@ export async function executeNodes(
         // ── Send SMS ───────────────────────────────────────────────────────────
         // Leak 5 fix: fail visibly so the gap shows in execution logs, not as a silent skip
         case 'send_sms': {
-          throw new Error('SMS sending not implemented — integrate Twilio/MSG91 and set TWILIO_SID in env');
+          throw new Error('SMS sending not implemented - integrate Twilio/MSG91 and set TWILIO_SID in env');
         }
 
         // ── Execute Another Automation ─────────────────────────────────────────
@@ -1804,18 +1804,18 @@ export async function executeNodes(
                     [lead.id]
                   ).catch(() => ({ rows: [] as any[] }));
                   if (updFb.rows[0]) emitToTenant(tenantId, 'lead:updated', updFb.rows[0]);
-                  message = `field_routing: "${fieldValue}" not in mapping — moved to fallback pipeline "${fbName}" (Stage: ${stage_name})`;
+                  message = `field_routing: "${fieldValue}" not in mapping - moved to fallback pipeline "${fbName}" (Stage: ${stage_name})`;
                 } else {
                   status = 'failed';
-                  message = `field_routing: "${fieldValue}" not in mapping — fallback pipeline move affected 0 rows`;
+                  message = `field_routing: "${fieldValue}" not in mapping - fallback pipeline move affected 0 rows`;
                 }
               } else {
                 status = 'failed';
-                message = `field_routing: "${fieldValue}" not in mapping — fallback pipeline not found`;
+                message = `field_routing: "${fieldValue}" not in mapping - fallback pipeline not found`;
               }
             } else {
               status = 'skipped';
-              message = `field_routing: "${fieldValue}" not found in mapping${setId ? ` (set: ${setId})` : ''} — no fallback configured`;
+              message = `field_routing: "${fieldValue}" not found in mapping${setId ? ` (set: ${setId})` : ''} - no fallback configured`;
             }
             break;
           }
@@ -1879,7 +1879,7 @@ export async function executeNodes(
             );
             if ((moveRes.rowCount ?? 0) === 0) {
               status = 'failed';
-              message = `field_routing: UPDATE affected 0 rows — lead not moved to pipeline "${effectivePipeline}"`;
+              message = `field_routing: UPDATE affected 0 rows - lead not moved to pipeline "${effectivePipeline}"`;
               break;
             }
             lead.pipeline_id = pipeline_id; lead.stage_id = stage_id; lead.stage_name = stage_name;
@@ -1903,7 +1903,7 @@ export async function executeNodes(
             message = `field_routing${setLabel}: "${fieldValue}" → ${district ?? effectivePipeline}${state ? ', ' + state : ''} → Pipeline: ${effectivePipeline} (Stage: ${stage_name})${node.config.auto_tag && district ? ` · tagged "${district}"` : ''}`;
           } else {
             status = 'failed';
-            message = `field_routing: pipeline "${effectivePipeline}" not found — ${district ? `district "${district}" set on lead but ` : ''}not moved`;
+            message = `field_routing: pipeline "${effectivePipeline}" not found - ${district ? `district "${district}" set on lead but ` : ''}not moved`;
             if (lead.id) {
               await query(
                 `INSERT INTO lead_notes (lead_id, tenant_id, title, content) VALUES ($1,$2,$3,$4)`,
@@ -2041,7 +2041,7 @@ export async function executeNodes(
                VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
               [workflowId, executionId, tenantId, leadIdForQueue, JSON.stringify(lead), JSON.stringify(remaining), runAtIso, nodeIdx]
             );
-            message = `Delay scheduled: ${delayMinutes}m — ${remaining.length} step(s) queued for ${runAtIso}`;
+            message = `Delay scheduled: ${delayMinutes}m - ${remaining.length} step(s) queued for ${runAtIso}`;
           } else {
             message = `Delay of ${delayMinutes}m (no further steps after delay)`;
           }
@@ -2138,9 +2138,9 @@ export async function executeNodes(
           const groupId     = (node.config.group_id ?? '') as string;
           if (!groupId) {
             if (node.config.targetList) {
-              status = 'failed'; message = 'contact_group: action needs reconfiguration — open this node and select a Contact Group from the dropdown';
+              status = 'failed'; message = 'contact_group: action needs reconfiguration - open this node and select a Contact Group from the dropdown';
             } else {
-              status = 'skipped'; message = 'contact_group: no group configured — open the action node and select a group';
+              status = 'skipped'; message = 'contact_group: no group configured - open the action node and select a group';
             }
             break;
           }
@@ -2209,7 +2209,7 @@ export async function executeNodes(
         // ── Contact Group Access (deprecated — no-op) ──────────────────────────
         case 'contact_group_access': {
           status = 'skipped';
-          message = 'contact_group_access: deprecated — replace with the Contact Group action';
+          message = 'contact_group_access: deprecated - replace with the Contact Group action';
           break;
         }
 
@@ -2247,12 +2247,12 @@ export async function executeNodes(
         // ── Instagram DM (requires Meta API — not yet implemented) ───────────
         // Leak 5 fix: throw so execution shows as 'failed', not silently 'skipped'
         case 'post_instagram': {
-          throw new Error('Instagram DM not implemented — wire Meta Messenger API to enable this action');
+          throw new Error('Instagram DM not implemented - wire Meta Messenger API to enable this action');
         }
 
         // ── Facebook Comment Reply (requires Meta API — not yet implemented) ──
         case 'facebook_post': {
-          throw new Error('Facebook comment reply not implemented — wire Meta Graph API to enable this action');
+          throw new Error('Facebook comment reply not implemented - wire Meta Graph API to enable this action');
         }
 
         default: {
@@ -2594,7 +2594,7 @@ export async function triggerWorkflows(
               `INSERT INTO workflow_execution_logs
                  (execution_id, workflow_id, tenant_id, node_id, action_type, status, message)
                VALUES ($1,$2,$3,'reentry_blocked','reentry_blocked','skipped',
-                       'Reentry blocked — contact already enrolled (allow_reentry=false)')`,
+                       'Reentry blocked - contact already enrolled (allow_reentry=false)')`,
               [skipExec.rows[0].id, wf.id, tenantId]
             ).catch(() => null);
             await query(
@@ -2793,7 +2793,7 @@ export async function processBroadcastQueue(): Promise<void> {
           await query(
             `INSERT INTO workflow_execution_logs
                (execution_id, workflow_id, tenant_id, node_id, action_type, status, message)
-             VALUES ($1,$2,$3,$4,'broadcast_group','completed','Broadcast dispatched — sending to group member')`,
+             VALUES ($1,$2,$3,$4,'broadcast_group','completed','Broadcast dispatched - sending to group member')`,
             [executionId, row.workflow_id, row.tenant_id, row.broadcast_node_id]
           ).catch(() => null);
         }

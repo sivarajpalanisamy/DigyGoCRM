@@ -716,7 +716,7 @@ export default function InboxPage() {
         );
       }
       if (msg.status === 'failed') {
-        toast.error('Message saved but could not be delivered — check WhatsApp Personal connection');
+        toast.error('Message saved but could not be delivered - check WhatsApp Personal connection');
       }
       setMessageText('');
       if (selectedId) localStorage.removeItem(`inbox_draft_${selectedId}`);
@@ -756,7 +756,7 @@ export default function InboxPage() {
       : type.startsWith('audio/') ? 16
       : 100; // documents
     if (file.size > maxMB * 1024 * 1024) {
-      toast.error(`File too large — max ${maxMB} MB for ${type.startsWith('image/') ? 'images' : type.startsWith('video/') ? 'videos' : type.startsWith('audio/') ? 'audio' : 'documents'}`);
+      toast.error(`File too large - max ${maxMB} MB for ${type.startsWith('image/') ? 'images' : type.startsWith('video/') ? 'videos' : type.startsWith('audio/') ? 'audio' : 'documents'}`);
       return;
     }
     setUploading(true);
@@ -778,7 +778,7 @@ export default function InboxPage() {
       setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
       requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
       if (msg.status === 'failed') {
-        toast.error('File saved but could not be delivered — check WhatsApp Personal connection');
+        toast.error('File saved but could not be delivered - check WhatsApp Personal connection');
       }
     } catch {
       toast.error('Failed to upload file');

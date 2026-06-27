@@ -464,7 +464,7 @@ export default function PincodeRoutingPage() {
                       {testResult.found
                         ? <><CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
                             <span className="text-green-800">
-                              Pipeline: <strong>{testResult.pipeline_name ?? '—'}</strong>
+                              Pipeline: <strong>{testResult.pipeline_name ?? '-'}</strong>
                               {testResult.district ? ` · District: ${testResult.district}` : ''}
                               {testResult.state ? `, ${testResult.state}` : ''}
                             </span></>
@@ -593,9 +593,9 @@ export default function PincodeRoutingPage() {
                             {preview.slice(0, 30).map((r, i) => (
                               <tr key={i} className="hover:bg-[var(--app-bg)]">
                                 <td className="px-3 py-1.5 font-mono text-[#1c1410]">{r.match_value}</td>
-                                <td className="px-3 py-1.5 text-[#1c1410]">{r.pipeline_name ?? '—'}</td>
+                                <td className="px-3 py-1.5 text-[#1c1410]">{r.pipeline_name ?? '-'}</td>
                                 {previewFields.map((f) => (
-                                  <td key={f.slug} className="px-3 py-1.5 text-[#7a6b5c]">{r.meta?.[f.slug] ?? '—'}</td>
+                                  <td key={f.slug} className="px-3 py-1.5 text-[#7a6b5c]">{r.meta?.[f.slug] ?? '-'}</td>
                                 ))}
                               </tr>
                             ))}
@@ -756,8 +756,8 @@ export default function PincodeRoutingPage() {
                       return (
                         <tr key={r.id} className="hover:bg-[var(--app-bg)]">
                           <td className="px-4 py-2.5 font-mono text-[#1c1410]">{r.match_value}</td>
-                          <td className="px-4 py-2.5 text-[#1c1410]">{r.pipeline_name ?? '—'}</td>
-                          <td className="px-4 py-2.5 text-[#7a6b5c]">{summary || '—'}</td>
+                          <td className="px-4 py-2.5 text-[#1c1410]">{r.pipeline_name ?? '-'}</td>
+                          <td className="px-4 py-2.5 text-[#7a6b5c]">{summary || '-'}</td>
                         </tr>
                       );
                     })}

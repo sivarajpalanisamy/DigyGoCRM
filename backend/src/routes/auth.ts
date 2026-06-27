@@ -421,7 +421,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
     if (!rotated.rows[0]) {
       // Concurrent request already rotated this token — this copy is stale
       clearRefreshCookie(res);
-      res.status(401).json({ error: 'Session expired — please log in again' });
+      res.status(401).json({ error: 'Session expired - please log in again' });
       return;
     }
 
@@ -626,7 +626,7 @@ router.post('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest,
     const activateLink = `${frontendUrl}/activate?token=${activationToken}`;
     setImmediate(() => sendEmail({
       to: ownerEmail,
-      subject: `Welcome to ${businessName} — activate your CRM`,
+      subject: `Welcome to ${businessName} - activate your CRM`,
       html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #ece5de">
         <div style="background:linear-gradient(135deg,#c2410c,#ea580c,#f97316);padding:28px">
           <h1 style="color:#fff;margin:0;font-size:22px">Welcome, ${adminName} 👋</h1>
@@ -720,7 +720,7 @@ router.post('/activate', async (req: Request, res: Response) => {
       res.status(410).json({ error: 'Activation link has expired' }); return;
     }
     if ((user.otp_attempts ?? 0) >= OTP_MAX_ATTEMPTS) {
-      res.status(429).json({ error: 'Too many attempts — contact your administrator' }); return;
+      res.status(429).json({ error: 'Too many attempts - contact your administrator' }); return;
     }
     const pinOk = await bcrypt.compare(String(pin).trim(), user.otp_code_hash);
     if (!pinOk) {

@@ -307,7 +307,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           {isImpersonating && (
             <button
               onClick={async () => { await exitImpersonation(); navigate('/admin'); }}
-              title="Exit impersonation — back to Super Admin"
+              title="Exit impersonation - back to Super Admin"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-semibold text-white shrink-0 hover:-translate-y-px transition-transform"
               style={{ background: 'linear-gradient(90deg, var(--brand-dark), var(--brand))' }}
             >

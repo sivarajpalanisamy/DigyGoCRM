@@ -436,7 +436,7 @@ export default function WaPersonalOverviewPage() {
                         <span className="text-[10px] bg-[#f0ebe5] text-[#7a6b5c] rounded px-1.5 py-0.5 font-mono">
                           {row.wa_account.replace(/^91/, '+91 ').replace(/(\d{5})(\d{5})$/, '$1 $2')}
                         </span>
-                      ) : '—'}
+                      ) : '-'}
                     </td>
                     <td className="px-3 py-3 text-[#7a6b5c] whitespace-nowrap">
                       {fmtDate(row.created_at)}
@@ -452,7 +452,7 @@ export default function WaPersonalOverviewPage() {
                         )}>
                           {row.status}
                         </span>
-                      ) : '—'}
+                      ) : '-'}
                     </td>
                   </tr>
                 ))}

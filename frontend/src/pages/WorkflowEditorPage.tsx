@@ -431,7 +431,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
 
       {/* Calendar form submitted — pick which booking link(s) */}
       {node.actionType === 'calendar_form_submitted' && (
-        <FieldRow label="Booking Calendar" hint="Select at least one calendar — no selection means this trigger is inactive.">
+        <FieldRow label="Booking Calendar" hint="Select at least one calendar - no selection means this trigger is inactive.">
           <div className="w-full border border-border rounded-lg px-3 py-2 min-h-10 flex flex-wrap gap-1.5 items-center cursor-text bg-card">
             {((cfg.calendars as string[]) ?? []).map((blId) => (
               <span key={blId} className="flex items-center gap-1 bg-muted text-foreground text-xs px-2 py-1 rounded-full">
@@ -609,7 +609,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
           <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-800">
-              <span className="font-semibold">Re-entry tip:</span> By default this workflow fires only <span className="font-semibold">once per contact</span>. If the tag is removed and re-added later, the workflow won't fire again — enable <span className="font-semibold">Allow Re-entry</span> in the settings panel to fire every time the tag is added.
+              <span className="font-semibold">Re-entry tip:</span> By default this workflow fires only <span className="font-semibold">once per contact</span>. If the tag is removed and re-added later, the workflow won't fire again - enable <span className="font-semibold">Allow Re-entry</span> in the settings panel to fire every time the tag is added.
             </p>
           </div>
         </>);
@@ -832,9 +832,9 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
         <FieldRow label="Event / Webinar">
           <select className={selectCls} value={(cfg.eventId as string) ?? ''} onChange={sel('eventId')}>
             <option value="">Select event...</option>
-            <option value="evt1">Sales Webinar — April 20</option>
-            <option value="evt2">Product Launch — May 5</option>
-            <option value="evt3">Training Workshop — May 15</option>
+            <option value="evt1">Sales Webinar - April 20</option>
+            <option value="evt2">Product Launch - May 5</option>
+            <option value="evt3">Training Workshop - May 15</option>
           </select>
         </FieldRow>
         <FieldRow label="Trigger Offset">
@@ -896,7 +896,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
           <p className="text-xs text-muted-foreground mt-1">Match the exact button text the user clicks. Leave blank to match any button click.</p>
         </FieldRow>
         <FieldRow label="Template Name (optional)">
-          <input className={inputCls} placeholder="e.g. welcome_offer — leave blank for any template" value={(cfg.template_name as string) ?? ''} onChange={sel('template_name')} />
+          <input className={inputCls} placeholder="e.g. welcome_offer - leave blank for any template" value={(cfg.template_name as string) ?? ''} onChange={sel('template_name')} />
           <p className="text-xs text-muted-foreground mt-1">Filter by template meta name. Blank = any template button.</p>
         </FieldRow>
       </>)}
@@ -1200,7 +1200,7 @@ function ConditionConfigPanel({ node, onUpdate, pipelines, staff }: {
 
     if (ft === 'pipeline') return (
       <select className={selectCls} value={cond.value} onChange={(e) => editCondition(i, 'value', e.target.value)}>
-        <option value="">— Select pipeline —</option>
+        <option value="">- Select pipeline -</option>
         {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
       </select>
     );
@@ -1209,7 +1209,7 @@ function ConditionConfigPanel({ node, onUpdate, pipelines, staff }: {
       const allStages = pipelines.flatMap((p) => p.stages.map((s) => ({ ...s, pipelineName: p.name })));
       return (
         <select className={selectCls} value={cond.value} onChange={(e) => editCondition(i, 'value', e.target.value)}>
-          <option value="">— Select stage —</option>
+          <option value="">- Select stage -</option>
           {pipelines.map((p) => (
             <optgroup key={p.id} label={p.name}>
               {p.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -1221,28 +1221,28 @@ function ConditionConfigPanel({ node, onUpdate, pipelines, staff }: {
 
     if (ft === 'staff') return (
       <select className={selectCls} value={cond.value} onChange={(e) => editCondition(i, 'value', e.target.value)}>
-        <option value="">— Select staff —</option>
+        <option value="">- Select staff -</option>
         {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
       </select>
     );
 
     if (ft === 'tag') return (
       <select className={selectCls} value={cond.value} onChange={(e) => editCondition(i, 'value', e.target.value)}>
-        <option value="">— Select tag —</option>
+        <option value="">- Select tag -</option>
         {tags.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
       </select>
     );
 
     if (ft === 'source') return (
       <select className={selectCls} value={cond.value} onChange={(e) => editCondition(i, 'value', e.target.value)}>
-        <option value="">— Select source —</option>
+        <option value="">- Select source -</option>
         {LEAD_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
       </select>
     );
 
     if (ft === 'quality') return (
       <select className={selectCls} value={cond.value} onChange={(e) => editCondition(i, 'value', e.target.value)}>
-        <option value="">— Select quality —</option>
+        <option value="">- Select quality -</option>
         {LEAD_QUALITIES.map((q) => <option key={q} value={q}>{q}</option>)}
       </select>
     );
@@ -1252,7 +1252,7 @@ function ConditionConfigPanel({ node, onUpdate, pipelines, staff }: {
       const opts: string[] = Array.isArray(cf?.options) ? cf!.options as string[] : [];
       return (
         <select className={selectCls} value={cond.value} onChange={(e) => editCondition(i, 'value', e.target.value)}>
-          <option value="">— Select option —</option>
+          <option value="">- Select option -</option>
           {opts.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       );
@@ -1322,7 +1322,7 @@ function ConditionConfigPanel({ node, onUpdate, pipelines, staff }: {
 
               {/* Field selector */}
               <select className={selectCls} value={cond.field} onChange={(e) => editCondition(i, 'field', e.target.value)}>
-                <option value="">— Select field —</option>
+                <option value="">- Select field -</option>
                 <optgroup label="Lead Fields">
                   {CONDITION_FIELDS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
                 </optgroup>
@@ -1336,7 +1336,7 @@ function ConditionConfigPanel({ node, onUpdate, pipelines, staff }: {
               {/* Operator selector — shown only after field picked */}
               {cond.field && (
                 <select className={selectCls} value={cond.operator} onChange={(e) => editCondition(i, 'operator', e.target.value)}>
-                  <option value="">— Select condition —</option>
+                  <option value="">- Select condition -</option>
                   {operators.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               )}
@@ -1538,7 +1538,7 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
           <label className="block text-[13px] font-semibold text-[#1c1410]">Pipeline + Staff Rotation</label>
           <p className="text-[11px] text-[#9a8a7a]">Leads alternate between these pairs in order. Each pair gets an equal share.</p>
           {rrPairs.length === 0 && (
-            <p className="text-[12px] text-[#b09e8d]">No pairs yet — add one per destination.</p>
+            <p className="text-[12px] text-[#b09e8d]">No pairs yet - add one per destination.</p>
           )}
           {rrPairs.map((pair, i) => {
             const pairStages = pipelines.find((p) => p.id === pair.pipeline_id)?.stages ?? [];
@@ -1573,7 +1573,7 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
         <div className="space-y-2">
           <label className="block text-[13px] font-semibold text-[#1c1410]">Pipeline → Staff</label>
           {mapping.length === 0 && (
-            <p className="text-[12px] text-[#b09e8d]">No rules yet — add a pipeline and the staff to assign.</p>
+            <p className="text-[12px] text-[#b09e8d]">No rules yet - add a pipeline and the staff to assign.</p>
           )}
           {mapping.map((row, i) => {
             const rowStaffIds: string[] = Array.isArray(row.staff_ids) ? row.staff_ids : (row.staff_id ? [row.staff_id] : []);
@@ -1681,7 +1681,7 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
         <div className="space-y-2">
           <p className="text-[13px] font-semibold text-[#1c1410]">
             Traffic Weightage
-            {splitMode === 'evenly' && <span className="ml-2 text-[11px] font-normal text-muted-foreground">(round-robin — each staff gets equal turns)</span>}
+            {splitMode === 'evenly' && <span className="ml-2 text-[11px] font-normal text-muted-foreground">(round-robin - each staff gets equal turns)</span>}
           </p>
 
           {selectedStaff.map((s) => {
@@ -1710,7 +1710,7 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
 
           {splitMode === 'weighted' && !weightValid && (
             <p className="text-[11px] text-red-500 font-medium">
-              Total = {totalWeight}% — must equal 100%
+              Total = {totalWeight}% - must equal 100%
             </p>
           )}
           {splitMode === 'weighted' && weightValid && (
@@ -2100,7 +2100,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
         {!(cfg.group_id as string) && (
           <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-800">No group selected — this action will be skipped at runtime.</p>
+            <p className="text-xs text-amber-800">No group selected - this action will be skipped at runtime.</p>
           </div>
         )}
       </>)}
@@ -2160,7 +2160,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
         {!(cfg.group_id as string) && (
           <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-800">No group selected — this action will be skipped at runtime.</p>
+            <p className="text-xs text-amber-800">No group selected - this action will be skipped at runtime.</p>
           </div>
         )}
       </>)}
@@ -2362,9 +2362,9 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
           <FieldRow label="Event">
             <select className={selectCls} value={(cfg.eventId as string) ?? ''} onChange={sel('eventId')}>
               <option value="">Select event...</option>
-              <option value="evt1">Sales Webinar — April 20</option>
-              <option value="evt2">Product Launch — May 5</option>
-              <option value="evt3">Training Workshop — May 15</option>
+              <option value="evt1">Sales Webinar - April 20</option>
+              <option value="evt2">Product Launch - May 5</option>
+              <option value="evt3">Training Workshop - May 15</option>
             </select>
           </FieldRow>
         </div>
@@ -2451,7 +2451,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 <option value="">Auto (first connected device)</option>
                 {waDevices.map((d) => (
                   <option key={d.session_id} value={d.session_id}>
-                    {d.session_name}{d.phone_number ? ` (${d.phone_number})` : ''}{d.status === 'connected' ? ' ✓' : ' — offline'}
+                    {d.session_name}{d.phone_number ? ` (${d.phone_number})` : ''}{d.status === 'connected' ? ' ✓' : ' - offline'}
                   </option>
                 ))}
               </select>
@@ -2481,7 +2481,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
               <textarea
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card outline-none resize-none min-h-[100px]"
                 rows={4}
-                placeholder="New lead alert: {first_name} {last_name} — {phone}"
+                placeholder="New lead alert: {first_name} {last_name} - {phone}"
                 value={(cfg.waMessage as string) ?? ''}
                 onChange={sel('waMessage')}
               />
@@ -2517,7 +2517,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
             <label className="text-sm font-semibold">Content</label>
           </div>
           <div className="border border-border rounded-t-lg bg-gray-50 px-2 py-1.5 flex items-center gap-1 flex-wrap text-xs text-gray-600">
-            {['↩', '↪', 'B', 'I', 'U', 'H1', '¶', 'A', '—', '🔗'].map((t) => (
+            {['↩', '↪', 'B', 'I', 'U', 'H1', '¶', 'A', '-', '🔗'].map((t) => (
               <button key={t} className="px-1.5 py-0.5 rounded hover:bg-gray-200 font-medium transition-colors">{t}</button>
             ))}
             <select className="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white outline-none ml-1">
@@ -2701,7 +2701,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
               <option value="">Auto (first connected device)</option>
               {waDevices.map((d) => (
                 <option key={d.session_id} value={d.session_id}>
-                  {d.session_name}{d.phone_number ? ` (${d.phone_number})` : ''}{d.status === 'connected' ? ' ✓' : ' — offline'}
+                  {d.session_name}{d.phone_number ? ` (${d.phone_number})` : ''}{d.status === 'connected' ? ' ✓' : ' - offline'}
                 </option>
               ))}
             </select>
@@ -2742,7 +2742,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                   value={(cfg.templateId as string) ?? ''}
                   onChange={(e) => onUpdate({ config: { ...cfg, templateId: e.target.value } })}
                 >
-                  <option value="">— Select a template —</option>
+                  <option value="">- Select a template -</option>
                   {waTemplates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               )}
@@ -3194,7 +3194,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                     </div>
                   ))}
                   {bodyFields.length === 0 && (
-                    <p className="text-[12px] text-gray-400 text-center py-2">No fields — full lead object sent by default</p>
+                    <p className="text-[12px] text-gray-400 text-center py-2">No fields - full lead object sent by default</p>
                   )}
                   <button type="button" onClick={() => addRow(bodyFields, updateBodyFields)}
                     className="mt-1 flex items-center gap-1 text-[13px] text-gray-500 border border-dashed border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 w-full justify-center">
@@ -3257,7 +3257,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
               <FieldRow label="Custom Field">
                 <select className={selectCls} value={(cfg.save_response_field as string) ?? ''}
                   onChange={sel('save_response_field')}>
-                  <option value="">— Select field —</option>
+                  <option value="">- Select field -</option>
                   {customFields.map((cf) => <option key={cf.id} value={cf.slug}>{cf.name}</option>)}
                 </select>
               </FieldRow>
@@ -3393,13 +3393,13 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 value={selectedSetId}
                 onChange={(e) => onUpdate({ config: { ...cfg, set_id: e.target.value } })}
               >
-                <option value="">— Select a routing set —</option>
+                <option value="">- Select a routing set -</option>
                 {sets.map((s) => (
                   <option key={s.id} value={s.id}>{s.name} ({s.match_field}, {s.match_type})</option>
                 ))}
               </select>
               {!selectedSetId && (
-                <p className="text-[11px] text-red-500 font-medium mt-1">⚠ You must select a routing set — the node will be skipped until one is chosen.</p>
+                <p className="text-[11px] text-red-500 font-medium mt-1">⚠ You must select a routing set - the node will be skipped until one is chosen.</p>
               )}
               {selectedSet && (
                 <p className="text-[11px] text-blue-600 mt-1">
@@ -3425,13 +3425,13 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 value={selectedSlug}
                 onChange={sel('pincode_field')}
               >
-                <option value="">— Select a custom field —</option>
+                <option value="">- Select a custom field -</option>
                 {customFields.map((cf) => (
                   <option key={cf.id} value={cf.slug}>{cf.name}</option>
                 ))}
               </select>
               {!selectedSlug && (
-                <p className="text-[11px] text-red-500 font-medium mt-1">⚠ You must select a field — the node will be skipped until one is chosen.</p>
+                <p className="text-[11px] text-red-500 font-medium mt-1">⚠ You must select a field - the node will be skipped until one is chosen.</p>
               )}
               {selectedField && (
                 <p className="text-[11px] text-blue-600 mt-1">
@@ -3467,13 +3467,13 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 value={(cfg.fallback_pipeline_id as string) ?? ''}
                 onChange={(e) => onUpdate({ config: { ...cfg, fallback_pipeline_id: e.target.value } })}
               >
-                <option value="">— Select a pipeline —</option>
+                <option value="">- Select a pipeline -</option>
                 {pipelines.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
               {!(cfg.fallback_pipeline_id) && (
-                <p className="text-[11px] text-amber-600 font-medium mt-1">⚠ Select a pipeline — unmatched leads will be skipped until one is chosen.</p>
+                <p className="text-[11px] text-amber-600 font-medium mt-1">⚠ Select a pipeline - unmatched leads will be skipped until one is chosen.</p>
               )}
             </FieldRow>
           )}
@@ -4908,9 +4908,9 @@ export default function WorkflowEditorPage() {
         const conditions = node.config.conditions as Array<{ field: string; operator: string }> | undefined;
         if (conditions && conditions.length > 0) {
           const incomplete = conditions.some((c) => !c.field || !c.operator);
-          if (incomplete) return `"If/Else" has an incomplete condition rule — set all fields and operators.`;
+          if (incomplete) return `"If/Else" has an incomplete condition rule - set all fields and operators.`;
         } else if (!node.config.field || !node.config.operator) {
-          return `"If/Else" condition is incomplete — set the field and operator.`;
+          return `"If/Else" condition is incomplete - set the field and operator.`;
         }
       }
       if (node.branches?.yes) { const err = validateNodes(node.branches.yes); if (err) return err; }
@@ -4942,7 +4942,7 @@ export default function WorkflowEditorPage() {
       if (got !== sent) {
         setSaveStatus('error');
         setIsDirty(true);
-        toast.error('Save could not be verified — please click Save again.');
+        toast.error('Save could not be verified - please click Save again.');
         setSaving(false);
         return;
       }
@@ -4953,7 +4953,7 @@ export default function WorkflowEditorPage() {
       nodes: workflow.nodes,
     }).catch(() => null);
     toast.success(workflow.status === 'inactive'
-      ? 'Saved ✓ — click Publish to activate it'
+      ? 'Saved ✓ - click Publish to activate it'
       : 'Saved ✓ all changes stored');
     setSaving(false);
   };
@@ -5154,8 +5154,8 @@ export default function WorkflowEditorPage() {
               <RefreshCw className="w-3 h-3 animate-spin" />Saving…
             </span>
           ) : saveStatus === 'error' ? (
-            <button onClick={() => persist()} className="text-[10px] text-red-600 flex items-center gap-1 mr-1 hover:underline" title="Save failed — click to retry">
-              <AlertTriangle className="w-3 h-3" />Unsaved — retry
+            <button onClick={() => persist()} className="text-[10px] text-red-600 flex items-center gap-1 mr-1 hover:underline" title="Save failed - click to retry">
+              <AlertTriangle className="w-3 h-3" />Unsaved - retry
             </button>
           ) : (
             <span className="text-[10px] text-[#b09e8d] flex items-center gap-1 mr-1">

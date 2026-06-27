@@ -47,7 +47,7 @@ export default function DevicesPage() {
       setOtpSent(true);
       if (r.devOtp) toast.success(`OTP (dev): ${r.devOtp}`, { duration: 10000 });
       else if (r.channel === 'whatsapp') toast.success(`OTP sent on WhatsApp${r.sentTo ? ` to ${r.sentTo}` : ''}`);
-      else if (r.channel === 'email') toast.success(`WhatsApp unavailable — OTP emailed${r.sentTo ? ` to ${r.sentTo}` : ''}`);
+      else if (r.channel === 'email') toast.success(`WhatsApp unavailable - OTP emailed${r.sentTo ? ` to ${r.sentTo}` : ''}`);
       else toast.success('OTP sent');
     } catch (e: any) {
       toast.error(e.message ?? 'Failed to send OTP');
@@ -59,7 +59,7 @@ export default function DevicesPage() {
     setBusy(true);
     try {
       await api.post('/api/devices/number/verify-otp', { phone, otp });
-      toast.success('Number verified — it can now connect from the app');
+      toast.success('Number verified - it can now connect from the app');
       setPhone(''); setOtp(''); setOtpSent(false);
       load();
     } catch (e: any) {

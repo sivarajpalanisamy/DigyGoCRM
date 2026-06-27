@@ -64,7 +64,7 @@ router.post('/sessions/:sessionId/connect', checkPermission('integrations:manage
     await destroySession(tenantId, sessionId).catch(() => null);
     await new Promise<void>((r) => setTimeout(r, 300));
     await startSession(tenantId, sessionId);
-    res.json({ success: true, message: 'Session starting — scan the QR code' });
+    res.json({ success: true, message: 'Session starting - scan the QR code' });
   } catch (err: any) {
     res.status(500).json({ error: err.message ?? 'Failed to start session' });
   }
@@ -217,7 +217,7 @@ router.post('/connect', checkPermission('integrations:manage'), async (req: Auth
     await destroySession(tenantId, sessionId).catch(() => null);
     await new Promise<void>((r) => setTimeout(r, 300));
     await startSession(tenantId, sessionId);
-    res.json({ success: true, message: 'Session starting — scan the QR code' });
+    res.json({ success: true, message: 'Session starting - scan the QR code' });
   } catch (err: any) {
     res.status(500).json({ error: err.message ?? 'Failed to start session' });
   }
