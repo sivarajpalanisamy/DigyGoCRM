@@ -16,7 +16,7 @@ import android.telephony.TelephonyManager
 
 /**
  * Persistent foreground service that keeps DigyGo listening for calls in the
- * background — the reliable counterpart to the manifest [CallEndReceiver].
+ * background - the reliable counterpart to the manifest [CallEndReceiver].
  *
  * Why a foreground service (the fix for "incoming call only synced after I reopened
  * the app"): a plain manifest receiver runs in a process the OS can kill the instant
@@ -193,7 +193,7 @@ class CallSyncService : Service() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i)
                 else ctx.startService(i)
             } catch (e: Exception) {
-                // Background-start restrictions (e.g. invoked while not visible) — the
+                // Background-start restrictions (e.g. invoked while not visible) - the
                 // manifest CallEndReceiver remains as the fallback path.
             }
         }

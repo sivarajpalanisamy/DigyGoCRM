@@ -4,7 +4,7 @@ import '../theme.dart';
 import '../services/native.dart';
 
 /// Guides the user to turn ON their phone's built-in (OEM) automatic call
-/// recording — the only way (on Android 10+) to capture both sides of a call.
+/// recording - the only way (on Android 10+) to capture both sides of a call.
 /// Our app then harvests those files and uploads them to the CRM. This screen
 /// shows live status and brand-specific steps, plus buttons to jump straight to
 /// the phone's recording settings and to grant the file access we need to read
@@ -92,7 +92,7 @@ class _EnableRecordingScreenState extends State<EnableRecordingScreen> with Widg
                 ),
                 const SizedBox(height: 22),
 
-                // Step 1 — enable built-in recording
+                // Step 1 - enable built-in recording
                 _sectionHeader('1', 'Turn on automatic call recording'),
                 const SizedBox(height: 4),
                 Text('Steps for your phone ($brandName):',
@@ -107,7 +107,7 @@ class _EnableRecordingScreenState extends State<EnableRecordingScreen> with Widg
                 ),
                 const SizedBox(height: 24),
 
-                // Step 2 — file access (so we can read the recordings)
+                // Step 2 - file access (so we can read the recordings)
                 _sectionHeader('2', 'Allow DigyGo to read recordings'),
                 const SizedBox(height: 8),
                 if (_fileAccess)

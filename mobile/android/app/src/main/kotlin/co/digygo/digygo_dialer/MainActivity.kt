@@ -150,7 +150,7 @@ class MainActivity : FlutterActivity() {
                 )
             }
         } catch (e: SecurityException) {
-            // permission revoked mid-call — return what we have
+            // permission revoked mid-call - return what we have
         }
         return out
     }
@@ -259,14 +259,14 @@ class MainActivity : FlutterActivity() {
         if (!hasAllFilesAccess()) return emptyList()
         val out = HashMap<String, Map<String, Any?>>()
         val root = Environment.getExternalStorageDirectory()
-        // 1) Known folders — trusted, take any audio inside.
+        // 1) Known folders - trusted, take any audio inside.
         for (rel in recordingDirs) {
             val dir = File(root, rel)
             if (dir.isDirectory) collect(dir, sinceMs, out, 0, true)
         }
         // 2) Auto-discover call-recording audio anywhere under storage.
         autoDiscover(root, sinceMs, out, 0)
-        // 3) Android/media/<pkg> is readable (unlike Android/data) — many OEMs store here.
+        // 3) Android/media/<pkg> is readable (unlike Android/data) - many OEMs store here.
         File(root, "Android/media").listFiles()?.forEach { pkg ->
             if (pkg.isDirectory) autoDiscover(pkg, sinceMs, out, 0)
         }
@@ -366,7 +366,7 @@ class MainActivity : FlutterActivity() {
     // Show a chooser of ALL installed dialer apps so the agent can pick which one places
     // (and records) the call. ACTION_CALL would dial directly through the default phone
     // app with no chooser; ACTION_DIAL is handled by every dialer, so the chooser lists
-    // them all — the chosen app opens with the number ready to call.
+    // them all - the chosen app opens with the number ready to call.
     private fun placeCallSystem(number: String) {
         if (number.isBlank()) return
         val uri = Uri.parse("tel:" + Uri.encode(number))

@@ -179,7 +179,7 @@ class Native {
     }
   }
 
-  /// Device manufacturer/brand/model — used to show brand-specific instructions
+  /// Device manufacturer/brand/model - used to show brand-specific instructions
   /// for enabling the phone's built-in call recording.
   Future<DeviceInfo> deviceInfo() async {
     try {

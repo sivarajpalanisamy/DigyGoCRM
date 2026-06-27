@@ -10,7 +10,7 @@ import 'crm_leads_page.dart';
 import 'followups_page.dart';
 import 'enable_recording_screen.dart';
 
-/// The dialer shell — a Callyzer-style call app. Tabs: Call History, Contacts,
+/// The dialer shell - a Callyzer-style call app. Tabs: Call History, Contacts,
 /// More. Shows the device's real call log + contacts (no CRM/lead data in the UI;
 /// call logs are mirrored to the CRM silently in the background).
 class HomeScreen extends StatefulWidget {
@@ -75,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ── More tab — minimal app settings (no CRM/company data) ────────────────────
+// ── More tab - minimal app settings (no CRM/company data) ────────────────────
 class _MorePage extends StatefulWidget {
   const _MorePage({required this.onSignOut});
   final Future<void> Function() onSignOut;

@@ -9,7 +9,7 @@ import android.telephony.TelephonyManager
  * Best-effort backup trigger: when ANY call ends, run the shared [CallSync] routine.
  * The reliable path is [CallSyncService] (a foreground service that stays alive long
  * enough to finish the upload); this manifest receiver simply covers the case where
- * the service happens to be down. Double-firing is harmless — [CallSync] dedupes via
+ * the service happens to be down. Double-firing is harmless - [CallSync] dedupes via
  * its watermark and the backend dedupes by clientCallId.
  *
  * Stateless on purpose: a manifest receiver's process can be torn down between the

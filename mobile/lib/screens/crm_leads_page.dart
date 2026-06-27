@@ -5,7 +5,7 @@ import '../services/api.dart';
 import '../services/call_launcher.dart';
 import 'call_details_page.dart';
 
-/// CRM Leads — shows the leads the agent can see (respects only_assigned / view_all),
+/// CRM Leads - shows the leads the agent can see (respects only_assigned / view_all),
 /// filterable by pipeline ("All Pipelines" + each pipeline) and by the stages the
 /// owner created in the CRM. Each lead shows name, mobile number, and a call button.
 class CrmLeadsPage extends StatefulWidget {

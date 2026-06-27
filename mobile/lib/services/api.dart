@@ -96,7 +96,7 @@ class Api {
   Future<bool> isRecordingTestDone() async => (await _store.read(key: _recTestKey)) == '1';
   Future<void> markRecordingTestDone() async => _store.write(key: _recTestKey, value: '1');
 
-  // OEM recording harvest watermark — only files newer than this are uploaded.
+  // OEM recording harvest watermark - only files newer than this are uploaded.
   static const _harvestKey = 'digygo_last_harvest_ms';
   Future<int> lastHarvestMs() async {
     final v = await _store.read(key: _harvestKey);
@@ -154,7 +154,7 @@ class Api {
     return data;
   }
 
-  // ── Local (verified-in-app) numbers — used to auto-link once added in the CRM ──
+  // ── Local (verified-in-app) numbers - used to auto-link once added in the CRM ──
   static const _numsKey = 'digygo_local_numbers';
   Future<List<String>> localNumbers() async {
     final v = await _store.read(key: _numsKey);

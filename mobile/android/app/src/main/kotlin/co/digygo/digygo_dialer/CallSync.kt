@@ -16,7 +16,7 @@ import java.util.TimeZone
 
 /**
  * Shared call-sync routine. Reads the most-recent call, posts it to the CRM, then
- * finds + uploads the matching OEM recording — all in the background, even if the
+ * finds + uploads the matching OEM recording - all in the background, even if the
  * app is never opened.
  *
  * Used by BOTH:
@@ -26,7 +26,7 @@ import java.util.TimeZone
  *    service happens to be down).
  *
  * Idempotent on purpose: a persisted watermark skips already-synced calls, and the
- * backend dedupes by clientCallId — so a double-fire from both callers is harmless.
+ * backend dedupes by clientCallId - so a double-fire from both callers is harmless.
  *
  * KEY FIX (incoming calls not syncing until app reopened): instead of a single fixed
  * sleep, we POLL for the call-log row to appear. Some OEMs write the row a few
@@ -90,13 +90,13 @@ object CallSync {
             }
             if (!appeared) return
 
-            // Gather EVERY new call since the watermark that just ended — incoming or
+            // Gather EVERY new call since the watermark that just ended - incoming or
             // outgoing, answered or not. Reading all (not just the latest) means a
             // burst of calls can't slip through the real-time path.
             val calls = readCallsSince(ctx, watermark)
             if (calls.isEmpty()) return
 
-            // 1) Post the metadata batch FIRST — small + fast, the part the user needs.
+            // 1) Post the metadata batch FIRST - small + fast, the part the user needs.
             //    Advance the watermark only on success so a network failure retries later.
             try {
                 postCalls(base, token, calls)
@@ -115,7 +115,7 @@ object CallSync {
 
     // All call-log rows strictly newer than afterMs that ended within the recency
     // window, oldest-first (so the watermark advances monotonically). Capped to avoid
-    // posting a huge backlog from the real-time path — the in-app fallback batch
+    // posting a huge backlog from the real-time path - the in-app fallback batch
     // handles any older backfill.
     private fun readCallsSince(ctx: Context, afterMs: Long): List<CallRow> {
         val out = ArrayList<CallRow>()
@@ -250,7 +250,7 @@ object CallSync {
                 if (delta <= bestDelta) { bestDelta = delta; best = f }
             }
         }
-        // 1) Known folders — trusted, any audio.
+        // 1) Known folders - trusted, any audio.
         for (rel in recordingDirs) {
             val dir = File(root, rel)
             if (dir.isDirectory) collect(dir, 0, true, consider)

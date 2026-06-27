@@ -8,7 +8,7 @@ import 'phone_call.dart';
 
 /// Reads the device's call log + contacts (the dialer's data source) and exposes
 /// dial / SMS / WhatsApp actions. Also silently mirrors call logs to the CRM in
-/// the background — that sync is invisible to the user; the UI is a pure dialer.
+/// the background - that sync is invisible to the user; the UI is a pure dialer.
 class DialerData {
   DialerData._();
   static final DialerData instance = DialerData._();
@@ -42,7 +42,7 @@ class DialerData {
     if (isDefault) {
       await PhoneCall.instance.placeCall(number);
     } else {
-      // User declined the role — fall back to the system dialer so calling still works.
+      // User declined the role - fall back to the system dialer so calling still works.
       final uri = Uri(scheme: 'tel', path: number);
       if (await canLaunchUrl(uri)) await launchUrl(uri);
     }
@@ -66,7 +66,7 @@ class DialerData {
 
   // ── Background CRM sync ───────────────────────────────────────────────────
   // Posts recent call logs to the CRM (deduped server-side by clientCallId).
-  // Best-effort and silent — never blocks or surfaces errors in the dialer UI.
+  // Best-effort and silent - never blocks or surfaces errors in the dialer UI.
   Future<void> syncToCrm(List<CallLogEntry> logs) async {
     if (logs.isEmpty) return;
     // Only sync when this number is linked to the CRM (device token present).
@@ -78,7 +78,7 @@ class DialerData {
         final isOutgoing = e.callType == CallType.outgoing;
         final dur = e.duration ?? 0;
         // Outcome from the call TYPE + DURATION (an unanswered outgoing call has
-        // type=outgoing with duration 0 — it must NOT be reported as ANSWERED).
+        // type=outgoing with duration 0 - it must NOT be reported as ANSWERED).
         String outcome;
         if (e.callType == CallType.missed) {
           outcome = 'MISSED';
@@ -100,7 +100,7 @@ class DialerData {
       }).toList();
       await Api.instance.postCalls(batch);
     } catch (_) {
-      // silent — sync retries on next refresh
+      // silent - sync retries on next refresh
     }
   }
 }

@@ -28,11 +28,11 @@ class GateStep {
   final Future<bool> Function() request;
 }
 
-/// Lean onboarding gate — asks only what the app actually needs.
+/// Lean onboarding gate - asks only what the app actually needs.
 /// Re-evaluated on every cold start / resume so a revoked permission sends the
 /// user back automatically.
 class OnboardingGate {
-  // Callyzer-style: just Call logs, Contacts, and Files — then SIM verification.
+  // Callyzer-style: just Call logs, Contacts, and Files - then SIM verification.
   // Recording is achieved by harvesting the phone's built-in recorder files (needs
   // Files access), so no microphone/default-dialer permission is required here.
   static List<GateStep> steps() => [
@@ -57,7 +57,7 @@ class OnboardingGate {
           isSatisfied: () async => await Permission.contacts.isGranted,
           request: () async => (await Permission.contacts.request()).isGranted,
         ),
-        // Files — all-files access to read the recordings your phone saves, so we
+        // Files - all-files access to read the recordings your phone saves, so we
         // can upload both-sides call recordings to the CRM.
         GateStep(
           key: 'files',

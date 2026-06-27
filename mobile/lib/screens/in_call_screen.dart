@@ -31,7 +31,7 @@ class _InCallScreenState extends State<InCallScreen> {
         _ticker = Timer.periodic(const Duration(seconds: 1), (_) => setState(() => _seconds++));
       }
       if (!s.isOngoing) {
-        // Call ended — close after a brief beat.
+        // Call ended - close after a brief beat.
         Future.delayed(const Duration(milliseconds: 600), () {
           if (mounted) Navigator.of(context).maybePop();
         });

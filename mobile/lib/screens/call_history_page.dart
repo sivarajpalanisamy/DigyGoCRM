@@ -353,7 +353,7 @@ class _CallCard extends StatelessWidget {
               ],
             ),
           ),
-          // Note & tag bar (Callyzer-style) — tap to add/edit a note for this call.
+          // Note & tag bar (Callyzer-style) - tap to add/edit a note for this call.
           InkWell(
             onTap: onAddNote,
             borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),

@@ -70,7 +70,7 @@
             </intent-filter>
         </activity>
 
-        <!-- In-call service — Android routes every call (incoming + outgoing) here
+        <!-- In-call service - Android routes every call (incoming + outgoing) here
              when DigyGo is the default dialer, so the call runs inside our app. -->
         <service
             android:name=".DigygoInCallService"

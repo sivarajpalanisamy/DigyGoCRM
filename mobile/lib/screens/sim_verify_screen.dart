@@ -9,7 +9,7 @@ import '../services/api.dart';
 import '../services/native.dart';
 import '../widgets/app_dialog.dart';
 
-/// SIM setup — handles each SIM ONE AT A TIME: enter its number, verify it, then
+/// SIM setup - handles each SIM ONE AT A TIME: enter its number, verify it, then
 /// move to the next SIM. First verified+CRM number links the device; the rest are
 /// attached. Verification never blocks (app works locally either way).
 class ConnectSimScreen extends StatefulWidget {

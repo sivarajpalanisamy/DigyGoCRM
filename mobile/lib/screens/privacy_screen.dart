@@ -10,7 +10,7 @@ class PrivacyScreen extends StatefulWidget {
   const PrivacyScreen({super.key, required this.onAgree});
   final Future<void> Function() onAgree;
 
-  // Hosted policy/terms — update to your live URLs.
+  // Hosted policy/terms - update to your live URLs.
   static const privacyUrl = 'https://digygo.in/privacy';
   static const termsUrl = 'https://digygo.in/terms';
 

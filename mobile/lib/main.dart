@@ -156,7 +156,7 @@ class _DigygoDialerAppState extends State<DigygoDialerApp> with WidgetsBindingOb
 }
 
 /// Decides where to land on launch and re-checks on every resume (no login /
-/// no pairing code — the app binds by SIM number):
+/// no pairing code - the app binds by SIM number):
 ///   permissions not granted  → OnboardingGateScreen
 ///   privacy not accepted      → PrivacyScreen
 ///   SIM step not done         → ConnectSimScreen
@@ -207,20 +207,20 @@ class _RootRouterState extends State<RootRouter> with WidgetsBindingObserver {
       _set(PrivacyScreen(onAgree: _resolve));
       return;
     }
-    // 3) SIM verification (always succeeds locally — links to CRM only if the
+    // 3) SIM verification (always succeeds locally - links to CRM only if the
     //    number is verified in the dashboard).
     if (!await Api.instance.isSimStepDone()) {
       _set(ConnectSimScreen(onDone: _resolve));
       return;
     }
-    // 4) Ready — show the dialer. Sync/recording only run when linked to the CRM.
+    // 4) Ready - show the dialer. Sync/recording only run when linked to the CRM.
     Api.instance.refreshSyncConfig(); // ensure the background auto-sync service has the latest config
     if (await Api.instance.hasDeviceToken()) {
       _syncCallLogsFallback(); // FALLBACK: mirror any calls the background service missed
       RecordingUploader.instance.start();
       RecordingHarvester.instance.run();
     } else {
-      // Not linked yet — try to link in case an admin has since added this number.
+      // Not linked yet - try to link in case an admin has since added this number.
       Api.instance.tryLink().then((linked) {
         if (linked) {
           _syncCallLogsFallback();
@@ -242,7 +242,7 @@ class _RootRouterState extends State<RootRouter> with WidgetsBindingObserver {
       final logs = await DialerData.instance.callLogs();
       await DialerData.instance.syncToCrm(logs);
     } catch (_) {
-      // silent — best-effort; the next open/resume retries
+      // silent - best-effort; the next open/resume retries
     }
   }
 

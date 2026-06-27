@@ -447,7 +447,7 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           ]),
         ),
         const SizedBox(height: 8),
-        const Text('New number — not in CRM. Create the lead:', style: TextStyle(color: Brand.muted, fontSize: 12.5)),
+        const Text('New number - not in CRM. Create the lead:', style: TextStyle(color: Brand.muted, fontSize: 12.5)),
         const SizedBox(height: 14),
         _sectionTitle('Name'),
         TextField(controller: _nameCtrl, decoration: const InputDecoration(hintText: 'Lead name')),
@@ -570,7 +570,7 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title, style: const TextStyle(color: Brand.ink, fontWeight: FontWeight.w600, fontSize: 13.5)),
             if (detail.isNotEmpty) Text(detail, style: const TextStyle(color: Brand.muted, fontSize: 12.5)),
-            Text([_fmt(a['created_at']), if (by.isNotEmpty) '– $by'].join('  '), style: const TextStyle(color: Brand.muted, fontSize: 11)),
+            Text([_fmt(a['created_at']), if (by.isNotEmpty) '- $by'].join('  '), style: const TextStyle(color: Brand.muted, fontSize: 11)),
           ]),
         ),
       ]),

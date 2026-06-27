@@ -48,7 +48,7 @@ class _OnboardingGateScreenState extends State<OnboardingGateScreen> {
       _satisfied = ok;
       _permanentlyDenied = permaDenied;
     });
-    // Auto-advance once granted — no manual Continue needed.
+    // Auto-advance once granted - no manual Continue needed.
     if (ok) {
       await Future.delayed(const Duration(milliseconds: 550));
       if (mounted) _next();
@@ -231,7 +231,7 @@ class _OnboardingGateScreenState extends State<OnboardingGateScreen> {
                   label: Text(_busy ? 'Requesting…' : _actionLabel(step)),
                 ),
               const SizedBox(height: 8),
-              // Skip — ONLY for optional steps that aren't yet granted.
+              // Skip - ONLY for optional steps that aren't yet granted.
               if (!step.required && !_satisfied)
                 TextButton(
                   onPressed: _busy ? null : _next,
