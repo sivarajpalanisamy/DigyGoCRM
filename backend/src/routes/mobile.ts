@@ -760,11 +760,24 @@ router.get('/leads', async (req: AuthRequest, res: Response) => {
 // GET /api/mobile/leads/lookup?phone= — find an existing lead by phone (for the
 // post-call screen). Returns the lead with pipeline/stage + recent notes, or found:false.
 router.get('/leads/lookup', async (req: AuthRequest, res: Response) => {
-  const { tenantId } = req.user!;
+  const { tenantId, userId, role } = req.user!;
   const phoneRaw = (req.query.phone ?? '').toString().trim();
   if (!phoneRaw) { res.status(400).json({ error: 'phone required' }); return; }
   const norm = normalizePhone(phoneRaw);
   try {
+    // Respect only_assigned permission
+    let viewAll = role === 'super_admin';
+    if (!viewAll) {
+      const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+      if (isOwner) viewAll = true;
+      else if (await hasPermission(userId, 'leads:only_assigned', tenantId)) viewAll = false;
+      else viewAll = true;
+    }
+
+    const params: any[] = [tenantId, phoneRaw, norm];
+    let assignedFilter = '';
+    if (!viewAll) { params.push(userId); assignedFilter = ` AND l.assigned_to=$${params.length}::uuid`; }
+
     const r = await query(
       `SELECT l.id, l.name, l.phone, l.email, l.source, l.notes,
               l.pipeline_id, l.stage_id, p.name AS pipeline, s.name AS stage,
@@ -773,9 +786,9 @@ router.get('/leads/lookup', async (req: AuthRequest, res: Response) => {
        LEFT JOIN pipelines p ON p.id = l.pipeline_id
        LEFT JOIN pipeline_stages s ON s.id = l.stage_id
        LEFT JOIN users u ON u.id = l.assigned_to
-       WHERE l.tenant_id=$1::uuid AND l.is_deleted=FALSE AND (l.phone=$2 OR l.phone=$3)
+       WHERE l.tenant_id=$1::uuid AND l.is_deleted=FALSE AND (l.phone=$2 OR l.phone=$3)${assignedFilter}
        ORDER BY l.created_at DESC LIMIT 1`,
-      [tenantId, phoneRaw, norm]
+      params
     );
     const lead = r.rows[0];
     if (!lead) { res.json({ found: false }); return; }
@@ -845,9 +858,22 @@ router.post('/followups/:id/complete', async (req: AuthRequest, res: Response) =
 // GET /api/mobile/leads/:id/details — full lead detail (mirrors the CRM Lead Details
 // panel): lead fields + tags + custom fields + activity timeline + this lead's calls.
 router.get('/leads/:id/details', async (req: AuthRequest, res: Response) => {
-  const { tenantId } = req.user!;
+  const { tenantId, userId, role } = req.user!;
   const id = req.params.id;
   try {
+    // Respect only_assigned permission
+    let viewAll = role === 'super_admin';
+    if (!viewAll) {
+      const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+      if (isOwner) viewAll = true;
+      else if (await hasPermission(userId, 'leads:only_assigned', tenantId)) viewAll = false;
+      else viewAll = true;
+    }
+
+    const params: any[] = [id, tenantId];
+    let assignedFilter = '';
+    if (!viewAll) { params.push(userId); assignedFilter = ` AND l.assigned_to=$${params.length}::uuid`; }
+
     const r = await query(
       `SELECT l.id, l.name, l.phone, l.email, l.source, l.notes, l.deal_value,
               l.pipeline_id, l.stage_id, l.assigned_to, l.custom_fields,
@@ -857,8 +883,8 @@ router.get('/leads/:id/details', async (req: AuthRequest, res: Response) => {
        LEFT JOIN pipelines p ON p.id = l.pipeline_id
        LEFT JOIN pipeline_stages s ON s.id = l.stage_id
        LEFT JOIN users u ON u.id = l.assigned_to
-       WHERE l.id=$1::uuid AND l.tenant_id=$2::uuid AND l.is_deleted=FALSE`,
-      [id, tenantId]
+       WHERE l.id=$1::uuid AND l.tenant_id=$2::uuid AND l.is_deleted=FALSE${assignedFilter}`,
+      params
     );
     const lead = r.rows[0];
     if (!lead) { res.status(404).json({ error: 'Lead not found' }); return; }
