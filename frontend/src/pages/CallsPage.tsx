@@ -1,9 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
-import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Download, Play, Pause, Filter, X, Search } from 'lucide-react';
+import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Download, Play, Pause, Filter, X, Search, Phone, PhoneOff, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
 import { useCrmStore } from '@/store/crmStore';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, Cell,
+} from 'recharts';
 
 interface CallLog {
   id: string;
@@ -27,6 +31,20 @@ interface CallLog {
   disposition: string | null;
   source: string | null;
 }
+
+interface CallStats {
+  kpi: { total: number; answered: number; missed: number; avg_duration: number };
+  daily: { date: string; inbound: number; outbound: number }[];
+  outcomes: { outcome: string; count: number }[];
+  agents: { staff_name: string; total: number; answered: number; missed: number }[];
+}
+
+const OUTCOME_COLORS: Record<string, string> = {
+  ANSWERED: '#10b981', MISSED: '#ef4444', NO_ANSWER: '#f59e0b', REJECTED: '#f43f5e',
+  BUSY: '#8b5cf6', IVR_TIMEOUT: '#6b7280', UNKNOWN: '#9ca3af',
+};
+
+const tooltipStyle = { borderRadius: 10, border: 'none', background: '#1c1410', color: '#fff', fontSize: 11 };
 
 const OUTCOMES = ['ANSWERED', 'MISSED', 'NO_ANSWER', 'REJECTED', 'BUSY', 'IVR_TIMEOUT', 'UNKNOWN'];
 const NOT_CONNECTED = new Set(['MISSED', 'NO_ANSWER', 'REJECTED', 'BUSY']);
@@ -63,30 +81,45 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
   const [search, setSearch]       = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
+  // Stats
+  const [stats, setStats] = useState<CallStats | null>(null);
+  const [showCharts, setShowCharts] = useState(true);
+
   // Audio
   const [playingId, setPlayingId]   = useState<string | null>(null);
   const [audioUrls, setAudioUrls]   = useState<Record<string, string>>({});
 
+  const buildParams = useCallback(() => {
+    const p = new URLSearchParams();
+    if (source)    p.set('source', source);
+    if (direction) p.set('direction', direction);
+    if (outcome)   p.set('outcome', outcome);
+    if (staffName) p.set('staff_name', staffName);
+    if (dateFrom)  p.set('date_from', dateFrom);
+    if (dateTo)    p.set('date_to', dateTo);
+    return p;
+  }, [source, direction, outcome, staffName, dateFrom, dateTo]);
+
   const load = useCallback(async (pg = 1) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(pg), limit: String(LIMIT) });
-      if (source)    params.set('source', source);
-      if (direction) params.set('direction', direction);
-      if (outcome)   params.set('outcome', outcome);
-      if (staffName) params.set('staff_name', staffName);
-      if (dateFrom)  params.set('date_from', dateFrom);
-      if (dateTo)    params.set('date_to', dateTo);
-      const data = await api.get<{ calls: CallLog[]; total: number }>(`/api/calls?${params}`);
+      const params = buildParams();
+      params.set('page', String(pg));
+      params.set('limit', String(LIMIT));
+      const [data, statsData] = await Promise.all([
+        api.get<{ calls: CallLog[]; total: number }>(`/api/calls?${params}`),
+        api.get<CallStats>(`/api/calls/stats?${buildParams()}`).catch(() => null),
+      ]);
       setCalls(data.calls);
       setTotal(data.total);
       setPage(pg);
+      if (statsData) setStats(statsData);
     } catch (e: any) {
       toast.error(e.message ?? 'Failed to load calls');
     } finally {
       setLoading(false);
     }
-  }, [source, direction, outcome, staffName, dateFrom, dateTo]);
+  }, [buildParams]);
 
   useEffect(() => { load(1); }, [load]);
 
@@ -200,8 +233,11 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Agent</label>
-            <input className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
-              placeholder="Search agent..." value={staffName} onChange={(e) => setStaffName(e.target.value)} />
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+              value={staffName} onChange={(e) => setStaffName(e.target.value)}>
+              <option value="">All Agents</option>
+              {staff.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+            </select>
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">From Date</label>
@@ -213,6 +249,109 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
             <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
               value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </div>
+        </div>
+      )}
+
+      {/* Analytics toggle */}
+      <button
+        onClick={() => setShowCharts((v) => !v)}
+        className="flex items-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] hover:text-[#1c1410] mb-3 transition-colors"
+      >
+        {showCharts ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        {showCharts ? 'Hide Analytics' : 'Show Analytics'}
+      </button>
+
+      {/* Analytics */}
+      {showCharts && stats && (
+        <div className="space-y-4 mb-4">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white rounded-xl border border-black/5 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Phone className="w-4 h-4 text-blue-500" />
+                <span className="text-[11px] font-medium text-[#7a6b5c]">Total Calls</span>
+              </div>
+              <p className="text-[22px] font-bold text-[#1c1410]">{stats.kpi.total.toLocaleString()}</p>
+            </div>
+            <div className="bg-white rounded-xl border border-black/5 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <PhoneIncoming className="w-4 h-4 text-emerald-500" />
+                <span className="text-[11px] font-medium text-[#7a6b5c]">Answer Rate</span>
+              </div>
+              <p className="text-[22px] font-bold text-emerald-600">
+                {stats.kpi.total ? Math.round((stats.kpi.answered / stats.kpi.total) * 100) : 0}%
+              </p>
+            </div>
+            <div className="bg-white rounded-xl border border-black/5 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="w-4 h-4 text-blue-500" />
+                <span className="text-[11px] font-medium text-[#7a6b5c]">Avg Duration</span>
+              </div>
+              <p className="text-[22px] font-bold text-[#1c1410]">{durLabel(stats.kpi.avg_duration)}</p>
+            </div>
+            <div className="bg-white rounded-xl border border-black/5 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <PhoneOff className="w-4 h-4 text-red-500" />
+                <span className="text-[11px] font-medium text-[#7a6b5c]">Missed Calls</span>
+              </div>
+              <p className="text-[22px] font-bold text-red-600">{stats.kpi.missed.toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Row 2: Call Volume + Outcome Breakdown */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Call Volume Trend */}
+            <div className="bg-white rounded-xl border border-black/5 p-4">
+              <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Call Volume Trend</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={stats.daily}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" />
+                  <XAxis dataKey="date" fontSize={10} fill="#8a7c6e" axisLine={false} tickLine={false}
+                    tickFormatter={(v) => new Date(v + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} />
+                  <YAxis fontSize={10} fill="#8a7c6e" axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Line type="monotone" dataKey="inbound" stroke="#10b981" strokeWidth={2} dot={false} name="Inbound" />
+                  <Line type="monotone" dataKey="outbound" stroke="#3b82f6" strokeWidth={2} dot={false} name="Outbound" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Outcome Breakdown */}
+            <div className="bg-white rounded-xl border border-black/5 p-4">
+              <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Outcome Breakdown</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={stats.outcomes} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" horizontal={false} />
+                  <XAxis type="number" fontSize={10} fill="#8a7c6e" axisLine={false} tickLine={false} allowDecimals={false} />
+                  <YAxis type="category" dataKey="outcome" fontSize={10} fill="#8a7c6e" axisLine={false} tickLine={false} width={80}
+                    tickFormatter={(v) => outcomeLabel(v)} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [value, 'Calls']} />
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
+                    {stats.outcomes.map((entry) => (
+                      <Cell key={entry.outcome} fill={OUTCOME_COLORS[entry.outcome] || '#9ca3af'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Row 3: Agent Performance */}
+          {stats.agents.length > 0 && (
+            <div className="bg-white rounded-xl border border-black/5 p-4">
+              <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Agent Performance</h3>
+              <ResponsiveContainer width="100%" height={Math.max(160, stats.agents.length * 36)}>
+                <BarChart data={stats.agents} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" horizontal={false} />
+                  <XAxis type="number" fontSize={10} fill="#8a7c6e" axisLine={false} tickLine={false} allowDecimals={false} />
+                  <YAxis type="category" dataKey="staff_name" fontSize={10} fill="#8a7c6e" axisLine={false} tickLine={false} width={120} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="answered" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} barSize={20} name="Answered" />
+                  <Bar dataKey="missed" stackId="a" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={20} name="Missed" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
 

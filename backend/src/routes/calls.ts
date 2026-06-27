@@ -62,6 +62,77 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
 
+// GET /api/calls/stats — aggregated stats for charts
+router.get('/stats', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  const { direction, outcome, staff_name, date_from, date_to, source } = req.query as Record<string, string>;
+
+  const isSuper = role === 'super_admin';
+  let viewAll = false;
+  if (isSuper) {
+    viewAll = true;
+  } else {
+    const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+    viewAll = isOwner || await hasPermission(userId, 'calls:view_all', tenantId);
+  }
+
+  const params: any[] = [tenantId];
+  const conditions: string[] = ['cl.tenant_id=$1::uuid'];
+
+  if (!viewAll) { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
+
+  if (source)     { params.push(source);                   conditions.push(`cl.source=$${params.length}`); }
+  if (direction)  { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
+  if (outcome)    { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
+  if (staff_name) { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
+  if (date_from)  { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
+  if (date_to)    { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+
+  const where = conditions.join(' AND ');
+
+  try {
+    const [kpiRes, dailyRes, outcomesRes, agentsRes] = await Promise.all([
+      query(
+        `SELECT COUNT(*)::int AS total,
+                COUNT(*) FILTER (WHERE cl.outcome='ANSWERED')::int AS answered,
+                COUNT(*) FILTER (WHERE cl.outcome IN ('MISSED','NO_ANSWER'))::int AS missed,
+                COALESCE(ROUND(AVG(cl.duration_seconds) FILTER (WHERE cl.duration_seconds > 0)), 0)::int AS avg_duration
+         FROM call_logs cl WHERE ${where}`,
+        params,
+      ),
+      query(
+        `SELECT DATE(COALESCE(cl.started_at, cl.created_at)) AS date,
+                COUNT(*) FILTER (WHERE cl.direction='INBOUND')::int AS inbound,
+                COUNT(*) FILTER (WHERE cl.direction='OUTBOUND')::int AS outbound
+         FROM call_logs cl WHERE ${where}
+         GROUP BY 1 ORDER BY 1`,
+        params,
+      ),
+      query(
+        `SELECT cl.outcome, COUNT(*)::int AS count
+         FROM call_logs cl WHERE ${where}
+         GROUP BY 1 ORDER BY 2 DESC`,
+        params,
+      ),
+      query(
+        `SELECT cl.staff_name, COUNT(*)::int AS total,
+                COUNT(*) FILTER (WHERE cl.outcome='ANSWERED')::int AS answered,
+                COUNT(*) FILTER (WHERE cl.outcome IN ('MISSED','NO_ANSWER','REJECTED'))::int AS missed
+         FROM call_logs cl WHERE ${where} AND cl.staff_name IS NOT NULL
+         GROUP BY 1 ORDER BY 2 DESC LIMIT 10`,
+        params,
+      ),
+    ]);
+
+    res.json({
+      kpi: kpiRes.rows[0],
+      daily: dailyRes.rows,
+      outcomes: outcomesRes.rows,
+      agents: agentsRes.rows,
+    });
+  } catch (e) { res.status(500).json({ error: 'Server error' }); }
+});
+
 // GET /api/calls/export — Excel export
 router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
