@@ -64,10 +64,10 @@ import PublicLandingPage from "./pages/PublicLandingPage";
 
 const queryClient = new QueryClient();
 
-// Calls is gated by the per-tenant Superfone feature flag.
-const CallsRoute = () => {
+// Superfone calls page is gated by the per-tenant Superfone feature flag.
+const SuperfoneCallsRoute = () => {
   const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
-  return superfoneEnabled ? <CallsPage /> : <Navigate to="/dashboard" replace />;
+  return superfoneEnabled ? <CallsPage source="superfone" /> : <Navigate to="/dashboard" replace />;
 };
 
 const App = () => (
@@ -122,7 +122,8 @@ const App = () => (
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/calendar/edit/:id" element={<CalendarEditPage />} />
 
-            <Route path="/calls" element={<CallsRoute />} />
+            <Route path="/calls" element={<CallsPage source="mobile" />} />
+            <Route path="/superfone-calls" element={<SuperfoneCallsRoute />} />
             <Route path="/inbox" element={<InboxPage />} />
             <Route path="/inbox/overview" element={<InboxOverviewPage />} />
             <Route path="/fields" element={<FieldsPage />} />

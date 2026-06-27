@@ -45,7 +45,7 @@ function dateLabel(ts: string | null) {
   return new Date(ts).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-export default function CallsPage() {
+export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' } = {}) {
   const { staff } = useCrmStore();
 
   const [calls, setCalls] = useState<CallLog[]>([]);
@@ -71,6 +71,7 @@ export default function CallsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(pg), limit: String(LIMIT) });
+      if (source)    params.set('source', source);
       if (direction) params.set('direction', direction);
       if (outcome)   params.set('outcome', outcome);
       if (staffName) params.set('staff_name', staffName);
@@ -85,13 +86,14 @@ export default function CallsPage() {
     } finally {
       setLoading(false);
     }
-  }, [direction, outcome, staffName, dateFrom, dateTo]);
+  }, [source, direction, outcome, staffName, dateFrom, dateTo]);
 
   useEffect(() => { load(1); }, [load]);
 
   const handleExport = async () => {
     try {
       const params = new URLSearchParams();
+      if (source)    params.set('source', source);
       if (direction) params.set('direction', direction);
       if (outcome)   params.set('outcome', outcome);
       if (staffName) params.set('staff_name', staffName);
@@ -136,7 +138,7 @@ export default function CallsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">Call Logs</h1>
+          <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">{source === 'superfone' ? 'Superfone Call Logs' : 'Dialer Call Logs'}</h1>
           <p className="text-[13px] text-[#7a6b5c] mt-0.5">{total} total calls</p>
         </div>
         <button
@@ -239,7 +241,7 @@ export default function CallsPage() {
                   <td colSpan={9} className="text-center py-16">
                     <PhoneIncoming className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                     <p className="text-[14px] font-semibold text-[#7a6b5c]">No calls found</p>
-                    <p className="text-[12px] text-[#b09e8d] mt-1">Calls will appear here after Superfone syncs</p>
+                    <p className="text-[12px] text-[#b09e8d] mt-1">{source === 'superfone' ? 'Calls will appear here after Superfone syncs' : 'Calls will appear here once the DigyGo Dialer app syncs'}</p>
                   </td>
                 </tr>
               ) : visible.map((c, idx) => {
