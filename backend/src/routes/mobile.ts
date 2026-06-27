@@ -894,10 +894,12 @@ router.get('/leads/:id/details', async (req: AuthRequest, res: Response) => {
       [id]
     ).catch(() => ({ rows: [] as any[] }));
 
+    // Exclude call activities — calls live in their own section in the CRM, and their
+    // `detail` holds the call_log id (an internal UUID we must not surface).
     const activities = await query(
       `SELECT a.type, a.title, a.detail, a.created_at, u.name AS by_name
        FROM lead_activities a LEFT JOIN users u ON u.id = a.created_by
-       WHERE a.lead_id=$1 ORDER BY a.created_at DESC LIMIT 50`,
+       WHERE a.lead_id=$1 AND a.type <> 'call' ORDER BY a.created_at DESC LIMIT 50`,
       [id]
     ).catch(() => ({ rows: [] as any[] }));
 

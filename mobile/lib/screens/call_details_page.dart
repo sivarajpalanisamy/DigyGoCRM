@@ -41,7 +41,6 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
   Map _lead = {};
   List<dynamic> _tags = [];
   List<dynamic> _activities = [];
-  List<dynamic> _calls = [];
   List<dynamic> _pipelines = [];
 
   // new-lead form
@@ -83,7 +82,6 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           _lead = Map.from(d['lead'] ?? {});
           _tags = d['tags'] as List? ?? [];
           _activities = d['activities'] as List? ?? [];
-          _calls = d['calls'] as List? ?? [];
           _loading = false;
         });
       } else {
@@ -206,13 +204,6 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           const Text('No activity yet', style: TextStyle(color: Brand.muted, fontSize: 13))
         else
           ..._activities.map(_activityItem),
-        const SizedBox(height: 18),
-        // Calls
-        _sectionTitle('Calls'),
-        if (_calls.isEmpty)
-          const Center(child: Padding(padding: EdgeInsets.all(12), child: Text('No calls yet', style: TextStyle(color: Brand.muted))))
-        else
-          ..._calls.map(_callItem),
       ],
     );
   }
@@ -573,22 +564,6 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
             Text([_fmt(a['created_at']), if (by.isNotEmpty) '- $by'].join('  '), style: const TextStyle(color: Brand.muted, fontSize: 11)),
           ]),
         ),
-      ]),
-    );
-  }
-
-  Widget _callItem(dynamic c) {
-    final dir = (c['direction'] ?? '').toString();
-    final outcome = (c['outcome'] ?? '').toString();
-    final dur = (c['duration_seconds'] ?? 0);
-    final isOut = dir == 'OUTBOUND';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(children: [
-        Icon(isOut ? Icons.call_made : Icons.call_received, size: 18, color: isOut ? Brand.accent : const Color(0xFF16A34A)),
-        const SizedBox(width: 10),
-        Expanded(child: Text('${isOut ? 'Outgoing' : 'Incoming'} · $outcome', style: const TextStyle(color: Brand.ink, fontSize: 13))),
-        Text([_fmt(c['started_at']), if ((dur as int) > 0) '${dur}s'].join('  '), style: const TextStyle(color: Brand.muted, fontSize: 11.5)),
       ]),
     );
   }
