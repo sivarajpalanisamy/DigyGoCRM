@@ -46,7 +46,7 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
         `SELECT cl.id, cl.cdr_id, cl.direction, cl.outcome, cl.caller_phone, cl.superfone_number,
                 cl.duration_seconds, cl.started_at, cl.ended_at, cl.staff_name,
                 cl.recording_url, cl.recording_path, cl.recording_downloaded,
-                cl.is_unknown, cl.created_at,
+                cl.is_unknown, cl.created_at, cl.notes, cl.disposition, cl.source,
                 l.id AS lead_id, COALESCE(l.name, cl.caller_phone) AS lead_name
          FROM call_logs cl
          LEFT JOIN leads l ON l.id = cl.lead_id
@@ -91,6 +91,7 @@ router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest
     const result = await query(
       `SELECT cl.cdr_id, cl.direction, cl.outcome, cl.caller_phone, cl.superfone_number,
               cl.duration_seconds, cl.started_at, cl.ended_at, cl.staff_name, cl.is_unknown,
+              cl.disposition, cl.notes,
               COALESCE(l.name, cl.caller_phone) AS lead_name
        FROM call_logs cl
        LEFT JOIN leads l ON l.id = cl.lead_id
@@ -114,6 +115,8 @@ router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest
       { header: 'Superfone No.', key: 'superfone_number',  width: 16 },
       { header: 'Started At',    key: 'started_at',        width: 22 },
       { header: 'Ended At',      key: 'ended_at',          width: 22 },
+      { header: 'Disposition',   key: 'disposition',       width: 16 },
+      { header: 'Note',          key: 'notes',             width: 40 },
       { header: 'Unknown',       key: 'is_unknown',        width: 10 },
     ];
     ws.getRow(1).font = { bold: true };
@@ -219,7 +222,10 @@ router.get('/:callId/download', checkPermission('calls:recordings'), async (req:
 function streamFile(req: AuthRequest, res: Response, filePath: string, relPath: string): void {
   const stat = fs.statSync(filePath);
   const ext = path.extname(relPath).toLowerCase();
-  const contentType = ext === '.wav' ? 'audio/wav' : 'audio/mpeg';
+  const contentType = ext === '.wav' ? 'audio/wav'
+    : ext === '.m4a' || ext === '.aac' ? 'audio/mp4'
+    : ext === '.ogg' ? 'audio/ogg'
+    : 'audio/mpeg';
   const range = req.headers.range;
 
   if (range) {

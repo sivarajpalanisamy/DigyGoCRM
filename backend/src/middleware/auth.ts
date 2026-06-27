@@ -11,6 +11,7 @@ export interface AuthPayload {
 
 export interface AuthRequest extends Request {
   user?: AuthPayload;
+  deviceId?: string; // set by requireDevice (mobile dialer app) — used for ownership checks
 }
 
 // ── Tenant billing/active cache: avoids a DB hit on every authenticated request ──

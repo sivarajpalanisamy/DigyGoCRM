@@ -44,7 +44,7 @@ ngrok http 5173
 
 ## Deployment
 - Production server: SSH deploy via `python deploy_ssh.py` from project root
-- Two git remotes: `origin` (broken/old), `digygo` (working production) — always push to `digygo`
+- Git remote: this clone has a single remote `origin` → `https://github.com/Sruthirangaraj03/digygo.git` (fetch + push). Always run `git remote -v` before pushing — if a separate production remote (e.g. `digygo`) is expected but not listed, add it or confirm with the owner first; don't assume it exists.
 - PM2 process name: `digygocrm`
 - Migrations run automatically on every deploy
 
@@ -370,7 +370,7 @@ decrementUsage():        Call after resource deletion
 
 ---
 
-## Key Backend Routes (24 route files)
+## Key Backend Routes (30 route files)
 | File | Prefix | Notes |
 |---|---|---|
 | `routes/auth.ts` | `/api/auth` | Login, refresh, super admin tenant management |
@@ -397,10 +397,16 @@ decrementUsage():        Call after resource deletion
 | `routes/leadGeneration.ts` | `/api/lead-generation` | Lead generation analytics |
 | `routes/dashboard.ts` | `/api/dashboard` | Stats + analytics (role-scoped) |
 | `routes/public.ts` | `/api/public` | Public form/booking (no auth) |
+| `routes/contact_groups.ts` | `/api/contact-groups` | Contact group CRUD and membership |
+| `routes/calls.ts` | `/api/calls` | Call logs + recordings (calls:view_all/own/recordings) |
+| `routes/reports.ts` | `/api/reports` | Reporting / analytics exports |
+| `routes/google_sheets.ts` | `/api/integrations/sheets` | Google Sheets sync integration |
+| `routes/whatsapp_personal.ts` | `/api/whatsapp-personal` | WhatsApp personal (web-session) account + messaging |
+| `routes/wa_personal_templates.ts` | `/api/wa-personal-templates` | WhatsApp personal message templates |
 
 ---
 
-## Key Frontend Pages (40 pages)
+## Key Frontend Pages (50 pages)
 | Page | Path | Key Permissions |
 |---|---|---|
 | `DashboardPage.tsx` | `/dashboard` | Role-split: owner/super_admin → ManagementDashboard; staff:manage → ManagerDashboard; else → StaffDashboard |

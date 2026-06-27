@@ -23,9 +23,16 @@ interface CallLog {
   created_at: string;
   lead_id: string | null;
   lead_name: string | null;
+  notes: string | null;
+  disposition: string | null;
+  source: string | null;
 }
 
-const OUTCOMES = ['ANSWERED', 'MISSED', 'IVR_TIMEOUT', 'UNKNOWN'];
+const OUTCOMES = ['ANSWERED', 'MISSED', 'NO_ANSWER', 'REJECTED', 'BUSY', 'IVR_TIMEOUT', 'UNKNOWN'];
+const NOT_CONNECTED = new Set(['MISSED', 'NO_ANSWER', 'REJECTED', 'BUSY']);
+function outcomeLabel(o: string) {
+  return ({ NO_ANSWER: 'Not Answered', IVR_TIMEOUT: 'IVR Timeout' } as Record<string, string>)[o] ?? o;
+}
 const DIRECTIONS = ['INBOUND', 'OUTBOUND'];
 
 function durLabel(sec: number | null) {
@@ -186,7 +193,7 @@ export default function CallsPage() {
             <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
               value={outcome} onChange={(e) => setOutcome(e.target.value)}>
               <option value="">All</option>
-              {OUTCOMES.map((o) => <option key={o} value={o}>{o}</option>)}
+              {OUTCOMES.map((o) => <option key={o} value={o}>{outcomeLabel(o)}</option>)}
             </select>
           </div>
           <div>
@@ -220,26 +227,27 @@ export default function CallsPage() {
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Duration</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Agent</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Date & Time</th>
+                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Note</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Recording</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {loading ? (
-                <tr><td colSpan={8} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
+                <tr><td colSpan={9} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
               ) : visible.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-16">
+                  <td colSpan={9} className="text-center py-16">
                     <PhoneIncoming className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                     <p className="text-[14px] font-semibold text-[#7a6b5c]">No calls found</p>
                     <p className="text-[12px] text-[#b09e8d] mt-1">Calls will appear here after Superfone syncs</p>
                   </td>
                 </tr>
               ) : visible.map((c, idx) => {
-                const isMissed   = c.outcome === 'MISSED';
-                const isAnswered = c.outcome === 'ANSWERED';
-                const isOutbound = c.direction === 'OUTBOUND';
-                const DirIcon    = isMissed ? PhoneMissed : isOutbound ? PhoneOutgoing : PhoneIncoming;
-                const dirColor   = isMissed ? 'text-red-500' : isOutbound ? 'text-blue-500' : 'text-emerald-500';
+                const isAnswered    = c.outcome === 'ANSWERED';
+                const notConnected  = NOT_CONNECTED.has(c.outcome);
+                const isOutbound    = c.direction === 'OUTBOUND';
+                const DirIcon    = isOutbound ? PhoneOutgoing : notConnected ? PhoneMissed : PhoneIncoming;
+                const dirColor   = isOutbound ? 'text-blue-500' : notConnected ? 'text-red-500' : 'text-emerald-500';
                 const hasRec     = !!(c.recording_path || c.recording_url);
 
                 return (
@@ -258,14 +266,28 @@ export default function CallsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold',
-                          isAnswered ? 'bg-emerald-50 text-emerald-700' :
-                          isMissed   ? 'bg-red-50 text-red-600' :
-                                       'bg-amber-50 text-amber-700'
-                        )}>{c.outcome}</span>
+                          isAnswered   ? 'bg-emerald-50 text-emerald-700' :
+                          notConnected ? 'bg-red-50 text-red-600' :
+                                         'bg-amber-50 text-amber-700'
+                        )}>{outcomeLabel(c.outcome)}</span>
                       </td>
                       <td className="px-4 py-3 text-[#7a6b5c] font-medium">{durLabel(c.duration_seconds)}</td>
                       <td className="px-4 py-3 text-[#7a6b5c]">{c.staff_name ?? '—'}</td>
                       <td className="px-4 py-3 text-[#7a6b5c]">{dateLabel(c.started_at ?? c.created_at)}</td>
+                      <td className="px-4 py-3 max-w-[200px]">
+                        {c.notes ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[#1c1410] whitespace-pre-wrap break-words" title={c.notes}>{c.notes}</span>
+                            {c.disposition && (
+                              <span className="self-start px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-700">{c.disposition}</span>
+                            )}
+                          </div>
+                        ) : c.disposition ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-700">{c.disposition}</span>
+                        ) : (
+                          <span className="text-[11px] text-[#b09e8d]">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         {hasRec ? (
                           <div className="flex items-center gap-2">
@@ -291,7 +313,7 @@ export default function CallsPage() {
                     </tr>
                     {playingId === c.id && audioUrls[c.id] && (
                       <tr key={`${c.id}-audio`} className="bg-orange-50/50">
-                        <td colSpan={8} className="px-4 py-2">
+                        <td colSpan={9} className="px-4 py-2">
                           <audio
                             src={audioUrls[c.id]}
                             autoPlay

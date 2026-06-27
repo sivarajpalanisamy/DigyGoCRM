@@ -1,4 +1,4 @@
-import { Building2, Plug, Bell, ChevronRight, Palette, ShieldCheck } from 'lucide-react';
+import { Building2, Plug, Bell, ChevronRight, Palette, ShieldCheck, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,6 +6,7 @@ const settingsCards = [
   { title: 'Branding', description: 'Customize logo, favicon, colors, and login page', icon: Palette, iconBg: 'bg-pink-100 text-pink-600', path: '/settings/branding' },
   { title: 'Company Details', description: 'Manage legal info and workspace identity', icon: Building2, iconBg: 'bg-purple-100 text-purple-600', path: '/settings/company' },
   { title: 'Security', description: 'Two-factor authentication for your team', icon: ShieldCheck, iconBg: 'bg-emerald-100 text-emerald-600', path: '/settings/security' },
+  { title: 'Dialer Device Pair', description: 'Verify a mobile number (OTP) and manage DigyGo Dialer phones', icon: Smartphone, iconBg: 'bg-blue-100 text-blue-600', path: '/settings/devices' },
   { title: 'Integrations', description: 'Connect Meta, WhatsApp, email providers, and more', icon: Plug, iconBg: 'bg-primary/10 text-primary', path: '/settings/integrations' },
   { title: 'Notifications', description: 'Configure in-app and email notification preferences', icon: Bell, iconBg: 'bg-yellow-100 text-yellow-600', path: '/settings/notifications' },
 ];

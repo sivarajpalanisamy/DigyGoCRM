@@ -92,11 +92,88 @@ const labelCls = 'block text-[11px] font-bold uppercase tracking-[0.08em] text-[
 
 // ── WABA modal ─────────────────────────────────────────────────────────────────
 
+// Loads the Facebook JS SDK once and resolves with the FB global (initialised).
+let fbSdkPromise: Promise<any> | null = null;
+function loadFbSdk(appId: string, version: string): Promise<any> {
+  const w = window as any;
+  if (w.FB) return Promise.resolve(w.FB);
+  if (fbSdkPromise) return fbSdkPromise;
+  fbSdkPromise = new Promise((resolve, reject) => {
+    w.fbAsyncInit = () => {
+      w.FB.init({ appId, autoLogAppEvents: true, xfbml: false, version });
+      resolve(w.FB);
+    };
+    const id = 'facebook-jssdk';
+    if (document.getElementById(id)) return;
+    const js = document.createElement('script');
+    js.id = id;
+    js.src = 'https://connect.facebook.net/en_US/sdk.js';
+    js.async = true; js.defer = true; js.crossOrigin = 'anonymous';
+    js.onerror = () => { fbSdkPromise = null; reject(new Error('Failed to load Facebook SDK')); };
+    document.body.appendChild(js);
+  });
+  return fbSdkPromise;
+}
+
+type EsConfig = { available: boolean; appId: string; configId: string; graphVersion: string };
+
 function WabaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({ phone_number_id: '', waba_id: '', access_token: '', phone_number: '' });
   const [saving, setSaving] = useState(false);
   const [showToken, setShowToken] = useState(false);
+  const [esConfig, setEsConfig] = useState<EsConfig | null>(null);
+  const [esBusy, setEsBusy] = useState(false);
+  const sessionInfoRef = useRef<{ waba_id?: string; phone_number_id?: string }>({});
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Load Embedded Signup config + listen for the WhatsApp session-info postMessage.
+  useEffect(() => {
+    api.get<EsConfig>('/api/integrations/waba/embedded-config')
+      .then((c) => { setEsConfig(c); if (c?.available) loadFbSdk(c.appId, c.graphVersion).catch(() => {}); })
+      .catch(() => {});
+
+    const onMessage = (event: MessageEvent) => {
+      if (typeof event.origin === 'string' && !event.origin.endsWith('facebook.com')) return;
+      try {
+        const data = JSON.parse(event.data);
+        if (data?.type === 'WA_EMBEDDED_SIGNUP' && data?.data) {
+          sessionInfoRef.current = { waba_id: data.data.waba_id, phone_number_id: data.data.phone_number_id };
+        }
+      } catch { /* not a JSON message we care about */ }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  const launchSignup = async () => {
+    if (!esConfig?.available) return;
+    setEsBusy(true);
+    try {
+      const FB = await loadFbSdk(esConfig.appId, esConfig.graphVersion);
+      FB.login((response: any) => {
+        const code = response?.authResponse?.code;
+        if (!code) { setEsBusy(false); toast.error('WhatsApp sign-up was cancelled'); return; }
+        const { waba_id, phone_number_id } = sessionInfoRef.current;
+        if (!waba_id || !phone_number_id) {
+          setEsBusy(false);
+          toast.error('Could not read your WhatsApp account info — please try again');
+          return;
+        }
+        api.post('/api/integrations/waba/embedded-signup', { code, waba_id, phone_number_id })
+          .then((r: any) => { toast.success(`WhatsApp connected${r?.phoneNumber ? ` (${r.phoneNumber})` : ''}!`); onSaved(); })
+          .catch((e: any) => toast.error(e.message ?? 'Failed to finish WhatsApp signup'))
+          .finally(() => setEsBusy(false));
+      }, {
+        config_id: esConfig.configId,
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
+      });
+    } catch {
+      setEsBusy(false);
+      toast.error('Could not start Facebook sign-up');
+    }
+  };
 
   const handleSave = async () => {
     if (!form.phone_number_id.trim() || !form.waba_id.trim() || !form.access_token.trim()) {
@@ -129,6 +206,37 @@ function WabaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         </Button>
       </>
     }>
+      {/* Embedded Signup — the recommended self-serve path */}
+      {esConfig?.available && (
+        <div className="rounded-xl border border-[#1877F2]/30 bg-[#1877F2]/5 p-3.5 mb-1">
+          <p className="text-[12px] text-[#5c5245] mb-2.5 leading-relaxed">
+            <strong className="text-[#1c1410]">Recommended.</strong> Connect your own WhatsApp number — Meta
+            guides you through it in a popup. No tokens to copy.
+          </p>
+          <button
+            type="button"
+            onClick={launchSignup}
+            disabled={esBusy}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#1877F2] text-white text-sm font-semibold py-2.5 hover:bg-[#1568d8] disabled:opacity-60 transition-colors"
+          >
+            {esBusy
+              ? <><RefreshCw className="w-4 h-4 animate-spin" />Connecting…</>
+              : <>
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+                  Connect with Facebook
+                </>}
+          </button>
+        </div>
+      )}
+
+      {esConfig?.available && (
+        <div className="flex items-center gap-3 my-1">
+          <div className="h-px flex-1 bg-black/10" />
+          <span className="text-[10px] uppercase tracking-wider text-[#b09e8d]">or enter credentials manually</span>
+          <div className="h-px flex-1 bg-black/10" />
+        </div>
+      )}
+
       <p className="text-[12px] text-[#7a6b5c]">Get these values from your Meta Business Manager → WhatsApp → API Setup.</p>
       <div>
         <label className={labelCls}>Phone Number ID *</label>

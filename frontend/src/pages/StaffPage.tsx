@@ -106,6 +106,8 @@ const PERM_GROUPS: PermGroup[] = [
       { key: 'calls:view_own', label: 'View Own Calls' },
       { key: 'calls:view_all', label: 'View All Calls' },
       { key: 'calls:recordings', label: 'Call Recordings' },
+      { key: 'devices:view', label: 'View Mobile Devices' },
+      { key: 'devices:manage', label: 'Manage Mobile Devices' },
     ],
   },
   {

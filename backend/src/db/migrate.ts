@@ -118,6 +118,13 @@ const MIGRATIONS = [
   'migration_116_conversation_tags.sql',
   'migration_117_template_meta_edit_at.sql',
   'migration_118_broadcast_enhancements.sql',
+  // ── Mobile dialer integration (renumbered from 095-100 to sit after upstream 118) ──
+  'migration_119_mobile_devices.sql',
+  'migration_120_devices_perm_backfill.sql',
+  'migration_121_device_phone_verify.sql',
+  'migration_122_dialer_number_verification.sql',
+  'migration_123_device_numbers.sql',
+  'migration_124_number_one_org.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
