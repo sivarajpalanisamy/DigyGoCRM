@@ -323,11 +323,13 @@ class _CrmLeadsPageState extends State<CrmLeadsPage> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        onTap: phone.isEmpty
-            ? null
-            : () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => CallDetailsPage(phone: phone, contactName: name.isNotEmpty ? name : null),
-                )),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => CallDetailsPage(
+                phone: phone,
+                leadId: (lead['id'] ?? '').toString().isNotEmpty ? lead['id'].toString() : null,
+                contactName: name.isNotEmpty ? name : null,
+              ),
+            )),
         leading: CircleAvatar(
           backgroundColor: const Color(0x14EA580C),
           child: Text(
