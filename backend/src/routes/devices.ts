@@ -138,9 +138,17 @@ const OTP_TTL_MS = 10 * 60 * 1000;
 router.post('/number/request-otp', checkPermission('devices:manage'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
   const phone = normalizePhone((req.body?.phone ?? '').toString());
+  const targetUserId = (req.body?.userId ?? '').toString().trim() || userId;
   if (!phone || phone.length < 8) { res.status(400).json({ error: 'Valid phone number required' }); return; }
 
   try {
+    // Validate the target user belongs to this tenant
+    const targetUser = await query(
+      `SELECT id, name FROM users WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_active=TRUE LIMIT 1`,
+      [targetUserId, tenantId]
+    );
+    if (!targetUser.rows[0]) { res.status(404).json({ error: 'Staff user not found' }); return; }
+
     // One number per organisation: block if it's already verified under a DIFFERENT tenant.
     const claimed = await query(
       `SELECT 1 FROM dialer_number_verifications
@@ -159,10 +167,10 @@ router.post('/number/request-otp', checkPermission('devices:manage'), async (req
     await query(
       `INSERT INTO dialer_number_verifications
          (tenant_id, user_id, phone_number, otp_hash, otp_expires_at, otp_attempts, created_by)
-       VALUES ($1::uuid,$2::uuid,$3,$4,$5,0,$2::uuid)
+       VALUES ($1::uuid,$2::uuid,$3,$4,$5,0,$6::uuid)
        ON CONFLICT (tenant_id, phone_number)
-       DO UPDATE SET otp_hash=$4, otp_expires_at=$5, otp_attempts=0, updated_at=NOW()`,
-      [tenantId, userId, phone, otpHash, expires]
+       DO UPDATE SET user_id=$2::uuid, otp_hash=$4, otp_expires_at=$5, otp_attempts=0, updated_at=NOW()`,
+      [tenantId, targetUserId, phone, otpHash, expires, userId]
     );
 
     // Delivery: email the OTP to the requesting user's registered email (SMTP).
