@@ -55,6 +55,7 @@ export default function DevicesPage() {
 
   // Verify-a-number form
   const [phone, setPhone] = useState('');
+  const [numberStaff, setNumberStaff] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
   const [busy, setBusy] = useState(false);
@@ -102,9 +103,10 @@ export default function DevicesPage() {
 
   const sendOtp = async () => {
     if (phone.trim().length < 8) { toast.error('Enter a valid mobile number with country code'); return; }
+    if (!numberStaff) { toast.error('Select a staff member to assign this number'); return; }
     setBusy(true);
     try {
-      const r = await api.post<{ sent: boolean; channel: 'email' | null; sentTo: string | null; devOtp?: string }>('/api/devices/number/request-otp', { phone });
+      const r = await api.post<{ sent: boolean; channel: 'email' | null; sentTo: string | null; devOtp?: string }>('/api/devices/number/request-otp', { phone, userId: numberStaff });
       setOtpSent(true);
       if (r.devOtp) toast.success(`OTP (dev): ${r.devOtp}`, { duration: 10000 });
       else if (r.channel === 'email') toast.success(`OTP emailed${r.sentTo ? ` to ${r.sentTo}` : ''}`);
@@ -120,7 +122,7 @@ export default function DevicesPage() {
     try {
       await api.post('/api/devices/number/verify-otp', { phone, otp });
       toast.success('Number verified - it can now connect from the app');
-      setPhone(''); setOtp(''); setOtpSent(false);
+      setPhone(''); setOtp(''); setOtpSent(false); setNumberStaff('');
       loadAll();
     } catch (e: any) {
       toast.error(e.message ?? 'Verification failed');
@@ -238,27 +240,42 @@ export default function DevicesPage() {
         <section className="bg-white rounded-xl border border-black/5 p-5 mb-6">
           <h2 className="font-semibold text-[#1c1410] text-[14px] mb-1">Verify a mobile number</h2>
           <p className="text-[12px] text-[#7a6b5c] mb-4">
-            Enter the number with country code (e.g. +9198...). We'll email a 6-digit OTP to your registered email. Once verified here and SIM-verified in the app, that number's calls are recorded into the CRM.
+            Assign a staff member and verify their mobile number. Once verified, calls from that number are recorded under their name in the CRM.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 98765 43210"
+          <div className="flex flex-col gap-3">
+            <select
+              value={numberStaff}
+              onChange={(e) => setNumberStaff(e.target.value)}
               disabled={otpSent}
-              className="flex-1 border border-black/10 rounded-lg px-3 py-2.5 text-[14px] disabled:bg-black/5"
-            />
-            {!otpSent ? (
-              <button onClick={sendOtp} disabled={busy}
-                className="bg-gradient-to-r from-[#c2410c] to-[#ea580c] text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60">
-                {busy ? 'Sending...' : 'Send OTP'}
-              </button>
-            ) : (
-              <button onClick={() => { setOtpSent(false); setOtp(''); }}
-                className="border border-black/10 text-[#1c1410] text-[13px] font-semibold px-5 py-2.5 rounded-lg hover:bg-black/5">
-                Change
-              </button>
-            )}
+              className="w-full border border-black/10 rounded-lg px-3 py-2.5 text-[14px] bg-white disabled:bg-black/5"
+            >
+              <option value="">Assign to staff member...</option>
+              {staffList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}{s.is_owner ? ' (Owner)' : ''}
+                </option>
+              ))}
+            </select>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+                disabled={otpSent}
+                className="flex-1 border border-black/10 rounded-lg px-3 py-2.5 text-[14px] disabled:bg-black/5"
+              />
+              {!otpSent ? (
+                <button onClick={sendOtp} disabled={busy}
+                  className="bg-gradient-to-r from-[#c2410c] to-[#ea580c] text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60">
+                  {busy ? 'Sending...' : 'Send OTP'}
+                </button>
+              ) : (
+                <button onClick={() => { setOtpSent(false); setOtp(''); }}
+                  className="border border-black/10 text-[#1c1410] text-[13px] font-semibold px-5 py-2.5 rounded-lg hover:bg-black/5">
+                  Change
+                </button>
+              )}
+            </div>
           </div>
           {otpSent && (
             <div className="flex flex-col sm:flex-row gap-3 mt-3">
@@ -298,7 +315,7 @@ export default function DevicesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-[#1c1410] text-[14px]">{n.phone_number}</p>
-                    <p className="text-[12px] text-[#7a6b5c] truncate">{n.user_name} · {n.verified ? 'Verified' : 'Pending OTP'}</p>
+                    <p className="text-[12px] text-[#7a6b5c] truncate">Assigned to {n.user_name} · {n.verified ? 'Verified' : 'Pending OTP'}</p>
                   </div>
                   {canManage && (
                     <button onClick={() => deleteNumber(n.id)} className="p-2 rounded-lg text-red-500 hover:bg-red-50 shrink-0" title="Remove">
