@@ -120,7 +120,8 @@ class MainActivity : FlutterActivity() {
             "phone" to phone,
             "direction" to (intent.getStringExtra("dg_call_direction") ?: ""),
             "outcome" to (intent.getStringExtra("dg_call_outcome") ?: ""),
-            "duration" to intent.getIntExtra("dg_call_duration", 0)
+            "duration" to intent.getIntExtra("dg_call_duration", 0),
+            "date" to intent.getLongExtra("dg_call_ts", 0L)
         )
         intent.removeExtra("dg_call_phone") // don't reprocess on rotation/resume
         if (live && methodChannel != null) {

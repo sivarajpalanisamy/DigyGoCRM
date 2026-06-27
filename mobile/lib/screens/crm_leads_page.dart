@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/api.dart';
 import '../services/call_launcher.dart';
+import 'call_details_page.dart';
 
 /// CRM Leads — shows the leads the agent can see (respects only_assigned / view_all),
 /// filterable by pipeline ("All Pipelines" + each pipeline) and by the stages the
@@ -322,6 +323,11 @@ class _CrmLeadsPageState extends State<CrmLeadsPage> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        onTap: phone.isEmpty
+            ? null
+            : () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => CallDetailsPage(phone: phone, contactName: name.isNotEmpty ? name : null),
+                )),
         leading: CircleAvatar(
           backgroundColor: const Color(0x14EA580C),
           child: Text(

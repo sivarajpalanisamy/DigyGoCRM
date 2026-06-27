@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:call_log/call_log.dart';
 
 import 'dart:async';
 
@@ -37,6 +38,7 @@ class _DigygoDialerAppState extends State<DigygoDialerApp> with WidgetsBindingOb
   StreamSubscription<CallState>? _callSub;
   bool _inCallShown = false;
   bool _callDetailsOpen = false;
+  String? _lastPostCallKey; // phone_timestamp of the call we've already surfaced
 
   @override
   void initState() {
@@ -71,7 +73,10 @@ class _DigygoDialerAppState extends State<DigygoDialerApp> with WidgetsBindingOb
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _consumePendingCallDetails();
+    if (state == AppLifecycleState.resumed) {
+      _consumePendingCallDetails();
+      _maybeShowPostCallFromLog();
+    }
   }
 
   Future<void> _consumePendingCallDetails() async {
@@ -81,22 +86,61 @@ class _DigygoDialerAppState extends State<DigygoDialerApp> with WidgetsBindingOb
     } catch (_) {}
   }
 
+  // Reliable fallback (background notifications get killed by OEM battery managers):
+  // when the app is opened/resumed, if the most-recent call just ended, pop the
+  // Call Details page for it once.
+  Future<void> _maybeShowPostCallFromLog() async {
+    try {
+      if (!await Api.instance.hasDeviceToken()) return;
+      final logs = await DialerData.instance.callLogs();
+      if (logs.isEmpty) return;
+      final e = logs.first; // newest first
+      final number = e.number ?? '';
+      if (number.isEmpty) return;
+      final ts = e.timestamp ?? 0;
+      final endMs = ts + ((e.duration ?? 0) * 1000);
+      // Only surface calls that ended in the last 3 minutes.
+      if (DateTime.now().millisecondsSinceEpoch - endMs > 3 * 60 * 1000) return;
+      final isOut = e.callType == CallType.outgoing;
+      final dur = e.duration ?? 0;
+      String outcome;
+      if (e.callType == CallType.missed) {
+        outcome = 'MISSED';
+      } else if (e.callType == CallType.rejected) {
+        outcome = 'REJECTED';
+      } else if (dur > 0) {
+        outcome = 'ANSWERED';
+      } else {
+        outcome = isOut ? 'NO_ANSWER' : 'MISSED';
+      }
+      _openCallDetails({
+        'phone': number,
+        'direction': isOut ? 'OUTBOUND' : 'INBOUND',
+        'outcome': outcome,
+        'duration': dur,
+        'date': ts,
+      });
+    } catch (_) {}
+  }
+
   Future<void> _openCallDetails(Map<String, dynamic> data) async {
     final phone = (data['phone'] ?? '').toString();
     if (phone.isEmpty || _callDetailsOpen) return;
-    // Only meaningful once the device is linked to the CRM.
-    if (!await Api.instance.hasDeviceToken()) return;
-    _callDetailsOpen = true;
-    _navKey.currentState
-        ?.push(MaterialPageRoute(
-          builder: (_) => CallDetailsPage(
-            phone: phone,
-            direction: (data['direction'] ?? '').toString(),
-            outcome: (data['outcome'] ?? '').toString(),
-            durationSeconds: (data['duration'] is int) ? data['duration'] as int : null,
-          ),
-        ))
-        .then((_) => _callDetailsOpen = false);
+    final key = '${phone}_${data['date'] ?? ''}';
+    if (key == _lastPostCallKey) return; // already surfaced this call
+    _callDetailsOpen = true; // sync guard against double-pop
+    final linked = await Api.instance.hasDeviceToken();
+    if (!linked) { _callDetailsOpen = false; return; }
+    _lastPostCallKey = key;
+    await _navKey.currentState?.push(MaterialPageRoute(
+      builder: (_) => CallDetailsPage(
+        phone: phone,
+        direction: (data['direction'] ?? '').toString(),
+        outcome: (data['outcome'] ?? '').toString(),
+        durationSeconds: (data['duration'] is int) ? data['duration'] as int : null,
+      ),
+    ));
+    _callDetailsOpen = false;
   }
 
   @override

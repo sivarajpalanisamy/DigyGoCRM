@@ -89,6 +89,7 @@ class CallSyncService : Service() {
             putExtra("dg_call_direction", (info["direction"] ?: "").toString())
             putExtra("dg_call_outcome", (info["outcome"] ?: "").toString())
             putExtra("dg_call_duration", (info["duration"] as? Int) ?: 0)
+            putExtra("dg_call_ts", (info["date"] as? Long) ?: 0L)
         }
         val reqCode = ((info["date"] as? Long) ?: System.currentTimeMillis()).toInt()
         val pi = PendingIntent.getActivity(

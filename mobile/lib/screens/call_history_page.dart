@@ -5,6 +5,7 @@ import '../theme.dart';
 import '../services/dialer_data.dart';
 import '../services/call_launcher.dart';
 import '../services/api.dart';
+import 'call_details_page.dart';
 
 class CallHistoryPage extends StatefulWidget {
   const CallHistoryPage({super.key});
@@ -264,6 +265,32 @@ class _CallCard extends StatelessWidget {
   final String? note;
   final VoidCallback onAddNote;
 
+  void _openDetails(BuildContext context) {
+    final num = entry.number ?? '';
+    if (num.isEmpty) return;
+    final isOut = entry.callType == CallType.outgoing;
+    final dur = entry.duration ?? 0;
+    String outcome;
+    if (entry.callType == CallType.missed) {
+      outcome = 'MISSED';
+    } else if (entry.callType == CallType.rejected) {
+      outcome = 'REJECTED';
+    } else if (dur > 0) {
+      outcome = 'ANSWERED';
+    } else {
+      outcome = isOut ? 'NO_ANSWER' : 'MISSED';
+    }
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CallDetailsPage(
+        phone: num,
+        contactName: (entry.name?.isNotEmpty ?? false) ? entry.name : null,
+        direction: isOut ? 'OUTBOUND' : 'INBOUND',
+        outcome: outcome,
+        durationSeconds: dur,
+      ),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final number = entry.number ?? 'Unknown';
@@ -278,7 +305,10 @@ class _CallCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Padding(
+          InkWell(
+            onTap: () => _openDetails(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
             child: Row(
               children: [
@@ -309,7 +339,7 @@ class _CallCard extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+          )),
           const Divider(height: 1, color: Color(0x10000000)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
