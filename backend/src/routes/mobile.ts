@@ -695,7 +695,7 @@ router.get('/pipelines', async (req: AuthRequest, res: Response) => {
 // Optional filters: pipelineId, stageId, search.
 router.get('/leads', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { search, limit = '200', pipelineId, stageId } = req.query as Record<string, string>;
+  const { search, limit = '50', offset = '0', pipelineId, stageId } = req.query as Record<string, string>;
 
   try {
     let viewAll = role === 'super_admin';
@@ -706,13 +706,18 @@ router.get('/leads', async (req: AuthRequest, res: Response) => {
       else viewAll = await hasPermission(userId, 'leads:view_all', tenantId);
     }
 
+    const pageSize = Math.min(Math.max(parseInt(limit) || 50, 1), 200);
+    const off = Math.max(parseInt(offset) || 0, 0);
+
     const params: any[] = [tenantId];
     const conds = ['l.tenant_id=$1::uuid', 'l.is_deleted=FALSE'];
     if (!viewAll) { params.push(userId); conds.push(`l.assigned_to=$${params.length}::uuid`); }
     if (pipelineId) { params.push(pipelineId); conds.push(`l.pipeline_id=$${params.length}::uuid`); }
     if (stageId) { params.push(stageId); conds.push(`l.stage_id=$${params.length}::uuid`); }
     if (search) { params.push(`%${search}%`); conds.push(`(l.name ILIKE $${params.length} OR l.phone ILIKE $${params.length})`); }
-    params.push(Math.min(parseInt(limit) || 200, 500));
+    // Fetch one extra row to detect whether more pages exist.
+    params.push(pageSize + 1); const limIdx = params.length;
+    params.push(off); const offIdx = params.length;
 
     const result = await query(
       `SELECT l.id, l.name, l.phone, l.email, l.source, l.assigned_to,
@@ -724,10 +729,12 @@ router.get('/leads', async (req: AuthRequest, res: Response) => {
        LEFT JOIN pipelines p ON p.id = l.pipeline_id
        WHERE ${conds.join(' AND ')}
        ORDER BY l.created_at DESC
-       LIMIT $${params.length}`,
+       LIMIT $${limIdx} OFFSET $${offIdx}`,
       params
     );
-    res.json({ leads: result.rows });
+    const rows = result.rows;
+    const hasMore = rows.length > pageSize;
+    res.json({ leads: hasMore ? rows.slice(0, pageSize) : rows, hasMore, offset: off, limit: pageSize });
   } catch (err: any) {
     console.error('[mobile/leads]', err.message);
     res.status(500).json({ error: 'Server error' });

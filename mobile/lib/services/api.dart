@@ -215,13 +215,24 @@ class Api {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
-  Future<List<dynamic>> leads({String? search, String? pipelineId, String? stageId}) async {
+  /// One page of leads. Returns the items plus whether more pages exist.
+  Future<({List<dynamic> items, bool hasMore})> leads({
+    String? search,
+    String? pipelineId,
+    String? stageId,
+    int offset = 0,
+    int limit = 50,
+  }) async {
     final res = await _dio.get('/api/mobile/leads', queryParameters: {
+      'offset': offset,
+      'limit': limit,
       if (search != null && search.isNotEmpty) 'search': search,
       if (pipelineId != null && pipelineId.isNotEmpty) 'pipelineId': pipelineId,
       if (stageId != null && stageId.isNotEmpty) 'stageId': stageId,
     });
-    return (res.data['leads'] as List?) ?? [];
+    final items = (res.data['leads'] as List?) ?? [];
+    final hasMore = res.data['hasMore'] == true;
+    return (items: items, hasMore: hasMore);
   }
 
   /// Pipelines with their stages, for the CRM Leads filter.

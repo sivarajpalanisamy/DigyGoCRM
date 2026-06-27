@@ -28,6 +28,8 @@ class _Stage {
 }
 
 class _CrmLeadsPageState extends State<CrmLeadsPage> {
+  static const int _pageSize = 50;
+
   List<_Pipeline> _pipelines = [];
   List<dynamic> _leads = [];
   String? _pipelineId; // null = All Pipelines
@@ -36,11 +38,30 @@ class _CrmLeadsPageState extends State<CrmLeadsPage> {
   bool _loadingPipelines = true;
   bool _loadingLeads = true;
 
+  final ScrollController _scrollCtrl = ScrollController();
+  int _offset = 0;
+  bool _hasMore = true;
+  bool _loadingMore = false;
+
   @override
   void initState() {
     super.initState();
+    _scrollCtrl.addListener(_onScroll);
     _loadPipelines();
     _loadLeads();
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollCtrl.hasClients &&
+        _scrollCtrl.position.pixels >= _scrollCtrl.position.maxScrollExtent - 300) {
+      _loadMore();
+    }
   }
 
   Future<void> _loadPipelines() async {
@@ -62,21 +83,54 @@ class _CrmLeadsPageState extends State<CrmLeadsPage> {
     }
   }
 
+  // Load the first page (replaces the list). Called on mount, filter change, refresh.
   Future<void> _loadLeads() async {
-    setState(() => _loadingLeads = true);
+    setState(() {
+      _loadingLeads = true;
+      _offset = 0;
+      _hasMore = true;
+    });
     try {
-      final list = await Api.instance.leads(
+      final page = await Api.instance.leads(
         pipelineId: _pipelineId,
         stageId: _stageId,
         search: _search,
+        offset: 0,
+        limit: _pageSize,
       );
       if (!mounted) return;
       setState(() {
-        _leads = list;
+        _leads = page.items;
+        _offset = page.items.length;
+        _hasMore = page.hasMore;
         _loadingLeads = false;
       });
     } catch (_) {
       if (mounted) setState(() => _loadingLeads = false);
+    }
+  }
+
+  // Append the next page (infinite scroll).
+  Future<void> _loadMore() async {
+    if (_loadingMore || _loadingLeads || !_hasMore) return;
+    setState(() => _loadingMore = true);
+    try {
+      final page = await Api.instance.leads(
+        pipelineId: _pipelineId,
+        stageId: _stageId,
+        search: _search,
+        offset: _offset,
+        limit: _pageSize,
+      );
+      if (!mounted) return;
+      setState(() {
+        _leads = [..._leads, ...page.items];
+        _offset += page.items.length;
+        _hasMore = page.hasMore;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
@@ -224,13 +278,26 @@ class _CrmLeadsPageState extends State<CrmLeadsPage> {
         child: Text('No leads found', style: TextStyle(color: Brand.muted)),
       );
     }
+    final showFooter = _hasMore || _loadingMore;
     return RefreshIndicator(
       onRefresh: _loadLeads,
       child: ListView.separated(
+        controller: _scrollCtrl,
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-        itemCount: _leads.length,
+        itemCount: _leads.length + (showFooter ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 8),
-        itemBuilder: (_, i) => _leadTile(_leads[i] as Map),
+        itemBuilder: (_, i) {
+          if (i >= _leads.length) {
+            // Footer: spinner while the next page loads.
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 18),
+              child: Center(
+                child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+            );
+          }
+          return _leadTile(_leads[i] as Map);
+        },
       ),
     );
   }
