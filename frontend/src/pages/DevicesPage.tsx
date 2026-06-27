@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, ShieldCheck, Clock, Smartphone, UserPlus, Copy, Unplug } from 'lucide-react';
+import { ArrowLeft, Trash2, ShieldCheck, Clock, Smartphone, Unplug } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { usePermission } from '@/hooks/usePermission';
-import { copyToClipboard } from '@/lib/utils';
 
 interface VerifiedNumber {
   id: string;
@@ -46,13 +45,6 @@ export default function DevicesPage() {
   const [staffList, setStaffList] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Pair device form
-  const [selectedStaff, setSelectedStaff] = useState('');
-  const [pairingCode, setPairingCode] = useState<string | null>(null);
-  const [pairingStaffName, setPairingStaffName] = useState('');
-  const [pairingExpiry, setPairingExpiry] = useState('');
-  const [pairing, setPairing] = useState(false);
-
   // Verify-a-number form
   const [phone, setPhone] = useState('');
   const [numberStaff, setNumberStaff] = useState('');
@@ -75,25 +67,8 @@ export default function DevicesPage() {
 
   useEffect(() => { loadAll(); }, []);
 
-  // Staff members who already have an active device
-  const pairedStaffIds = new Set(devices.map((d) => d.user_id));
-
-  const generatePairingCode = async () => {
-    if (!selectedStaff) { toast.error('Select a staff member'); return; }
-    setPairing(true);
-    try {
-      const r = await api.post<{ code: string; expiresAt: string; staffName: string }>('/api/devices/pairing-code', { userId: selectedStaff });
-      setPairingCode(r.code);
-      setPairingStaffName(r.staffName);
-      setPairingExpiry(r.expiresAt);
-      toast.success(`Pairing code generated for ${r.staffName}`);
-    } catch (e: any) {
-      toast.error(e.message ?? 'Failed to generate code');
-    } finally { setPairing(false); }
-  };
-
   const revokeDevice = async (id: string, userName: string) => {
-    if (!confirm(`Unpair device for ${userName}? They will need a new pairing code to reconnect.`)) return;
+    if (!confirm(`Unpair device for ${userName}? They will need to reinstall the app to reconnect.`)) return;
     try {
       await api.delete(`/api/devices/${id}`);
       toast.success('Device unpaired');
@@ -102,8 +77,8 @@ export default function DevicesPage() {
   };
 
   const sendOtp = async () => {
-    if (phone.trim().length < 8) { toast.error('Enter a valid mobile number with country code'); return; }
     if (!numberStaff) { toast.error('Select a staff member to assign this number'); return; }
+    if (phone.trim().length < 8) { toast.error('Enter a valid mobile number with country code'); return; }
     setBusy(true);
     try {
       const r = await api.post<{ sent: boolean; channel: 'email' | null; sentTo: string | null; devOtp?: string }>('/api/devices/number/request-otp', { phone, userId: numberStaff });
@@ -147,100 +122,16 @@ export default function DevicesPage() {
         </button>
         <div>
           <h1 className="font-headline font-bold text-[#1c1410] text-lg leading-tight">Dialer Device Pair</h1>
-          <p className="text-[12px] text-[#7a6b5c]">Pair mobile devices to staff members and verify numbers for call recording</p>
+          <p className="text-[12px] text-[#7a6b5c]">Assign staff members to mobile numbers and manage connected devices</p>
         </div>
       </div>
 
-      {/* Pair a device to staff */}
-      {canManage && (
-        <section className="bg-white rounded-xl border border-black/5 p-5 mb-6">
-          <h2 className="font-semibold text-[#1c1410] text-[14px] mb-1">Pair device to staff</h2>
-          <p className="text-[12px] text-[#7a6b5c] mb-4">
-            Select a staff member and generate a 6-digit pairing code. Enter it in the DigyGo Dialer app to bind the device. One device per staff.
-          </p>
-
-          {!pairingCode ? (
-            <div className="flex flex-col sm:flex-row gap-3">
-              <select
-                value={selectedStaff}
-                onChange={(e) => setSelectedStaff(e.target.value)}
-                className="flex-1 border border-black/10 rounded-lg px-3 py-2.5 text-[14px] bg-white"
-              >
-                <option value="">Select staff member...</option>
-                {staffList.map((s) => (
-                  <option key={s.id} value={s.id} disabled={pairedStaffIds.has(s.id)}>
-                    {s.name}{s.is_owner ? ' (Owner)' : ''}{pairedStaffIds.has(s.id) ? ' - already paired' : ''}
-                  </option>
-                ))}
-              </select>
-              <button onClick={generatePairingCode} disabled={pairing || !selectedStaff}
-                className="bg-gradient-to-r from-[#c2410c] to-[#ea580c] text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60 flex items-center gap-1.5 shrink-0">
-                <UserPlus className="w-4 h-4" />
-                {pairing ? 'Generating...' : 'Generate Code'}
-              </button>
-            </div>
-          ) : (
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-5 text-center">
-              <p className="text-[12px] text-[#7a6b5c] mb-2">Pairing code for <span className="font-semibold text-[#1c1410]">{pairingStaffName}</span></p>
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <p className="font-mono text-[32px] font-bold text-[#1c1410] tracking-[8px]">{pairingCode}</p>
-                <button onClick={() => { copyToClipboard(pairingCode!); toast.success('Code copied'); }}
-                  className="p-2 rounded-lg hover:bg-orange-100 text-orange-600" title="Copy code">
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-[11px] text-[#7a6b5c] mb-3">
-                Expires at {new Date(pairingExpiry).toLocaleTimeString()} ({Math.round((new Date(pairingExpiry).getTime() - Date.now()) / 60000)} min remaining)
-              </p>
-              <button onClick={() => { setPairingCode(null); setSelectedStaff(''); }}
-                className="text-[12px] font-semibold text-orange-700 hover:text-orange-900">
-                Done / Generate another
-              </button>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Paired devices */}
-      {!loading && (
-        <section className="mb-6">
-          <h3 className="text-[12px] font-bold uppercase tracking-wide text-[#7a6b5c] mb-2">Paired devices ({devices.length})</h3>
-          {devices.length === 0 ? (
-            <div className="bg-white rounded-xl border border-black/5 p-6 text-center text-[13px] text-[#7a6b5c]">
-              No devices paired yet. Generate a pairing code above.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {devices.map((d) => (
-                <div key={d.id} className="bg-white rounded-xl border border-black/5 p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 text-blue-600">
-                    <Smartphone className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[#1c1410] text-[14px]">{d.user_name}</p>
-                    <p className="text-[12px] text-[#7a6b5c] truncate">
-                      {d.device_label ?? d.platform ?? 'Device'} · {d.last_seen_at ? `Last seen ${new Date(d.last_seen_at).toLocaleDateString()}` : 'Never connected'}
-                    </p>
-                  </div>
-                  {canManage && (
-                    <button onClick={() => revokeDevice(d.id, d.user_name)}
-                      className="p-2 rounded-lg text-red-500 hover:bg-red-50 shrink-0 flex items-center gap-1" title="Unpair device">
-                      <Unplug className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Verify a number */}
+      {/* Verify a number + assign staff */}
       {canManage && (
         <section className="bg-white rounded-xl border border-black/5 p-5 mb-6">
           <h2 className="font-semibold text-[#1c1410] text-[14px] mb-1">Verify a mobile number</h2>
           <p className="text-[12px] text-[#7a6b5c] mb-4">
-            Assign a staff member and verify their mobile number. Once verified, calls from that number are recorded under their name in the CRM.
+            Assign a staff member and verify their mobile number. Once verified, install the DigyGo Dialer app on that phone - it auto-connects and records calls under their name.
           </p>
           <div className="flex flex-col gap-3">
             <select
@@ -301,13 +192,14 @@ export default function DevicesPage() {
         </div>
       ) : (
         <>
-          <h3 className="text-[12px] font-bold uppercase tracking-wide text-[#7a6b5c] mb-2">Verified numbers</h3>
+          {/* Verified numbers */}
+          <h3 className="text-[12px] font-bold uppercase tracking-wide text-[#7a6b5c] mb-2">Verified numbers ({numbers.length})</h3>
           {numbers.length === 0 ? (
-            <div className="bg-white rounded-xl border border-black/5 p-6 text-center text-[13px] text-[#7a6b5c]">
+            <div className="bg-white rounded-xl border border-black/5 p-6 text-center text-[13px] text-[#7a6b5c] mb-6">
               No numbers yet. Verify one above.
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 mb-6">
               {numbers.map((n) => (
                 <div key={n.id} className="bg-white rounded-xl border border-black/5 p-4 flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${n.verified ? 'bg-emerald-100 text-emerald-600' : 'bg-yellow-100 text-yellow-600'}`}>
@@ -320,6 +212,36 @@ export default function DevicesPage() {
                   {canManage && (
                     <button onClick={() => deleteNumber(n.id)} className="p-2 rounded-lg text-red-500 hover:bg-red-50 shrink-0" title="Remove">
                       <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Connected devices */}
+          <h3 className="text-[12px] font-bold uppercase tracking-wide text-[#7a6b5c] mb-2">Connected devices ({devices.length})</h3>
+          {devices.length === 0 ? (
+            <div className="bg-white rounded-xl border border-black/5 p-6 text-center text-[13px] text-[#7a6b5c]">
+              No devices connected. Verify a number above, then install the DigyGo Dialer app on that phone.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {devices.map((d) => (
+                <div key={d.id} className="bg-white rounded-xl border border-black/5 p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 text-blue-600">
+                    <Smartphone className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-[#1c1410] text-[14px]">{d.user_name}</p>
+                    <p className="text-[12px] text-[#7a6b5c] truncate">
+                      {d.device_label ?? d.platform ?? 'Device'} · {d.last_seen_at ? `Last seen ${new Date(d.last_seen_at).toLocaleDateString()}` : 'Never connected'}
+                    </p>
+                  </div>
+                  {canManage && (
+                    <button onClick={() => revokeDevice(d.id, d.user_name)}
+                      className="p-2 rounded-lg text-red-500 hover:bg-red-50 shrink-0" title="Unpair device">
+                      <Unplug className="w-4 h-4" />
                     </button>
                   )}
                 </div>
