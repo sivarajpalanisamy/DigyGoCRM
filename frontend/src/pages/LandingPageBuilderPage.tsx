@@ -541,8 +541,7 @@ export default function LandingPageBuilderPage() {
   }, [dirty]);
 
   // Keyboard shortcuts
-  const savePageRef = useRef(savePage);
-  savePageRef.current = savePage;
+  const savePageRef = useRef<(status: 'draft' | 'published') => Promise<void>>(null as any);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       // Ctrl+S / Cmd+S — save draft
@@ -658,6 +657,7 @@ export default function LandingPageBuilderPage() {
       setSaving(false);
     }
   };
+  savePageRef.current = savePage;
 
   const canvasWidth = device === 'mobile' ? 390 : device === 'tablet' ? 768 : undefined;
 
