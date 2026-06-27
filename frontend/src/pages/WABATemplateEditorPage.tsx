@@ -379,7 +379,7 @@ export default function WABATemplateEditorPage() {
             headers: tok ? { Authorization: `Bearer ${tok}` } : {},
             credentials: 'include', body: fd,
           });
-          if (resp.status === 413) throw new Error('File too large — exceeds upload limit');
+          if (resp.status === 413) throw new Error('File too large - exceeds upload limit');
           const data = resp.headers.get('content-type')?.includes('json') ? await resp.json() : null;
           if (!resp.ok) throw new Error(data?.error || `Submit failed (${resp.status})`);
           if (data?.meta_warning) {
@@ -419,7 +419,7 @@ export default function WABATemplateEditorPage() {
           headers: tok ? { Authorization: `Bearer ${tok}` } : {},
           credentials: 'include', body: fd,
         });
-        if (resp.status === 413) throw new Error('File too large — exceeds upload limit');
+        if (resp.status === 413) throw new Error('File too large - exceeds upload limit');
         const data = resp.headers.get('content-type')?.includes('json') ? await resp.json() : null;
         if (!resp.ok) throw new Error(data?.error || `Request failed (${resp.status})`);
         toast.success(isEdit ? 'Template updated locally' : 'Template saved locally');
@@ -699,7 +699,7 @@ export default function WABATemplateEditorPage() {
                           const f = e.target.files?.[0];
                           if (f) {
                             const maxMB = headerType === 'image' ? 5 : headerType === 'video' ? 16 : 100;
-                            if (f.size > maxMB * 1024 * 1024) { toast.error(`File too large — max ${maxMB} MB for ${headerType}`); e.target.value = ''; return; }
+                            if (f.size > maxMB * 1024 * 1024) { toast.error(`File too large - max ${maxMB} MB for ${headerType}`); e.target.value = ''; return; }
                             setFile(f); setRemoveFile(false);
                           }
                           e.target.value = '';

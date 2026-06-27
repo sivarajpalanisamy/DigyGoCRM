@@ -205,7 +205,7 @@ export default function WhatsAppDevicesPage() {
 
       {/* Assign staff modal */}
       {assignDevice && (
-        <ModalShell title={`Assign Staff — ${assignDevice.session_name}`} onClose={() => setAssignDevice(null)}>
+        <ModalShell title={`Assign Staff - ${assignDevice.session_name}`} onClose={() => setAssignDevice(null)}>
           <div className="p-5 space-y-4">
             <p className="text-[12px] text-[#9e8e7e]">Select staff members who can send messages from this device.</p>
             <div className="max-h-[250px] overflow-y-auto space-y-1.5">
@@ -332,7 +332,7 @@ function DeviceCard({ device: d, menuOpen, onMenuToggle, onScan, onRename, onAss
       {/* Phone */}
       <div className="text-[13px] text-[#1c1410]">
         <span className="text-[#9e8e7e]">Phone : </span>
-        <span className="font-semibold">{d.phone_number || '—'}</span>
+        <span className="font-semibold">{d.phone_number || '-'}</span>
       </div>
 
       {/* Total Messages */}

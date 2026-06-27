@@ -231,7 +231,7 @@ export default function WaPersonalTemplateEditorPage() {
       : type.startsWith('audio/') ? 16
       : 100;
     if (f.size > maxMB * 1024 * 1024) {
-      toast.error(`File too large — max ${maxMB} MB for ${type.startsWith('image/') ? 'images' : type.startsWith('video/') ? 'videos' : type.startsWith('audio/') ? 'audio' : 'documents'}`);
+      toast.error(`File too large - max ${maxMB} MB for ${type.startsWith('image/') ? 'images' : type.startsWith('video/') ? 'videos' : type.startsWith('audio/') ? 'audio' : 'documents'}`);
       return;
     }
     const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
@@ -263,7 +263,7 @@ export default function WaPersonalTemplateEditorPage() {
         credentials: 'include',
         body: fd,
       });
-      if (resp.status === 413) throw new Error('File too large — exceeds WhatsApp size limit');
+      if (resp.status === 413) throw new Error('File too large - exceeds WhatsApp size limit');
       const isJson = resp.headers.get('content-type')?.includes('application/json');
       const data = isJson ? await resp.json() : null;
       if (!resp.ok) throw new Error(data?.error || `Save failed (${resp.status} ${resp.statusText})`);
@@ -410,7 +410,7 @@ export default function WaPersonalTemplateEditorPage() {
                   className="border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7]"
                 />
                 <p className="text-[11px] text-[#7a6b5c] mt-1.5">
-                  Only visible to your team — not sent to the lead.
+                  Only visible to your team - not sent to the lead.
                 </p>
               </div>
             </section>
@@ -697,7 +697,7 @@ export default function WaPersonalTemplateEditorPage() {
                   <del className="text-[#1c1410]">strikethrough</del>
                 </div>
                 <p className="text-[11px] pt-1.5 border-t border-orange-100 text-[#7a6b5c]">
-                  Emoji can be typed or pasted directly — 👋 🎉 📎 ✅
+                  Emoji can be typed or pasted directly - 👋 🎉 📎 ✅
                 </p>
               </div>
             </div>
@@ -718,7 +718,7 @@ export default function WaPersonalTemplateEditorPage() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-orange-100 shrink-0">
               <div>
                 <h3 className="text-[14px] font-semibold text-[#1c1410]">Insert Variable</h3>
-                <p className="text-[11px] text-[#7a6b5c] mt-0.5">Click any field — inserts <code className="bg-orange-50 px-1 rounded text-orange-700">{'{%slug%}'}</code> at cursor</p>
+                <p className="text-[11px] text-[#7a6b5c] mt-0.5">Click any field - inserts <code className="bg-orange-50 px-1 rounded text-orange-700">{'{%slug%}'}</code> at cursor</p>
               </div>
               <button
                 onClick={() => { setPickerOpen(false); setSearch(''); }}

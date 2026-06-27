@@ -64,8 +64,8 @@ const DATA_TYPES: { label: DataType; Icon: ElementType; hint: string; hasOptions
   // Multiple Options
   { label: 'Dropdown',      Icon: ChevronDown,   hint: 'Pick one from a list',                group: 'Multiple Options', hasOptions: true },
   { label: 'Multi-select',  Icon: ChevronsUpDown,hint: 'Pick many from a dropdown',           group: 'Multiple Options', hasOptions: true },
-  { label: 'Radio',         Icon: CircleDot,     hint: 'Pick one — all options visible',      group: 'Multiple Options', hasOptions: true },
-  { label: 'Multi-Checkbox',Icon: SquareCheck,   hint: 'Pick many — all options visible',     group: 'Multiple Options', hasOptions: true },
+  { label: 'Radio',         Icon: CircleDot,     hint: 'Pick one - all options visible',      group: 'Multiple Options', hasOptions: true },
+  { label: 'Multi-Checkbox',Icon: SquareCheck,   hint: 'Pick many - all options visible',     group: 'Multiple Options', hasOptions: true },
   { label: 'Checkbox',      Icon: Check,         hint: 'Simple Yes / No toggle',              group: 'Multiple Options' },
 
   // Others
@@ -107,7 +107,7 @@ const INIT_ADDITIONAL: AdditionalField[] = [
 
 const INIT_VALUES: ValueToken[] = [
   { id: 'v1', name: 'Google Meet link',  replaceWith: 'https://meet.google.com/xyz-abc-def' },
-  { id: 'v2', name: 'Email signature',   replaceWith: 'Best regards,\n— Team DigyGo' },
+  { id: 'v2', name: 'Email signature',   replaceWith: 'Best regards,\n- Team DigyGo' },
   { id: 'v3', name: 'Working hours',     replaceWith: 'Mon–Fri, 9am–6pm IST' },
 ];
 
@@ -362,7 +362,7 @@ function StandardFieldModal({ field, onClose, onSave }: {
             )}
             <div>
               <h3 className="font-bold text-[#1c1410] text-[15px] leading-tight">
-                {field ? 'Edit Field' : step === 'pick' ? 'Choose field type' : `New Custom Field — ${type}`}
+                {field ? 'Edit Field' : step === 'pick' ? 'Choose field type' : `New Custom Field - ${type}`}
               </h3>
               {step === 'pick' && <p className="text-[11px] text-[#7a6b5c] mt-0.5">Pick a data type that fits what you want to capture</p>}
             </div>
@@ -471,7 +471,7 @@ function AdditionalFieldModal({ pipelineId, field, onClose, onSave }: {
             )}
             <div>
               <h3 className="font-bold text-[#1c1410] text-[15px] leading-tight">
-                {field ? 'Edit Question' : step === 'pick' ? 'Choose answer type' : `New Question — ${type}`}
+                {field ? 'Edit Question' : step === 'pick' ? 'Choose answer type' : `New Question - ${type}`}
               </h3>
               <p className="text-[11px] text-[#7a6b5c] mt-0.5">
                 {step === 'pick' ? 'Pick a data type that fits the answer you want' : 'Staff fills this while talking to the lead'}

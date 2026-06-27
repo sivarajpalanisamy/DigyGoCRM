@@ -289,7 +289,7 @@ router.get('/export', checkPermission('leads:export'), async (req: AuthRequest, 
            (SELECT string_agg(
               '[' || TO_CHAR(n.created_at, 'DD-Mon-YYYY HH12:MI AM') || '] ' ||
               COALESCE(un.name, 'System') || ': ' ||
-              COALESCE(NULLIF(TRIM(n.title), '') || ' — ', '') || COALESCE(n.content, ''),
+              COALESCE(NULLIF(TRIM(n.title), '') || ' - ', '') || COALESCE(n.content, ''),
               E'\n' ORDER BY n.created_at ASC
             ) FROM lead_notes n LEFT JOIN users un ON un.id = n.created_by WHERE n.lead_id = l.id) AS notes
     FROM leads l
@@ -442,7 +442,7 @@ router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(
         [tenantId, phone]
       );
       if (dupPhone.rows[0]) {
-        res.status(409).json({ error: `Phone number already exists — lead "${dupPhone.rows[0].name}" has this number`, duplicate_lead_id: dupPhone.rows[0].id });
+        res.status(409).json({ error: `Phone number already exists - lead "${dupPhone.rows[0].name}" has this number`, duplicate_lead_id: dupPhone.rows[0].id });
         return;
       }
     }
@@ -453,7 +453,7 @@ router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(
         [tenantId, email]
       );
       if (dupEmail.rows[0]) {
-        res.status(409).json({ error: `Email already exists — lead "${dupEmail.rows[0].name}" has this email`, duplicate_lead_id: dupEmail.rows[0].id });
+        res.status(409).json({ error: `Email already exists - lead "${dupEmail.rows[0].name}" has this email`, duplicate_lead_id: dupEmail.rows[0].id });
         return;
       }
     }
@@ -1098,7 +1098,7 @@ router.get('/import-template', checkPermission('leads:create'), async (req: Auth
     const allHeaders = [...standardHeaders, ...customFields.map((cf) => cf.name)];
     const sampleRow = [
       'John Doe', '+919876543210', 'john@example.com', 'Manual', '50000',
-      'Hot Lead', 'Called twice — very interested', 'New Lead',
+      'Hot Lead', 'Called twice - very interested', 'New Lead',
       ...customFields.map(() => ''),
     ];
 

@@ -36,12 +36,12 @@ function outcomeLabel(o: string) {
 const DIRECTIONS = ['INBOUND', 'OUTBOUND'];
 
 function durLabel(sec: number | null) {
-  if (!sec || sec <= 0) return '—';
+  if (!sec || sec <= 0) return '-';
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 }
 
 function dateLabel(ts: string | null) {
-  if (!ts) return '—';
+  if (!ts) return '-';
   return new Date(ts).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
@@ -255,7 +255,7 @@ export default function CallsPage() {
                     <tr key={c.id} className="hover:bg-[var(--app-bg)] transition-colors">
                       <td className="px-4 py-3 text-[#b09e8d]">{(page - 1) * LIMIT + idx + 1}</td>
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-[#1c1410] truncate max-w-[160px]">{c.lead_name ?? '—'}</p>
+                        <p className="font-semibold text-[#1c1410] truncate max-w-[160px]">{c.lead_name ?? '-'}</p>
                         <p className="text-[11px] text-[#b09e8d]">{c.caller_phone ?? ''}</p>
                       </td>
                       <td className="px-4 py-3">
@@ -272,7 +272,7 @@ export default function CallsPage() {
                         )}>{outcomeLabel(c.outcome)}</span>
                       </td>
                       <td className="px-4 py-3 text-[#7a6b5c] font-medium">{durLabel(c.duration_seconds)}</td>
-                      <td className="px-4 py-3 text-[#7a6b5c]">{c.staff_name ?? '—'}</td>
+                      <td className="px-4 py-3 text-[#7a6b5c]">{c.staff_name ?? '-'}</td>
                       <td className="px-4 py-3 text-[#7a6b5c]">{dateLabel(c.started_at ?? c.created_at)}</td>
                       <td className="px-4 py-3 max-w-[200px]">
                         {c.notes ? (
@@ -285,7 +285,7 @@ export default function CallsPage() {
                         ) : c.disposition ? (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-700">{c.disposition}</span>
                         ) : (
-                          <span className="text-[11px] text-[#b09e8d]">—</span>
+                          <span className="text-[11px] text-[#b09e8d]">-</span>
                         )}
                       </td>
                       <td className="px-4 py-3">

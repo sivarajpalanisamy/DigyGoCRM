@@ -3,9 +3,9 @@ import { useAuthStore } from '@/store/authStore';
 import { AlertTriangle, ShieldCheck, LogOut } from 'lucide-react';
 
 function fmtDate(iso?: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   try { return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
-  catch { return '—'; }
+  catch { return '-'; }
 }
 function daysOverdue(iso?: string | null): number {
   if (!iso) return 0;

@@ -328,10 +328,10 @@ function CreateFieldModal({
             )}
             <div>
               <h3 className="font-bold text-[#1c1410] text-[15px] leading-tight">
-                {step === 'pick' ? 'Choose field type' : `New Field — ${dataType}`}
+                {step === 'pick' ? 'Choose field type' : `New Field - ${dataType}`}
               </h3>
               <p className="text-[11px] text-[#7a6b5c] mt-0.5">
-                {step === 'pick' ? 'Pick the type of data this field will capture' : "Name it — it'll be saved to your Fields page too"}
+                {step === 'pick' ? 'Pick the type of data this field will capture' : "Name it - it'll be saved to your Fields page too"}
               </p>
             </div>
           </div>
@@ -851,7 +851,7 @@ export default function CustomFormDetailPage() {
                             }}
                             className="text-[11px] border border-emerald-200 rounded-lg px-2 py-1 bg-emerald-50 text-emerald-800 outline-none focus:border-emerald-400 font-medium max-w-[200px]"
                           >
-                            <option value="">— Not mapped —</option>
+                            <option value="">- Not mapped -</option>
                             <optgroup label="Standard Fields">
                               {STANDARD_CRM_FIELDS.map((f) => (
                                 <option key={f.slug} value={f.slug}>{f.name}</option>
@@ -920,7 +920,7 @@ export default function CustomFormDetailPage() {
                   onChange={(e) => { setPipelineId(e.target.value); setStageId(''); }}
                   className="w-full text-[13px] border border-black/8 rounded-xl px-3 py-2.5 bg-[var(--app-bg)] text-[#1c1410] outline-none focus:border-primary/30"
                 >
-                  <option value="">— Select a pipeline —</option>
+                  <option value="">- Select a pipeline -</option>
                   {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
@@ -933,7 +933,7 @@ export default function CustomFormDetailPage() {
                   disabled={!pipelineId}
                   className="w-full text-[13px] border border-black/8 rounded-xl px-3 py-2.5 bg-[var(--app-bg)] text-[#1c1410] outline-none focus:border-primary/30 disabled:opacity-40"
                 >
-                  <option value="">— Select a stage —</option>
+                  <option value="">- Select a stage -</option>
                   {(selectedPipeline?.stages ?? []).map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
@@ -1081,7 +1081,7 @@ export default function CustomFormDetailPage() {
                         className="w-full h-20 px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[13px] text-[#7a6b5c] placeholder:text-[#b09e8d] resize-none outline-none" />
                     ) : field.type === 'dropdown' ? (
                       <select disabled className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[13px] text-[#7a6b5c] outline-none">
-                        <option>— Select —</option>
+                        <option>- Select -</option>
                         {(field.options ?? []).map((o) => <option key={o}>{o}</option>)}
                       </select>
                     ) : field.type === 'radio' ? (

@@ -201,7 +201,7 @@ router.delete('/:id', checkPermission('custom_forms:delete'), async (req: AuthRe
         'UPDATE custom_forms SET is_active=FALSE WHERE id=$1 AND tenant_id=$2',
         [id, tenantId]
       );
-      res.json({ success: true, soft_deleted: true, reason: 'Form has submissions — deactivated instead of deleted' });
+      res.json({ success: true, soft_deleted: true, reason: 'Form has submissions - deactivated instead of deleted' });
     } else {
       await query(
         'DELETE FROM custom_forms WHERE id=$1 AND tenant_id=$2',

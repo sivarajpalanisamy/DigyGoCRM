@@ -651,7 +651,7 @@ export default function ContactGroupPage() {
                 <h3 className="font-headline font-bold text-[16px] text-[#1c1410]">
                   {createStep === 1 ? 'Create Group' : 'Add Members'}
                 </h3>
-                <p className="text-[11px] text-[#7a6b5c] mt-0.5">Step {createStep} of 2 — {createStep === 1 ? 'Name & details' : 'Optional: add contacts now'}</p>
+                <p className="text-[11px] text-[#7a6b5c] mt-0.5">Step {createStep} of 2 - {createStep === 1 ? 'Name & details' : 'Optional: add contacts now'}</p>
               </div>
               <button onClick={resetCreate} className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]"><X className="w-4 h-4" /></button>
             </div>
@@ -1190,7 +1190,7 @@ function BroadcastModal({ groupId, groupName, memberCount, onClose }: {
             </div>
             {result.skipped > 0 && (
               <p className="text-[11px] text-[#7a6b5c] text-center">
-                {result.skipped} member{result.skipped !== 1 ? 's' : ''} skipped — no {tab === 'whatsapp' ? 'phone number' : 'email address'} on record
+                {result.skipped} member{result.skipped !== 1 ? 's' : ''} skipped - no {tab === 'whatsapp' ? 'phone number' : 'email address'} on record
               </p>
             )}
             {result.errors.length > 0 && (
@@ -1239,7 +1239,7 @@ function BroadcastModal({ groupId, groupName, memberCount, onClose }: {
                     if (t) setMessage(t.body);
                   }} defaultValue=""
                     className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[13px] outline-none focus:border-primary/40 bg-white">
-                    <option value="">— pick a template —</option>
+                    <option value="">- pick a template -</option>
                     {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>

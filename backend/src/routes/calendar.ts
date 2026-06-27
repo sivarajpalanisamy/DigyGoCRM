@@ -284,8 +284,8 @@ router.post('/public/book', publicBookingLimiter, async (req: Request, res: Resp
         await client.query('ROLLBACK');
         res.status(409).json({
           error: capacity === 1
-            ? 'This slot has just been taken — please choose another time'
-            : `This slot is full (${capacity} / ${capacity} spots taken) — please choose another time`,
+            ? 'This slot has just been taken - please choose another time'
+            : `This slot is full (${capacity} / ${capacity} spots taken) - please choose another time`,
         }); return;
       }
     }
@@ -299,7 +299,7 @@ router.post('/public/book', publicBookingLimiter, async (req: Request, res: Resp
       );
       if (Number(dayCount.rows[0].cnt) >= et.max_per_day) {
         await client.query('ROLLBACK');
-        res.status(409).json({ error: `This calendar is fully booked for ${date} — please pick another day` }); return;
+        res.status(409).json({ error: `This calendar is fully booked for ${date} - please pick another day` }); return;
       }
     }
 
@@ -681,7 +681,7 @@ router.post('/', checkPermission('calendar:manage'), async (req: AuthRequest, re
           res.status(409).json({
             error: slotCapacity === 1
               ? 'This slot is already booked for this calendar'
-              : `This slot is full (${slotCapacity} spots) — choose another time`,
+              : `This slot is full (${slotCapacity} spots) - choose another time`,
           }); return;
         }
       }
@@ -880,7 +880,7 @@ router.post('/event-types', checkPermission('calendar:manage'), async (req: Auth
     );
     res.status(201).json(result.rows[0]);
   } catch (err: any) {
-    if (err?.code === '23505') { res.status(409).json({ error: 'Slug already exists — choose a different name' }); }
+    if (err?.code === '23505') { res.status(409).json({ error: 'Slug already exists - choose a different name' }); }
     else { res.status(500).json({ error: 'Server error' }); }
   }
 });

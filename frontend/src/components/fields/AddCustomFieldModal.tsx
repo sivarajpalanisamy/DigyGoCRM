@@ -36,8 +36,8 @@ const DATA_TYPES: { label: DataType; Icon: ElementType; hint: string; hasOptions
   { label: 'Monetary',       Icon: IndianRupee,    hint: 'Currency amount (₹)'            },
   { label: 'Dropdown',       Icon: ChevronDown,    hint: 'Pick one from a list',          hasOptions: true },
   { label: 'Multi-select',   Icon: ChevronsUpDown, hint: 'Pick many from a dropdown',     hasOptions: true },
-  { label: 'Radio',          Icon: CircleDot,      hint: 'Pick one — all options visible', hasOptions: true },
-  { label: 'Multi-Checkbox', Icon: SquareCheck,    hint: 'Pick many — all options visible', hasOptions: true },
+  { label: 'Radio',          Icon: CircleDot,      hint: 'Pick one - all options visible', hasOptions: true },
+  { label: 'Multi-Checkbox', Icon: SquareCheck,    hint: 'Pick many - all options visible', hasOptions: true },
   { label: 'Checkbox',       Icon: Check,          hint: 'Simple Yes / No toggle'         },
   { label: 'Date',           Icon: CalendarDays,   hint: 'Date picker'                    },
   { label: 'File Upload',    Icon: FileUp,         hint: 'Attach a file'                  },
@@ -195,7 +195,7 @@ export function AddCustomFieldModal({
             )}
             <div>
               <h3 className="font-bold text-[#1c1410] text-[15px] leading-tight">
-                {step === 'pick' ? 'Choose field type' : `New Custom Field — ${type}`}
+                {step === 'pick' ? 'Choose field type' : `New Custom Field - ${type}`}
               </h3>
               {step === 'pick' && (
                 <p className="text-[11px] text-[#7a6b5c] mt-0.5">Pick a data type that fits what you want to capture</p>

@@ -81,7 +81,7 @@ export default function WhatsAppSingleSendPage() {
     setReceiverPhone(c.phone);
     setReceiverName(c.name);
     setReceiverLeadId(c.id);
-    setSearchQuery(c.name + ' — ' + c.phone);
+    setSearchQuery(c.name + ' - ' + c.phone);
     setShowDropdown(false);
   };
 
@@ -165,10 +165,10 @@ export default function WhatsAppSingleSendPage() {
               value={deviceId}
               onChange={(e) => setDeviceId(e.target.value)}
             >
-              <option value="">— Select a device —</option>
+              <option value="">- Select a device -</option>
               {devices.map((d) => (
                 <option key={d.session_id} value={d.session_id} disabled={d.status !== 'connected'}>
-                  {d.session_name}{d.phone_number ? ` (${d.phone_number})` : ''}{d.status !== 'connected' ? ' — offline' : ''}
+                  {d.session_name}{d.phone_number ? ` (${d.phone_number})` : ''}{d.status !== 'connected' ? ' - offline' : ''}
                 </option>
               ))}
             </select>
@@ -292,7 +292,7 @@ export default function WhatsAppSingleSendPage() {
             />
           </div>
           <p className="text-[11px] text-[#9e8e7e] mt-1.5">
-            {message.length} characters — Use *bold*, _italic_, ~strikethrough~ for WhatsApp formatting
+            {message.length} characters - Use *bold*, _italic_, ~strikethrough~ for WhatsApp formatting
           </p>
         </div>
 

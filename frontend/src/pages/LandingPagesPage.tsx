@@ -134,7 +134,7 @@ export default function LandingPagesPage() {
       const created = await api.post<any>('/api/landing-pages', data);
       setPages((prev) => [mapPage(created), ...prev]);
       setShowModal(false);
-      toast.success(`"${data.title}" created — open builder to design it`);
+      toast.success(`"${data.title}" created - open builder to design it`);
     } catch (err: any) {
       toast.error(err?.message ?? 'Failed to create page');
     }

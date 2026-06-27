@@ -825,6 +825,20 @@ async function ingestSuperfoneCall(tenantId: string, payload: Record<string, any
       staffUserId,
     }).catch(() => null);
 
+    // Lead timeline activity
+    if (leadId) {
+      const dir = (cdr_call_type ?? 'INBOUND').toUpperCase();
+      const out = (cdr_disposition ?? 'UNKNOWN').toUpperCase();
+      const dur = Number(cdr_duration ?? 0) || 0;
+      const durTxt = dur > 0 ? ` (${Math.floor(dur / 60)}m ${dur % 60}s)` : '';
+      query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+         VALUES ($1::uuid,$2::uuid,'call',$3,$4,$5::uuid)`,
+        [leadId, tenantId, `${dir === 'OUTBOUND' ? 'Outgoing' : 'Incoming'} call - ${out}${durTxt}`,
+         null, staffUserId]
+      ).catch(() => null);
+    }
+
     // Fire automation triggers for matched leads (skip unknown callers — no lead to attach)
     if (!isUnknown && leadId) {
       const outcome = (cdr_disposition ?? 'UNKNOWN').toUpperCase();

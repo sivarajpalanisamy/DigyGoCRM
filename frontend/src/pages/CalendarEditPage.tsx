@@ -248,7 +248,7 @@ export default function CalendarEditPage() {
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Calendar name is required'); return; }
     const overlapDay = validateOverlaps();
-    if (overlapDay) { toast.error(`Overlapping time slots on ${overlapDay} — fix before saving`); return; }
+    if (overlapDay) { toast.error(`Overlapping time slots on ${overlapDay} - fix before saving`); return; }
 
     const payload = {
       ...form,
@@ -278,7 +278,7 @@ export default function CalendarEditPage() {
       navigate('/calendar?tab=create-edit', { state: { savedEventType: saved } });
     } catch (err: any) {
       const msg: string = err?.message ?? '';
-      if (msg.toLowerCase().includes('slug')) toast.error('This URL slug is already taken — change the calendar name or edit the slug field');
+      if (msg.toLowerCase().includes('slug')) toast.error('This URL slug is already taken - change the calendar name or edit the slug field');
       else toast.error(msg || 'Failed to save');
     } finally {
       setSaving(false);

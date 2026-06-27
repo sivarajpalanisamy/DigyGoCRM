@@ -264,7 +264,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                     }}
                     className={cn(inputCls, 'cursor-pointer appearance-none')}
                   >
-                    <option value="">— Select pipeline —</option>
+                    <option value="">- Select pipeline -</option>
                     {pipelines.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
@@ -278,7 +278,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                     onChange={(e) => setForm((f) => ({ ...f, stageId: e.target.value }))}
                     className={cn(inputCls, 'cursor-pointer appearance-none')}
                   >
-                    <option value="">— Select stage —</option>
+                    <option value="">- Select stage -</option>
                     {selectedStages.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
@@ -319,7 +319,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                       <label className={labelCls}>{f.field_name}</label>
                       <input
                         readOnly
-                        value={f.value || '—'}
+                        value={f.value || '-'}
                         className={cn(inputCls, 'bg-gray-50 cursor-default text-[#7a6b5c]')}
                       />
                     </div>
@@ -362,7 +362,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                       <p className="text-[18px] font-bold text-[#1c1410]">
                         {journey.enquiries.length > 0
                           ? format(new Date(journey.enquiries[journey.enquiries.length - 1].created_at), 'dd MMM yyyy')
-                          : '—'}
+                          : '-'}
                       </p>
                       <p className="text-[11px] text-[#7a6b5c]">First seen</p>
                     </div>
@@ -378,7 +378,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                             <div>
                               <p className="text-[13px] font-semibold text-[#1c1410]">{l.pipeline_name || 'No pipeline'}</p>
                               <p className="text-[11px] text-[#7a6b5c]">
-                                Stage: {l.stage_name || '—'}
+                                Stage: {l.stage_name || '-'}
                                 {l.assigned_name ? ` · Assigned: ${l.assigned_name}` : ''}
                                 {l.lead_quality ? ` · ${l.lead_quality}` : ''}
                               </p>
@@ -488,7 +488,7 @@ function WorkflowTriggerModal({ leadIds, workflows, onClose, onSuccess }: {
     setSending(true);
     try {
       await api.post(`/api/workflows/${selected}/bulk-trigger`, { lead_ids: leadIds });
-      toast.success(`${leadIds.length} contact${leadIds.length !== 1 ? 's' : ''} pushed to "${wf?.name}" — automation is executing`);
+      toast.success(`${leadIds.length} contact${leadIds.length !== 1 ? 's' : ''} pushed to "${wf?.name}" - automation is executing`);
       onSuccess();
     } catch (err: any) {
       toast.error(err?.message ?? 'Failed to trigger workflow');
@@ -508,7 +508,7 @@ function WorkflowTriggerModal({ leadIds, workflows, onClose, onSuccess }: {
           <label className="text-[13px] font-semibold text-[#1c1410] block">Select Active Workflow</label>
           <div className="relative">
             <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white appearance-none pr-10">
-              <option value="">— Choose a workflow —</option>
+              <option value="">- Choose a workflow -</option>
               {activeWorkflows.map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -520,7 +520,7 @@ function WorkflowTriggerModal({ leadIds, workflows, onClose, onSuccess }: {
           )}
           <p className="text-[12px] text-blue-500 flex items-start gap-1.5 pt-1">
             <Settings className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-            {leadIds.length} contact{leadIds.length !== 1 ? 's' : ''} selected — all will be pushed through the chosen workflow.
+            {leadIds.length} contact{leadIds.length !== 1 ? 's' : ''} selected - all will be pushed through the chosen workflow.
           </p>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/5">
@@ -921,7 +921,7 @@ export default function ContactsPage() {
                     {/* Pipeline */}
                     <td className="px-4 py-3.5">
                       <span className="text-[12px] font-medium text-[#1c1410]">
-                        {pipelines.find((p) => p.id === lead.pipelineId)?.name ?? '—'}
+                        {pipelines.find((p) => p.id === lead.pipelineId)?.name ?? '-'}
                       </span>
                     </td>
 
@@ -929,7 +929,7 @@ export default function ContactsPage() {
                     <td className="px-4 py-3.5">
                       <div className="flex flex-wrap gap-1">
                         {lead.tags.length === 0
-                          ? <span className="text-[#c4b09e] text-[11px]">—</span>
+                          ? <span className="text-[#c4b09e] text-[11px]">-</span>
                           : lead.tags.slice(0, 2).map((tag) => (
                               <span key={tag} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{tag}</span>
                             ))

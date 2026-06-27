@@ -360,7 +360,7 @@ export default function WABABroadcastPage() {
         <div className="bg-white rounded-2xl border border-black/5 px-4 py-3">
           <label className="text-[11px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-1 block">Broadcast Name</label>
           <Input value={broadcastName} onChange={(e) => setBroadcastName(e.target.value)}
-            placeholder="e.g. Diwali Offer 2026 — leave blank for auto-generated name"
+            placeholder="e.g. Diwali Offer 2026 - leave blank for auto-generated name"
             className="h-9" />
         </div>
 
@@ -637,7 +637,7 @@ export default function WABABroadcastPage() {
                       <div className="flex items-center gap-3 border border-emerald-200 bg-emerald-50/50 rounded-xl px-4 py-3">
                         <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
                         <span className="text-[12px] text-emerald-700 truncate flex-1">
-                          {selectedTemplate?.file_name || 'Saved file'} — will be sent automatically
+                          {selectedTemplate?.file_name || 'Saved file'} - will be sent automatically
                         </span>
                         <label className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 cursor-pointer shrink-0">
                           Replace
@@ -816,7 +816,7 @@ export default function WABABroadcastPage() {
               </div>
               {result.errors.length > 0 && (
                 <details className="text-left bg-red-50 border border-red-200 rounded-xl p-4 text-sm">
-                  <summary className="cursor-pointer text-red-700 font-medium">{result.errors.length} error(s) — click to expand</summary>
+                  <summary className="cursor-pointer text-red-700 font-medium">{result.errors.length} error(s) - click to expand</summary>
                   <ul className="mt-2 space-y-1 text-red-600 text-xs max-h-40 overflow-y-auto">
                     {result.errors.map((e, i) => <li key={i}>{e}</li>)}
                   </ul>

@@ -481,7 +481,7 @@ router.post('/:id/resubmit-to-meta', checkPermission('automation_templates:manag
     );
     if (!tplRes.rows[0]) { res.status(404).json({ error: 'Template not found' }); return; }
     const ex = tplRes.rows[0];
-    if (!ex.meta_template_id) { res.status(400).json({ error: 'Template has no Meta ID — use submit-to-meta instead' }); return; }
+    if (!ex.meta_template_id) { res.status(400).json({ error: 'Template has no Meta ID - use submit-to-meta instead' }); return; }
 
     // Load WABA credentials
     const wabaRes = await query(
@@ -539,7 +539,7 @@ router.post('/:id/resubmit-to-meta', checkPermission('automation_templates:manag
         } else if (ex.file_path) {
           // Re-upload existing file from disk
           const fullPath = path.resolve(process.cwd(), ex.file_path);
-          if (!fs.existsSync(fullPath)) { res.status(400).json({ error: 'Existing header file not found on disk — please re-upload' }); return; }
+          if (!fs.existsSync(fullPath)) { res.status(400).json({ error: 'Existing header file not found on disk - please re-upload' }); return; }
           fileBuffer = fs.readFileSync(fullPath);
           fileMime = ex.file_type || 'application/octet-stream';
           fileName = ex.file_name || 'file';

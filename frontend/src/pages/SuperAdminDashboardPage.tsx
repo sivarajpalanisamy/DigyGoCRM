@@ -385,7 +385,7 @@ export default function SuperAdminDashboardPage() {
       {/* Row: Inactive Accounts + Near Limits */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Inactive Accounts */}
-        <Card title="Inactive Accounts" sub="No leads in 30+ days — churn risk">
+        <Card title="Inactive Accounts" sub="No leads in 30+ days - churn risk">
           {data.inactive.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-[12px] text-[#9a8a7a]">
               All accounts are active

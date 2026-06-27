@@ -181,7 +181,7 @@ export default function WorkflowAnalyticsPage() {
                 <tbody>
                   {recent.map((r) => (
                     <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
-                      <td className="py-2 font-medium">{r.lead_name || '—'}</td>
+                      <td className="py-2 font-medium">{r.lead_name || '-'}</td>
                       <td className="py-2 text-muted-foreground">{r.trigger_type}</td>
                       <td className="py-2">
                         <span className={cn('px-2 py-0.5 rounded-full font-semibold',

@@ -139,7 +139,7 @@ router.get('/export', checkPermission('contacts:export'), async (req: AuthReques
         (SELECT string_agg(
            '[' || TO_CHAR(n.created_at, 'DD-Mon-YYYY HH12:MI AM') || '] ' ||
            COALESCE(un.name, 'System') || ': ' ||
-           COALESCE(NULLIF(TRIM(n.title), '') || ' — ', '') || COALESCE(n.content, ''),
+           COALESCE(NULLIF(TRIM(n.title), '') || ' - ', '') || COALESCE(n.content, ''),
            E'\n' ORDER BY n.created_at ASC
          ) FROM lead_notes n LEFT JOIN users un ON un.id = n.created_by WHERE n.lead_id = l.id) AS notes
        FROM contacts c

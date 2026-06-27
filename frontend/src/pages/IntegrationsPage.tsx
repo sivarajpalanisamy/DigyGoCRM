@@ -156,7 +156,7 @@ function WabaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         const { waba_id, phone_number_id } = sessionInfoRef.current;
         if (!waba_id || !phone_number_id) {
           setEsBusy(false);
-          toast.error('Could not read your WhatsApp account info — please try again');
+          toast.error('Could not read your WhatsApp account info - please try again');
           return;
         }
         api.post('/api/integrations/waba/embedded-signup', { code, waba_id, phone_number_id })
