@@ -4,7 +4,6 @@ import * as XLSX from 'xlsx';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useCrmStore, LeadActivity } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
-import { useCompanyStore } from '@/store/companyStore';
 import { usePermission } from '@/hooks/usePermission';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
@@ -16,7 +15,7 @@ import {
   Mail, Pencil, CheckSquare, RotateCcw, LayoutGrid, List, EyeOff, Eye,
   Star, ChevronRight, ArrowLeft, ArrowRight, Settings, Download, Package, Zap, Copy, ArrowUpDown, Layers,
   CalendarPlus, MoreHorizontal, UserX, ArrowLeftRight, UserCheck, UserPlus, Circle, Clock, Users, Smartphone,
-  PhoneIncoming, PhoneOutgoing, PhoneMissed, Play, Pause, Send, Megaphone, MousePointerClick,
+  Play, Pause, Send, Megaphone, MousePointerClick,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1483,9 +1482,8 @@ function DeleteLeadModal({ lead, onClose, onDeleted }: { lead: Lead; onClose: ()
 function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   const { updateLead, deleteLead, moveLeadStage, pipelines, calendarEvents, addNote, updateNote, deleteNote, addFollowUp, addCalendarEvent, bookingLinks } = useCrmStore();
   const currentUser = useAuthStore((s) => s.currentUser);
-  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  type Tab = 'opportunity' | 'additional' | 'followup' | 'notes' | 'appointments' | 'calls';
+  type Tab = 'opportunity' | 'additional' | 'followup' | 'notes' | 'appointments';
   const [activeTab, setActiveTab] = useState<Tab>('opportunity');
   const [noteContent, setNoteContent] = useState('');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -1515,17 +1513,13 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
   const [leadNotes, setLeadNotes] = useState<any[]>([]);
   const [leadFollowUps, setLeadFollowUps] = useState<any[]>([]);
-  const [leadCalls, setLeadCalls] = useState<any[]>([]);
-  const [playingCallId, setPlayingCallId] = useState<string | null>(null);
-  const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
   const [editFu, setEditFu] = useState<{ id: string; title: string; notes: string; dueAt: string } | null>(null);
   useEffect(() => {
     api.get<any[]>(`/api/leads/${lead.id}/notes`).then(setLeadNotes).catch(() => null);
     api.get<any[]>(`/api/leads/${lead.id}/followups`).then((data) =>
       setLeadFollowUps(data.map((f) => ({ id: f.id, leadId: lead.id, dueAt: f.due_at, note: f.title, description: f.description, completed: f.completed, assignedTo: f.assigned_to, createdAt: f.created_at })))
     ).catch(() => null);
-    if (superfoneEnabled) api.get<any[]>(`/api/calls/lead/${lead.id}`).then(setLeadCalls).catch(() => null);
-  }, [lead.id, superfoneEnabled]);
+  }, [lead.id]);
   const leadEvents = calendarEvents?.filter((e) => e.leadName === `${lead.firstName} ${lead.lastName}`) ?? [];
 
   const handleUpdate = async () => {
@@ -1571,7 +1565,6 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
     { key: 'opportunity', label: 'Opportunity' },
     { key: 'additional', label: 'Additional Info' },
     { key: 'followup', label: 'Follow-up' },
-    ...(superfoneEnabled ? [{ key: 'calls' as Tab, label: leadCalls.length > 0 ? `Calls (${leadCalls.length})` : 'Calls' }] : []),
   ];
 
   const field = (label: string, child: React.ReactNode, required = false) => (
@@ -1937,121 +1930,6 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             );
           })()}
 
-          {/* ── Calls ── */}
-          {activeTab === 'calls' && (() => {
-            const fmtDur = (sec: number | null) => {
-              if (!sec) return null;
-              const m = Math.floor(sec / 60), s = sec % 60;
-              return m > 0 ? `${m}m ${s}s` : `${s}s`;
-            };
-            const outcomeBadge = (outcome: string) => {
-              const map: Record<string, string> = {
-                ANSWERED: 'bg-emerald-50 text-emerald-600',
-                MISSED: 'bg-red-50 text-red-500',
-                IVR_TIMEOUT: 'bg-amber-50 text-amber-600',
-                BUSY: 'bg-orange-50 text-orange-500',
-                NO_ANSWER: 'bg-amber-50 text-amber-600',
-              };
-              return map[outcome] ?? 'bg-gray-100 text-gray-500';
-            };
-            const hasRecording = (c: any) => c.recording_path || c.recording_url;
-            const handlePlay = async (callId: string) => {
-              if (playingCallId === callId) { setPlayingCallId(null); return; }
-              if (audioUrls[callId]) { setPlayingCallId(callId); return; }
-              try {
-                const blob = await fetchBlob(`/api/calls/${callId}/recording`);
-                const url = URL.createObjectURL(blob);
-                setAudioUrls((prev) => ({ ...prev, [callId]: url }));
-                setPlayingCallId(callId);
-              } catch { toast.error('Recording not available'); }
-            };
-            return (
-              <div className="space-y-2">
-                {leadCalls.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
-                      <Phone className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <p className="text-[13px] font-medium text-gray-500">No calls yet</p>
-                    <p className="text-[11px] text-gray-400 mt-1">Calls will appear here after Superfone syncs</p>
-                  </div>
-                ) : leadCalls.map((c) => (
-                  <div key={c.id} className="rounded-xl border border-black/5 bg-[var(--app-bg)] overflow-hidden">
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      {/* Direction icon */}
-                      <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
-                        c.outcome === 'MISSED' ? 'bg-red-50' : c.direction === 'OUTBOUND' ? 'bg-blue-50' : 'bg-emerald-50'
-                      )}>
-                        {c.outcome === 'MISSED'
-                          ? <PhoneMissed className="w-4 h-4 text-red-500" />
-                          : c.direction === 'OUTBOUND'
-                          ? <PhoneOutgoing className="w-4 h-4 text-blue-500" />
-                          : <PhoneIncoming className="w-4 h-4 text-emerald-500" />}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-md', outcomeBadge(c.outcome))}>
-                            {c.outcome.replace('_', ' ')}
-                          </span>
-                          {fmtDur(c.duration_seconds) && (
-                            <span className="text-[11px] text-gray-500 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />{fmtDur(c.duration_seconds)}
-                            </span>
-                          )}
-                          {c.staff_name && (
-                            <span className="text-[11px] text-gray-400 flex items-center gap-1">
-                              <User className="w-3 h-3" />{c.staff_name}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-gray-400 mt-0.5">
-                          {c.started_at ? format(new Date(c.started_at), 'dd MMM yyyy, hh:mm aa') : format(new Date(c.created_at), 'dd MMM yyyy, hh:mm aa')}
-                          {' · '}{c.direction === 'OUTBOUND' ? 'Outbound' : 'Inbound'}
-                        </p>
-                      </div>
-
-                      {/* Recording actions */}
-                      {hasRecording(c) && (
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            onClick={() => handlePlay(c.id)}
-                            title={playingCallId === c.id ? 'Stop' : 'Play recording'}
-                            className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                          >
-                            {playingCallId === c.id
-                              ? <Pause className="w-3.5 h-3.5 text-primary" />
-                              : <Play className="w-3.5 h-3.5 text-primary" />}
-                          </button>
-                          <button
-                            onClick={() => downloadBlob(`/api/calls/${c.id}/download`, `call-${c.cdr_id}.mp3`)}
-                            title="Download recording"
-                            className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                          >
-                            <Download className="w-3.5 h-3.5 text-gray-500" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Inline audio player */}
-                    {playingCallId === c.id && audioUrls[c.id] && (
-                      <div className="px-4 pb-3">
-                        <audio
-                          controls
-                          autoPlay
-                          src={audioUrls[c.id]}
-                          className="w-full h-8"
-                          style={{ height: 32 }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
         </div>
 
         {/* Footer */}
@@ -2379,7 +2257,6 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
   onClose: () => void;
   onLeadUpdated?: (id: string, updates: { pipelineId: string; stage: string; stageId: string | undefined; tags: string[] }) => void;
 }) {
-  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
   const [editMode, setEditMode] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showFuModal, setShowFuModal] = useState(false);
@@ -2389,7 +2266,6 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
   const [leadNotes, setLeadNotes] = useState<any[]>([]);
   const [leadFollowUps, setLeadFollowUps] = useState<any[]>([]);
   const [leadActivities, setLeadActivities] = useState<any[]>([]);
-  const [leadCalls, setLeadCalls] = useState<any[]>([]);
   const [playingCallId, setPlayingCallId] = useState<string | null>(null);
   const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
   const [editNote, setEditNote] = useState<{ id: string; title: string; content: string } | null>(null);
@@ -2487,12 +2363,11 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
       setLeadFollowUps(data.map((f) => ({ id: f.id, leadId: lead.id, dueAt: f.due_at, note: f.title, description: f.description, completed: f.completed, assignedTo: f.assigned_to, createdAt: f.created_at })))
     ).catch(() => null);
     api.get<any[]>(`/api/leads/${lead.id}/activities`).then((data) =>
-      setLeadActivities(data.map((a) => ({ id: a.id, leadId: lead.id, type: a.type, title: a.title, detail: a.detail, timestamp: a.created_at, createdBy: a.created_by_name ?? a.created_by })))
+      setLeadActivities(data.map((a) => ({ id: a.id, leadId: lead.id, type: a.type, title: a.title, detail: a.type === 'call' ? null : a.detail, timestamp: a.created_at, createdBy: a.created_by_name ?? a.created_by, callLogId: a.type === 'call' ? a.detail : undefined, hasRecording: a.has_recording === true })))
     ).catch(() => null);
     setFields((lead.customFields as any) ?? []); // seed from store for the (possibly new) lead, then refresh
     loadFields();
-    if (superfoneEnabled) api.get<any[]>(`/api/calls/lead/${lead.id}`).then(setLeadCalls).catch(() => null);
-  }, [lead.id, superfoneEnabled]);
+  }, [lead.id]);
 
   // Option B: re-fetch activities whenever this lead is updated (from any source/window)
   useEffect(() => {
@@ -2502,8 +2377,10 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
       api.get<any[]>(`/api/leads/${lead.id}/activities`).then((data) =>
         setLeadActivities(data.map((a) => ({
           id: a.id, leadId: lead.id, type: a.type, title: a.title,
-          detail: a.detail, timestamp: a.created_at,
+          detail: a.type === 'call' ? null : a.detail, timestamp: a.created_at,
           createdBy: a.created_by_name ?? a.created_by,
+          callLogId: a.type === 'call' ? a.detail : undefined,
+          hasRecording: a.has_recording === true,
         })))
       ).catch(() => null);
       // NOTE: deliberately do NOT reload fields here. Field values are in local state and
@@ -2649,10 +2526,10 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     .replace(/^Stage →\s*/i, 'Moved to ');
 
   // Build timeline from all sources
-  type TimelineEntry = { id: string; type: LeadActivity['type']; title: string; detail?: string; timestamp: string; createdBy?: string };
+  type TimelineEntry = { id: string; type: LeadActivity['type']; title: string; detail?: string; timestamp: string; createdBy?: string; callLogId?: string; hasRecording?: boolean };
   const timeline: TimelineEntry[] = [
     { id: 'created', type: 'created', title: `Joined · ${pipelineName}`, detail: getSourceLabel(lead), timestamp: lead.createdAt },
-    ...leadActivities.filter((a) => a.type !== 'note' && a.type !== 'followup').map((a) => ({ id: a.id, type: a.type, title: cleanActivityTitle(a.title), detail: a.detail, timestamp: a.timestamp, createdBy: a.createdBy })),
+    ...leadActivities.filter((a) => a.type !== 'note' && a.type !== 'followup').map((a) => ({ id: a.id, type: a.type, title: cleanActivityTitle(a.title), detail: a.detail, timestamp: a.timestamp, createdBy: a.createdBy, callLogId: a.callLogId, hasRecording: a.hasRecording })),
     ...leadNotes.map((n) => ({ id: `note-${n.id}`, type: 'note' as const, title: n.title || 'Note', detail: n.content, timestamp: n.created_at, createdBy: n.created_by_name ?? n.created_by })),
     ...leadFollowUps.map((f) => ({ id: `fu-${f.id}`, type: 'followup' as const, title: f.note || 'Follow-up', detail: `Due: ${format(new Date(f.dueAt), 'dd MMM yyyy, h:mm a')}${f.completed ? ' · Done' : ''}${f.description ? `\n${f.description}` : ''}`, timestamp: f.createdAt || f.dueAt, createdBy: undefined as string | undefined })),
     ...leadAppointments.map((a) => ({
@@ -3323,6 +3200,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   const noteId = isNote ? entry.id.slice(5) : '';
                   const isFu = entry.type === 'followup' && entry.id.startsWith('fu-');
                   const fuId = isFu ? entry.id.slice(3) : '';
+                  const isCall = entry.type === 'call' && !!entry.callLogId;
                   return (
                     <div key={entry.id} className="flex gap-3">
                       <div className={cn('w-9 h-9 rounded-full flex items-center justify-center shrink-0', bg, color)}>
@@ -3341,6 +3219,41 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                           )}
                         </div>
                         {entry.detail && <p className="text-[12px] text-[#7a6b5c] mt-0.5 break-words whitespace-pre-wrap">{entry.detail}</p>}
+                        {/* Call recording Play/Download */}
+                        {isCall && entry.hasRecording && (
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <button
+                              onClick={async () => {
+                                const cid = entry.callLogId!;
+                                if (playingCallId === cid) { setPlayingCallId(null); return; }
+                                if (audioUrls[cid]) { setPlayingCallId(cid); return; }
+                                try {
+                                  const blob = await fetchBlob(`/api/calls/${cid}/recording`);
+                                  const url = URL.createObjectURL(blob);
+                                  setAudioUrls((prev) => ({ ...prev, [cid]: url }));
+                                  setPlayingCallId(cid);
+                                } catch { toast.error('Recording not available'); }
+                              }}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-[11px] font-semibold transition-colors"
+                            >
+                              {playingCallId === entry.callLogId ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                              {playingCallId === entry.callLogId ? 'Stop' : 'Play'}
+                            </button>
+                            <button
+                              onClick={() => downloadBlob(`/api/calls/${entry.callLogId}/download`, `call-recording.mp3`)}
+                              className="text-[11px] text-[#7a6b5c] hover:text-primary transition-colors"
+                            >Download</button>
+                          </div>
+                        )}
+                        {isCall && playingCallId === entry.callLogId && audioUrls[entry.callLogId!] && (
+                          <audio
+                            src={audioUrls[entry.callLogId!]}
+                            autoPlay
+                            controls
+                            className="w-full h-8 mt-1.5"
+                            onEnded={() => setPlayingCallId(null)}
+                          />
+                        )}
                         <div className="flex items-center justify-between mt-1">
                           <p className="text-[11px] text-[#b09e8d] flex items-center gap-1">
                             <Clock className="w-3 h-3" /> {timestampLabel(entry.timestamp)}
@@ -3378,90 +3291,6 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
           />
         )}
 
-        {/* ── Calls ── */}
-        {!editMode && superfoneEnabled && (
-          <div className="px-5 py-4 border-t border-black/5">
-            <h4 className="text-[13px] font-bold text-[#1c1410] mb-3 flex items-center gap-2">
-              <PhoneIncoming className="w-4 h-4 text-[var(--brand-dark)]" />
-              Calls {leadCalls.length > 0 && <span className="ml-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-orange-100 text-orange-700">{leadCalls.length}</span>}
-            </h4>
-            {leadCalls.length === 0 ? (
-              <p className="text-[12px] text-[#b09e8d] text-center py-4">No calls yet</p>
-            ) : (
-              <div className="space-y-3">
-                {leadCalls.map((c) => {
-                  const isAnswered = c.outcome === 'ANSWERED';
-                  const isMissed   = c.outcome === 'MISSED';
-                  const isOutbound = c.direction === 'OUTBOUND';
-                  const DirIcon    = isMissed ? PhoneMissed : isOutbound ? PhoneOutgoing : PhoneIncoming;
-                  const dirColor   = isMissed ? 'text-red-500' : isOutbound ? 'text-blue-500' : 'text-emerald-500';
-                  const durSec     = c.duration_seconds ?? 0;
-                  const durLabel   = durSec > 0 ? `${Math.floor(durSec / 60)}:${String(durSec % 60).padStart(2, '0')}` : '-';
-                  const hasRec     = !!(c.recording_path || c.recording_url);
-                  return (
-                    <div key={c.id} className="rounded-xl border border-black/[0.07] bg-white p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <DirIcon className={`w-4 h-4 shrink-0 ${dirColor}`} />
-                          <span className="text-[12px] font-semibold text-[#1c1410]">
-                            {isOutbound ? 'Outbound' : 'Inbound'}
-                          </span>
-                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                            isAnswered ? 'bg-emerald-50 text-emerald-700' :
-                            isMissed   ? 'bg-red-50 text-red-600' :
-                                         'bg-amber-50 text-amber-700'
-                          }`}>{c.outcome}</span>
-                        </div>
-                        <span className="text-[11px] text-[#b09e8d]">{durLabel}</span>
-                      </div>
-                      {c.staff_name && (
-                        <p className="text-[11px] text-[#7a6b5c]">Agent: {c.staff_name}</p>
-                      )}
-                      {c.started_at && (
-                        <p className="text-[11px] text-[#b09e8d]">
-                          {new Date(c.started_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                        </p>
-                      )}
-                      {hasRec && (
-                        <div className="flex items-center gap-2 pt-1">
-                          <button
-                            onClick={async () => {
-                              if (playingCallId === c.id) { setPlayingCallId(null); return; }
-                              if (audioUrls[c.id]) { setPlayingCallId(c.id); return; }
-                              try {
-                                const blob = await fetchBlob(`/api/calls/${c.id}/recording`);
-                                const url = URL.createObjectURL(blob);
-                                setAudioUrls((prev) => ({ ...prev, [c.id]: url }));
-                                setPlayingCallId(c.id);
-                              } catch { /* no-op */ }
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-[11px] font-semibold transition-colors"
-                          >
-                            {playingCallId === c.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                            {playingCallId === c.id ? 'Stop' : 'Play'}
-                          </button>
-                          <button
-                            onClick={() => downloadBlob(`/api/calls/${c.id}/download`, `call-${c.cdr_id}.mp3`)}
-                            className="text-[11px] text-[#7a6b5c] hover:text-primary transition-colors"
-                          >Download</button>
-                        </div>
-                      )}
-                      {playingCallId === c.id && audioUrls[c.id] && (
-                        <audio
-                          src={audioUrls[c.id]}
-                          autoPlay
-                          controls
-                          className="w-full h-8 mt-1"
-                          onEnded={() => setPlayingCallId(null)}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
 
       </div>
     </div>

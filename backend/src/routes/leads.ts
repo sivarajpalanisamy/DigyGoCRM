@@ -862,12 +862,16 @@ router.delete('/:id/followups/:fuId', async (req: AuthRequest, res: Response) =>
 router.get('/:id/activities', async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
-      `SELECT a.*, u.name AS created_by_name
+      `SELECT a.*, u.name AS created_by_name,
+              CASE WHEN a.type = 'call' AND a.detail IS NOT NULL
+                   THEN (SELECT CASE WHEN cl.recording_path IS NOT NULL OR cl.recording_url IS NOT NULL THEN TRUE ELSE FALSE END
+                         FROM call_logs cl WHERE cl.id::text = a.detail LIMIT 1)
+                   ELSE NULL END AS has_recording
        FROM lead_activities a
        LEFT JOIN users u ON u.id = a.created_by
        WHERE a.lead_id = $1 AND a.tenant_id = $2
        ORDER BY a.created_at DESC
-       LIMIT 50`,
+       LIMIT 100`,
       [req.params.id, req.user!.tenantId]
     );
     res.json(result.rows);

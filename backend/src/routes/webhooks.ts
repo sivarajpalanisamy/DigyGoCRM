@@ -825,7 +825,7 @@ async function ingestSuperfoneCall(tenantId: string, payload: Record<string, any
       staffUserId,
     }).catch(() => null);
 
-    // Lead timeline activity
+    // Lead timeline activity — store call_log_id in detail for recording playback
     if (leadId) {
       const dir = (cdr_call_type ?? 'INBOUND').toUpperCase();
       const out = (cdr_disposition ?? 'UNKNOWN').toUpperCase();
@@ -835,7 +835,7 @@ async function ingestSuperfoneCall(tenantId: string, payload: Record<string, any
         `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
          VALUES ($1::uuid,$2::uuid,'call',$3,$4,$5::uuid)`,
         [leadId, tenantId, `${dir === 'OUTBOUND' ? 'Outgoing' : 'Incoming'} call - ${out}${durTxt}`,
-         null, staffUserId]
+         callLogId, staffUserId]
       ).catch(() => null);
     }
 

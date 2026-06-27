@@ -479,14 +479,14 @@ async function ingestOneCall(
       callerPhone: phone, duration, staffName, staffUserId,
     }).catch(() => null);
 
-    // Lead timeline activity
+    // Lead timeline activity — store call_log_id in detail for recording playback
     if (leadId) {
       const durTxt = duration > 0 ? ` (${Math.round(duration / 60)}m ${duration % 60}s)` : '';
       query(
         `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
          VALUES ($1::uuid,$2::uuid,'call',$3,$4,$5::uuid)`,
         [leadId, tenantId, `${direction === 'OUTBOUND' ? 'Outgoing' : 'Incoming'} call - ${outcome}${durTxt}`,
-         call.notes ?? null, staffUserId]
+         callLogId, staffUserId]
       ).catch(() => null);
     }
 
