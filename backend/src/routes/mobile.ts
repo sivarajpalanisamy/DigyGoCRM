@@ -9,6 +9,7 @@ import { query } from '../db';
 import { AuthRequest } from '../middleware/auth';
 import { requireDevice } from '../middleware/deviceAuth';
 import { hasPermission } from '../middleware/permissions';
+import { incrementUsage } from '../middleware/plan';
 import { emitToTenant } from '../socket';
 import { triggerWorkflows } from './workflows';
 import { sendCallLoggedNotification } from '../utils/notifications';
@@ -666,10 +667,36 @@ router.get('/me/stats', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/mobile/leads — scoped lead list for the dialer (only_assigned aware)
+// GET /api/mobile/pipelines — pipelines with their stages (for the CRM Leads filter)
+router.get('/pipelines', async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  try {
+    const pls = await query(
+      'SELECT id, name FROM pipelines WHERE tenant_id=$1::uuid ORDER BY created_at',
+      [tenantId]
+    );
+    const stages = await query(
+      `SELECT id, pipeline_id, name, stage_order, color
+       FROM pipeline_stages WHERE tenant_id=$1::uuid ORDER BY stage_order`,
+      [tenantId]
+    );
+    const byPipe: Record<string, any[]> = {};
+    for (const s of stages.rows) {
+      (byPipe[s.pipeline_id] ||= []).push({ id: s.id, name: s.name, color: s.color });
+    }
+    const pipelines = pls.rows.map((p: any) => ({ id: p.id, name: p.name, stages: byPipe[p.id] || [] }));
+    res.json({ pipelines });
+  } catch (err: any) {
+    console.error('[mobile/pipelines]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/mobile/leads — scoped lead list for the dialer (only_assigned aware).
+// Optional filters: pipelineId, stageId, search.
 router.get('/leads', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { search, limit = '100' } = req.query as Record<string, string>;
+  const { search, limit = '50', offset = '0', pipelineId, stageId } = req.query as Record<string, string>;
 
   try {
     let viewAll = role === 'super_admin';
@@ -680,14 +707,22 @@ router.get('/leads', async (req: AuthRequest, res: Response) => {
       else viewAll = await hasPermission(userId, 'leads:view_all', tenantId);
     }
 
+    const pageSize = Math.min(Math.max(parseInt(limit) || 50, 1), 200);
+    const off = Math.max(parseInt(offset) || 0, 0);
+
     const params: any[] = [tenantId];
     const conds = ['l.tenant_id=$1::uuid', 'l.is_deleted=FALSE'];
     if (!viewAll) { params.push(userId); conds.push(`l.assigned_to=$${params.length}::uuid`); }
+    if (pipelineId) { params.push(pipelineId); conds.push(`l.pipeline_id=$${params.length}::uuid`); }
+    if (stageId) { params.push(stageId); conds.push(`l.stage_id=$${params.length}::uuid`); }
     if (search) { params.push(`%${search}%`); conds.push(`(l.name ILIKE $${params.length} OR l.phone ILIKE $${params.length})`); }
-    params.push(Math.min(parseInt(limit) || 100, 500));
+    // Fetch one extra row to detect whether more pages exist.
+    params.push(pageSize + 1); const limIdx = params.length;
+    params.push(off); const offIdx = params.length;
 
     const result = await query(
       `SELECT l.id, l.name, l.phone, l.email, l.source, l.assigned_to,
+              l.pipeline_id, l.stage_id,
               u.name AS assigned_name, s.name AS stage, p.name AS pipeline
        FROM leads l
        LEFT JOIN users u ON u.id = l.assigned_to
@@ -695,12 +730,164 @@ router.get('/leads', async (req: AuthRequest, res: Response) => {
        LEFT JOIN pipelines p ON p.id = l.pipeline_id
        WHERE ${conds.join(' AND ')}
        ORDER BY l.created_at DESC
-       LIMIT $${params.length}`,
+       LIMIT $${limIdx} OFFSET $${offIdx}`,
       params
     );
-    res.json({ leads: result.rows });
+    const rows = result.rows;
+    const hasMore = rows.length > pageSize;
+    res.json({ leads: hasMore ? rows.slice(0, pageSize) : rows, hasMore, offset: off, limit: pageSize });
   } catch (err: any) {
     console.error('[mobile/leads]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/mobile/leads/lookup?phone= — find an existing lead by phone (for the
+// post-call screen). Returns the lead with pipeline/stage + recent notes, or found:false.
+router.get('/leads/lookup', async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const phoneRaw = (req.query.phone ?? '').toString().trim();
+  if (!phoneRaw) { res.status(400).json({ error: 'phone required' }); return; }
+  const norm = normalizePhone(phoneRaw);
+  try {
+    const r = await query(
+      `SELECT l.id, l.name, l.phone, l.email, l.source, l.notes,
+              l.pipeline_id, l.stage_id, p.name AS pipeline, s.name AS stage,
+              l.assigned_to, u.name AS assigned_name
+       FROM leads l
+       LEFT JOIN pipelines p ON p.id = l.pipeline_id
+       LEFT JOIN pipeline_stages s ON s.id = l.stage_id
+       LEFT JOIN users u ON u.id = l.assigned_to
+       WHERE l.tenant_id=$1::uuid AND l.is_deleted=FALSE AND (l.phone=$2 OR l.phone=$3)
+       ORDER BY l.created_at DESC LIMIT 1`,
+      [tenantId, phoneRaw, norm]
+    );
+    const lead = r.rows[0];
+    if (!lead) { res.json({ found: false }); return; }
+    const notes = await query(
+      `SELECT title, detail, created_at FROM lead_activities
+       WHERE lead_id=$1 AND type='note' ORDER BY created_at DESC LIMIT 10`,
+      [lead.id]
+    ).catch(() => ({ rows: [] as any[] }));
+    res.json({ found: true, lead, notes: notes.rows });
+  } catch (err: any) {
+    console.error('[mobile/leads/lookup]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/mobile/leads — create a lead from the post-call screen.
+// Body: { name, phone, pipelineId, stageId, email?, notes?, source? }
+router.post('/leads', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  const b = req.body || {};
+  const name = (b.name ?? '').toString().trim();
+  const phone = b.phone ? normalizePhone(b.phone.toString()) : '';
+  const pipelineId = b.pipelineId || b.pipeline_id || null;
+  const stageId = b.stageId || b.stage_id || null;
+  const email = (b.email ?? '').toString().trim() || null;
+  const notes = (b.notes ?? '').toString().trim() || null;
+  const source = (b.source ?? 'Mobile Dialer').toString();
+
+  if (!name && !phone) { res.status(400).json({ error: 'name or phone required' }); return; }
+
+  try {
+    // Duplicate phone → return the existing lead so the app can show it instead.
+    if (phone) {
+      const dup = await query(
+        `SELECT id FROM leads WHERE tenant_id=$1::uuid AND phone=$2 AND is_deleted=FALSE LIMIT 1`,
+        [tenantId, phone]
+      );
+      if (dup.rows[0]) { res.status(409).json({ error: 'A lead with this number already exists', leadId: dup.rows[0].id }); return; }
+    }
+
+    // Auto-assign to creator if they can't view all leads (so it stays in their list).
+    let assignee: string | null = null;
+    let viewAll = role === 'super_admin';
+    if (!viewAll) {
+      const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+      if (isOwner) viewAll = true;
+      else if (await hasPermission(userId, 'leads:only_assigned', tenantId)) viewAll = false;
+      else viewAll = await hasPermission(userId, 'leads:view_all', tenantId);
+    }
+    if (!viewAll) assignee = userId!;
+
+    const ins = await query(
+      `INSERT INTO leads (tenant_id, name, email, phone, source, pipeline_id, stage_id, assigned_to, notes)
+       VALUES ($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [tenantId, name || phone, email, phone || null, source, pipelineId, stageId, assignee, notes]
+    );
+    const lead = ins.rows[0];
+
+    await query(
+      `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
+       VALUES ($1,$2,'created','Lead created from mobile dialer',$3)`,
+      [lead.id, tenantId, userId]
+    ).catch(() => null);
+    if (notes) {
+      await query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+         VALUES ($1,$2,'note','Note',$3,$4)`,
+        [lead.id, tenantId, notes, userId]
+      ).catch(() => null);
+    }
+
+    const withName = await query(
+      `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
+      [lead.id]
+    );
+    const emitLead = withName.rows[0] ?? lead;
+    emitToTenant(tenantId!, 'lead:created', emitLead);
+    res.status(201).json({ created: true, lead: emitLead });
+
+    setImmediate(() => {
+      incrementUsage(tenantId!, 'leads').catch(() => null);
+      triggerWorkflows('lead_created', lead, tenantId!, userId).catch(() => null);
+    });
+  } catch (err: any) {
+    console.error('[mobile/leads/create]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/mobile/leads/:id/update — from the post-call screen for an EXISTING lead:
+// optionally move stage and/or add a note. Body: { stageId?, note? }
+router.post('/leads/:id/update', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const id = req.params.id;
+  const stageId = req.body?.stageId || req.body?.stage_id || null;
+  const note = (req.body?.note ?? '').toString().trim();
+  try {
+    const owns = await query('SELECT id, pipeline_id FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE', [id, tenantId]);
+    if (!owns.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }
+
+    if (stageId) {
+      await query('UPDATE leads SET stage_id=$1 WHERE id=$2::uuid AND tenant_id=$3::uuid', [stageId, id, tenantId]);
+      await query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
+         VALUES ($1,$2,'stage','Stage changed from mobile dialer',$3)`,
+        [id, tenantId, userId]
+      ).catch(() => null);
+    }
+    if (note) {
+      await query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+         VALUES ($1,$2,'note','Note',$3,$4)`,
+        [id, tenantId, note, userId]
+      ).catch(() => null);
+    }
+
+    const updated = await query(
+      `SELECT l.id, l.name, l.phone, l.pipeline_id, l.stage_id, p.name AS pipeline, s.name AS stage
+       FROM leads l LEFT JOIN pipelines p ON p.id=l.pipeline_id LEFT JOIN pipeline_stages s ON s.id=l.stage_id
+       WHERE l.id=$1`, [id]
+    );
+    emitToTenant(tenantId!, 'lead:updated', updated.rows[0]);
+    res.json({ updated: true, lead: updated.rows[0] });
+
+    if (stageId) setImmediate(() => triggerWorkflows('stage_changed', updated.rows[0], tenantId!, userId).catch(() => null));
+  } catch (err: any) {
+    console.error('[mobile/leads/update]', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });

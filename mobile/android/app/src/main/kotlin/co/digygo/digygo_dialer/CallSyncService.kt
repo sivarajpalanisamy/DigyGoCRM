@@ -61,8 +61,54 @@ class CallSyncService : Service() {
             sawNonIdle = true
         } else if (sawNonIdle) {
             sawNonIdle = false
-            Thread { CallSync.run(applicationContext, maxTries = 12) }.start()
+            Thread {
+                CallSync.run(applicationContext, maxTries = 12)
+                // After syncing, surface the post-call screen for the call that just ended.
+                val info = CallSync.lastCallInfo(applicationContext)
+                if (info != null) postCallDetailsNotification(info)
+            }.start()
         }
+    }
+
+    // High-priority notification that opens the Call Details screen for the just-ended
+    // call (full-screen intent so it can pop even from the background, where allowed;
+    // otherwise it's a heads-up the agent taps).
+    private fun postCallDetailsNotification(info: Map<String, Any?>) {
+        val phone = (info["phone"] ?: "").toString()
+        if (phone.isBlank()) return
+        val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ch = NotificationChannel(CALL_CH, "Call details", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Prompts to view or add the lead after a call"
+            }
+            mgr.createNotificationChannel(ch)
+        }
+        val open = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra("dg_call_phone", phone)
+            putExtra("dg_call_direction", (info["direction"] ?: "").toString())
+            putExtra("dg_call_outcome", (info["outcome"] ?: "").toString())
+            putExtra("dg_call_duration", (info["duration"] as? Int) ?: 0)
+        }
+        val reqCode = ((info["date"] as? Long) ?: System.currentTimeMillis()).toInt()
+        val pi = PendingIntent.getActivity(
+            this, reqCode, open,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            Notification.Builder(this, CALL_CH)
+        else
+            @Suppress("DEPRECATION") Notification.Builder(this)
+        val n = builder
+            .setContentTitle("Log call: $phone")
+            .setContentText("Tap to view or add this lead in the CRM")
+            .setSmallIcon(android.R.drawable.sym_action_call)
+            .setAutoCancel(true)
+            .setCategory(Notification.CATEGORY_CALL)
+            .setContentIntent(pi)
+            .setFullScreenIntent(pi, true)
+            .build()
+        try { mgr.notify(CALL_NOTIF_ID, n) } catch (e: Exception) {}
     }
 
     private fun registerCallStateListener() {
@@ -137,6 +183,8 @@ class CallSyncService : Service() {
     companion object {
         private const val CHANNEL = "digygo_call_sync"
         private const val NOTIF_ID = 4711
+        private const val CALL_CH = "digygo_call_details"
+        private const val CALL_NOTIF_ID = 4712
 
         fun start(ctx: Context) {
             val i = Intent(ctx, CallSyncService::class.java)

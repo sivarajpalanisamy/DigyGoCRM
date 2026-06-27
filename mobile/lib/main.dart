@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'dart:async';
@@ -15,6 +16,7 @@ import 'screens/onboarding_gate_screen.dart';
 import 'screens/privacy_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/in_call_screen.dart';
+import 'screens/call_details_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,14 +31,17 @@ class DigygoDialerApp extends StatefulWidget {
   State<DigygoDialerApp> createState() => _DigygoDialerAppState();
 }
 
-class _DigygoDialerAppState extends State<DigygoDialerApp> {
+class _DigygoDialerAppState extends State<DigygoDialerApp> with WidgetsBindingObserver {
   final _navKey = GlobalKey<NavigatorState>();
+  static const _nativeCh = MethodChannel('digygo/dialer');
   StreamSubscription<CallState>? _callSub;
   bool _inCallShown = false;
+  bool _callDetailsOpen = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Whenever a call starts (incoming or outgoing), bring up the in-app call screen.
     _callSub = PhoneCall.instance.stream.listen((s) {
       if (s.isOngoing && !_inCallShown) {
@@ -46,12 +51,52 @@ class _DigygoDialerAppState extends State<DigygoDialerApp> {
             .then((_) => _inCallShown = false);
       }
     });
+    // Native → Flutter: a post-call notification asks us to open the Call Details page.
+    _nativeCh.setMethodCallHandler((call) async {
+      if (call.method == 'openCallDetails' && call.arguments is Map) {
+        _openCallDetails(Map<String, dynamic>.from(call.arguments as Map));
+      }
+      return null;
+    });
+    // Cold start from the notification: pick up the pending payload once we're up.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _consumePendingCallDetails());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _callSub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _consumePendingCallDetails();
+  }
+
+  Future<void> _consumePendingCallDetails() async {
+    try {
+      final data = await _nativeCh.invokeMethod('consumePendingCallDetails');
+      if (data is Map) _openCallDetails(Map<String, dynamic>.from(data));
+    } catch (_) {}
+  }
+
+  Future<void> _openCallDetails(Map<String, dynamic> data) async {
+    final phone = (data['phone'] ?? '').toString();
+    if (phone.isEmpty || _callDetailsOpen) return;
+    // Only meaningful once the device is linked to the CRM.
+    if (!await Api.instance.hasDeviceToken()) return;
+    _callDetailsOpen = true;
+    _navKey.currentState
+        ?.push(MaterialPageRoute(
+          builder: (_) => CallDetailsPage(
+            phone: phone,
+            direction: (data['direction'] ?? '').toString(),
+            outcome: (data['outcome'] ?? '').toString(),
+            durationSeconds: (data['duration'] is int) ? data['duration'] as int : null,
+          ),
+        ))
+        .then((_) => _callDetailsOpen = false);
   }
 
   @override

@@ -215,11 +215,66 @@ class Api {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
-  Future<List<dynamic>> leads({String? search}) async {
+  /// One page of leads. Returns the items plus whether more pages exist.
+  Future<({List<dynamic> items, bool hasMore})> leads({
+    String? search,
+    String? pipelineId,
+    String? stageId,
+    int offset = 0,
+    int limit = 50,
+  }) async {
     final res = await _dio.get('/api/mobile/leads', queryParameters: {
+      'offset': offset,
+      'limit': limit,
       if (search != null && search.isNotEmpty) 'search': search,
+      if (pipelineId != null && pipelineId.isNotEmpty) 'pipelineId': pipelineId,
+      if (stageId != null && stageId.isNotEmpty) 'stageId': stageId,
     });
-    return (res.data['leads'] as List?) ?? [];
+    final items = (res.data['leads'] as List?) ?? [];
+    final hasMore = res.data['hasMore'] == true;
+    return (items: items, hasMore: hasMore);
+  }
+
+  /// Pipelines with their stages, for the CRM Leads filter + post-call lead form.
+  Future<List<dynamic>> pipelines() async {
+    final res = await _dio.get('/api/mobile/pipelines');
+    return (res.data['pipelines'] as List?) ?? [];
+  }
+
+  /// Look up an existing lead by phone (post-call screen).
+  /// Returns {found, lead?, notes?}.
+  Future<Map<String, dynamic>> lookupLead(String phone) async {
+    final res = await _dio.get('/api/mobile/leads/lookup', queryParameters: {'phone': phone});
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  /// Create a new lead from the post-call screen.
+  Future<Map<String, dynamic>> createLead({
+    required String name,
+    required String phone,
+    String? pipelineId,
+    String? stageId,
+    String? email,
+    String? notes,
+  }) async {
+    final res = await _dio.post('/api/mobile/leads', data: {
+      'name': name,
+      'phone': phone,
+      if (pipelineId != null) 'pipelineId': pipelineId,
+      if (stageId != null) 'stageId': stageId,
+      if (email != null && email.isNotEmpty) 'email': email,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+    });
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  /// Update an existing lead (move stage and/or add a note) from the post-call screen.
+  Future<Map<String, dynamic>> updateLead(String id, {String? stageId, String? note}) async {
+    final res = await _dio.post('/api/mobile/leads/$id/update', data: {
+      if (stageId != null) 'stageId': stageId,
+      if (note != null && note.isNotEmpty) 'note': note,
+    });
+    return Map<String, dynamic>.from(res.data as Map);
   }
 
   /// Post one or many calls (offline batch). Returns the ingest summary.
