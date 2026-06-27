@@ -36,6 +36,26 @@ router.post('/pairing-code', checkPermission('devices:manage'), async (req: Auth
     );
     if (!u.rows[0]) { res.status(404).json({ error: 'Staff user not found' }); return; }
 
+    // One active device per staff - check if this user already has an active (non-revoked) device
+    const existing = await query(
+      `SELECT id, device_label FROM mobile_devices
+       WHERE user_id=$1::uuid AND tenant_id=$2::uuid AND revoked=FALSE LIMIT 1`,
+      [targetUserId, tenantId]
+    );
+    if (existing.rows[0]) {
+      res.status(409).json({
+        error: `${u.rows[0].name} already has an active device paired. Revoke it first to pair a new one.`,
+        existingDeviceId: existing.rows[0].id,
+      });
+      return;
+    }
+
+    // Also invalidate any unused pairing codes for this user (only one pending code at a time)
+    await query(
+      `UPDATE device_pairing_codes SET used=TRUE WHERE user_id=$1::uuid AND tenant_id=$2::uuid AND used=FALSE`,
+      [targetUserId, tenantId]
+    );
+
     const code = generatePairingCode();
     const codeHash = await bcrypt.hash(code, 10);
     const codePrefix = code.substring(0, 8);
@@ -51,6 +71,23 @@ router.post('/pairing-code', checkPermission('devices:manage'), async (req: Auth
     res.json({ code, expiresAt: expiresAt.toISOString(), staffName: u.rows[0].name });
   } catch (err: any) {
     console.error('[devices/pairing-code]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/devices/staff — all active users (including owner) for the pairing dropdown
+router.get('/staff', checkPermission('devices:view'), async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  try {
+    const result = await query(
+      `SELECT id, name, email, is_owner
+       FROM users WHERE tenant_id=$1::uuid AND is_active=TRUE
+       ORDER BY is_owner DESC NULLS LAST, name ASC`,
+      [tenantId]
+    );
+    res.json({ staff: result.rows });
+  } catch (err: any) {
+    console.error('[devices/staff]', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
