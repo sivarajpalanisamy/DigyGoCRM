@@ -35,11 +35,20 @@ class MainActivity : FlutterActivity() {
     private val channel = "digygo/dialer"
     private val reqDefaultDialer = 4101
     private var pendingResult: MethodChannel.Result? = null
+    private var methodChannel: MethodChannel? = null
+    // Set when launched/resumed from a post-call notification, consumed by Flutter.
+    private var pendingCallDetails: Map<String, Any?>? = null
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel).setMethodCallHandler { call, result ->
+        val mc = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel)
+        methodChannel = mc
+        mc.setMethodCallHandler { call, result ->
             when (call.method) {
+                "consumePendingCallDetails" -> {
+                    result.success(pendingCallDetails)
+                    pendingCallDetails = null
+                }
                 "isDefaultDialer" -> result.success(isDefaultDialer())
                 "requestDefaultDialer" -> requestDefaultDialer(result)
                 "isIgnoringBatteryOptimizations" -> result.success(isIgnoringBattery())
@@ -90,6 +99,35 @@ class MainActivity : FlutterActivity() {
                     CallManager.setEventSink(null)
                 }
             })
+
+        // Process a launch intent from a post-call notification (cold start): store it
+        // for Flutter to consume once its handler is ready.
+        handleCallIntent(intent, live = false)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // App already running → deliver straight to Flutter.
+        handleCallIntent(intent, live = true)
+    }
+
+    // Pull the post-call details out of a notification intent and route them to Flutter.
+    private fun handleCallIntent(intent: Intent?, live: Boolean) {
+        val phone = intent?.getStringExtra("dg_call_phone") ?: return
+        if (phone.isBlank()) return
+        val data = mapOf(
+            "phone" to phone,
+            "direction" to (intent.getStringExtra("dg_call_direction") ?: ""),
+            "outcome" to (intent.getStringExtra("dg_call_outcome") ?: ""),
+            "duration" to intent.getIntExtra("dg_call_duration", 0)
+        )
+        intent.removeExtra("dg_call_phone") // don't reprocess on rotation/resume
+        if (live && methodChannel != null) {
+            methodChannel?.invokeMethod("openCallDetails", data)
+        } else {
+            pendingCallDetails = data
+        }
     }
 
     @Suppress("DEPRECATION")

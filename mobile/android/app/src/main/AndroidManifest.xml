@@ -22,6 +22,8 @@
     <!-- Persistent background call-sync service keeps logs flowing to the CRM. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Pop the post-call "log this lead" screen even from the background. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS"/>
     <!-- All-files access: read the OEM call-recorder's saved files to harvest both-sides

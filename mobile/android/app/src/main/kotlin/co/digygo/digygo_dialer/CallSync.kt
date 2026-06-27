@@ -167,21 +167,35 @@ object CallSync {
         }
     }
 
+    private fun outcomeOf(c: CallRow): String = when {
+        c.type == CallLog.Calls.MISSED_TYPE -> "MISSED"
+        c.type == CallLog.Calls.REJECTED_TYPE -> "REJECTED"
+        c.duration > 0 -> "ANSWERED"
+        c.type == CallLog.Calls.OUTGOING_TYPE -> "NO_ANSWER"
+        else -> "MISSED"
+    }
+
     // Build one JSON object for a call. Direction + outcome cover every case:
     // incoming answered (INBOUND/ANSWERED), incoming missed (INBOUND/MISSED),
     // incoming rejected (INBOUND/REJECTED), outgoing answered/unanswered.
     private fun callJson(c: CallRow): String {
         val direction = if (c.type == CallLog.Calls.OUTGOING_TYPE) "OUTBOUND" else "INBOUND"
-        val outcome = when {
-            c.type == CallLog.Calls.MISSED_TYPE -> "MISSED"
-            c.type == CallLog.Calls.REJECTED_TYPE -> "REJECTED"
-            c.duration > 0 -> "ANSWERED"
-            c.type == CallLog.Calls.OUTGOING_TYPE -> "NO_ANSWER"
-            else -> "MISSED"
-        }
         val num = jsonEscape(c.number)
         return """{"clientCallId":"${num}_${c.date}","phone":"$num","direction":"$direction",""" +
-                """"outcome":"$outcome","durationSeconds":${c.duration},"startedAt":"${isoUtc(c.date)}"}"""
+                """"outcome":"${outcomeOf(c)}","durationSeconds":${c.duration},"startedAt":"${isoUtc(c.date)}"}"""
+    }
+
+    /** Most-recent call (phone/direction/outcome/duration) for the post-call screen. */
+    fun lastCallInfo(ctx: Context): Map<String, Any?>? {
+        val c = readLatestCall(ctx) ?: return null
+        if (c.number.isBlank()) return null
+        return mapOf(
+            "phone" to c.number,
+            "direction" to (if (c.type == CallLog.Calls.OUTGOING_TYPE) "OUTBOUND" else "INBOUND"),
+            "outcome" to outcomeOf(c),
+            "duration" to c.duration,
+            "date" to c.date
+        )
     }
 
     private fun postCalls(base: String, token: String, calls: List<CallRow>) {
