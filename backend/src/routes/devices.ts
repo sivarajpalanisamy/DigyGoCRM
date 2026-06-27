@@ -6,7 +6,6 @@ import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission } from '../middleware/permissions';
 import { normalizePhone } from '../utils/phone';
 import { sendEmail } from '../services/email';
-import { sendOtpViaWhatsApp } from '../services/waba';
 
 // Owner-side management of paired mobile devices (DigyGo Dialer app).
 // Device-token endpoints the phone itself calls live in routes/mobile.ts.
@@ -129,35 +128,26 @@ router.post('/number/request-otp', checkPermission('devices:manage'), async (req
       [tenantId, userId, phone, otpHash, expires]
     );
 
-    // Primary delivery: WhatsApp to the phone number being verified (real mobile OTP).
-    let channel: 'whatsapp' | 'email' | null = null;
+    // Delivery: email the OTP to the requesting user's registered email (SMTP).
+    let channel: 'email' | null = null;
     let sentTo: string | null = null;
-    const wa = await sendOtpViaWhatsApp(tenantId!, phone, otp);
-    if (wa.sent) {
-      channel = 'whatsapp';
-      sentTo = phone;
-    } else {
-      // Fallback: email the requesting user so verification still works if WhatsApp
-      // isn't configured yet (e.g. before WABA_OTP_TEMPLATE is set in .env).
-      const u = await query(`SELECT email, name FROM users WHERE id=$1::uuid`, [userId]);
-      const to = u.rows[0]?.email;
-      if (to) {
-        await sendEmail({
-          to,
-          subject: `Your DigyGo Dialer verification code: ${otp}`,
-          html: `<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto;text-align:center">
-                   <p style="color:#5c5245;font-size:14px">Verification code for <b>${phone}</b>:</p>
-                   <p style="font-size:34px;font-weight:800;letter-spacing:8px;color:#1c1410;margin:12px 0">${otp}</p>
-                   <p style="color:#9c8f84;font-size:12px">Expires in 10 minutes.</p>
-                 </div>`,
-        }).catch(() => null);
-        channel = 'email';
-        sentTo = to;
-      }
-      if (wa.error) console.warn('[devices/number/request-otp] WhatsApp OTP failed:', wa.error);
+    const u = await query(`SELECT email, name FROM users WHERE id=$1::uuid`, [userId]);
+    const to = u.rows[0]?.email;
+    if (to) {
+      await sendEmail({
+        to,
+        subject: `Your DigyGo Dialer verification code: ${otp}`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto;text-align:center">
+                 <p style="color:#5c5245;font-size:14px">Verification code for <b>${phone}</b>:</p>
+                 <p style="font-size:34px;font-weight:800;letter-spacing:8px;color:#1c1410;margin:12px 0">${otp}</p>
+                 <p style="color:#9c8f84;font-size:12px">Expires in 10 minutes.</p>
+               </div>`,
+      }).catch((e) => console.warn('[devices/number/request-otp] email send failed:', e?.message));
+      channel = 'email';
+      sentTo = to;
     }
 
-    // In dev, return the OTP so it can be tested without WhatsApp/email delivery.
+    // In dev, return the OTP so it can be tested without email delivery.
     const devOtp = process.env.NODE_ENV !== 'production' ? otp : undefined;
     res.json({ sent: true, phone, channel, sentTo, devOtp });
   } catch (err: any) {

@@ -43,11 +43,10 @@ export default function DevicesPage() {
     if (phone.trim().length < 8) { toast.error('Enter a valid mobile number with country code'); return; }
     setBusy(true);
     try {
-      const r = await api.post<{ sent: boolean; channel: 'whatsapp' | 'email' | null; sentTo: string | null; devOtp?: string }>('/api/devices/number/request-otp', { phone });
+      const r = await api.post<{ sent: boolean; channel: 'email' | null; sentTo: string | null; devOtp?: string }>('/api/devices/number/request-otp', { phone });
       setOtpSent(true);
       if (r.devOtp) toast.success(`OTP (dev): ${r.devOtp}`, { duration: 10000 });
-      else if (r.channel === 'whatsapp') toast.success(`OTP sent on WhatsApp${r.sentTo ? ` to ${r.sentTo}` : ''}`);
-      else if (r.channel === 'email') toast.success(`WhatsApp unavailable — OTP emailed${r.sentTo ? ` to ${r.sentTo}` : ''}`);
+      else if (r.channel === 'email') toast.success(`OTP sent to your email${r.sentTo ? ` (${r.sentTo})` : ''}`);
       else toast.success('OTP sent');
     } catch (e: any) {
       toast.error(e.message ?? 'Failed to send OTP');
@@ -94,7 +93,7 @@ export default function DevicesPage() {
         <section className="bg-white rounded-xl border border-black/5 p-5 mb-6">
           <h2 className="font-semibold text-[#1c1410] text-[14px] mb-1">Verify a mobile number</h2>
           <p className="text-[12px] text-[#7a6b5c] mb-4">
-            Enter the number with country code (e.g. +9198…). We'll send an OTP on WhatsApp to that number. Once verified here and SIM-verified in the app, that number's calls are recorded into the CRM.
+            Enter the number with country code (e.g. +9198…). We'll email a 6-digit OTP to your registered email. Once verified here and SIM-verified in the app, that number's calls are recorded into the CRM.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
