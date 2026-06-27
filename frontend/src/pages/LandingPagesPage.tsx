@@ -71,7 +71,7 @@ function PageModal({ initial, onClose, onSave }: {
             {title && (
               <p className="text-[11px] text-[#7a6b5c] mt-1.5 flex items-center gap-1">
                 <Globe className="w-3 h-3" />
-                <span className="font-mono">digygocrm.com/p/{slug}</span>
+                <span className="font-mono">{window.location.host}/p/{slug}</span>
               </p>
             )}
           </div>
@@ -270,7 +270,7 @@ export default function LandingPagesPage() {
                         className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors" title="Edit in builder">
                         <Paintbrush className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => { copyToClipboard(`https://digygocrm.com/p/${page.slug}`); toast.success('URL copied'); }}
+                      <button onClick={() => { copyToClipboard(`${window.location.origin}/p/${page.slug}`); toast.success('URL copied'); }}
                         className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors" title="Copy URL">
                         <Copy className="w-3.5 h-3.5" />
                       </button>
