@@ -1246,17 +1246,27 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
   const [saving, setSaving] = useState(false);
   const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
 
-  // Outcome chips for new follow-up creation
-  const outcomeOptions = [
-    { key: 'interested', label: 'Interested', icon: '👍', color: 'border-emerald-300 bg-emerald-50 text-emerald-700', terminal: false },
-    { key: 'callback_later', label: 'Callback later', icon: '🕐', color: 'border-blue-300 bg-blue-50 text-blue-700', terminal: false },
-    { key: 'not_reachable', label: 'Not reachable', icon: '📵', color: 'border-red-300 bg-red-50 text-red-700', terminal: false },
-    { key: 'not_interested', label: 'Not interested', icon: '😕', color: 'border-gray-300 bg-gray-50 text-gray-600', terminal: true },
-    { key: 'hot_lead', label: 'Hot lead', icon: '⭐', color: 'border-orange-300 bg-orange-50 text-orange-700', terminal: false },
-    { key: 'deal_closed', label: 'Deal closed', icon: '✓', color: 'border-purple-300 bg-purple-50 text-purple-700', terminal: true },
-  ];
+  // Outcome chips fetched from tenant config
+  const COLOR_MAP: Record<string, string> = {
+    emerald: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+    blue: 'border-blue-300 bg-blue-50 text-blue-700',
+    red: 'border-red-300 bg-red-50 text-red-700',
+    gray: 'border-gray-300 bg-gray-50 text-gray-600',
+    orange: 'border-orange-300 bg-orange-50 text-orange-700',
+    purple: 'border-purple-300 bg-purple-50 text-purple-700',
+    amber: 'border-amber-300 bg-amber-50 text-amber-700',
+    pink: 'border-pink-300 bg-pink-50 text-pink-700',
+    cyan: 'border-cyan-300 bg-cyan-50 text-cyan-700',
+    yellow: 'border-yellow-300 bg-yellow-50 text-yellow-700',
+  };
+  const [outcomeOptions, setOutcomeOptions] = useState<{ key: string; label: string; icon: string; color: string }[]>([]);
   const [selectedOutcome, setSelectedOutcome] = useState('');
-  const isTerminal = outcomeOptions.find((o) => o.key === selectedOutcome)?.terminal ?? false;
+
+  useEffect(() => {
+    if (!isEdit && !isNote) {
+      api.get<any[]>('/api/settings/dispositions').then(setOutcomeOptions).catch(() => {});
+    }
+  }, [isEdit, isNote]);
 
   // Quick-tap date/time helpers
   const [selectedDateIdx, setSelectedDateIdx] = useState(-1);
@@ -1341,14 +1351,13 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
     if (!selectedOutcome) { toast.error('Select an outcome'); return; }
     const outcomeDef = outcomeOptions.find((o) => o.key === selectedOutcome)!;
     const autoTitle = `Follow up - ${outcomeDef.label}`;
-    if (!isTerminal && !dueAt) { toast.error('Pick a follow-up date'); return; }
     setSaving(true);
     try {
-      if (!isTerminal) {
+      if (dueAt) {
         const created = await api.post<any>(`/api/leads/${leadId}/followups`, {
           title: autoTitle,
           description: notes.trim() || undefined,
-          due_at: dueAt ? new Date(dueAt).toISOString() : undefined,
+          due_at: new Date(dueAt).toISOString(),
           assigned_to: currentUser?.id,
         });
         const fu = {
@@ -1363,11 +1372,12 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
         onCreated?.(fu);
         toast.success('Follow-up scheduled');
       } else {
-        // Terminal outcome (deal closed / not interested) - save as note only
-        if (notes.trim()) {
+        // No date selected - save outcome as a note
+        const noteText = [outcomeDef.label, notes.trim()].filter(Boolean).join(' - ');
+        if (noteText) {
           const created = await api.post<any>(`/api/leads/${leadId}/notes`, {
             title: outcomeDef.label,
-            content: notes.trim(),
+            content: noteText,
           });
           onNoteCreated?.({ ...created, created_by_name: currentUser?.name ?? '' });
         }
@@ -1437,10 +1447,9 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
               {outcomeOptions.map((o) => (
                 <button key={o.key} type="button" onClick={() => {
                   setSelectedOutcome(o.key);
-                  if (o.terminal) { setDueAt(''); setSelectedDateIdx(-1); setSelectedTimeIdx(-1); }
                 }}
                   className={cn('flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all text-center',
-                    selectedOutcome === o.key ? o.color + ' ring-1 ring-offset-1 ring-current' : 'border-gray-100 bg-white hover:border-gray-200')}>
+                    selectedOutcome === o.key ? (COLOR_MAP[o.color] ?? 'border-gray-300 bg-gray-50 text-gray-600') + ' ring-1 ring-offset-1 ring-current' : 'border-gray-100 bg-white hover:border-gray-200')}>
                   <span className="text-lg">{o.icon}</span>
                   <span className={cn('text-[11px] font-semibold leading-tight', selectedOutcome === o.key ? '' : 'text-[#1c1410]')}>{o.label}</span>
                 </button>
@@ -1448,8 +1457,8 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
             </div>
           </div>
 
-          {/* NEXT FOLLOW-UP - hidden for terminal outcomes */}
-          {selectedOutcome && !isTerminal && (
+          {/* NEXT FOLLOW-UP */}
+          {selectedOutcome && (
             <div className="space-y-3">
               <label className="text-[11px] font-bold text-[#1c1410] tracking-wide block">NEXT FOLLOW-UP</label>
               <div className="flex gap-2">
@@ -1490,7 +1499,7 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
 
           {/* Submit */}
           <button type="submit" disabled={saving || !selectedOutcome} className="w-full py-3 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
-            {saving ? 'Saving...' : isTerminal ? `Mark as ${outcomeOptions.find((o) => o.key === selectedOutcome)?.label ?? ''}` : 'Save & set follow-up'}
+            {saving ? 'Saving...' : dueAt ? 'Save & set follow-up' : 'Save outcome'}
           </button>
         </form>
       </div>
