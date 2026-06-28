@@ -1246,6 +1246,41 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
   const [saving, setSaving] = useState(false);
   const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
 
+  // Quick-tap date/time helpers for new follow-up creation
+  const [selectedDateIdx, setSelectedDateIdx] = useState(-1);
+  const [selectedTimeIdx, setSelectedTimeIdx] = useState(-1);
+  const today = new Date();
+  const dateOptions = [
+    { label: 'Today', sub: today.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), value: today },
+    { label: 'Tomorrow', sub: new Date(Date.now() + 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), value: new Date(Date.now() + 86400000) },
+    { label: 'In 3 days', sub: new Date(Date.now() + 3 * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), value: new Date(Date.now() + 3 * 86400000) },
+  ];
+  const timeOptions = [
+    { label: '9 AM', hour: 9 },
+    { label: '12 PM', hour: 12 },
+    { label: '3 PM', hour: 15 },
+    { label: '6 PM', hour: 18 },
+  ];
+
+  const applyQuickDate = (idx: number, date: Date) => {
+    setSelectedDateIdx(idx);
+    const h = selectedTimeIdx >= 0 ? timeOptions[selectedTimeIdx].hour : 9;
+    const d = new Date(date); d.setHours(h, 0, 0, 0);
+    setDueAt(d.toISOString().slice(0, 16));
+  };
+  const applyQuickTime = (idx: number) => {
+    setSelectedTimeIdx(idx);
+    if (!dueAt) {
+      // default to today if no date selected yet
+      const d = new Date(); d.setHours(timeOptions[idx].hour, 0, 0, 0);
+      setDueAt(d.toISOString().slice(0, 16));
+      setSelectedDateIdx(0);
+    } else {
+      const d = new Date(dueAt); d.setHours(timeOptions[idx].hour, 0, 0, 0);
+      setDueAt(d.toISOString().slice(0, 16));
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     // ── EDIT existing note / follow-up (PATCH) ──
@@ -1351,7 +1386,42 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
             </label>
             <textarea className={inputCls + ' resize-none h-20'} placeholder={isNote ? 'Write your note...' : 'Add any notes...'} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
-          {!isNote && (
+          {!isNote && !isEdit && (
+            <div className="space-y-3">
+              <label className="text-[12px] font-semibold text-[#1c1410] block">When</label>
+              <div className="flex gap-2">
+                {dateOptions.map((d, i) => (
+                  <button key={i} type="button" onClick={() => applyQuickDate(i, d.value)}
+                    className={cn('flex-1 py-2 rounded-xl border text-center transition-colors',
+                      selectedDateIdx === i ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 hover:border-[#ea580c]/40')}>
+                    <span className={cn('block text-[12px] font-bold', selectedDateIdx === i ? 'text-white' : 'text-[#1c1410]')}>{d.label}</span>
+                    <span className={cn('block text-[10px]', selectedDateIdx === i ? 'text-white/70' : 'text-[#7a6b5c]')}>{d.sub}</span>
+                  </button>
+                ))}
+                <button type="button" onClick={() => {
+                  const el = document.getElementById('fu-datetime') as HTMLInputElement | null;
+                  el?.showPicker?.();
+                }}
+                  className={cn('px-3 py-2 rounded-xl border text-center transition-colors',
+                    selectedDateIdx === 3 ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 hover:border-[#ea580c]/40')}>
+                  <span className={cn('block text-[12px] font-bold', selectedDateIdx === 3 ? 'text-white' : 'text-[#1c1410]')}>Pick</span>
+                  <span className={cn('block text-[10px]', selectedDateIdx === 3 ? 'text-white/70' : 'text-[#7a6b5c]')}>Custom</span>
+                </button>
+              </div>
+              <div className="flex gap-2">
+                {timeOptions.map((t, i) => (
+                  <button key={i} type="button" onClick={() => applyQuickTime(i)}
+                    className={cn('flex-1 py-2.5 rounded-xl border text-[13px] font-bold transition-colors',
+                      selectedTimeIdx === i ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 text-[#1c1410] hover:border-[#ea580c]/40')}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <input id="fu-datetime" type="datetime-local" className={inputCls + ' text-[11px]'} value={dueAt}
+                onChange={(e) => { setDueAt(e.target.value); setSelectedDateIdx(3); setSelectedTimeIdx(-1); }} />
+            </div>
+          )}
+          {!isNote && isEdit && (
             <div>
               <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">Due Date & Time</label>
               <input type="datetime-local" className={inputCls} value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
