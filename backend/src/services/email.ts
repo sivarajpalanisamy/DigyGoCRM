@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import { config } from '../config';
 import { query } from '../db';
 import { decrypt } from '../utils/crypto';
+import { enqueue } from '../lib/queue';
 
 let _transporter: nodemailer.Transporter | null = null;
 
@@ -252,6 +253,20 @@ export async function canSendEmail(tenantId?: string): Promise<boolean> {
     if (cfg) return true;
   }
   return isResendConfigured() || isSmtpConfigured();
+}
+
+export const EMAIL_QUEUE = 'email';
+type EmailOpts = Parameters<typeof sendEmail>[0];
+
+/**
+ * Fire-and-forget email through the queue. With Redis the send is durable +
+ * retried/backed-off by the worker; without Redis it sends inline (previous
+ * behavior). Use this for NON-interactive emails (notifications, alerts) where
+ * the caller doesn't need the messageId or a synchronous success/fail result —
+ * for those (login OTP, password reset, workflow logs) keep calling sendEmail.
+ */
+export function queueEmail(opts: EmailOpts): void {
+  void enqueue(EMAIL_QUEUE, opts);
 }
 
 /** Test a tenant's SMTP connection (verifies credentials). */

@@ -46,11 +46,12 @@ import callsRoutes from './routes/calls';
 import devicesRoutes from './routes/devices';
 import mobileRoutes from './routes/mobile';
 import googleSheetsRoutes from './routes/google_sheets';
-import { processRecordingDownloads } from './utils/recordingDownloader';
+import { processRecordingDownloads, recordingDownloadProcessor, RECORDING_QUEUE } from './utils/recordingDownloader';
+import { registerQueue } from './lib/queue';
+import { sendEmail, EMAIL_QUEUE } from './services/email';
 import { pollGoogleSheets } from './utils/googleSheetsPoller';
 import { resolveDomain } from './middleware/domainResolver';
 import { query as dbQuery } from './db';
-import { sendEmail } from './services/email';
 import { initCorsOrigins, isAllowedOrigin, addAllowedOrigin } from './utils/corsOrigins';
 
 const app        = express();
@@ -226,6 +227,10 @@ runMigrations()
   })
   .then(() => validateSchema())
   .finally(() => {
+    // ── BullMQ queues (no-op without REDIS_URL; producers fall back to inline) ─
+    registerQueue(EMAIL_QUEUE, (job) => sendEmail(job.data as any), { concurrency: 5 });
+    registerQueue(RECORDING_QUEUE, (job) => recordingDownloadProcessor(job as any), { concurrency: 4 });
+
     // ── Delay queue worker: runs every 30 seconds ─────────────────────────────
     setInterval(() => processDelayedSteps().catch(() => null), 30_000);
     console.log('⏱️   Delay queue worker started (30s interval)');

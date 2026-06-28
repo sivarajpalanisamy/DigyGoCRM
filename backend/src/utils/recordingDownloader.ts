@@ -1,15 +1,33 @@
 import fs from 'fs';
 import path from 'path';
 import { query } from '../db';
+import { enqueue, queueActive } from '../lib/queue';
 
 export const RECORDINGS_DIR = process.env.RECORDINGS_DIR ?? '/var/www/digygocrm/recordings';
 
+export const RECORDING_QUEUE = 'recording-download';
+
+interface RecordingJob { id: string; tenant_id: string; cdr_id: number; recording_url: string }
+
 /**
- * Background worker — runs every 10 minutes.
- * Downloads up to 10 pending call recordings from Superfone before the 30-day URL expiry.
- * Stores files at {RECORDINGS_DIR}/{tenantId}/{callLogId}.mp3
+ * BullMQ processor for one recording download. Registered as the
+ * `recording-download` queue worker; also used as the inline fallback when Redis
+ * is off. Throwing makes BullMQ retry with backoff; a clean return = done.
+ */
+export async function recordingDownloadProcessor(job: { data: RecordingJob }): Promise<void> {
+  const { id, tenant_id, cdr_id, recording_url } = job.data;
+  await downloadOne(id, tenant_id, cdr_id, recording_url);
+}
+
+/**
+ * Producer — runs every 10 minutes. Finds pending recordings (self-healing: also
+ * re-picks ones a previous attempt missed) and enqueues a download job for each.
+ * When Redis is on, the BullMQ worker downloads them concurrently with retry;
+ * when off, enqueue() runs the download inline (previous behavior). The poll
+ * batch is larger now since the worker, not this loop, does the heavy lifting.
  */
 export async function processRecordingDownloads(): Promise<void> {
+  const limit = queueActive(RECORDING_QUEUE) ? 200 : 10; // worker can absorb more; inline stays conservative
   const pending = await query(`
     SELECT cl.id, cl.tenant_id, cl.cdr_id, cl.recording_url
     FROM call_logs cl
@@ -18,11 +36,13 @@ export async function processRecordingDownloads(): Promise<void> {
       AND cl.recording_downloaded = FALSE
       AND cl.created_at > NOW() - INTERVAL '28 days'
     ORDER BY cl.created_at DESC
-    LIMIT 10
+    LIMIT ${limit}
   `);
 
   for (const row of pending.rows) {
-    await downloadOne(row.id, row.tenant_id, row.cdr_id, row.recording_url);
+    await enqueue(RECORDING_QUEUE, {
+      id: row.id, tenant_id: row.tenant_id, cdr_id: row.cdr_id, recording_url: row.recording_url,
+    } as RecordingJob, { jobId: `rec:${row.id}` }); // dedupe: skip if a job for this recording is already queued
   }
 }
 
@@ -46,9 +66,9 @@ async function downloadOne(
     }
 
     if (!resp.ok) {
-      // Transient error — leave recording_downloaded=FALSE, will retry next cycle
-      console.error(`[recordings] cdr=${cdrId}: HTTP ${resp.status}, will retry`);
-      return;
+      // Transient error — leave recording_downloaded=FALSE and THROW so the queue
+      // retries with backoff (and the 10-min poller re-picks it as a safety net).
+      throw new Error(`[recordings] cdr=${cdrId}: HTTP ${resp.status}, will retry`);
     }
 
     const contentType = resp.headers.get('content-type') ?? '';
@@ -65,6 +85,9 @@ async function downloadOne(
     );
     console.log(`[recordings] cdr=${cdrId}: saved → ${relPath}`);
   } catch (err: any) {
+    // Network/timeout/transient — re-throw so the queue retries with backoff.
+    // recording_downloaded stays FALSE, so the poller also re-picks it later.
     console.error(`[recordings] cdr=${cdrId}: ${err.message}`);
+    throw err;
   }
 }
