@@ -1,3 +1,4 @@
+import type { Response } from 'express';
 import { getRedis, isRedisHealthy } from './redis';
 
 /**
@@ -83,6 +84,35 @@ export async function bumpTenantCacheVersion(tenantId: string): Promise<void> {
   }
   const cur = memGet(key);
   memSet(key, String((cur ? parseInt(cur, 10) || 0 : 0) + 1), 86400);
+}
+
+/**
+ * Cache an expensive report response. Keyed by tenant + user (so per-staff
+ * scoped dashboards stay correct) + endpoint name + tenant cache-version +
+ * query params. On hit, serves from cache; on miss, runs `compute`, stores it,
+ * and serves. Adds X-Cache + a short private Cache-Control so the browser can
+ * also reuse it briefly. `compute` should THROW on error (caller's try/catch
+ * handles the 500) — errors are never cached.
+ */
+export async function serveCached(
+  res: Response,
+  opts: { tenantId: string; userId: string; name: string; ttlSec: number; params?: Record<string, unknown> },
+  compute: () => Promise<unknown>,
+): Promise<void> {
+  const ver = await tenantCacheVersion(opts.tenantId);
+  const key = `report:${opts.tenantId}:${opts.userId}:${opts.name}:v${ver}:${paramsHash(opts.params ?? {})}`;
+  const hit = await cacheGet(key);
+  if (hit !== null) {
+    res.setHeader('X-Cache', 'HIT');
+    res.setHeader('Cache-Control', `private, max-age=${Math.min(opts.ttlSec, 30)}`);
+    res.json(hit);
+    return;
+  }
+  const data = await compute();
+  if (data !== null && data !== undefined) await cacheSet(key, data, opts.ttlSec);
+  res.setHeader('X-Cache', 'MISS');
+  res.setHeader('Cache-Control', `private, max-age=${Math.min(opts.ttlSec, 30)}`);
+  res.json(data);
 }
 
 /** Stable hash for query-param objects → part of a cache key. */

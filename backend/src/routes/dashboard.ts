@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { query } from '../db';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { hasPermission } from '../middleware/permissions';
+import { serveCached } from '../lib/cache';
 
 const router = Router();
 router.use(requireAuth);
@@ -24,6 +25,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
   }
 
   try {
+    await serveCached(res, { tenantId, userId, name: 'stats', ttlSec: 60, params: {} }, async () => {
     let canSeeTotalLeads:    boolean;
     let canSeeActiveStaff:   boolean;
     let canSeeConversations: boolean;
@@ -99,7 +101,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
 
     await Promise.all(fetches);
 
-    res.json({
+    return {
       stats,
       visible: {
         total_leads:   canSeeTotalLeads,
@@ -107,6 +109,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
         conversations: canSeeConversations,
         appointments:  canSeeAppointments,
       },
+    };
     });
   } catch (err) {
     console.error('[dashboard:stats]', err);
@@ -139,6 +142,7 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
   }
 
   try {
+    await serveCached(res, { tenantId, userId, name: 'analytics', ttlSec: 60, params: req.query as any }, async () => {
     const now          = new Date();
     const thisMonth    = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonth    = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -423,7 +427,7 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
     }
     const pipeline_funnels = Object.values(funnelMap);
 
-    res.json({
+    return {
       total_leads:       total,
       leads_this_month:  thisM,
       leads_last_month:  lastM,
@@ -449,6 +453,7 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
       calls_answered:       callsStats.rows[0]?.answered ?? 0,
       calls_missed:         callsStats.rows[0]?.missed   ?? 0,
       role:                 isPrivileged ? role : (isManager ? 'manager' : 'staff'),
+    };
     });
   } catch (err) {
     console.error('[dashboard:analytics]', err);

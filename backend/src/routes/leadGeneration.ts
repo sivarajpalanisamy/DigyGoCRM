@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { hasPermission } from '../middleware/permissions';
+import { serveCached } from '../lib/cache';
 
 const router = Router();
 router.use(requireAuth);
@@ -24,6 +25,7 @@ router.get('/overview', async (req: AuthRequest, res: Response) => {
   }
 
   try {
+    await serveCached(res, { tenantId: tenantId!, userId, name: 'leadgen-overview', ttlSec: 120, params: {} }, async () => {
     const [metaResult, customResult, totalRes] = await Promise.all([
       // Meta forms — join leads via meta_form_id
       query(`
@@ -88,7 +90,7 @@ router.get('/overview', async (req: AuthRequest, res: Response) => {
     // Dead: has received leads before but none in last 7 days
     const deadForms = allForms.filter(f => (f.leads_total ?? 0) > 0 && (f.leads_week ?? 0) === 0);
 
-    res.json({
+    return {
       summary: {
         total_leads:        totalRes.rows[0].n,
         active_forms_count: allForms.length,
@@ -106,6 +108,7 @@ router.get('/overview', async (req: AuthRequest, res: Response) => {
         last_lead_at: f.last_lead_at,
       })),
       forms: allForms,
+    };
     });
   } catch (err: any) {
     console.error('[lead-generation:overview]', err.message);

@@ -2,6 +2,7 @@ import { Router, Response, NextFunction } from 'express';
 import { query } from '../db';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { hasPermission } from '../middleware/permissions';
+import { serveCached } from '../lib/cache';
 
 const router = Router();
 router.use(requireAuth);
@@ -65,12 +66,13 @@ function requireOwner(req: AuthRequest, res: Response, next: Function) {
 
 // ── 1. Lead Acquisition ───────────────────────────────────────────────────────
 router.get('/lead-acquisition', requireOwner, async (req: AuthRequest, res: Response) => {
-  const { tenantId } = req.user!;
+  const { tenantId, userId } = req.user!;
   if (!tenantId) return res.status(403).json({ error: 'No tenant' });
   const { range = 'this_month', from, to } = req.query as Record<string, string>;
   const { start, end } = computeRange(range, from, to);
 
   try {
+    await serveCached(res, { tenantId, userId, name: 'lead-acquisition', ttlSec: 120, params: req.query as any }, async () => {
     const [bySource, byDay] = await Promise.all([
       query(`
         SELECT COALESCE(l.source,'Unknown') AS source,
@@ -89,7 +91,8 @@ router.get('/lead-acquisition', requireOwner, async (req: AuthRequest, res: Resp
         GROUP BY day_ts,day ORDER BY day_ts ASC
       `, [tenantId, start, end]),
     ]);
-    res.json({ by_source: bySource.rows, by_day: byDay.rows });
+    return { by_source: bySource.rows, by_day: byDay.rows };
+    });
   } catch (err) {
     console.error('[reports:lead-acquisition]', err);
     res.status(500).json({ error: 'Server error' });
@@ -328,7 +331,7 @@ router.get('/pipelines', requireManagerOrOwner, async (req: AuthRequest, res: Re
 
 // ── 10. Pipeline Analytics ────────────────────────────────────────────────────
 router.get('/pipeline-analytics', requireManagerOrOwner, async (req: AuthRequest, res: Response) => {
-  const { tenantId } = req.user!;
+  const { tenantId, userId } = req.user!;
   if (!tenantId) return res.status(403).json({ error: 'No tenant' });
   const { pipeline_id, range = 'this_month', from, to } = req.query as Record<string, string>;
   if (!pipeline_id) return res.status(400).json({ error: 'pipeline_id required' });
@@ -336,6 +339,7 @@ router.get('/pipeline-analytics', requireManagerOrOwner, async (req: AuthRequest
   const p = [tenantId, pipeline_id, start, end];
 
   try {
+    await serveCached(res, { tenantId, userId, name: 'pipeline-analytics', ttlSec: 180, params: req.query as any }, async () => {
     const [
       kpiRes, stagesRes, sourcesRes, flowRes, winLossRes,
       qualityRes, staffRes, fuSummaryRes, overdueRes,
@@ -554,7 +558,7 @@ router.get('/pipeline-analytics', requireManagerOrOwner, async (req: AuthRequest
       `, p),
     ]);
 
-    res.json({
+    return {
       kpi:       kpiRes.rows[0] ?? {},
       stages:    stagesRes.rows,
       sources:   sourcesRes.rows,
@@ -574,6 +578,7 @@ router.get('/pipeline-analytics', requireManagerOrOwner, async (req: AuthRequest
       tags:       tagsRes.rows,
       aging:      agingRes.rows,
       calls:      callsRes.rows,
+    };
     });
   } catch (err) {
     console.error('[reports:pipeline-analytics]', err);

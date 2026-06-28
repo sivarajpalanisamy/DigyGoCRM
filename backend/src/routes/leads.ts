@@ -10,6 +10,7 @@ import { triggerWorkflows } from './workflows';
 import { decrypt } from '../utils/crypto';
 import { backfillCustomFields, cleanFieldKey } from '../utils/customFields';
 import { cleanText } from '../utils/sanitize';
+import { bumpTenantCacheVersion } from '../lib/cache';
 import { parseMetaFieldData } from '../utils/meta';
 import https from 'https';
 import { emitToTenant } from '../socket';
@@ -543,6 +544,7 @@ router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(
     );
     const emitLead = leadWithName.rows[0] ?? lead;
     emitToTenant(tenantId!, 'lead:created', emitLead);
+    bumpTenantCacheVersion(tenantId!).catch(() => {}); // refresh dashboards/reports
     res.status(201).json(emitLead);
     setImmediate(async () => {
       incrementUsage(tenantId!, 'leads').catch(() => null);
@@ -722,6 +724,7 @@ router.patch('/:id', checkPermission('leads:edit'), validate(UpdateLeadSchema), 
     }
 
     emitToTenant(tenantId!, 'lead:updated', emitPayload);
+    bumpTenantCacheVersion(tenantId!).catch(() => {}); // refresh dashboards/reports
     res.json(emitPayload);
   } catch (err) {
     console.error(err);
@@ -736,6 +739,7 @@ router.delete('/:id', checkPermission('leads:delete'), async (req: AuthRequest, 
       'UPDATE leads SET is_deleted = TRUE WHERE id = $1 AND tenant_id = $2',
       [req.params.id, req.user!.tenantId]
     );
+    bumpTenantCacheVersion(req.user!.tenantId!).catch(() => {});
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
