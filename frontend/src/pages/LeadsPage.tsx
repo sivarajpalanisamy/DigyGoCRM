@@ -4681,8 +4681,6 @@ export default function LeadsPage() {
   // filteredLeads from the store, so we skip the server fetch for it.
   const MAX_BOARD = 3000;
   useEffect(() => {
-    if (dashFilter) { setApiLeads(null); setFilterLoading(false); return; }
-
     let cancelled = false;
     const delay = search ? 300 : 0;
     setFilterLoading(true);
@@ -4691,7 +4689,9 @@ export default function LeadsPage() {
         let allLeads: any[] = [];
         let cursor = '';
         while (true) {
-          const params = buildLeadsParams(filters, search, selectedPipelineId, selectedPipeline, cursor);
+          // dashFilter (stale/converted) is cross-pipeline and resolved server-side via `quick`.
+          const params = buildLeadsParams(filters, search, dashFilter ? null : selectedPipelineId, dashFilter ? undefined : selectedPipeline, cursor);
+          if (dashFilter) params.set('quick', dashFilter);
           const data = await api.get<{ leads: any[]; nextCursor: string | null }>(`/api/leads?${params}`);
           if (cancelled) return;
           allLeads = [...allLeads, ...data.leads];
@@ -4709,17 +4709,8 @@ export default function LeadsPage() {
   }, [filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, leads.length]);
 
   const filteredLeads = useMemo(() => {
-    // Dashboard quick-filter — cross-pipeline, bypasses server fetch
-    if (dashFilter === 'stale') {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      return leads.filter((l) => new Date(l.lastActivity) < sevenDaysAgo);
-    }
-    if (dashFilter === 'converted') {
-      const wonStageIds = new Set(pipelines.flatMap((p) => p.stages.filter((s) => s.is_won).map((s) => s.id)));
-      return wonStageIds.size > 0 ? leads.filter((l) => wonStageIds.has(l.stageId)) : [];
-    }
-
-    // Use server-fetched leads when active filters exist, otherwise use store leads
+    // Server-fetched snapshot (board/list/dashFilter all resolved server-side);
+    // store leads are only a brief fallback before the first fetch resolves.
     let result = apiLeads ?? leads;
 
     // Client-side-only filters (no backend equivalent)

@@ -28,7 +28,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
   const {
     stage, search, pipeline_id, assigned_to, source, source_ref, meta_form_id,
-    tag, date_from, date_to,
+    tag, date_from, date_to, quick,
     page = '1', limit = '200',
     after,          // cursor: ISO timestamp — when present, enables keyset pagination
   } = req.query as Record<string, string>;
@@ -92,6 +92,9 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   if (pipeline_id) { params.push(pipeline_id);            sql += ` AND l.pipeline_id = $${params.length}`; }
   if (assigned_to === 'none') { sql += ` AND l.assigned_to IS NULL`; }
   else if (assigned_to) { params.push(assigned_to);            sql += ` AND l.assigned_to = $${params.length}`; }
+  // Dashboard quick-filters (cross-pipeline): stale = no activity 7+ days; converted = in a won stage.
+  if (quick === 'stale')     { sql += ` AND l.updated_at < NOW() - INTERVAL '7 days'`; }
+  else if (quick === 'converted') { sql += ` AND ps.is_won = TRUE`; }
   if (source)         { params.push(source);       sql += ` AND l.source = $${params.length}`; }
   if (source_ref)     { params.push(source_ref);   sql += ` AND l.source_ref = $${params.length}`; }
   if (meta_form_id)   { params.push(meta_form_id); sql += ` AND l.meta_form_id = $${params.length}`; }

@@ -561,6 +561,11 @@ export const useCrmStore = create<CrmState>((set) => ({
       const canViewCalendar = permAll || permissions['calendar:view'] !== false;
 
       const [leadsRes, staffRes, pipelinesRes, calRes, tagsRes, questionsRes, convsRes, notifsRes, bookingLinksRes, followUpsRes, customFieldsRes, workflowsRes, systemFieldsRes, valueTokensRes] = await Promise.all([
+        // Heavy pages (Leads board/list, Contacts, Dashboard, Overview) are now
+        // server-driven, so this store copy is data-only (lookups + the
+        // calendar/contact-group lead pickers + socket patches), never rendered as
+        // thousands of rows. Kept at 5000 so those pickers still reach the full set;
+        // shrinking it further requires moving those pickers to server search.
         api.get<any[]>('/api/leads?limit=5000').catch(keepOnError),
         api.get<any[]>('/api/settings/staff').catch(keepOnError),
         api.get<any[]>('/api/pipelines').catch(keepOnError),

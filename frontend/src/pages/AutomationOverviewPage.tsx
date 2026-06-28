@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Zap, LayoutTemplate, ArrowRight, Activity, CheckCircle, Users } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useCrmStore } from '@/store/crmStore';
 import { cn } from '@/lib/utils';
 
 const channels = [
@@ -27,10 +26,11 @@ const channels = [
 export default function AutomationOverviewPage() {
   const navigate = useNavigate();
   const [workflows, setWorkflows] = useState<any[]>([]);
-  const { leads } = useCrmStore();
+  const [totalLeads, setTotalLeads] = useState(0);
 
   useEffect(() => {
     api.get<any[]>('/api/workflows').then((rows) => setWorkflows(rows ?? [])).catch(() => null);
+    api.get<{ total: number }>('/api/leads/summary').then((d) => setTotalLeads(d.total ?? 0)).catch(() => null);
   }, []);
 
   const totalWorkflows  = workflows.length;
@@ -40,7 +40,7 @@ export default function AutomationOverviewPage() {
     { label: 'Total Workflows', value: totalWorkflows.toLocaleString(),               icon: Zap,          color: 'text-primary' },
     { label: 'Active',          value: activeWorkflows.toLocaleString(),              icon: Activity,     color: 'text-emerald-500' },
     { label: 'Paused',          value: (totalWorkflows - activeWorkflows).toLocaleString(), icon: CheckCircle, color: 'text-purple-500' },
-    { label: 'Total Leads',     value: leads.length.toLocaleString(),                 icon: Users,        color: 'text-primary' },
+    { label: 'Total Leads',     value: totalLeads.toLocaleString(),                   icon: Users,        color: 'text-primary' },
   ];
 
   return (
