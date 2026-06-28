@@ -19,6 +19,7 @@ import 'screens/privacy_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/in_call_screen.dart';
 import 'screens/post_call_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -154,7 +155,7 @@ class _DigygoDialerAppState extends State<DigygoDialerApp> with WidgetsBindingOb
       debugShowCheckedModeBanner: false,
       navigatorKey: _navKey,
       theme: buildTheme(),
-      home: const RootRouter(),
+      home: const SplashScreen(next: RootRouter()),
     );
   }
 }

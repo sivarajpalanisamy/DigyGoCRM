@@ -71,8 +71,8 @@ flutter_launcher_icons:
 # ── Splash screen (padded wordmark on white, centered) ──────────────────────────
 flutter_native_splash:
   color: "#ffffff"
-  image: assets/branding/splash.png
+  image: assets/branding/hawcus.png
   android_gravity: center
   android_12:
     color: "#ffffff"
-    image: assets/branding/splash.png
+    image: assets/branding/hawcus.png
