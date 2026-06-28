@@ -3,13 +3,14 @@ import { createServer } from 'http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import { pool } from './db';
 import { runMigrations } from './db/migrate';
 import { validateSchema } from './db/schema-validator';
 import { config } from './config';
 import { initSocket } from './socket';
 import { getRedis, redisEnabled } from './lib/redis';
+import { makeLimiter } from './lib/rateLimit';
+import { ipBlockGuard } from './middleware/ipBlock';
 
 import authRoutes         from './routes/auth';
 import leadsRoutes        from './routes/leads';
@@ -115,33 +116,34 @@ app.use((req, res, next) => {
   })(req, res, next);
 });
 
-// ── Rate limiting ─────────────────────────────────────────────────────────────
-// Global limiter: 1000 req / 60 s per IP (allows normal CRM usage with polling)
-app.use(rateLimit({
+// ── IP blocking ───────────────────────────────────────────────────────────────
+// Reject already-blocked IPs early and auto-block IPs that rack up 401/429s.
+app.use(ipBlockGuard);
+
+// ── Rate limiting (Redis-backed when REDIS_URL set, else in-memory) ──────────
+// Global limiter: 1000 req / 60 s per IP. NOTE: intentionally NOT 100/min — the
+// CRM frontend boots ~14 parallel calls and polls every 30s, so a 100/min cap
+// would lock out normal users. Abuse is handled by ipBlockGuard above + the
+// stricter auth limiters below.
+app.use(makeLimiter({
   windowMs: 60_000,
   max: process.env.NODE_ENV === 'production' ? 1000 : 5000,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { error: 'Too many requests, please slow down.' },
   skip: (req) => req.path === '/health',
 }));
 
 // Strict limiter for login and password setup — brute-force protection
-const authLimiter = rateLimit({
+const authLimiter = makeLimiter({
   windowMs: 15 * 60_000,
   max: process.env.NODE_ENV === 'production' ? 30 : 500,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { error: 'Too many login attempts. Try again in 15 minutes.' },
 });
 
 // Relaxed limiter for token refresh — not a brute-force vector (token itself is the secret)
 // Must handle: multiple tabs, 30s polling, multiple users behind same NAT IP
-const refreshLimiter = rateLimit({
+const refreshLimiter = makeLimiter({
   windowMs: 15 * 60_000,
   max: process.env.NODE_ENV === 'production' ? 300 : 5000,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { error: 'Too many requests, please slow down.' },
 });
 

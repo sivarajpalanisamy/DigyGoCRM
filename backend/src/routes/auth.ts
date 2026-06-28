@@ -12,6 +12,7 @@ import { requireAuth, requireSuperAdmin, AuthRequest, invalidateTenantCache, get
 import { invalidateDomainCache, setCachedDomain } from '../utils/domainCache';
 import { addAllowedOrigin, removeAllowedOrigin } from '../utils/corsOrigins';
 import { hashPassword, needsRehash } from '../utils/password';
+import { blockIp, unblockIp, isIpBlocked, listBlockedIps } from '../middleware/ipBlock';
 import { sendEmail, getTenantEmailIdentity } from '../services/email';
 import { emitToTenant } from '../socket';
 
@@ -534,6 +535,28 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// ── IP block management (super admin) ────────────────────────────────────────
+// GET    /api/auth/ip-blocks            — list blocked IPs (Redis-backed)
+// POST   /api/auth/ip-blocks  {ip,ttl?} — manually block an IP
+// DELETE /api/auth/ip-blocks/:ip        — unblock an IP
+router.get('/ip-blocks', requireAuth, requireSuperAdmin, async (_req: AuthRequest, res: Response) => {
+  res.json({ blocked: await listBlockedIps() });
+});
+router.post('/ip-blocks', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
+  const ip = (req.body?.ip ?? '').toString().trim();
+  const ttl = Math.min(30 * 24 * 3600, Math.max(60, parseInt(req.body?.ttl) || 3600));
+  if (!ip) { res.status(400).json({ error: 'ip required' }); return; }
+  await blockIp(ip, ttl);
+  res.json({ blocked: true, ip, ttl });
+});
+router.delete('/ip-blocks/:ip', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
+  await unblockIp(req.params.ip);
+  res.json({ unblocked: true, ip: req.params.ip });
+});
+router.get('/ip-blocks/:ip', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
+  res.json({ ip: req.params.ip, blocked: await isIpBlocked(req.params.ip) });
 });
 
 // POST /api/auth/tenants — super admin creates a new tenant (#53 audit log)
