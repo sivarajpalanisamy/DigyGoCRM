@@ -47,7 +47,7 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
         `SELECT cl.id, cl.cdr_id, cl.direction, cl.outcome, cl.caller_phone, cl.superfone_number,
                 cl.duration_seconds, cl.started_at, cl.ended_at, cl.staff_name,
                 cl.recording_url, cl.recording_path, cl.recording_downloaded,
-                cl.is_unknown, cl.created_at, cl.notes, cl.disposition, cl.source,
+                cl.is_unknown, cl.created_at, cl.notes, cl.disposition, cl.disposition_key, cl.source,
                 l.id AS lead_id, COALESCE(l.name, cl.caller_phone) AS lead_name
          FROM call_logs cl
          LEFT JOIN leads l ON l.id = cl.lead_id
@@ -322,5 +322,121 @@ function streamFile(req: AuthRequest, res: Response, filePath: string, relPath: 
     fs.createReadStream(filePath).pipe(res);
   }
 }
+
+// --- Post-Call Disposition ---
+
+interface DispositionDef {
+  key: string;
+  label: string;
+  lead_quality?: string | null;
+  terminal: boolean;
+}
+
+const DEFAULT_DISPOSITIONS: DispositionDef[] = [
+  { key: 'interested',      label: 'Interested',      lead_quality: 'Hot',  terminal: false },
+  { key: 'callback_later',  label: 'Callback Later',  lead_quality: null,   terminal: false },
+  { key: 'not_reachable',   label: 'Not Reachable',   lead_quality: null,   terminal: false },
+  { key: 'not_interested',  label: 'Not Interested',  lead_quality: 'Cold', terminal: true  },
+  { key: 'hot_lead',        label: 'Hot Lead',         lead_quality: 'Hot',  terminal: false },
+  { key: 'deal_closed',     label: 'Deal Closed',     lead_quality: null,   terminal: true  },
+];
+
+// GET /api/calls/dispositions - list available post-call outcomes
+router.get('/dispositions', async (_req: AuthRequest, res: Response) => {
+  res.json(DEFAULT_DISPOSITIONS);
+});
+
+// POST /api/calls/:callId/post-call - log outcome + optional follow-up after a call
+router.post('/:callId/post-call', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  const { callId } = req.params;
+  const { disposition_key, follow_up_date, follow_up_time, note } = req.body as {
+    disposition_key: string;
+    follow_up_date?: string;
+    follow_up_time?: string;
+    note?: string;
+  };
+
+  if (!disposition_key) { res.status(400).json({ error: 'disposition_key is required' }); return; }
+
+  const dispDef = DEFAULT_DISPOSITIONS.find((d) => d.key === disposition_key);
+  if (!dispDef) { res.status(400).json({ error: 'Invalid disposition_key' }); return; }
+
+  try {
+    // Fetch call - verify tenant + ownership
+    const isSuper = role === 'super_admin';
+    let ownershipFilter = '';
+    const fetchParams: any[] = [callId, tenantId];
+    if (!isSuper) {
+      const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+      const canViewAll = isOwner || await hasPermission(userId, 'calls:view_all', tenantId);
+      if (!canViewAll) {
+        fetchParams.push(userId);
+        ownershipFilter = ` AND cl.staff_user_id=$${fetchParams.length}::uuid`;
+      }
+    }
+
+    const callRes = await query(
+      `SELECT cl.id, cl.lead_id, cl.staff_user_id, cl.staff_name, cl.caller_phone
+       FROM call_logs cl
+       WHERE cl.id=$1 AND cl.tenant_id=$2::uuid${ownershipFilter}`,
+      fetchParams,
+    );
+    const call = callRes.rows[0];
+    if (!call) { res.status(404).json({ error: 'Call not found' }); return; }
+
+    // 1. Update call_logs disposition
+    await query(
+      `UPDATE call_logs SET disposition_key=$2, disposition=$3, notes=COALESCE($4, notes)
+       WHERE id=$1`,
+      [callId, disposition_key, dispDef.label, note ?? null],
+    );
+
+    // 2. Update lead quality if mapping exists and call is linked to a lead
+    if (call.lead_id && dispDef.lead_quality) {
+      await query(
+        `UPDATE leads SET custom_fields = COALESCE(custom_fields, '{}'::jsonb) || $2::jsonb, updated_at=NOW()
+         WHERE id=$1::uuid AND tenant_id=$3::uuid`,
+        [call.lead_id, JSON.stringify({ lead_quality: dispDef.lead_quality }), tenantId],
+      );
+    }
+
+    // 3. Create follow-up if date provided and outcome is not terminal
+    let followUp = null;
+    if (call.lead_id && follow_up_date && !dispDef.terminal) {
+      const dueAt = follow_up_time
+        ? `${follow_up_date}T${follow_up_time}:00`
+        : `${follow_up_date}T09:00:00`;
+      const title = `Follow up - ${dispDef.label}`;
+      const fuRes = await query(
+        `INSERT INTO lead_followups (lead_id, tenant_id, title, description, due_at, assigned_to, created_by)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::uuid, $6::uuid) RETURNING *`,
+        [call.lead_id, tenantId, title, note ?? null, dueAt, userId],
+      );
+      followUp = fuRes.rows[0];
+
+      // Activity log
+      await query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
+         VALUES ($1::uuid, $2::uuid, 'followup', $3, $4::uuid)`,
+        [call.lead_id, tenantId, `Follow-up scheduled: ${title}`, userId],
+      );
+    }
+
+    // 4. Log disposition as activity on lead timeline
+    if (call.lead_id) {
+      await query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+         VALUES ($1::uuid, $2::uuid, 'call_outcome', $3, $4, $5::uuid)`,
+        [call.lead_id, tenantId, `Call outcome: ${dispDef.label}`, note ?? null, userId],
+      );
+    }
+
+    res.json({ ok: true, disposition: dispDef.label, follow_up: followUp });
+  } catch (err: any) {
+    console.error('[post-call]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 export default router;
