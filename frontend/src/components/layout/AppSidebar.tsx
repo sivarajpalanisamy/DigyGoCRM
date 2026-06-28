@@ -115,7 +115,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             <img
               src="/hawcus-logo.png"
               alt="Hawcus"
-              style={{ width: '160px', height: '160px', marginTop: '-36px', flexShrink: 0 }}
+              className="max-h-10 max-w-[150px] object-contain"
             />
           )}
           <button
