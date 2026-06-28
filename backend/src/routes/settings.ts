@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission, checkAnyPermission, clearUserPermCache } from '../middleware/permissions';
-import { checkUsage, incrementUsage, decrementUsage } from '../middleware/plan';
+import { incrementUsage, decrementUsage } from '../middleware/plan';
 import { emitToUser } from '../socket';
 import { sendEmail, getTenantEmailIdentity } from '../services/email';
 import { hashPassword } from '../utils/password';
@@ -136,6 +136,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
               t.phone       AS tenant_phone,
               t.address     AS tenant_address,
               t.plan,
+              t.max_users,
               t.created_at  AS tenant_created_at,
               u.name        AS owner_name,
               u.email       AS owner_email
@@ -297,12 +298,25 @@ router.get('/staff', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/settings/staff
-router.post('/staff', checkPermission('staff:manage'), checkUsage('staff'), async (req: AuthRequest, res: Response) => {
+router.post('/staff', checkPermission('staff:manage'), async (req: AuthRequest, res: Response) => {
   const bcrypt = await import('bcryptjs');
   // full_access=true → all permissions granted; false → read-only custom defaults
   const { name, email, password, full_access = true, phone, login_pin } = req.body;
   if (!name || !email) {
     res.status(400).json({ error: 'name and email required' }); return;
+  }
+
+  // Per-tenant user license check (includes owner + all active staff)
+  const tenantId = req.user!.tenantId!;
+  const [licenseRes, countRes] = await Promise.all([
+    query('SELECT max_users FROM tenants WHERE id=$1', [tenantId]),
+    query('SELECT COUNT(*)::int AS cnt FROM users WHERE tenant_id=$1 AND is_active=TRUE', [tenantId]),
+  ]);
+  const maxUsers = licenseRes.rows[0]?.max_users ?? 5;
+  const currentCount = countRes.rows[0]?.cnt ?? 0;
+  if (currentCount >= maxUsers) {
+    res.status(403).json({ error: `User license limit reached (${maxUsers}). Contact your admin to upgrade.` });
+    return;
   }
   if (login_pin !== undefined && login_pin !== '' && login_pin !== null && !/^\d{4}$/.test(String(login_pin))) {
     res.status(400).json({ error: 'Login PIN must be 4 digits' }); return;

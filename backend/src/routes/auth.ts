@@ -572,13 +572,14 @@ router.post('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest,
     plan_price: z.number().optional().nullable(),
     phone: z.string().optional().nullable(),
     address: z.string().optional().nullable(),
+    max_users: z.number().int().min(1).optional(),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
     return;
   }
-  const { businessName, email, adminName, password, plan, phone = null, address = null, plan_price = null } = parsed.data;
+  const { businessName, email, adminName, password, plan, phone = null, address = null, plan_price = null, max_users = 5 } = parsed.data;
   const cycle = normalizeCycle(parsed.data.billing_cycle ?? 'monthly');
   const expiresAt = endOfDayISTAfterPeriod(new Date(), cycle);
 
@@ -587,9 +588,9 @@ router.post('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest,
     await conn.query('BEGIN');
 
     const tenantRes = await conn.query(
-      `INSERT INTO tenants (name, email, plan, phone, address, billing_cycle, subscription_started_at, subscription_expires_at, subscription_status, plan_price)
-       VALUES ($1,$2,$3,$4,$5,$6, now(), $7, 'active', $8) RETURNING id`,
-      [businessName, email.toLowerCase().trim(), plan, phone, address, cycle, expiresAt, plan_price]
+      `INSERT INTO tenants (name, email, plan, phone, address, billing_cycle, subscription_started_at, subscription_expires_at, subscription_status, plan_price, max_users)
+       VALUES ($1,$2,$3,$4,$5,$6, now(), $7, 'active', $8, $9) RETURNING id`,
+      [businessName, email.toLowerCase().trim(), plan, phone, address, cycle, expiresAt, plan_price, max_users]
     );
     const tenantId = tenantRes.rows[0].id;
 
@@ -977,7 +978,7 @@ router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, 
         t.id, t.name, t.email, t.plan, t.is_active,
         t.subscription_status, t.subscription_expires_at, t.billing_cycle, t.plan_price,
         t.phone, t.address, t.created_at,
-        t.custom_domain, t.domain_status, t.superfone_enabled, t.email_credits,
+        t.custom_domain, t.domain_status, t.superfone_enabled, t.email_credits, t.max_users,
         COUNT(DISTINCT u.id) FILTER (WHERE u.is_active=TRUE) AS user_count,
         COUNT(DISTINCT l.id) AS lead_count,
         (SELECT au.name  FROM users au WHERE au.tenant_id=t.id AND au.role='owner' AND au.is_active=TRUE LIMIT 1) AS admin_name,
@@ -999,7 +1000,7 @@ router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, 
 
 // PATCH /api/auth/tenants/:id
 router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
-  const { name, plan, subscription_status, subscription_expires_at, billing_cycle, plan_price, phone, address, brand_color, logo_url, reply_to_email, owner_name, owner_email, superfone_enabled, email_credits } = req.body;
+  const { name, plan, subscription_status, subscription_expires_at, billing_cycle, plan_price, phone, address, brand_color, logo_url, reply_to_email, owner_name, owner_email, superfone_enabled, email_credits, max_users } = req.body;
   const updates: string[] = [];
   const params: any[] = [];
   if (name !== undefined)                    { params.push(name);                    updates.push(`name=$${params.length}`); }
@@ -1015,6 +1016,7 @@ router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthReq
   if (reply_to_email !== undefined)          { params.push(reply_to_email || null);   updates.push(`reply_to_email=$${params.length}`); }
   if (superfone_enabled !== undefined)       { params.push(superfone_enabled === true); updates.push(`superfone_enabled=$${params.length}`); }
   if (email_credits !== undefined)           { params.push(email_credits === '' || email_credits === null ? -1 : Number(email_credits)); updates.push(`email_credits=$${params.length}`); }
+  if (max_users !== undefined)               { params.push(Math.max(1, Number(max_users)));  updates.push(`max_users=$${params.length}`); }
   const hasOwnerEdit = owner_name !== undefined || owner_email !== undefined;
   if (!updates.length && !hasOwnerEdit) { res.status(400).json({ error: 'No fields to update' }); return; }
   try {

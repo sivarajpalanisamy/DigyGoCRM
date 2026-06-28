@@ -829,10 +829,14 @@ export default function StaffPage() {
   const tab = (searchParams.get('tab') ?? 'team') as 'team' | 'roles' | 'performance';
   const [showInviteModal, setShowInviteModal] = useState(false);
   const canManageStaff = usePermission('staff:manage');
+  const [maxUsers, setMaxUsers] = useState<number | null>(null);
 
   React.useEffect(() => {
     api.get<any[]>('/api/settings/staff')
       .then((rows) => setStaff(rows.map(mapApiStaff)))
+      .catch(() => {});
+    api.get<any>('/api/settings')
+      .then((s) => { if (s.max_users != null) setMaxUsers(s.max_users); })
       .catch(() => {});
   }, []);
 
@@ -942,10 +946,15 @@ export default function StaffPage() {
               <p className="text-[12px] text-[#7a6b5c] mt-0.5">
                 {staff.filter((s) => s.status === 'active').length} active
                 {staff.filter((s) => s.status === 'inactive').length > 0 && ` · ${staff.filter((s) => s.status === 'inactive').length} inactive`}
+                {maxUsers != null && ` · ${staff.filter((s) => s.status === 'active').length + 1}/${maxUsers} license used`}
               </p>
             </div>
             {canManageStaff && (
-              <Button className="btn-hover shrink-0" onClick={() => setShowInviteModal(true)}>
+              <Button
+                className="btn-hover shrink-0"
+                disabled={maxUsers != null && staff.filter((s) => s.status === 'active').length + 1 >= maxUsers}
+                onClick={() => setShowInviteModal(true)}
+              >
                 <Plus className="w-4 h-4 mr-1" /> New Staff
               </Button>
             )}

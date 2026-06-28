@@ -35,6 +35,7 @@ interface Tenant {
   custom_domain?: string | null;
   superfone_enabled?: boolean;
   email_credits?: number;
+  max_users?: number;
 }
 
 // Plans are Monthly / Yearly only (the billing cycle). The old tier field is retired.
@@ -333,6 +334,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
     owner_email: tenant.admin_email ?? '',
     superfone_enabled: !!tenant.superfone_enabled,
     email_credits: tenant.email_credits != null ? String(tenant.email_credits) : '-1',
+    max_users: tenant.max_users != null ? String(tenant.max_users) : '5',
   });
   const [saving, setSaving] = useState(false);
   const [renewing, setRenewing] = useState(false);
@@ -344,6 +346,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
         ...form,
         plan_price: form.plan_price === '' ? null : Number(form.plan_price),
         email_credits: form.email_credits === '' || form.email_credits === '-1' ? -1 : Number(form.email_credits),
+        max_users: Number(form.max_users) || 5,
         subscription_expires_at: form.subscription_expires_at || null,
       });
       toast.success('Account updated');
@@ -452,6 +455,18 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
                 checked={form.superfone_enabled}
                 onChange={(e) => setForm({ ...form, superfone_enabled: e.target.checked })} />
             </label>
+          </div>
+
+          {/* User License */}
+          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">User License</div>
+          <div>
+            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Max Users <span className="font-normal text-[#7a6b5c]">(including owner)</span></label>
+            <input type="number" min="1" value={form.max_users} onChange={(e) => setForm({ ...form, max_users: e.target.value })} className={inp} placeholder="5" />
+          </div>
+          <div className="flex items-end pb-1">
+            <p className="text-[11px] text-[#7a6b5c]">
+              Currently {tenant.user_count} active user{tenant.user_count !== 1 ? 's' : ''} of {form.max_users} allowed
+            </p>
           </div>
 
           {/* Email Credits */}
@@ -768,6 +783,7 @@ export default function SuperAdminPage() {
                       ? `Last login: ${format(new Date(t.last_login_at), 'MMM dd hh:mm aa')}`
                       : 'Never logged in'}
                     {t.phone ? ` · ${t.phone}` : ''}
+                    {` · ${t.user_count}/${t.max_users ?? 5} users`}
                   </p>
                   {/* Actions */}
                   <div className="flex items-center gap-1.5">
@@ -868,14 +884,20 @@ export default function SuperAdminPage() {
 
                     {/* Info */}
                     <td className="px-4 py-4 min-w-[160px]">
-                      <p className="text-[11px] text-[#7a6b5c] mb-1.5">
+                      <p className="text-[11px] text-[#7a6b5c] mb-1">
                         {t.last_login_at
                           ? `Last Login: ${format(new Date(t.last_login_at), 'MMM dd, yyyy hh:mm aa')}`
                           : 'Never logged in'}
                       </p>
-                      <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full', CYCLE_BADGE[cycleOf(t)])}>
-                        {CYCLE_LABEL[cycleOf(t)]}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full', CYCLE_BADGE[cycleOf(t)])}>
+                          {CYCLE_LABEL[cycleOf(t)]}
+                        </span>
+                        <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full',
+                          t.user_count >= (t.max_users ?? 5) ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600')}>
+                          {t.user_count}/{t.max_users ?? 5} users
+                        </span>
+                      </div>
                     </td>
 
                     {/* Actions */}
