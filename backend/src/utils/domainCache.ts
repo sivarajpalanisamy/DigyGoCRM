@@ -1,3 +1,5 @@
+import { publish, subscribe } from '../lib/redis';
+
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 export interface BrandingData {
@@ -41,11 +43,19 @@ export function setCachedTenantId(domain: string, tenantId: string): void {
   domainToTenantId.set(domain, { id: tenantId, cachedAt: Date.now() });
 }
 
-export function invalidateDomainCache(domain: string): void {
+function invalidateDomainCacheLocal(domain: string): void {
   domainToTenantId.delete(domain);
   domainToBranding.delete(domain);
 }
 
-// NOTE: In-memory cache works correctly for single PM2 process (current setup).
-// If PM2 is ever scaled to multiple workers (cluster mode), migrate this cache
-// to Redis to prevent out-of-sync state between processes.
+export function invalidateDomainCache(domain: string): void {
+  invalidateDomainCacheLocal(domain);
+  publish('cache:domain', domain); // broadcast to other instances (no-op without Redis)
+}
+
+// Apply domain invalidations from other instances (idempotent).
+subscribe('cache:domain', (domain) => invalidateDomainCacheLocal(domain));
+
+// NOTE: L1 lives in-memory per instance; invalidations are broadcast over Redis
+// pub/sub so multiple PM2 workers / instances stay in sync. Without REDIS_URL it
+// behaves exactly like the old single-process cache.

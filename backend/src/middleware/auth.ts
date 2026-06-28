@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { query } from '../db';
+import { publish, subscribe } from '../lib/redis';
 
 export interface AuthPayload {
   userId: string;
@@ -32,7 +33,11 @@ const TENANT_TTL_MS = 30_000;
 
 export function invalidateTenantCache(tenantId: string): void {
   tenantBillingCache.delete(tenantId);
+  publish('cache:billing', tenantId); // broadcast (no-op when Redis disabled)
 }
+
+// Apply billing invalidations from other instances (idempotent).
+subscribe('cache:billing', (tenantId) => { tenantBillingCache.delete(tenantId); });
 
 export async function getTenantBilling(tenantId: string): Promise<TenantBilling | null> {
   const cached = tenantBillingCache.get(tenantId);

@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { query } from '../db';
 import { AuthRequest } from './auth';
+import { publish, subscribe } from '../lib/redis';
 
 // DigyGo platform super_admin bypasses all permission checks via JWT role.
 // Business owners (role='owner') also bypass — role is in the JWT, no DB lookup needed.
@@ -102,7 +103,9 @@ export async function hasPermission(
 
 // Invalidate all cached entries for a specific user (+ optionally tenant-scoped).
 // Call after updating user_permissions.
-export function clearUserPermCache(userId: string, tenantId?: string | null): void {
+// Local-only L1 eviction (no broadcast). Used by both the public invalidator and
+// the pub/sub handler that applies invalidations from other instances.
+function clearUserPermCacheLocal(userId: string, tenantId?: string | null): void {
   const tenantPrefix = tenantId !== undefined
     ? `${tenantId ?? 'null'}:${userId}:`
     : null;
@@ -114,3 +117,15 @@ export function clearUserPermCache(userId: string, tenantId?: string | null): vo
     if (matches) permCache.delete(key);
   }
 }
+
+export function clearUserPermCache(userId: string, tenantId?: string | null): void {
+  clearUserPermCacheLocal(userId, tenantId);
+  // Broadcast so every instance drops its L1 entry (no-op when Redis disabled).
+  publish('cache:perm', JSON.stringify(tenantId === undefined ? { userId } : { userId, tenantId }));
+}
+
+// Apply invalidations published by other instances. Idempotent — receiving our
+// own message just re-clears already-cleared keys.
+subscribe('cache:perm', (msg) => {
+  try { const d = JSON.parse(msg); clearUserPermCacheLocal(d.userId, 'tenantId' in d ? d.tenantId : undefined); } catch {}
+});
