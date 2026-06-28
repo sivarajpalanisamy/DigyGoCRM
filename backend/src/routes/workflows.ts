@@ -1578,7 +1578,7 @@ export async function executeNodes(
         // ── Send Email ─────────────────────────────────────────────────────────
         case 'send_email': {
           const toEmail = interpolate((node.config.to ?? lead.email ?? '') as string, lead, valueTokens);
-          const subject = interpolate((node.config.subject ?? 'Message from DigyGo') as string, lead, valueTokens);
+          const subject = interpolate((node.config.subject ?? 'Message from Hawcus') as string, lead, valueTokens);
           const body    = interpolate((node.config.body ?? node.config.message ?? '') as string, lead, valueTokens);
 
           if (!toEmail) {

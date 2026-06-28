@@ -150,7 +150,7 @@ function verifyPinChallenge(token: string): string | null {
 // Send a freshly generated one-time PIN to the user's email (via Resend if configured, else SMTP).
 async function sendOtpEmail(user: { email: string; tenant_id: string | null }, otp: string): Promise<void> {
   const ident = await getTenantEmailIdentity(user.tenant_id);
-  const brand = ident.fromName || 'DigyGo CRM';
+  const brand = ident.fromName || 'Hawcus CRM';
   await sendEmail({
     to: user.email,
     subject: `Your ${brand} login PIN: ${otp}`,
@@ -212,7 +212,7 @@ async function completeLogin(res: Response, user: any): Promise<any> {
     [refreshHash, prefix, user.id]
   );
 
-  let tenantName = 'DigyGo CRM';
+  let tenantName = 'Hawcus CRM';
   let tenantBranding: any = { name: tenantName, logoUrl: null };
   if (user.tenant_id) {
     const brandRes = await query(
@@ -504,10 +504,10 @@ router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
     const user = result.rows[0];
     if (!user) { res.status(404).json({ error: 'User not found' }); return; }
 
-    let tenantName = user.tenant_name || user.legal_name || 'DigyGo CRM';
+    let tenantName = user.tenant_name || user.legal_name || 'Hawcus CRM';
     let tenantLogo = user.tenant_logo || null;
     const isSuper = user.role === 'super_admin';
-    if (isSuper) { tenantName = 'DigyGo CRM'; tenantLogo = null; }
+    if (isSuper) { tenantName = 'Hawcus CRM'; tenantLogo = null; }
 
     const bill = (!isSuper && user.tenant_id) ? await getTenantBilling(user.tenant_id) : null;
 
@@ -803,7 +803,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
 
     // Resolve tenant frontend URL + white-label identity
     let frontendUrl = process.env.FRONTEND_URL ?? 'https://crm.digygo.in';
-    let brand = 'DigyGo CRM';
+    let brand = 'Hawcus CRM';
     let replyTo: string | undefined;
     if (user.tenant_id) {
       const t = await query(
@@ -821,7 +821,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     setImmediate(() => sendEmail({
       to: email,
       subject: `Reset your ${brand} password`,
-      fromName: brand !== 'DigyGo CRM' ? brand : undefined,
+      fromName: brand !== 'Hawcus CRM' ? brand : undefined,
       replyTo,
       tenantId: user.tenant_id || undefined,
       html: `<p>We received a request to reset your <strong>${brand}</strong> password.</p>
@@ -1054,9 +1054,9 @@ router.patch('/tenants/:id', requireAuth, requireSuperAdmin, async (req: AuthReq
 
       // Solution C: notify on login-email change (old + new address).
       if (newEmail.toLowerCase() !== String(owner.email).toLowerCase()) {
-        const subject = 'Your DigyGo login email was changed';
+        const subject = 'Your Hawcus login email was changed';
         const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#3d3128">
-          <p>The login email for your DigyGo account was updated by an administrator.</p>
+          <p>The login email for your Hawcus account was updated by an administrator.</p>
           <p><b>Previous:</b> ${owner.email}<br/><b>New:</b> ${newEmail}</p>
           <p>You will sign in with <b>${newEmail}</b> from now on. If you did not expect this change, contact support immediately.</p></div>`;
         setImmediate(() => sendEmail({ to: owner.email, subject, html }).catch(() => {}));

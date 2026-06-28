@@ -1190,7 +1190,7 @@ export default function MetaFormsPage() {
           </div>
           <h3 className="font-headline font-bold text-[#1c1410] text-[16px] mb-2">Connect Meta Account</h3>
           <p className="text-[13px] text-[#7a6b5c] mb-6 max-w-xs mx-auto">
-            Authorise DigyGo CRM to receive leads from your Facebook & Instagram Lead Ads in real time.
+            Authorise Hawcus CRM to receive leads from your Facebook & Instagram Lead Ads in real time.
           </p>
           {!showManual ? (
             <div className="flex flex-col items-center gap-3">

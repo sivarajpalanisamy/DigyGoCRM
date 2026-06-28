@@ -367,7 +367,7 @@ export async function startSession(tenantId: string, sessionId: string): Promise
   const sock = makeWASocket({
     auth: state,
     printQRInTerminal: false,
-    browser: ['DigyGo CRM', 'Chrome', '1.0'],
+    browser: ['Hawcus CRM', 'Chrome', '1.0'],
     connectTimeoutMs: 30_000,
     logger: {
       level: 'warn',

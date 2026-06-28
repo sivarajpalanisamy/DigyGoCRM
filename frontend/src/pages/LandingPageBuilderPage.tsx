@@ -51,8 +51,8 @@ function defaultProps(type: BlockType): Record<string, any> {
     case 'divider':     return { style: 'solid', thickness: 1 };
     case 'spacer':      return { height: 48 };
     case 'features':    return { title: 'Everything you need', items: [{ icon: '⚡', title: 'Lightning Fast', desc: 'Set up in minutes, not months. No technical skills required.' }, { icon: '🎯', title: 'Laser Focused', desc: 'Capture the right leads at the right time with smart targeting.' }, { icon: '📈', title: 'Scale Effortlessly', desc: 'Grow from 10 to 10,000 leads without changing your workflow.' }] };
-    case 'cta':         return { headline: 'Ready to get started?', subtext: 'Join over 10,000 businesses already using DigyGo CRM.', btnText: 'Start Free Today' };
-    case 'testimonial': return { quote: 'DigyGo CRM transformed our lead generation. We saw a 3x increase in conversions within the first month!', name: 'Priya Sharma', role: 'CEO', company: 'TechWave Solutions' };
+    case 'cta':         return { headline: 'Ready to get started?', subtext: 'Join over 10,000 businesses already using Hawcus CRM.', btnText: 'Start Free Today' };
+    case 'testimonial': return { quote: 'Hawcus CRM transformed our lead generation. We saw a 3x increase in conversions within the first month!', name: 'Priya Sharma', role: 'CEO', company: 'TechWave Solutions' };
     case 'stats':       return { items: [{ value: '10,000+', label: 'Happy Customers' }, { value: '3x', label: 'More Leads' }, { value: '98%', label: 'Satisfaction' }, { value: '24/7', label: 'Support' }] };
     case 'form':        return { title: 'Get in Touch', fields: ['Name', 'Email', 'Phone'], btnText: 'Send Message' };
   }

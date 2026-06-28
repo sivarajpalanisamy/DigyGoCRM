@@ -963,7 +963,7 @@ export default function WABATemplateEditorPage() {
                   <span className="text-white text-xs font-bold">WA</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-[13px] font-semibold leading-tight">DigyGo CRM</p>
+                  <p className="text-white text-[13px] font-semibold leading-tight">Hawcus CRM</p>
                   <p className="text-green-300 text-[10px]">online</p>
                 </div>
               </div>

@@ -181,7 +181,7 @@ router.post('/number/request-otp', checkPermission('devices:manage'), async (req
     if (to) {
       await sendEmail({
         to,
-        subject: `Your DigyGo Dialer verification code: ${otp}`,
+        subject: `Your Hawcus Dialer verification code: ${otp}`,
         html: `<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto;text-align:center">
                  <p style="color:#5c5245;font-size:14px">Verification code for <b>${phone}</b>:</p>
                  <p style="font-size:34px;font-weight:800;letter-spacing:8px;color:#1c1410;margin:12px 0">${otp}</p>

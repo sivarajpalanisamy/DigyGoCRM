@@ -91,7 +91,7 @@ export default function LoginPage() {
             <div className="w-44 h-12 bg-gray-200 rounded-lg animate-pulse mb-0" />
           )
         ) : (
-          <img src="/digygo-logo.png" alt="DigyGo CRM" className="w-44 h-auto object-contain drop-shadow-md mb-0" />
+          <img src="/hawcus-logo.png" alt="Hawcus CRM" className="w-44 h-auto object-contain drop-shadow-md mb-0" />
         )}
 
         {/* Form card */}
@@ -101,7 +101,7 @@ export default function LoginPage() {
             <div className="text-center mb-4">
               <h1 className="font-headline text-xl font-bold tracking-tight text-[#1c1410]">Welcome back</h1>
               <p className="text-[#5c5245] mt-1 text-[13px] leading-relaxed">
-                {`Sign in to your ${isCustomDomain && tenantName ? tenantName : 'DigyGo CRM'} account`}
+                {`Sign in to your ${isCustomDomain && tenantName ? tenantName : 'Hawcus CRM'} account`}
               </p>
             </div>
 
@@ -190,7 +190,7 @@ export default function LoginPage() {
         {/* Footer — hidden on custom domains (full white-label) */}
         {!isCustomDomain && (
           <footer className="mt-3 text-center">
-            <p className="text-[11px] text-[#b09e8d]">Powered by DigyGo CRM © 2026</p>
+            <p className="text-[11px] text-[#b09e8d]">Powered by Hawcus CRM © 2026</p>
           </footer>
         )}
       </div>

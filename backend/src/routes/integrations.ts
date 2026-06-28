@@ -2163,7 +2163,7 @@ router.post('/smtp/send-test', checkPermission('integrations:manage'), async (re
   try {
     const { sendEmail, getTenantEmailIdentity } = require('../services/email');
     const ident = await getTenantEmailIdentity(req.user!.tenantId);
-    const brand = ident.fromName || 'DigyGo CRM';
+    const brand = ident.fromName || 'Hawcus CRM';
     await sendEmail({
       to: recipient,
       subject: `Test Email from ${brand}`,

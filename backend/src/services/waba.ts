@@ -189,7 +189,7 @@ export async function sendOtpViaWhatsApp(
     } else {
       resp = await sendWAText(
         creds.phoneNumberId, creds.token, toPhone,
-        `Your DigyGo verification code is ${code}. It expires in 10 minutes.`,
+        `Your Hawcus verification code is ${code}. It expires in 10 minutes.`,
       );
     }
     if (resp?.error) {

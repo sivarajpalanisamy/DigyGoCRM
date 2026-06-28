@@ -331,7 +331,7 @@ export default function CalendarEditPage() {
             <div className="space-y-5">
               <div>
                 <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Calendar name <span className="text-red-500">*</span></label>
-                <input className={inp} placeholder="DigyGoSlotBooking" value={form.name} onChange={(e) => upd('name', e.target.value)} autoFocus />
+                <input className={inp} placeholder="HawcusSlotBooking" value={form.name} onChange={(e) => upd('name', e.target.value)} autoFocus />
               </div>
               <div>
                 <label className="text-[13px] font-semibold text-[#1c1410] mb-2 block">Assign Staff</label>
