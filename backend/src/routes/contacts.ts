@@ -26,20 +26,43 @@ router.get('/', checkPermission('contacts:read'), async (req: AuthRequest, res: 
       }
     }
 
+    const { search, after, limit } = req.query as Record<string, string>;
     const params: any[] = [tenantId];
-    let assignedFilter = '';
+    let sql = `SELECT c.*, l.name AS lead_name, l.tags FROM contacts c
+       LEFT JOIN leads l ON l.id = c.lead_id
+       WHERE c.tenant_id = $1`;
+
     if (onlyAssigned) {
       params.push(userId);
-      assignedFilter = ` AND l.assigned_to = $${params.length}`;
+      sql += ` AND l.assigned_to = $${params.length}`;
+    }
+    if (search) {
+      params.push(`%${search}%`);
+      sql += ` AND (c.name ILIKE $${params.length} OR c.email ILIKE $${params.length} OR c.phone ILIKE $${params.length} OR c.company ILIKE $${params.length})`;
     }
 
-    const result = await query(
-      `SELECT c.*, l.name AS lead_name, l.tags FROM contacts c
-       LEFT JOIN leads l ON l.id = c.lead_id
-       WHERE c.tenant_id = $1${assignedFilter} ORDER BY c.created_at DESC`,
-      params
-    );
-    res.json(result.rows);
+    // Keyset pagination — opt-in via `after` (""=first page). Tiebreak on id so
+    // contacts sharing a created_at (bulk import) never skip/duplicate at a boundary.
+    const paginated = after !== undefined;
+    const pageSize = Math.min(500, Math.max(1, parseInt(limit) || 50));
+    if (paginated && after) {
+      const [ts, id] = after.split('|');
+      params.push(ts, id);
+      sql += ` AND (c.created_at, c.id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`;
+    }
+    sql += ` ORDER BY c.created_at DESC, c.id DESC`;
+    if (paginated) { params.push(pageSize); sql += ` LIMIT $${params.length}`; }
+
+    const result = await query(sql, params);
+    if (paginated) {
+      const rows = result.rows;
+      const nextCursor = rows.length === pageSize
+        ? `${(rows[rows.length - 1].created_at as Date).toISOString()}|${rows[rows.length - 1].id}`
+        : null;
+      res.json({ contacts: rows, nextCursor });
+    } else {
+      res.json(result.rows);
+    }
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 

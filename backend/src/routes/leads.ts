@@ -113,12 +113,21 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   const pageSize = parseInt(limit);
 
   if (after !== undefined) {
-    // Keyset / cursor pagination — after="" means first page
+    // Keyset / cursor pagination — after="" means first page. Cursor is
+    // "<iso>|<id>" so leads sharing a created_at (bulk import) can't skip or
+    // duplicate at a page boundary. (Legacy bare-timestamp cursors still work:
+    // the id half is just absent.)
     if (after) {
-      params.push(after);
-      sql += ` AND l.created_at < $${params.length}`;
+      const [ts, id] = after.split('|');
+      if (id) {
+        params.push(ts, id);
+        sql += ` AND (l.created_at, l.id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`;
+      } else {
+        params.push(ts);
+        sql += ` AND l.created_at < $${params.length}`;
+      }
     }
-    sql += ` ORDER BY l.created_at DESC LIMIT $${params.length + 1}`;
+    sql += ` ORDER BY l.created_at DESC, l.id DESC LIMIT $${params.length + 1}`;
     params.push(pageSize);
   } else {
     // Legacy offset pagination (used by initFromApi with limit=200)
@@ -138,8 +147,9 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     });
 
     if (after !== undefined) {
+      const last = rows[rows.length - 1];
       const nextCursor = rows.length === pageSize
-        ? rows[rows.length - 1].created_at as string
+        ? `${new Date(last.created_at).toISOString()}|${last.id}`
         : null;
       res.json({ leads: rows, nextCursor });
     } else {
@@ -152,6 +162,47 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       return;
     }
     console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Resolve whether a user sees all tenant leads or only their assigned ones.
+// Mirrors the inline block in GET '/' (super_admin → all; owner → all;
+// only_assigned wins over view_all; fail-safe = restrict).
+async function resolveViewAll(userId: string, tenantId: string | null, role: string): Promise<boolean> {
+  if (role === 'super_admin') return true;
+  let isOwner = false;
+  try { isOwner = (await query('SELECT is_owner FROM users WHERE id=$1 AND ($2::uuid IS NULL OR tenant_id=$2::uuid)', [userId, tenantId])).rows[0]?.is_owner === true; } catch { isOwner = false; }
+  if (isOwner) return true;
+  let onlyAssigned = false;
+  try { onlyAssigned = await hasPermission(userId, 'leads:only_assigned', tenantId!); } catch { onlyAssigned = true; }
+  if (onlyAssigned) return false;
+  try { return await hasPermission(userId, 'leads:view_all', tenantId!); } catch { return false; }
+}
+
+// GET /api/leads/stage-counts?pipeline_id= — lead count per stage for the board,
+// so the kanban can show counts without loading every lead. View-scoped.
+router.get('/stage-counts', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  const { pipeline_id } = req.query as Record<string, string>;
+  try {
+    const viewAll = await resolveViewAll(userId, tenantId, role);
+    const params: any[] = [tenantId];
+    let sql = `SELECT l.stage_id, COUNT(*)::int AS count
+               FROM leads l
+               WHERE l.tenant_id = $1 AND l.is_deleted = FALSE`;
+    if (!viewAll) {
+      params.push(userId);
+      sql += ` AND (l.assigned_to = $${params.length}::uuid OR $${params.length}::uuid = ANY(l.team_members))`;
+    }
+    if (pipeline_id) { params.push(pipeline_id); sql += ` AND l.pipeline_id = $${params.length}`; }
+    sql += ` GROUP BY l.stage_id`;
+    const r = await query(sql, params);
+    const counts: Record<string, number> = {};
+    for (const row of r.rows) if (row.stage_id) counts[row.stage_id] = row.count;
+    res.json({ counts });
+  } catch (err: any) {
+    console.error('[GET /leads/stage-counts]', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
