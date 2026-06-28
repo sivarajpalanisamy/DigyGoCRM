@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:call_log/call_log.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'dart:async';
 
@@ -173,6 +174,20 @@ class RootRouter extends StatefulWidget {
 
 class _RootRouterState extends State<RootRouter> with WidgetsBindingObserver {
   Widget? _screen;
+  bool _askedNotif = false;
+
+  // Request POST_NOTIFICATIONS once per session if not already granted. Covers
+  // already-onboarded users (the optional onboarding step never re-shows for them).
+  Future<void> _ensureNotificationPermission() async {
+    if (_askedNotif) return;
+    _askedNotif = true;
+    try {
+      final st = await Permission.notification.status;
+      if (!st.isGranted && !st.isPermanentlyDenied) {
+        await Permission.notification.request();
+      }
+    } catch (_) {}
+  }
 
   @override
   void initState() {
@@ -217,6 +232,10 @@ class _RootRouterState extends State<RootRouter> with WidgetsBindingObserver {
       return;
     }
     // 4) Ready - show the dialer. Sync/recording only run when linked to the CRM.
+    // Ask for notification permission here too (not just in onboarding): users who
+    // already onboarded before this feature skip the gate, so this is the only place
+    // they get prompted for lead-assigned + follow-up reminder notifications.
+    _ensureNotificationPermission();
     Api.instance.refreshSyncConfig(); // ensure the background auto-sync service has the latest config
     if (await Api.instance.hasDeviceToken()) {
       _syncCallLogsFallback(); // FALLBACK: mirror any calls the background service missed
