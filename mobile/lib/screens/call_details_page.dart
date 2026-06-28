@@ -315,6 +315,32 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
     }
   }
 
+  // A date/time pill for the "NEXT FOLLOW-UP" row: orange when selected, outlined
+  // otherwise. Subtitle (e.g. "28 Jun") is shown only for the date chips.
+  Widget _fuChip({required bool sel, required String title, String? subtitle, VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+        decoration: BoxDecoration(
+          color: sel ? Brand.accent : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: sel ? Brand.accent : const Color(0x22000000)),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(title, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: sel ? Colors.white : Brand.ink)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 1),
+            Text(subtitle, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 10, color: sel ? Colors.white70 : Brand.muted)),
+          ],
+        ]),
+      ),
+    );
+  }
+
   // "Set Follow-Up" outcome picker matching the CRM web: "HOW DID IT GO?" outcome
   // chips (tenant dispositions) + optional note. Saving records the outcome on the
   // lead (sets quality + logs it on the timeline).
@@ -328,6 +354,11 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
     final noteCtrl = TextEditingController();
     String? selectedKey;
     bool saving = false;
+    // NEXT FOLLOW-UP selection (revealed after an outcome is picked, like the web).
+    int dateIdx = -1;          // 0 Today · 1 Tomorrow · 2 In 3 days · 3 Custom
+    DateTime? customDate;       // set when dateIdx == 3 (Pick)
+    int timeIdx = -1;          // 0..3 presets · 4 Custom
+    TimeOfDay? customTime;       // set when timeIdx == 4
 
     await showDialog<void>(
       context: context,
@@ -378,6 +409,80 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
                   );
                 }).toList(),
               ),
+              // ── NEXT FOLLOW-UP (only after an outcome is chosen) ──────────────
+              if (selectedKey != null) ...[
+                const SizedBox(height: 18),
+                const Text('NEXT FOLLOW-UP', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Brand.muted, letterSpacing: 0.6)),
+                const SizedBox(height: 10),
+                Builder(builder: (_) {
+                  final now = DateTime.now();
+                  const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                  String sub(DateTime d) => '${d.day} ${mons[d.month - 1]}';
+                  final presets = <List<dynamic>>[
+                    ['Today', now],
+                    ['Tomorrow', now.add(const Duration(days: 1))],
+                    ['In 3 days', now.add(const Duration(days: 3))],
+                  ];
+                  return Column(children: [
+                    Row(children: [
+                      for (var i = 0; i < presets.length; i++) ...[
+                        Expanded(child: _fuChip(
+                          sel: dateIdx == i,
+                          title: presets[i][0] as String,
+                          subtitle: sub(presets[i][1] as DateTime),
+                          onTap: saving ? null : () => setLocal(() => dateIdx = i),
+                        )),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(child: _fuChip(
+                        sel: dateIdx == 3,
+                        title: 'Pick',
+                        subtitle: customDate != null ? sub(customDate!) : 'Custom',
+                        onTap: saving ? null : () async {
+                          final picked = await showDatePicker(
+                            context: ctx,
+                            initialDate: customDate ?? now,
+                            firstDate: DateTime(now.year, now.month, now.day),
+                            lastDate: DateTime(now.year + 3),
+                          );
+                          if (picked != null) setLocal(() { customDate = picked; dateIdx = 3; });
+                        },
+                      )),
+                    ]),
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      for (var i = 0; i < 4; i++) ...[
+                        Expanded(child: _fuChip(
+                          sel: timeIdx == i,
+                          title: const ['9 AM', '12 PM', '3 PM', '6 PM'][i],
+                          onTap: saving ? null : () => setLocal(() => timeIdx = i),
+                        )),
+                        if (i < 3) const SizedBox(width: 8),
+                      ],
+                    ]),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: timeIdx == 4 ? Brand.accent : Brand.muted,
+                          side: BorderSide(color: timeIdx == 4 ? Brand.accent : const Color(0x22000000)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.schedule, size: 16),
+                        label: Text(
+                          timeIdx == 4 && customTime != null ? 'Custom time: ${customTime!.format(ctx)}' : 'Custom time',
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                        ),
+                        onPressed: saving ? null : () async {
+                          final picked = await showTimePicker(context: ctx, initialTime: customTime ?? const TimeOfDay(hour: 9, minute: 0));
+                          if (picked != null) setLocal(() { customTime = picked; timeIdx = 4; });
+                        },
+                      ),
+                    ),
+                  ]);
+                }),
+              ],
               const SizedBox(height: 14),
               TextField(
                 controller: noteCtrl,
@@ -388,31 +493,56 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity, height: 48,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: Brand.accent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  onPressed: saving ? null : () async {
-                    if (selectedKey == null) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Pick an outcome')));
-                      return;
-                    }
-                    setLocal(() => saving = true);
-                    try {
-                      await Api.instance.leadDisposition(id, dispositionKey: selectedKey!, note: noteCtrl.text.trim());
-                      if (ctx.mounted) Navigator.pop(ctx);
-                      _toast('Outcome saved');
-                      await _load();
-                    } catch (_) {
-                      setLocal(() => saving = false);
-                      if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Could not save')));
-                    }
-                  },
-                  child: saving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Save outcome', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                ),
-              ),
+              Builder(builder: (_) {
+                final hasDate = dateIdx >= 0 && (dateIdx != 3 || customDate != null);
+                return SizedBox(
+                  width: double.infinity, height: 48,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(backgroundColor: Brand.accent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    onPressed: saving ? null : () async {
+                      if (selectedKey == null) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Pick an outcome')));
+                        return;
+                      }
+                      // Resolve the chosen follow-up date + time (if any).
+                      final now = DateTime.now();
+                      DateTime? d;
+                      if (dateIdx == 0) { d = now; }
+                      else if (dateIdx == 1) { d = now.add(const Duration(days: 1)); }
+                      else if (dateIdx == 2) { d = now.add(const Duration(days: 3)); }
+                      else if (dateIdx == 3) { d = customDate; }
+                      String two(int n) => n.toString().padLeft(2, '0');
+                      String? fuDate, fuTime;
+                      if (d != null) {
+                        fuDate = '${d.year}-${two(d.month)}-${two(d.day)}';
+                        int? hh; int mm = 0;
+                        if (timeIdx >= 0 && timeIdx < 4) { hh = const [9, 12, 15, 18][timeIdx]; }
+                        else if (timeIdx == 4 && customTime != null) { hh = customTime!.hour; mm = customTime!.minute; }
+                        if (hh != null) { fuTime = '${two(hh)}:${two(mm)}'; }
+                      }
+                      setLocal(() => saving = true);
+                      try {
+                        await Api.instance.leadDisposition(
+                          id,
+                          dispositionKey: selectedKey!,
+                          note: noteCtrl.text.trim(),
+                          followUpDate: fuDate,
+                          followUpTime: fuTime,
+                        );
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        _toast(fuDate != null ? 'Follow-up set' : 'Outcome saved');
+                        await _load();
+                      } catch (_) {
+                        setLocal(() => saving = false);
+                        if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Could not save')));
+                      }
+                    },
+                    child: saving
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Text(hasDate ? 'Save & set follow-up' : 'Save outcome', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  ),
+                );
+              }),
             ]),
           ),
         );
