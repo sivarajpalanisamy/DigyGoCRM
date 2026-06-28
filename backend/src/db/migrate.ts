@@ -125,6 +125,8 @@ const MIGRATIONS = [
   'migration_122_dialer_number_verification.sql',
   'migration_123_device_numbers.sql',
   'migration_124_number_one_org.sql',
+  'migration_125_call_disposition_key.sql',
+  'migration_126_call_dispositions_config.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
