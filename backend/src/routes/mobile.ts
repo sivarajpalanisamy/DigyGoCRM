@@ -584,6 +584,31 @@ router.post('/calls/by-key/note', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/mobile/notifications?after=<iso> — push-worthy notifications for THIS
+// device's staff: a new lead assigned to them, and follow-up due reminders. The
+// native poller passes the last-seen timestamp as `after` and dedups on it.
+router.get('/notifications', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const after = (req.query.after ?? '').toString();
+  try {
+    const params: any[] = [tenantId, userId];
+    let cur = '';
+    if (after) { params.push(after); cur = ` AND created_at > $${params.length}::timestamptz`; }
+    const r = await query(
+      `SELECT id, type, title, message, created_at
+       FROM notifications
+       WHERE tenant_id=$1::uuid AND user_id=$2::uuid
+         AND type IN ('assigned','new_lead','follow_up_due')${cur}
+       ORDER BY created_at ASC LIMIT 30`,
+      params
+    );
+    res.json({ notifications: r.rows });
+  } catch (err: any) {
+    console.error('[mobile/notifications]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/mobile/dispositions — tenant's post-call outcome options (device auth).
 // Mirrors the web /api/calls/dispositions so the mobile post-call screen shows the
 // same chips. Returns the tenant's custom list or the shared defaults.

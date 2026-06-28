@@ -73,6 +73,18 @@ class OnboardingGate {
             return await Native.instance.hasAllFilesAccess();
           },
         ),
+        // Notifications (Android 13+ asks at runtime; auto-granted on older OS).
+        // Optional - the app works without it, but enabling it surfaces alerts when
+        // a new lead is assigned to this number's staff and when follow-ups are due.
+        GateStep(
+          key: 'notifications',
+          title: 'Notifications',
+          rationale: 'Get alerted when a new lead is assigned to you and when follow-ups are due.',
+          icon: Icons.notifications_active_outlined,
+          required: false,
+          isSatisfied: () async => await Permission.notification.isGranted,
+          request: () async => (await Permission.notification.request()).isGranted,
+        ),
       ];
 
   /// Gate passes when every HARD-required step is satisfied.

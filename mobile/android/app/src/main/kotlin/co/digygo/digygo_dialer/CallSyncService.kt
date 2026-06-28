@@ -13,6 +13,9 @@ import android.os.IBinder
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 /**
  * Persistent foreground service that keeps DigyGo listening for calls in the
@@ -35,6 +38,7 @@ class CallSyncService : Service() {
     private var callback: Any? = null            // TelephonyCallback (S+)
     private var legacyListener: PhoneStateListener? = null
     @Volatile private var sawNonIdle = false
+    private var notifPoller: ScheduledExecutorService? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -42,6 +46,17 @@ class CallSyncService : Service() {
         super.onCreate()
         goForeground()
         registerCallStateListener()
+        startNotificationPolling()
+    }
+
+    // Poll the CRM for this staff's new-lead-assigned + follow-up-due notifications
+    // and post them locally. Runs on the always-alive FGS so alerts arrive without
+    // FCM. First poll after 5s, then every 60s (cheap GET; dedup via watermark).
+    private fun startNotificationPolling() {
+        notifPoller = Executors.newSingleThreadScheduledExecutor()
+        notifPoller?.scheduleWithFixedDelay({
+            try { NotificationSync.poll(applicationContext) } catch (e: Exception) {}
+        }, 5, 60, TimeUnit.SECONDS)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -132,6 +147,7 @@ class CallSyncService : Service() {
     }
 
     override fun onDestroy() {
+        try { notifPoller?.shutdownNow() } catch (e: Exception) {}
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 (callback as? TelephonyCallback)?.let { tm?.unregisterTelephonyCallback(it) }
