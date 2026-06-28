@@ -28,6 +28,8 @@ import java.util.TimeZone
 object NotificationSync {
     private const val CH = "digygo_crm_alerts"
     private const val WATERMARK = "notif_watermark"
+    private const val POSTED_IDS = "notif_posted_ids"   // dedup guard (last ~300 ids)
+    private const val MAX_POSTED = 300
     private val lock = Any()
 
     fun poll(ctx: Context) {
@@ -44,21 +46,28 @@ object NotificationSync {
             }
             val body = httpGet(base, token, after) ?: return
             try {
-                val arr = JSONObject(body).optJSONArray("notifications") ?: return
-                var maxTs = after
+                val obj = JSONObject(body)
+                val arr = obj.optJSONArray("notifications") ?: return
+                // Posted-id guard: never re-show a notification we've already posted,
+                // even if the watermark hiccups (belt-and-braces with `nextAfter`).
+                val posted = LinkedHashSet<String>(
+                    (prefs.getString(POSTED_IDS, "") ?: "").split(",").filter { it.isNotEmpty() }
+                )
                 for (i in 0 until arr.length()) {
                     val n = arr.getJSONObject(i)
-                    val createdAt = n.optString("created_at")
-                    postNotif(
-                        ctx,
-                        n.optString("id"),
-                        n.optString("type"),
-                        n.optString("title"),
-                        n.optString("message"),
-                    )
-                    if (createdAt > maxTs) maxTs = createdAt // ISO-8601 sorts lexicographically
+                    val id = n.optString("id")
+                    if (id.isNotEmpty() && posted.contains(id)) continue
+                    postNotif(ctx, id, n.optString("type"), n.optString("title"), n.optString("message"))
+                    if (id.isNotEmpty()) posted.add(id)
                 }
-                if (maxTs != after) prefs.edit().putString(WATERMARK, maxTs).apply()
+                // Advance the watermark to the server's full-precision cursor so the
+                // newest row isn't matched again next poll (fixes duplicate alerts).
+                val nextAfter = obj.optString("nextAfter", after)
+                val trimmed = if (posted.size > MAX_POSTED) posted.toList().takeLast(MAX_POSTED) else posted.toList()
+                prefs.edit()
+                    .putString(WATERMARK, if (nextAfter.isNotEmpty()) nextAfter else after)
+                    .putString(POSTED_IDS, trimmed.joinToString(","))
+                    .apply()
             } catch (e: Exception) { /* malformed response - skip this cycle */ }
         }
     }

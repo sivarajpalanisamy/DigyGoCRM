@@ -5,6 +5,7 @@ import {
 import { useCompanyStore } from '@/store/companyStore';
 import { useUserLevel } from '@/hooks/useUserLevel';
 import { api } from '@/lib/api';
+import { getSocket } from '@/lib/socket';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Bar, ComposedChart, LabelList,
@@ -781,6 +782,30 @@ export default function DashboardPage() {
       .then((r) => setTimeline({ daily: r.daily ?? {}, hourly: r.hourly ?? {} }))
       .catch(() => setTimeline({ daily: {}, hourly: {} }));
   }, [apiUrl]);
+
+  // Live refresh: when a lead is created/updated/deleted anywhere (realtime socket,
+  // manual add, import), re-pull the analytics + timeline so the dashboard reflects
+  // it immediately - no page reload needed. Debounced to coalesce bursts (e.g. import).
+  useEffect(() => {
+    if (range === 'custom' && (!customFrom || !customTo)) return;
+    const socket = getSocket();
+    const tlUrl = range === 'custom' && customFrom && customTo
+      ? `/api/dashboard/lead-timeline?range=custom&from=${customFrom}&to=${customTo}`
+      : `/api/dashboard/lead-timeline?range=${range}`;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => {
+        api.get<Analytics>(apiUrl).then((r) => setAnalytics(r)).catch(() => null);
+        api.get<{ daily: Record<string, number>; hourly: Record<string, number> }>(tlUrl)
+          .then((r) => setTimeline({ daily: r.daily ?? {}, hourly: r.hourly ?? {} }))
+          .catch(() => null);
+      }, 800);
+    };
+    const events = ['lead:created', 'lead:updated', 'lead:deleted'];
+    events.forEach((e) => socket.on(e, refresh));
+    return () => { if (t) clearTimeout(t); events.forEach((e) => socket.off(e, refresh)); };
+  }, [apiUrl, range, customFrom, customTo]);
 
   const lineData = useMemo(() => {
     const today = startOfDay(new Date());

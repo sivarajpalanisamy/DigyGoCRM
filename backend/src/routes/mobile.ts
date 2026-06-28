@@ -607,14 +607,21 @@ router.get('/notifications', async (req: AuthRequest, res: Response) => {
     let cur = '';
     if (after) { params.push(after); cur = ` AND created_at > $${params.length}::timestamptz`; }
     const r = await query(
-      `SELECT id, type, title, message, created_at
+      // created_at::text is FULL microsecond precision; the JSON `created_at`
+      // (a JS Date) is only millisecond, so we return `cursor` as the watermark.
+      // Using the truncated ms value would keep re-matching the newest row and
+      // re-fire the same notification every poll (the duplicate-alert bug).
+      `SELECT id, type, title, message, created_at, created_at::text AS cursor
        FROM notifications
        WHERE tenant_id=$1::uuid AND user_id=$2::uuid
          AND type IN ('assigned','new_lead','follow_up_due')${cur}
        ORDER BY created_at ASC LIMIT 30`,
       params
     );
-    res.json({ notifications: r.rows });
+    // Advance the watermark to the newest row's full-precision timestamp; if there
+    // was nothing new, keep the caller's `after` unchanged.
+    const nextAfter = r.rows.length ? r.rows[r.rows.length - 1].cursor : (after || null);
+    res.json({ notifications: r.rows, nextAfter });
   } catch (err: any) {
     console.error('[mobile/notifications]', err.message);
     res.status(500).json({ error: 'Server error' });

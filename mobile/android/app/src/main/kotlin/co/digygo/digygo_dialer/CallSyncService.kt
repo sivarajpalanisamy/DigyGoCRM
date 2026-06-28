@@ -51,12 +51,13 @@ class CallSyncService : Service() {
 
     // Poll the CRM for this staff's new-lead-assigned + follow-up-due notifications
     // and post them locally. Runs on the always-alive FGS so alerts arrive without
-    // FCM. First poll after 5s, then every 60s (cheap GET; dedup via watermark).
+    // FCM. First poll after 5s, then every 30s (cheap GET; deduped server-side via
+    // a full-precision cursor + a client posted-id guard).
     private fun startNotificationPolling() {
         notifPoller = Executors.newSingleThreadScheduledExecutor()
         notifPoller?.scheduleWithFixedDelay({
             try { NotificationSync.poll(applicationContext) } catch (e: Exception) {}
-        }, 5, 60, TimeUnit.SECONDS)
+        }, 5, 30, TimeUnit.SECONDS)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
