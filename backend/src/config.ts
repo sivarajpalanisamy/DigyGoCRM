@@ -21,6 +21,7 @@ export const config = {
   metaWebhookVerifyToken: process.env.META_WEBHOOK_VERIFY_TOKEN ?? 'digygo_webhook_verify',
   webhookBaseUrl: process.env.WEBHOOK_BASE_URL ?? process.env.FRONTEND_URL!,
   nodeEnv: process.env.NODE_ENV ?? 'development',
+  redisUrl: process.env.REDIS_URL ?? '',   // empty = Redis disabled, caches fall back to in-memory
   smtp: {
     host:     process.env.SMTP_HOST     ?? '',
     port:     parseInt(process.env.SMTP_PORT ?? '587'),

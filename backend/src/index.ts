@@ -9,6 +9,7 @@ import { runMigrations } from './db/migrate';
 import { validateSchema } from './db/schema-validator';
 import { config } from './config';
 import { initSocket } from './socket';
+import { getRedis, redisEnabled } from './lib/redis';
 
 import authRoutes         from './routes/auth';
 import leadsRoutes        from './routes/leads';
@@ -333,6 +334,10 @@ runMigrations()
     setInterval(() => checkSubscriptionExpiry(), 24 * 60 * 60_000);
     setTimeout(() => checkSubscriptionExpiry().catch(() => null), 75_000);
     console.log('💳  Subscription reminder worker started (24h interval)');
+
+    // Warm the Redis connection (no-op if REDIS_URL unset; never blocks boot).
+    if (redisEnabled) { getRedis(); console.log('🧠  Redis enabled — caches + rate limiting will use it (in-memory fallback if it blips)'); }
+    else { console.log('🧠  Redis disabled (no REDIS_URL) — using in-memory caches + rate limiting'); }
 
     httpServer.listen(PORT, () => {
       console.log(`\n🚀  DigyGo CRM Backend running on http://localhost:${PORT}`);
