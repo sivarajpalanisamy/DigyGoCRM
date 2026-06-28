@@ -7,6 +7,7 @@ import {
 import { useCrmStore } from '@/store/crmStore';
 import { usePermission } from '@/hooks/usePermission';
 import { api } from '@/lib/api';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -125,6 +126,8 @@ export default function ContactGroupPage() {
   };
 
   useEffect(() => { fetchGroups(); }, []);
+  // Live-refresh groups on any tenant data change (no manual reload).
+  useLiveRefresh(() => { fetchGroups(); });
 
   // ── Fetch members when group selected ──────────────────────────────────────
   useEffect(() => {

@@ -11,6 +11,7 @@ import { cn, copyToClipboard } from '@/lib/utils';
 import { toast } from 'sonner';
 import { api, getAccessToken, BASE } from '@/lib/api';
 import { usePermission } from '@/hooks/usePermission';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { getSocket } from '@/lib/socket';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -690,6 +691,8 @@ export default function AutomationTemplatesPage() {
   };
 
   useEffect(() => { load(); }, []);
+  // Live-refresh templates on any tenant data change (no manual reload).
+  useLiveRefresh(() => { load(); });
 
   // Real-time template status updates from Meta webhooks
   useEffect(() => {

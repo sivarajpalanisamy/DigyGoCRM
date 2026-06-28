@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useCrmStore } from '@/store/crmStore';
 import { api } from '@/lib/api';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 
 type AssignMethod = 'round-robin' | 'source' | 'stage' | 'manual';
 
@@ -112,6 +113,9 @@ export default function AssignmentRulesPage() {
   const [staffList, setStaffList] = useState<Array<{ id: string; name: string }>>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [liveTick, setLiveTick] = useState(0);
+  // Live-refresh rules on any tenant data change (no manual reload).
+  useLiveRefresh(() => setLiveTick((n) => n + 1));
 
   useEffect(() => {
     api.get<any[]>('/api/assignment-rules')
@@ -131,7 +135,7 @@ export default function AssignmentRulesPage() {
         .then((rows) => setStaffList(rows.filter((r) => r.is_active).map((r) => ({ id: r.id, name: r.name }))))
         .catch(() => {});
     }
-  }, [storeStaff]);
+  }, [storeStaff, liveTick]);
 
   const toggleRule = async (rule: AssignRule) => {
     const next = !rule.is_active;

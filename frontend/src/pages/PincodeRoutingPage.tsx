@@ -4,6 +4,7 @@ import { Trash2, Search, MapPin, RefreshCw, CheckCircle, AlertCircle, Download,
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import * as XLSX from 'xlsx';
 import { formatDistanceToNow } from 'date-fns';
 import CreateCustomFieldModal from '@/components/CreateCustomFieldModal';
@@ -97,6 +98,8 @@ export default function PincodeRoutingPage() {
   };
 
   useEffect(() => { loadSets(); }, []);
+  // Live-refresh routing sets on any tenant data change (no manual reload).
+  useLiveRefresh(() => { loadSets(); });
 
   // ── Create set ──────────────────────────────────────────────────────────────
   const handleCreate = async () => {

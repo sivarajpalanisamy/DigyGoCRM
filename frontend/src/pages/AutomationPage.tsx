@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCrmStore } from '@/store/crmStore';
 import { usePermission } from '@/hooks/usePermission';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import {
   Search, Plus, Zap, MoreVertical, X, CheckCircle2, Clock,
   Users, Activity, Pencil, Copy, Trash2, ChevronRight,
@@ -747,6 +748,8 @@ export default function AutomationPage() {
   };
 
   useEffect(() => { fetchWorkflows(); }, []);
+  // Live-refresh workflows on any tenant data change (no manual reload).
+  useLiveRefresh(() => { fetchWorkflows(); });
 
   const filtered = useMemo(() => {
     let list = [...workflows];

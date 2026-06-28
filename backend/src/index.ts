@@ -7,7 +7,7 @@ import { pool } from './db';
 import { runMigrations } from './db/migrate';
 import { validateSchema } from './db/schema-validator';
 import { config } from './config';
-import { initSocket } from './socket';
+import { initSocket, emitToTenant } from './socket';
 import { getRedis, redisEnabled } from './lib/redis';
 import { makeLimiter } from './lib/rateLimit';
 import { ipBlockGuard } from './middleware/ipBlock';
@@ -159,6 +159,30 @@ app.use('/api/webhooks/meta',             express.raw({ type: '*/*' }));
 app.use('/api/webhooks/whatsapp',         express.raw({ type: '*/*' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
+
+// ── Live data-change broadcast ─────────────────────────────────────────────────
+// After ANY successful mutating API call, signal the tenant so every open CRM page
+// can live-refresh the affected resource without a manual reload. Fire-and-forget
+// on response finish — it never touches the response. (Leads/conversations also
+// emit their own typed events; the frontend may listen to either.) High-frequency
+// or non-CRM paths are skipped to avoid refresh storms.
+const DATA_CHANGE_SKIP = new Set([
+  'auth', 'webhooks', 'public', 'mobile', 'calls', 'notifications', 'health', 'wf',
+]);
+app.use((req, res, next) => {
+  const m = req.method;
+  if (m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE') {
+    res.on('finish', () => {
+      if (res.statusCode >= 300) return;
+      const user = (req as any).user;
+      if (!user?.tenantId) return;
+      const seg = req.path.match(/^\/api\/([a-z0-9_-]+)/i)?.[1]?.toLowerCase();
+      if (!seg || DATA_CHANGE_SKIP.has(seg)) return;
+      try { emitToTenant(user.tenantId, 'data:changed', { resource: seg }); } catch { /* noop */ }
+    });
+  }
+  next();
+});
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', async (_req, res) => {

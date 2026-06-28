@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import {
   Plus, Pencil, Trash2, Copy, Layout, X, Check, Globe, Eye,
   Users, Paintbrush,
@@ -118,12 +119,15 @@ export default function LandingPagesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editPage, setEditPage] = useState<LandingPage | null>(null);
 
+  const [liveTick, setLiveTick] = useState(0);
+  // Live-refresh landing pages on any tenant data change (no manual reload).
+  useLiveRefresh(() => setLiveTick((n) => n + 1));
   useEffect(() => {
     api.get<any[]>('/api/landing-pages')
       .then((rows) => setPages((rows ?? []).map(mapPage)))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [liveTick]);
 
   const totalViews = pages.reduce((s, p) => s + p.views, 0);
   const totalLeads = pages.reduce((s, p) => s + p.leads, 0);

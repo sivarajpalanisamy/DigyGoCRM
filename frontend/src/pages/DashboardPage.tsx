@@ -802,7 +802,7 @@ export default function DashboardPage() {
           .catch(() => null);
       }, 800);
     };
-    const events = ['lead:created', 'lead:updated', 'lead:deleted'];
+    const events = ['lead:created', 'lead:updated', 'lead:deleted', 'data:changed'];
     events.forEach((e) => socket.on(e, refresh));
     return () => { if (t) clearTimeout(t); events.forEach((e) => socket.off(e, refresh)); };
   }, [apiUrl, range, customFrom, customTo]);

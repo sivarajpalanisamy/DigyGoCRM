@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { usePermission } from '@/hooks/usePermission';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { copyToClipboard } from '@/lib/utils';
 
 interface FormField {
@@ -138,12 +139,15 @@ export default function CustomFormsPage() {
   const shareLinkForm = forms.find((f) => f.id === shareLinkFormId);
   const totalSubmissions = forms.reduce((s, f) => s + (f.submission_count ?? 0), 0);
 
+  const [liveTick, setLiveTick] = useState(0);
+  // Live-refresh forms on any tenant data change (no manual reload).
+  useLiveRefresh(() => setLiveTick((n) => n + 1));
   useEffect(() => {
     api.get<CustomForm[]>('/api/forms')
       .then((data) => setForms(data))
       .catch(() => toast.error('Failed to load forms'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [liveTick]);
 
   const openPanel = (form: CustomForm) => {
     setPanelForm(form);

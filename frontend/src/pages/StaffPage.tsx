@@ -13,6 +13,7 @@ import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { usePermission } from '@/hooks/usePermission';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 
 // ── Permission group types ───────────────────────────────────────────────────
 
@@ -830,11 +831,14 @@ export default function StaffPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const canManageStaff = usePermission('staff:manage');
 
+  const [liveTick, setLiveTick] = useState(0);
+  // Live-refresh the team list on any tenant data change (no manual reload).
+  useLiveRefresh(() => setLiveTick((n) => n + 1));
   React.useEffect(() => {
     api.get<any[]>('/api/settings/staff')
       .then((rows) => setStaff(rows.map(mapApiStaff)))
       .catch(() => {});
-  }, []);
+  }, [liveTick]);
 
   const [editMember,       setEditMember]       = useState<StaffMember | null>(null);
   const [deactivateMember, setDeactivateMember] = useState<StaffMember | null>(null);

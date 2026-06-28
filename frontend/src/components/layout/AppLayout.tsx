@@ -47,17 +47,32 @@ export function AppLayout() {
     const superfoneHandler = (data: { enabled: boolean }) => {
       useCompanyStore.getState().setSuperfoneEnabled(!!data.enabled);
     };
+    // Any tenant data change (create/edit/delete on any CRM page) → refresh the
+    // store so every store-backed page reflects it live, no manual reload.
+    // Debounced to coalesce bursts (e.g. bulk import emits many events).
+    let dataChangeT: ReturnType<typeof setTimeout> | null = null;
+    const dataChangeHandler = () => {
+      if (dataChangeT) clearTimeout(dataChangeT);
+      dataChangeT = setTimeout(() => { initFromApi(true); }, 700);
+    };
     socket.on('notification:new', handler);
     socket.on('connect', reconnectHandler);
     socket.on('wa:status', waStatusHandler);
     socket.on('tenant:superfone', superfoneHandler);
+    socket.on('data:changed', dataChangeHandler);
+    socket.on('lead:created', dataChangeHandler);
+    socket.on('lead:updated', dataChangeHandler);
     return () => {
+      if (dataChangeT) clearTimeout(dataChangeT);
       socket.off('notification:new', handler);
       socket.off('connect', reconnectHandler);
       socket.off('wa:status', waStatusHandler);
       socket.off('tenant:superfone', superfoneHandler);
+      socket.off('data:changed', dataChangeHandler);
+      socket.off('lead:created', dataChangeHandler);
+      socket.off('lead:updated', dataChangeHandler);
     };
-  }, [addNotification, refreshNotifications, setWaPersonalStatus]);
+  }, [addNotification, refreshNotifications, setWaPersonalStatus, initFromApi]);
 
   // Re-fetch data whenever the user navigates to a new page
   useEffect(() => {

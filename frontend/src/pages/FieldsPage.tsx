@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useCrmStore, AdditionalField as StoreAdditionalField } from '@/store/crmStore';
 import { api } from '@/lib/api';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { cn, copyToClipboard } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { ElementType } from 'react';
@@ -648,6 +649,9 @@ export default function FieldsPage() {
   };
 
   // Load from API
+  const [liveTick, setLiveTick] = useState(0);
+  // Live-refresh fields on any tenant data change (no manual reload).
+  useLiveRefresh(() => setLiveTick((n) => n + 1));
   useEffect(() => {
     api.get<any[]>('/api/fields/custom').then((rows) => {
       setCustomStandard(rows.map((r) => ({
@@ -668,7 +672,7 @@ export default function FieldsPage() {
     api.get<any[]>('/api/fields/values').then((rows) => {
       setValues(rows.map((r) => ({ id: r.id, name: r.name, replaceWith: r.replace_with })));
     }).catch(() => {});
-  }, []);
+  }, [liveTick]);
 
   const filteredPipelineQuestions = useMemo(() => {
     // When "all" is selected → show only global questions

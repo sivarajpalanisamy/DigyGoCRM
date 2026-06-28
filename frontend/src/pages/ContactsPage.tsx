@@ -7,6 +7,7 @@ import {
 import { useCrmStore } from '@/store/crmStore';
 import { usePermission } from '@/hooks/usePermission';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { api } from '@/lib/api';
 import { ExportModal } from '@/components/ui/ExportModal';
 import { cn } from '@/lib/utils';
@@ -572,6 +573,8 @@ export default function ContactsPage() {
   const [apiContacts, setApiContacts] = useState<Lead[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
   const [reloadContacts, setReloadContacts] = useState(0);
+  // Live-refresh the list when contacts/leads change anywhere (no manual reload).
+  useLiveRefresh(() => setReloadContacts((n) => n + 1), ['leads', 'contacts']);
   const canEditContact   = usePermission('leads:edit');
   const canDeleteContact = usePermission('leads:delete');
   const canExport        = usePermission('contacts:export');
