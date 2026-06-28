@@ -4674,14 +4674,14 @@ export default function LeadsPage() {
   const [apiLeads, setApiLeads] = useState<Lead[] | null>(null);
   const [filterLoading, setFilterLoading] = useState(false);
 
-  const hasServerFilter = !!(
-    search || selectedPipelineId ||
-    filters.assignedTo.length || filters.stage.length ||
-    filters.tags.length || filters.createdOn
-  );
-
+  // The board/list are ALWAYS server-driven now (cursor-paginated), so the page
+  // no longer depends on the store holding every lead. We load up to MAX_BOARD
+  // rows (newest-first) for the current pipeline+filters; stage badges below the
+  // cap are exact. dashFilter (stale/converted) is cross-pipeline and handled in
+  // filteredLeads from the store, so we skip the server fetch for it.
+  const MAX_BOARD = 3000;
   useEffect(() => {
-    if (!hasServerFilter) { setApiLeads(null); setFilterLoading(false); return; }
+    if (dashFilter) { setApiLeads(null); setFilterLoading(false); return; }
 
     let cancelled = false;
     const delay = search ? 300 : 0;
@@ -4695,7 +4695,7 @@ export default function LeadsPage() {
           const data = await api.get<{ leads: any[]; nextCursor: string | null }>(`/api/leads?${params}`);
           if (cancelled) return;
           allLeads = [...allLeads, ...data.leads];
-          if (!data.nextCursor) break;
+          if (!data.nextCursor || allLeads.length >= MAX_BOARD) break;
           cursor = data.nextCursor;
         }
         setApiLeads(mapApiLeadsToStore(allLeads, stageMap));
@@ -4705,9 +4705,8 @@ export default function LeadsPage() {
     return () => { cancelled = true; clearTimeout(t); };
     // `leads.length` is intentionally a dep: when a new lead enters the store
     // (realtime lead:created socket → addLead, the manual Add Lead modal, or the
-    // 30s background poll), this re-fetches the server-filtered apiLeads snapshot
-    // so the board shows it immediately instead of only after a manual refresh.
-  }, [filters, search, selectedPipelineId, selectedPipeline?.id, hasServerFilter, leads.length]);
+    // 30s background poll), this re-fetches the snapshot so it shows immediately.
+  }, [filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, leads.length]);
 
   const filteredLeads = useMemo(() => {
     // Dashboard quick-filter — cross-pipeline, bypasses server fetch
@@ -5249,7 +5248,7 @@ export default function LeadsPage() {
 
       {/* ── Board ── */}
       <div className={cn('flex-1 flex flex-col min-h-0 overflow-hidden -mb-6 transition-opacity duration-200', filterLoading && 'opacity-50 pointer-events-none')}>
-      {!hydrated && leads.length === 0 ? (
+      {(apiLeads === null && filterLoading) || (!hydrated && leads.length === 0) ? (
         /* First-load skeleton — placeholder columns of cards while data loads */
         <div className="flex gap-4 overflow-hidden flex-1 min-h-0 items-stretch">
           {Array.from({ length: 4 }).map((_, ci) => (
