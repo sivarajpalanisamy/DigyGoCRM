@@ -205,14 +205,15 @@ router.get('/sets/:id/rows', checkPermission('routing:view'), async (req: AuthRe
       whereExtra = ` AND (LOWER(match_value) LIKE $${params.length} OR LOWER(COALESCE(pipeline_name,'')) LIKE $${params.length} OR LOWER(COALESCE(district,'')) LIKE $${params.length})`;
     }
 
+    const rowsParams = [...params, limit, offset];
     const [rowsRes, countRes] = await Promise.all([
       query(
         `SELECT id, match_value, pipeline_name, district, state, meta
          FROM field_routing_rows
          WHERE set_id=$1::uuid AND tenant_id=$2::uuid${whereExtra}
          ORDER BY match_value ASC
-         LIMIT ${limit} OFFSET ${offset}`,
-        params
+         LIMIT $${rowsParams.length - 1} OFFSET $${rowsParams.length}`,
+        rowsParams
       ),
       query(
         `SELECT COUNT(*) AS total FROM field_routing_rows

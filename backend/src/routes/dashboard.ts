@@ -209,7 +209,12 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
         rangeLabel = 'Last 30 Days';
     }
 
-    const leadFilter = onlyAssigned ? `AND l.assigned_to = '${userId}'` : '';
+    // Parameterized "only assigned" filter. userId is appended to each query's
+    // param array (never interpolated) — assignedClause(baseLen) returns the
+    // clause with the correct $N index, withUser(base) appends userId when needed.
+    const assignedClause = (baseLen: number) =>
+      onlyAssigned ? ` AND l.assigned_to = $${baseLen + 1}` : '';
+    const withUser = (base: any[]) => (onlyAssigned ? [...base, userId] : base);
 
     const [
       totalLeads,
@@ -231,28 +236,28 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
       callsStats,
     ] = await Promise.all([
       // Total leads — all time
-      query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE ${leadFilter}`, [tenantId]),
+      query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE ${assignedClause(1)}`, withUser([tenantId])),
 
       // Leads this calendar month
-      query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND l.created_at >= $2 ${leadFilter}`, [tenantId, thisMonth]),
+      query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND l.created_at >= $2 ${assignedClause(2)}`, withUser([tenantId, thisMonth])),
 
       // Leads last calendar month
-      query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND l.created_at >= $2 AND l.created_at <= $3 ${leadFilter}`, [tenantId, lastMonth, lastMonthEnd]),
+      query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND l.created_at >= $2 AND l.created_at <= $3 ${assignedClause(3)}`, withUser([tenantId, lastMonth, lastMonthEnd])),
 
       // Leads in selected range
-      query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND l.created_at >= $2 AND l.created_at <= $3 ${leadFilter}`, [tenantId, rangeStart, rangeEnd]),
+      query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND l.created_at >= $2 AND l.created_at <= $3 ${assignedClause(3)}`, withUser([tenantId, rangeStart, rangeEnd])),
 
       // Converted leads (in won stage) — all time
-      query(`SELECT COUNT(*)::int AS n FROM leads l JOIN pipeline_stages ps ON ps.id = l.stage_id WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND ps.is_won=TRUE ${leadFilter}`, [tenantId]),
+      query(`SELECT COUNT(*)::int AS n FROM leads l JOIN pipeline_stages ps ON ps.id = l.stage_id WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND ps.is_won=TRUE ${assignedClause(1)}`, withUser([tenantId])),
 
       // Stale leads — no activity in 7+ days
-      query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND l.updated_at < $2 ${leadFilter}`, [tenantId, sevenDaysAgo]),
+      query(`SELECT COUNT(*)::int AS n FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND l.updated_at < $2 ${assignedClause(2)}`, withUser([tenantId, sevenDaysAgo])),
 
       // Overdue follow-ups
-      query(`SELECT COUNT(*)::int AS n FROM lead_followups f JOIN leads l ON l.id = f.lead_id WHERE f.tenant_id=$1 AND f.completed=FALSE AND f.due_at < NOW() ${onlyAssigned ? `AND l.assigned_to='${userId}'` : ''}`, [tenantId]),
+      query(`SELECT COUNT(*)::int AS n FROM lead_followups f JOIN leads l ON l.id = f.lead_id WHERE f.tenant_id=$1 AND f.completed=FALSE AND f.due_at < NOW() ${assignedClause(1)}`, withUser([tenantId])),
 
       // Source breakdown — filtered by range
-      query(`SELECT l.source, COUNT(*)::int AS count FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND l.created_at >= $2 AND l.created_at <= $3 ${leadFilter} GROUP BY l.source ORDER BY count DESC`, [tenantId, rangeStart, rangeEnd]),
+      query(`SELECT l.source, COUNT(*)::int AS count FROM leads l WHERE l.tenant_id=$1 AND l.is_deleted=FALSE AND l.created_at >= $2 AND l.created_at <= $3 ${assignedClause(3)} GROUP BY l.source ORDER BY count DESC`, withUser([tenantId, rangeStart, rangeEnd])),
 
       // Per-pipeline funnel — each pipeline with its own stages
       query(`
@@ -282,7 +287,7 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
       `, [tenantId, rangeStart, rangeEnd]),
 
       // Today's follow-ups for this user
-      query(`SELECT f.id, f.title, f.description, f.due_at, l.name AS lead_name, l.id AS lead_id FROM lead_followups f JOIN leads l ON l.id = f.lead_id WHERE f.tenant_id=$1 AND f.completed=FALSE AND DATE(f.due_at) = CURRENT_DATE ${onlyAssigned ? `AND l.assigned_to='${userId}'` : ''} ORDER BY f.due_at ASC LIMIT 10`, [tenantId]),
+      query(`SELECT f.id, f.title, f.description, f.due_at, l.name AS lead_name, l.id AS lead_id FROM lead_followups f JOIN leads l ON l.id = f.lead_id WHERE f.tenant_id=$1 AND f.completed=FALSE AND DATE(f.due_at) = CURRENT_DATE ${assignedClause(1)} ORDER BY f.due_at ASC LIMIT 10`, withUser([tenantId])),
 
       // Leads not contacted in range (no followup exists at all)
       query(`
@@ -290,9 +295,9 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
         FROM leads l
         WHERE l.tenant_id = $1 AND l.is_deleted = FALSE
           AND l.created_at >= $2 AND l.created_at <= $3
-          ${leadFilter}
+          ${assignedClause(3)}
           AND NOT EXISTS (SELECT 1 FROM lead_followups f WHERE f.lead_id = l.id)
-      `, [tenantId, rangeStart, rangeEnd]),
+      `, withUser([tenantId, rangeStart, rangeEnd])),
 
       // Source with conversion rate (period-filtered)
       query(`
@@ -303,10 +308,10 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
         LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
         WHERE l.tenant_id = $1 AND l.is_deleted = FALSE
           AND l.created_at >= $2 AND l.created_at <= $3
-          ${leadFilter}
+          ${assignedClause(3)}
         GROUP BY l.source
         ORDER BY total DESC
-      `, [tenantId, rangeStart, rangeEnd]),
+      `, withUser([tenantId, rangeStart, rangeEnd])),
 
       // Staff accountability — assigned (all time), contacted (has any followup), won
       query(`
@@ -334,10 +339,10 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
         LEFT JOIN users u ON u.id = l.assigned_to
         WHERE l.tenant_id = $1 AND l.is_deleted = FALSE
           AND l.updated_at < NOW() - INTERVAL '7 days'
-          ${leadFilter}
+          ${assignedClause(1)}
         ORDER BY l.updated_at ASC
         LIMIT 10
-      `, [tenantId]),
+      `, withUser([tenantId])),
 
       // Untouched leads — assigned but no followup, older than 24 hours
       query(`
@@ -352,10 +357,10 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
           AND l.assigned_to IS NOT NULL
           AND l.created_at < NOW() - INTERVAL '24 hours'
           AND NOT EXISTS (SELECT 1 FROM lead_followups f WHERE f.lead_id = l.id)
-          ${leadFilter}
+          ${assignedClause(1)}
         ORDER BY l.created_at ASC
         LIMIT 10
-      `, [tenantId]),
+      `, withUser([tenantId])),
 
       // Calls stats — total, answered, missed in range (scoped to user if not view_all)
       query(`
@@ -367,8 +372,8 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
         WHERE tenant_id=$1::uuid
           AND COALESCE(started_at, created_at) >= $2
           AND COALESCE(started_at, created_at) <= $3
-          ${callsViewAll ? '' : `AND staff_user_id = '${userId}'`}
-      `, [tenantId, rangeStart, rangeEnd]),
+          ${callsViewAll ? '' : `AND staff_user_id = $4`}
+      `, callsViewAll ? [tenantId, rangeStart, rangeEnd] : [tenantId, rangeStart, rangeEnd, userId]),
     ]);
 
     const total     = totalLeads.rows[0].n;
