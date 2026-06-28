@@ -477,7 +477,7 @@ export default function CompanyDetailsPage() {
           </div>
           <div className="flex-1">
             <p className="text-[13px] font-semibold text-[#1c1410]">Business Accounts</p>
-            <p className="text-[11px] text-[#9e8e7e]">Manage all CRM accounts under DigyGo</p>
+            <p className="text-[11px] text-[#9e8e7e]">Manage all CRM accounts under Hawcus</p>
           </div>
           <ChevronRight className="w-4 h-4 text-[#c4b09e] group-hover:text-primary transition-colors shrink-0" />
         </button>

@@ -1235,7 +1235,7 @@ function IntegCard({ icon, name, tagline, connected, onConnect, onConfigure, onD
           <p className="text-[12px] text-[#9e8e7e] mt-0.5 leading-relaxed">{lockedNote ?? tagline}</p>
         </div>
         <Button variant="outline" size="sm" className="flex-1" disabled>
-          Contact DigyGo to enable
+          Contact Hawcus to enable
         </Button>
       </div>
     );
@@ -1377,7 +1377,7 @@ export default function IntegrationsPage() {
         </button>
         <div>
           <h2 className="font-headline font-bold text-[17px] text-[#1c1410]">Integrations</h2>
-          <p className="text-[12px] text-[#9e8e7e]">Connect your tools to DigyGo CRM</p>
+          <p className="text-[12px] text-[#9e8e7e]">Connect your tools to Hawcus CRM</p>
         </div>
       </div>
 
@@ -1567,7 +1567,7 @@ export default function IntegrationsPage() {
           onConfigure={() => setModal('superfone')}
           onDisconnect={() => disconnect('superfone', '/api/integrations/superfone/disconnect')}
           locked={!superfoneEnabled}
-          lockedNote="Calls & Superfone are not active on your account. Contact DigyGo to enable this add-on."
+          lockedNote="Calls & Superfone are not active on your account. Contact Hawcus to enable this add-on."
         />
 
         <IntegCard

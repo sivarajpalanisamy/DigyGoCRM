@@ -391,7 +391,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                   <td colSpan={10} className="text-center py-16">
                     <PhoneIncoming className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                     <p className="text-[14px] font-semibold text-[#7a6b5c]">No calls found</p>
-                    <p className="text-[12px] text-[#b09e8d] mt-1">{source === 'superfone' ? 'Calls will appear here after Superfone syncs' : 'Calls will appear here once the DigyGo Dialer app syncs'}</p>
+                    <p className="text-[12px] text-[#b09e8d] mt-1">{source === 'superfone' ? 'Calls will appear here after Superfone syncs' : 'Calls will appear here once the Hawcus Dialer app syncs'}</p>
                   </td>
                 </tr>
               ) : visible.map((c, idx) => {

@@ -14,7 +14,7 @@ export const useCompanyStore = create<CompanyState>()(
   persist(
     (set) => ({
       logoUrl: null,
-      companyName: 'DigyGo CRM',
+      companyName: 'Hawcus CRM',
       superfoneEnabled: false,
       setLogo: (url) => set({ logoUrl: url }),
       setCompanyName: (name) => set({ companyName: name }),

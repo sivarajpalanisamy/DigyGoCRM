@@ -201,7 +201,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           ) : (
             <>
               <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
-                <img src="/digygo-logo.png" alt="DigyGo" className="w-full h-full object-contain" />
+                <img src="/hawcus-logo.png" alt="Hawcus" className="w-full h-full object-contain" />
               </div>
               <span className="font-headline text-[15px] font-bold text-[#1c1410] truncate max-w-[110px]">{companyName}</span>
             </>

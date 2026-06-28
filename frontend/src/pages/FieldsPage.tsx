@@ -107,7 +107,7 @@ const INIT_ADDITIONAL: AdditionalField[] = [
 
 const INIT_VALUES: ValueToken[] = [
   { id: 'v1', name: 'Google Meet link',  replaceWith: 'https://meet.google.com/xyz-abc-def' },
-  { id: 'v2', name: 'Email signature',   replaceWith: 'Best regards,\n- Team DigyGo' },
+  { id: 'v2', name: 'Email signature',   replaceWith: 'Best regards,\n- Team Hawcus' },
   { id: 'v3', name: 'Working hours',     replaceWith: 'Mon–Fri, 9am–6pm IST' },
 ];
 

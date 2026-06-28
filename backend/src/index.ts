@@ -327,7 +327,7 @@ runMigrations()
             <p>${overdue
               ? `The subscription <strong>expired on ${when}</strong>. The CRM is locked, but leads and automations are still running — renew to restore access.`
               : `The subscription is due on <strong>${when}</strong>.`}</p>
-            <p>Renew from the DigyGo super-admin panel.</p>`;
+            <p>Renew from the Hawcus super-admin panel.</p>`;
 
           for (const to of [t.owner_email, adminTo].filter(Boolean)) {
             await sendEmail({ to, subject, html: body }).catch(() => null);
@@ -347,7 +347,7 @@ runMigrations()
     else { console.log('🧠  Redis disabled (no REDIS_URL) — using in-memory caches + rate limiting'); }
 
     httpServer.listen(PORT, () => {
-      console.log(`\n🚀  DigyGo CRM Backend running on http://localhost:${PORT}`);
+      console.log(`\n🚀  Hawcus CRM Backend running on http://localhost:${PORT}`);
       console.log(`📊  Health: http://localhost:${PORT}/health`);
       console.log(`🌍  Env: ${config.nodeEnv}\n`);
     });

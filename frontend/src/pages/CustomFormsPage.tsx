@@ -247,7 +247,7 @@ export default function CustomFormsPage() {
       ? `var d=document.getElementById('${uid}_d');if(!d.checked){alert('Please accept the declaration to continue.');return;}`
       : '';
 
-    return `<!-- DigyGo Form: ${form.name} -->
+    return `<!-- Hawcus Form: ${form.name} -->
 <div id="${uid}" style="font-family:system-ui,-apple-system,sans-serif;max-width:448px;margin:0 auto">
 <style>
 #${uid} *{box-sizing:border-box}

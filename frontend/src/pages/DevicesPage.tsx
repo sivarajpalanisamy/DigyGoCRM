@@ -142,7 +142,7 @@ export default function DevicesPage() {
         <section className="bg-white rounded-xl border border-black/5 p-5 mb-6">
           <h2 className="font-semibold text-[#1c1410] text-[14px] mb-1">Add a new number</h2>
           <p className="text-[12px] text-[#7a6b5c] mb-4">
-            Assign a staff member and verify their mobile number. Once verified, install the DigyGo Dialer app on that phone - it auto-connects and records calls under their name.
+            Assign a staff member and verify their mobile number. Once verified, install the Hawcus Dialer app on that phone - it auto-connects and records calls under their name.
           </p>
           <div className="flex flex-col gap-3">
             <select

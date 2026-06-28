@@ -113,8 +113,8 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             <span className="font-bold text-[15px] text-[#1c1410] px-3 text-center">{tenantName}</span>
           ) : (
             <img
-              src="/digygo-logo.png"
-              alt="DigyGo"
+              src="/hawcus-logo.png"
+              alt="Hawcus"
               style={{ width: '160px', height: '160px', marginTop: '-36px', flexShrink: 0 }}
             />
           )}

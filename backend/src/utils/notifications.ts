@@ -85,7 +85,7 @@ async function emailNotificationRecipients(
     )).rows;
     if (rows.length === 0) return;
     const ident = await getTenantEmailIdentity(tenantId);
-    const brand = ident.fromName || 'DigyGo CRM';
+    const brand = ident.fromName || 'Hawcus CRM';
     const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
       <h2 style="color:#1c1410;font-size:18px;margin:0 0 8px">${title}</h2>
       <p style="color:#5c5245;font-size:14px;margin:0 0 16px">${message}</p>

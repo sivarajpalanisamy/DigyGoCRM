@@ -12,7 +12,7 @@ async function seed() {
       INSERT INTO users (email, password_hash, name, role)
       VALUES ($1, $2, $3, 'super_admin')
       ON CONFLICT DO NOTHING
-    `, ['admin@digygocrm.com', superHash, 'DigyGo Admin']);
+    `, ['admin@digygocrm.com', superHash, 'Hawcus Admin']);
 
     // ── Demo tenant (a sample business) ──────────────────────────────────────
     const tenantRes = await client.query(`
@@ -94,7 +94,7 @@ async function seed() {
     await client.query(`
       INSERT INTO notifications (tenant_id, title, message, type)
       VALUES ($1, $2, $3, $4)
-    `, [tenantId, 'Welcome to DigyGo CRM!', 'Your workspace is ready. Start adding leads.', 'info']);
+    `, [tenantId, 'Welcome to Hawcus CRM!', 'Your workspace is ready. Start adding leads.', 'info']);
 
     // Seed RBAC role_permissions
     // Admin: full access to everything; staff: only their assigned leads by default

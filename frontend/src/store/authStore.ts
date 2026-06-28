@@ -106,7 +106,7 @@ function applySession(data: any, set: any, _get: any) {
   set({ currentUser: data.user, isAuthenticated: true, permAll: role === 'super_admin' || role === 'owner' });
   saveSession(data.token, data.user, data.tenant);
   if (data.tenant) {
-    useCompanyStore.getState().setCompanyName(data.tenant.name ?? 'DigyGo CRM');
+    useCompanyStore.getState().setCompanyName(data.tenant.name ?? 'Hawcus CRM');
     useCompanyStore.getState().setLogo(data.tenant.logoUrl ?? null);
     useCompanyStore.getState().setSuperfoneEnabled(role === 'super_admin' ? true : !!data.tenant.superfone_enabled);
     if (role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(data.tenant);
@@ -184,7 +184,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Clear in-memory CEO state if a logout happens mid-impersonation
     _ceoToken = null;
     _ceoUser  = null;
-    useCompanyStore.getState().setCompanyName('DigyGo CRM');
+    useCompanyStore.getState().setCompanyName('Hawcus CRM');
     useCompanyStore.getState().setLogo(null);
     useBrandingStore.getState().resetBranding();
     set({ currentUser: null, isAuthenticated: false, isImpersonating: false, permissions: {}, permAll: false });
@@ -216,7 +216,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ currentUser: { ...data.user, tenantId: data.user.tenantId }, isAuthenticated: true, isImpersonating: true });
       // Update company header to reflect the impersonated tenant's branding
       if (data.tenant) {
-        useCompanyStore.getState().setCompanyName(data.tenant.name ?? 'DigyGo CRM');
+        useCompanyStore.getState().setCompanyName(data.tenant.name ?? 'Hawcus CRM');
         useCompanyStore.getState().setLogo(data.tenant.logoUrl ?? null);
         useCompanyStore.getState().setSuperfoneEnabled(!!data.tenant.superfone_enabled);
         useBrandingStore.getState().applyTenantBranding(data.tenant);
@@ -251,7 +251,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       _ceoUser  = null;
       const ceoPermAll = ceoUser.role === 'super_admin' || ceoUser.role === 'owner';
       set({ currentUser: ceoUser, isAuthenticated: true, isImpersonating: false, permAll: ceoPermAll, permissions: {} });
-      useCompanyStore.getState().setCompanyName('DigyGo CRM');
+      useCompanyStore.getState().setCompanyName('Hawcus CRM');
       useCompanyStore.getState().setLogo(null);
       useBrandingStore.getState().resetBranding();
       // Drop the impersonated tenant's data so it can't leak into the next session.
@@ -272,7 +272,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       saveSession(token, me);
       const permAll = me.role === 'super_admin' || me.role === 'owner';
       set({ currentUser: me, isAuthenticated: true, isImpersonating: false, permAll, permissions: {} });
-      useCompanyStore.getState().setCompanyName('DigyGo CRM');
+      useCompanyStore.getState().setCompanyName('Hawcus CRM');
       useCompanyStore.getState().setLogo(null);
       useBrandingStore.getState().resetBranding();
       try { const { useCrmStore } = await import('./crmStore'); useCrmStore.getState().resetCrm(); } catch {}
@@ -300,7 +300,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       useCompanyStore.getState().setSuperfoneEnabled(role === 'super_admin' ? true : !!stored.tenant?.superfone_enabled);
       if (stored.tenant) {
-        useCompanyStore.getState().setCompanyName(stored.tenant.name ?? 'DigyGo CRM');
+        useCompanyStore.getState().setCompanyName(stored.tenant.name ?? 'Hawcus CRM');
         useCompanyStore.getState().setLogo(stored.tenant.logoUrl ?? null);
         if (role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(stored.tenant);
       }
@@ -363,7 +363,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             saveSession(token, user, tenant);
             set({ currentUser: user, isAuthenticated: true });
             if (tenant) {
-              useCompanyStore.getState().setCompanyName(tenant.name ?? 'DigyGo CRM');
+              useCompanyStore.getState().setCompanyName(tenant.name ?? 'Hawcus CRM');
               useCompanyStore.getState().setLogo(tenant.logoUrl ?? null);
               if (user.role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(tenant);
             }

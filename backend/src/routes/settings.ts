@@ -105,7 +105,7 @@ async function sendInviteEmail(to: string, token: string, tenantId: string) {
   try {
     const frontendUrl = await getTenantFrontendUrl(tenantId);
     const { fromName, replyTo } = await getTenantEmailIdentity(tenantId);
-    const brand = fromName || 'DigyGo CRM';
+    const brand = fromName || 'Hawcus CRM';
     const link = `${frontendUrl}/accept-invite?token=${token}`;
     await sendEmail({
       to,
