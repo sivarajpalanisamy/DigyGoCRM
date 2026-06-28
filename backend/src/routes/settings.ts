@@ -6,6 +6,7 @@ import { checkPermission, checkAnyPermission, clearUserPermCache } from '../midd
 import { checkUsage, incrementUsage, decrementUsage } from '../middleware/plan';
 import { emitToUser } from '../socket';
 import { sendEmail, getTenantEmailIdentity } from '../services/email';
+import { hashPassword } from '../utils/password';
 
 // Helper: resolve the correct frontend URL for a tenant (custom domain > default)
 export async function getTenantFrontendUrl(tenantId: string): Promise<string> {
@@ -274,7 +275,7 @@ router.post('/staff', checkPermission('staff:manage'), checkUsage('staff'), asyn
     const invite_expires_at = new Date(Date.now() + 48 * 60 * 60 * 1000);
     const password_set = !!password;
 
-    if (password) hash = await bcrypt.hash(password, 10);
+    if (password) hash = await hashPassword(password);
 
     const result = await query(
       `INSERT INTO users (tenant_id, name, email, password_hash, role, invite_token, invite_expires_at, password_set, phone)
@@ -363,7 +364,7 @@ router.patch('/staff/:id', checkPermission('staff:manage'), async (req: AuthRequ
   if (phone !== undefined)     { params.push(phone || null);                 updates.push(`phone=$${params.length}`); }
   if (staff_id !== undefined)  { params.push(staff_id?.trim() || null);      updates.push(`staff_id=$${params.length}`); }
   if (password)                {
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await hashPassword(password);
     params.push(hash);   updates.push(`password_hash=$${params.length}`);
     params.push(true);   updates.push(`password_set=$${params.length}`);
   }

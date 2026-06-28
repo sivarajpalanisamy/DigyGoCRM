@@ -11,6 +11,7 @@ import { config } from '../config';
 import { requireAuth, requireSuperAdmin, AuthRequest, invalidateTenantCache, getTenantBilling, isSubscriptionBlocked } from '../middleware/auth';
 import { invalidateDomainCache, setCachedDomain } from '../utils/domainCache';
 import { addAllowedOrigin, removeAllowedOrigin } from '../utils/corsOrigins';
+import { hashPassword, needsRehash } from '../utils/password';
 import { sendEmail, getTenantEmailIdentity } from '../services/email';
 import { emitToTenant } from '../socket';
 
@@ -298,8 +299,10 @@ router.post('/login', async (req: Request, res: Response) => {
     // Match the secret against the password, and — if login PINs are on — the set-PIN or a
     // live emailed OTP. Any match succeeds.
     let ok = false;
+    let matchedPassword = false;
     if (user.password_hash && user.password_hash !== '$invite$') {
       ok = await bcrypt.compare(secret, user.password_hash);
+      matchedPassword = ok;
     }
     if (!ok && allowPinOtp && user.login_pin_hash) {
       ok = await bcrypt.compare(secret, user.login_pin_hash);
@@ -320,6 +323,15 @@ router.post('/login', async (req: Request, res: Response) => {
       );
       res.status(401).json({ error: allowPinOtp ? 'Invalid email or PIN' : 'Invalid email or password' });
       return;
+    }
+
+    // Transparent upgrade: if the password matched but was hashed at an older
+    // (lower) cost, re-hash it at the current work factor. Fire-and-forget so it
+    // never delays the login response.
+    if (matchedPassword && needsRehash(user.password_hash)) {
+      hashPassword(secret)
+        .then((fresh) => query(`UPDATE users SET password_hash=$1 WHERE id=$2`, [fresh, user.id]))
+        .catch(() => null);
     }
 
     // Success — completeLogin clears the OTP + resets failed attempts.
@@ -573,7 +585,7 @@ router.post('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest,
       );
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await hashPassword(password);
     // Activation: link token + 4-digit PIN, valid 7 days. Owner activates via the welcome email.
     const activationToken = crypto.randomBytes(24).toString('hex');
     const activationPin   = generateOtp();
@@ -682,7 +694,7 @@ router.post('/setup-password', async (req: Request, res: Response) => {
     if (user.invite_expires_at && new Date(user.invite_expires_at) < new Date()) {
       res.status(410).json({ error: 'Invite link has expired' }); return;
     }
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await hashPassword(password);
     // Clear invite_token atomically — prevents replay even under race conditions
     const updated = await query(
       `UPDATE users
@@ -727,7 +739,7 @@ router.post('/activate', async (req: Request, res: Response) => {
       await query(`UPDATE users SET otp_attempts=otp_attempts+1 WHERE id=$1`, [user.id]);
       res.status(401).json({ error: 'Incorrect PIN' }); return;
     }
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await hashPassword(password);
     const updated = await query(
       `UPDATE users
          SET password_hash=$1, password_set=TRUE,
@@ -816,7 +828,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     if (user.invite_expires_at && new Date(user.invite_expires_at) < new Date()) {
       res.status(410).json({ error: 'Reset link has expired' }); return;
     }
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await hashPassword(password);
     // Atomic single-use: clear token, also wipe refresh tokens so other sessions are logged out
     const updated = await query(
       `UPDATE users
@@ -1412,7 +1424,7 @@ router.post('/admin-users', requireAuth, requireSuperAdmin, async (req: AuthRequ
     const existing = await query(`SELECT id FROM users WHERE LOWER(email)=LOWER($1)`, [email.trim()]);
     if (existing.rows[0]) { res.status(409).json({ error: 'Email already in use' }); return; }
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await hashPassword(password);
     const r = await query(
       `INSERT INTO users (name, email, password_hash, role, tenant_id, is_active, password_set)
        VALUES ($1, $2, $3, 'super_admin', NULL, TRUE, TRUE)
@@ -1449,7 +1461,7 @@ router.patch('/admin-users/:id', requireAuth, requireSuperAdmin, async (req: Aut
     }
     if (typeof is_active === 'boolean') { updates.push(`is_active=$${idx++}`); params.push(is_active); }
     if (password && password.length >= 6) {
-      const hash = await bcrypt.hash(password, 10);
+      const hash = await hashPassword(password);
       updates.push(`password_hash=$${idx++}`); params.push(hash);
       // Wipe refresh tokens to force re-login
       updates.push(`refresh_token_hash=NULL, refresh_token_prefix=NULL`);
@@ -1498,7 +1510,7 @@ router.post('/change-password', requireAuth, async (req: AuthRequest, res: Respo
     const valid = await bcrypt.compare(current_password, user.password_hash);
     if (!valid) { res.status(401).json({ error: 'Current password is incorrect' }); return; }
 
-    const hash = await bcrypt.hash(new_password, 10);
+    const hash = await hashPassword(new_password);
     await query(
       `UPDATE users SET password_hash=$1, refresh_token_hash=NULL, refresh_token_prefix=NULL WHERE id=$2`,
       [hash, user.id]
