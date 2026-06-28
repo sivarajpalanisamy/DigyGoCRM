@@ -13,7 +13,7 @@ export default function CreateBusinessPage() {
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', loginPin: '',
     phone: '', plan: '', snapshot: '',
-    businessName: '', address: '',
+    businessName: '', address: '', maxUsers: '5',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -52,6 +52,7 @@ export default function CreateBusinessPage() {
         billing_cycle: form.plan.toLowerCase(), // 'monthly' | 'yearly'
         phone: form.phone,
         address: form.address,
+        max_users: Number(form.maxUsers) || 5,
       });
       toast.success(`${form.businessName} created! Login: ${form.email} / ${password}`);
       navigate('/admin');
@@ -208,6 +209,20 @@ export default function CreateBusinessPage() {
                 placeholder=""
               />
               {errors.businessName && <p className="text-[12px] text-red-500 mt-1">{errors.businessName}</p>}
+            </div>
+
+            {/* User License */}
+            <div>
+              <label className={lbl}>User License</label>
+              <input
+                type="number"
+                min="1"
+                value={form.maxUsers}
+                onChange={set('maxUsers')}
+                className={inp()}
+                placeholder="5"
+              />
+              <p className="text-[13px] text-[#7a6b5c] mt-1.5">Max users this tenant can create (including owner)</p>
             </div>
 
             {/* Address */}
