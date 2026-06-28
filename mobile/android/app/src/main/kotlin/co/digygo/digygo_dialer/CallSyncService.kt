@@ -189,7 +189,7 @@ class CallSyncService : Service() {
             @Suppress("DEPRECATION") Notification.Builder(this)
 
         return builder
-            .setContentTitle("DigyGo Dialer")
+            .setContentTitle("Hawcus Dialer")
             .setContentText("Syncing your calls to the CRM")
             .setSmallIcon(android.R.drawable.stat_sys_phone_call)
             .setOngoing(true)

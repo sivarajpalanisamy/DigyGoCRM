@@ -1167,6 +1167,65 @@ router.post('/leads/:id/followup', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// POST /api/mobile/leads/:id/disposition — "Set Follow-Up" outcome from lead
+// details (the HOW-DID-IT-GO picker). Sets the lead's quality from the chosen
+// disposition, logs the outcome on the timeline, and optionally schedules a
+// follow-up. Body: { disposition_key, note?, follow_up_date?, follow_up_time? }
+router.post('/leads/:id/disposition', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const id = req.params.id;
+  const dispositionKey = (req.body?.disposition_key ?? '').toString();
+  const note = cleanText(req.body?.note ?? '');
+  const followUpDate = (req.body?.follow_up_date ?? '').toString(); // yyyy-MM-dd
+  const followUpTime = (req.body?.follow_up_time ?? '').toString(); // HH:mm
+  if (!dispositionKey) { res.status(400).json({ error: 'disposition_key required' }); return; }
+  try {
+    const disps = await getTenantDispositions(tenantId!);
+    const dispDef = disps.find((d) => d.key === dispositionKey);
+    if (!dispDef) { res.status(400).json({ error: 'Invalid disposition_key' }); return; }
+    const owns = await query('SELECT assigned_to FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE', [id, tenantId]);
+    if (!owns.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }
+
+    // Lead quality from the disposition mapping (e.g. Hot Lead -> Hot).
+    if (dispDef.lead_quality) {
+      await query(
+        `UPDATE leads SET custom_fields = COALESCE(custom_fields,'{}'::jsonb) || $2::jsonb, updated_at=NOW()
+         WHERE id=$1::uuid AND tenant_id=$3::uuid`,
+        [id, JSON.stringify({ lead_quality: dispDef.lead_quality }), tenantId]
+      );
+    }
+    // Optional follow-up.
+    let followUp: any = null;
+    if (followUpDate) {
+      const dueAt = followUpTime ? `${followUpDate}T${followUpTime}:00` : `${followUpDate}T09:00:00`;
+      const title = `Follow up - ${dispDef.label}`;
+      const assignee = owns.rows[0].assigned_to || userId;
+      const fu = await query(
+        `INSERT INTO lead_followups (lead_id, tenant_id, title, description, due_at, assigned_to, created_by)
+         VALUES ($1::uuid,$2::uuid,$3,$4,$5,$6::uuid,$7::uuid) RETURNING id`,
+        [id, tenantId, title, note || null, dueAt, assignee, userId]
+      );
+      followUp = fu.rows[0];
+      query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
+         VALUES ($1::uuid,$2::uuid,'followup',$3,$4::uuid)`,
+        [id, tenantId, `Follow-up scheduled: ${title}`, userId]
+      ).catch(() => null);
+    }
+    // Log the outcome on the lead timeline.
+    query(
+      `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+       VALUES ($1::uuid,$2::uuid,'call_outcome',$3,$4,$5::uuid)`,
+      [id, tenantId, `Call outcome: ${dispDef.label}`, note || null, userId]
+    ).catch(() => null);
+
+    res.json({ ok: true, disposition: dispDef.label, follow_up: followUp });
+  } catch (err: any) {
+    console.error('[mobile/leads/disposition]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /api/mobile/leads/:id/tag — add a tag to the lead. Body: { tag }
 router.post('/leads/:id/tag', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;

@@ -149,7 +149,7 @@ class _DigygoDialerAppState extends State<DigygoDialerApp> with WidgetsBindingOb
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'DigyGo Dialer',
+      title: 'Hawcus Dialer',
       debugShowCheckedModeBanner: false,
       navigatorKey: _navKey,
       theme: buildTheme(),

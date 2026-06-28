@@ -376,6 +376,25 @@ class Api {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
+  /// "Set Follow-Up" outcome from the lead details quick action: records the
+  /// disposition on the lead (sets quality + logs the outcome) and optionally
+  /// schedules a follow-up.
+  Future<Map<String, dynamic>> leadDisposition(
+    String leadId, {
+    required String dispositionKey,
+    String? note,
+    String? followUpDate,
+    String? followUpTime,
+  }) async {
+    final res = await _dio.post('/api/mobile/leads/$leadId/disposition', data: {
+      'disposition_key': dispositionKey,
+      if (note != null && note.isNotEmpty) 'note': note,
+      if (followUpDate != null && followUpDate.isNotEmpty) 'follow_up_date': followUpDate,
+      if (followUpTime != null && followUpTime.isNotEmpty) 'follow_up_time': followUpTime,
+    });
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
   // ── Per-call notes ───────────────────────────────────────────────────────────
   static const _notesKey = 'digygo_call_notes';
   Future<Map<String, String>> _allNotes() async {

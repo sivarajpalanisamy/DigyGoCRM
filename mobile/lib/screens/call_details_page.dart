@@ -210,7 +210,7 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
         Row(children: [
           _quickAction(Icons.layers, 'Stage', _changeStage),
           _quickAction(Icons.chat, 'WhatsApp', () => DialerData.instance.whatsapp(phone)),
-          _quickAction(Icons.access_time, 'Follow-up', () => _openFollowupDialog()),
+          _quickAction(Icons.access_time, 'Follow-up', () => _openDispositionDialog()),
           _quickAction(Icons.event, 'Appointment', () => _openFollowupDialog(defaultTitle: 'Appointment')),
         ]),
         const SizedBox(height: 18),
@@ -301,6 +301,123 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
     if (ok != true || ctrl.text.trim().isEmpty) return;
     try { await Api.instance.addTag(_lead['id'].toString(), ctrl.text.trim()); _toast('Tag added'); await _load(); }
     catch (_) { _toast('Could not add tag', error: true); }
+  }
+
+  Color _dispColor(String c) {
+    switch (c) {
+      case 'emerald': return const Color(0xFF10B981);
+      case 'blue':    return const Color(0xFF3B82F6);
+      case 'red':     return const Color(0xFFEF4444);
+      case 'gray':    return const Color(0xFF6B7280);
+      case 'orange':  return Brand.accent;
+      case 'purple':  return const Color(0xFF8B5CF6);
+      default:        return Brand.accent;
+    }
+  }
+
+  // "Set Follow-Up" outcome picker matching the CRM web: "HOW DID IT GO?" outcome
+  // chips (tenant dispositions) + optional note. Saving records the outcome on the
+  // lead (sets quality + logs it on the timeline).
+  Future<void> _openDispositionDialog() async {
+    final id = (_lead['id'] ?? '').toString();
+    if (id.isEmpty) { _toast('Open the lead first', error: true); return; }
+    final disps = await Api.instance.dispositions();
+    if (!mounted) return;
+    if (disps.isEmpty) { _toast('No outcomes configured', error: true); return; }
+
+    final noteCtrl = TextEditingController();
+    String? selectedKey;
+    bool saving = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 18),
+          contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          title: Row(children: [
+            const Expanded(child: Text('Set Follow-Up', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18))),
+            InkWell(onTap: saving ? null : () => Navigator.pop(ctx), child: const Icon(Icons.close, color: Brand.muted)),
+          ]),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('HOW DID IT GO?', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Brand.muted, letterSpacing: 0.6)),
+              const SizedBox(height: 12),
+              GridView.count(
+                crossAxisCount: 3,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.95,
+                children: disps.map((d) {
+                  final key = (d['key'] ?? '').toString();
+                  final sel = key == selectedKey;
+                  final col = _dispColor((d['color'] ?? '').toString());
+                  return InkWell(
+                    onTap: saving ? null : () => setLocal(() => selectedKey = sel ? null : key),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: sel ? col.withValues(alpha: 0.12) : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: sel ? col : const Color(0x1A000000), width: sel ? 1.5 : 1),
+                      ),
+                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Text((d['icon'] ?? '').toString(), style: const TextStyle(fontSize: 22)),
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text((d['label'] ?? '').toString(),
+                              textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: sel ? col : Brand.ink)),
+                        ),
+                      ]),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: noteCtrl,
+                decoration: InputDecoration(
+                  hintText: 'Add a note (optional)',
+                  isDense: true,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity, height: 48,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: Brand.accent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  onPressed: saving ? null : () async {
+                    if (selectedKey == null) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Pick an outcome')));
+                      return;
+                    }
+                    setLocal(() => saving = true);
+                    try {
+                      await Api.instance.leadDisposition(id, dispositionKey: selectedKey!, note: noteCtrl.text.trim());
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      _toast('Outcome saved');
+                      await _load();
+                    } catch (_) {
+                      setLocal(() => saving = false);
+                      if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Could not save')));
+                    }
+                  },
+                  child: saving
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Save outcome', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                ),
+              ),
+            ]),
+          ),
+        );
+      }),
+    );
   }
 
   // "Set Follow-Up" popup matching the CRM web: title (required), notes, due date+time,
