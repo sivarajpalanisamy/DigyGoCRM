@@ -4570,13 +4570,10 @@ export default function LeadsPage() {
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
 
-  // Keyboard shortcut Cmd/Ctrl+K to focus search
+  // Cmd/Ctrl+K is handled globally by the command palette (AppLayout). Here we
+  // only keep Escape-to-clear when the search box itself is focused.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
       if (e.key === 'Escape' && document.activeElement === searchInputRef.current) {
         searchInputRef.current?.blur();
         setSearch('');

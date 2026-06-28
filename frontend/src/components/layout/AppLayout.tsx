@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { AppHeader } from './AppHeader';
 import { MobileBottomNav } from './MobileBottomNav';
+import CommandPalette from '@/components/CommandPalette';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
 import { useCompanyStore } from '@/store/companyStore';
@@ -108,6 +109,9 @@ export function AppLayout() {
 
       {/* Bottom nav — mobile only (not for super admin) */}
       {!isSuperAdmin && <MobileBottomNav />}
+
+      {/* App-wide Cmd/Ctrl+K command palette */}
+      <CommandPalette />
     </div>
   );
 }
