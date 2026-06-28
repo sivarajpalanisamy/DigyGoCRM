@@ -6,6 +6,7 @@ import { useCrmStore, LeadActivity } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
 import { usePermission } from '@/hooks/usePermission';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useDebounce } from '@/hooks/useDebounce';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import LeadTrashModal from '@/components/LeadTrashModal';
@@ -4461,6 +4462,7 @@ export default function LeadsPage() {
   const canAssign     = usePermission('leads:assign');
   const canExport     = usePermission('leads:export');
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300); // filter after typing settles
   const [pipelineSearch, setPipelineSearch] = useState('');
   const [pipelineOpen, setPipelineOpen] = useState(false);
   const [searchParams] = useSearchParams();
@@ -4748,7 +4750,7 @@ export default function LeadsPage() {
 
     if (!apiLeads) {
       if (selectedPipelineId) result = result.filter((l) => l.pipelineId === selectedPipelineId);
-      if (search) { const s = search.toLowerCase(); result = result.filter((l) => `${l.firstName} ${l.lastName}`.toLowerCase().includes(s) || l.phone.includes(s) || l.email.toLowerCase().includes(s)); }
+      if (debouncedSearch) { const s = debouncedSearch.toLowerCase(); result = result.filter((l) => `${l.firstName} ${l.lastName}`.toLowerCase().includes(s) || l.phone.includes(s) || l.email.toLowerCase().includes(s)); }
       if (filters.assignedTo.length) result = result.filter(assigneeFilter);
       if (filters.stage.length) result = result.filter((l) => filters.stage.includes(l.stage));
       if (filters.tags.length) result = result.filter((l) => filters.tags.some((t) => l.tags.includes(t)));
@@ -4773,7 +4775,7 @@ export default function LeadsPage() {
     }
 
     return result;
-  }, [leads, apiLeads, selectedPipelineId, search, filters, dashFilter, pipelines]);
+  }, [leads, apiLeads, selectedPipelineId, debouncedSearch, filters, dashFilter, pipelines]);
 
   const totalCount = filteredLeads.length;
   const customerCount = useMemo(() => filteredLeads.reduce((n, l) => n + (l.stage === 'Closed Won' ? 1 : 0), 0), [filteredLeads]);

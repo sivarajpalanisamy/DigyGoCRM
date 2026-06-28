@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
+import { useDebounce } from '@/hooks/useDebounce';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import {
@@ -196,6 +197,7 @@ export default function InboxPage() {
   const [messages, setMessages]             = useState<ApiMessage[]>([]);
   const [selectedId, setSelectedId]         = useState<string | null>(null);
   const [search, setSearch]                 = useState('');
+  const debouncedSearch                     = useDebounce(search, 300);
   const [filterTab, setFilterTab]           = useState<FilterTab>('all');
   const [channelFilter, setChannelFilter]   = useState<ChannelFilter>('all');
   const [messageText, setMessageText]       = useState('');
@@ -678,8 +680,8 @@ export default function InboxPage() {
 
   const baseList = filterTab === 'archived' ? archivedConvs : conversations;
   const filtered = baseList.filter((c) => {
-    if (search) {
-      const q = search.toLowerCase();
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
       const matchName  = (c.lead_name  || '').toLowerCase().includes(q);
       const matchPhone = (c.lead_phone || '').toLowerCase().includes(q);
       if (!matchName && !matchPhone) return false;

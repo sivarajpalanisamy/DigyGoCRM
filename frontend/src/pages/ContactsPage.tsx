@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useCrmStore } from '@/store/crmStore';
 import { usePermission } from '@/hooks/usePermission';
+import { useDebounce } from '@/hooks/useDebounce';
 import { api } from '@/lib/api';
 import { ExportModal } from '@/components/ui/ExportModal';
 import { cn } from '@/lib/utils';
@@ -540,6 +541,7 @@ export default function ContactsPage() {
   const canDeleteContact = usePermission('leads:delete');
   const canExport        = usePermission('contacts:export');
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [showExportModal, setShowExportModal] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -584,8 +586,8 @@ export default function ContactsPage() {
   const filtered = useMemo(() => {
     const now = new Date();
     return leads.filter((l) => {
-      if (search.trim()) {
-        const q = search.toLowerCase();
+      if (debouncedSearch.trim()) {
+        const q = debouncedSearch.toLowerCase();
         if (!(l.firstName.toLowerCase().includes(q) || l.lastName.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.phone.toLowerCase().includes(q))) return false;
       }
       if (sourceFilter !== 'All' && l.source !== sourceFilter) return false;
@@ -616,7 +618,7 @@ export default function ContactsPage() {
       }
       return true;
     });
-  }, [leads, search, sourceFilter, typeFilter, tagFilter, pipelineFilter, stageFilter, dateFilter, customFrom, customTo]);
+  }, [leads, debouncedSearch, sourceFilter, typeFilter, tagFilter, pipelineFilter, stageFilter, dateFilter, customFrom, customTo]);
 
   const activeFiltersCount = [sourceFilter !== 'All', typeFilter !== 'All', tagFilter !== 'All', pipelineFilter !== 'All', stageFilter !== 'All', dateFilter !== 'All time'].filter(Boolean).length;
 
