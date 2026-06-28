@@ -15,6 +15,7 @@ import { triggerWorkflows } from './workflows';
 import { sendCallLoggedNotification } from '../utils/notifications';
 import { normalizePhone } from '../utils/phone';
 import { RECORDINGS_DIR } from '../utils/recordingDownloader';
+import { cleanText } from '../utils/sanitize';
 
 const router = Router();
 
@@ -543,8 +544,8 @@ router.post('/calls/by-key/note', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
   const phone = normalizePhone((req.body?.phone ?? '').toString());
   const startedAtMs = parseInt((req.body?.startedAt ?? '0').toString(), 10);
-  const note = (req.body?.note ?? '').toString();
-  const tag = req.body?.tag != null ? req.body.tag.toString() : null;
+  const note = cleanText(req.body?.note ?? '');
+  const tag = req.body?.tag != null ? cleanText(req.body.tag) : null;
   if (!phone) { res.status(400).json({ error: 'phone required' }); return; }
 
   try {
@@ -1022,8 +1023,8 @@ router.post('/leads/:id/followup', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
   const id = req.params.id;
   const dueAt = req.body?.dueAt;
-  const title = (req.body?.title ?? 'Follow-up').toString();
-  const note = (req.body?.note ?? '').toString() || null;
+  const title = cleanText(req.body?.title ?? 'Follow-up') || 'Follow-up';
+  const note = cleanText(req.body?.note ?? '') || null;
   if (!dueAt) { res.status(400).json({ error: 'dueAt required' }); return; }
   try {
     const owns = await query('SELECT assigned_to FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE', [id, tenantId]);
@@ -1081,13 +1082,13 @@ router.post('/leads/:id/tag', async (req: AuthRequest, res: Response) => {
 router.post('/leads', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
   const b = req.body || {};
-  const name = (b.name ?? '').toString().trim();
+  const name = cleanText(b.name ?? '');
   const phone = b.phone ? normalizePhone(b.phone.toString()) : '';
   const pipelineId = b.pipelineId || b.pipeline_id || null;
   const stageId = b.stageId || b.stage_id || null;
   const email = (b.email ?? '').toString().trim() || null;
-  const notes = (b.notes ?? '').toString().trim() || null;
-  const source = (b.source ?? 'Mobile Dialer').toString();
+  const notes = cleanText(b.notes ?? '') || null;
+  const source = cleanText(b.source ?? 'Mobile Dialer') || 'Mobile Dialer';
 
   if (!name && !phone) { res.status(400).json({ error: 'name or phone required' }); return; }
 
@@ -1157,7 +1158,7 @@ router.post('/leads/:id/update', async (req: AuthRequest, res: Response) => {
   const id = req.params.id;
   const stageId = req.body?.stageId || req.body?.stage_id || null;
   const pipelineId = req.body?.pipelineId || req.body?.pipeline_id || null;
-  const note = (req.body?.note ?? '').toString().trim();
+  const note = cleanText(req.body?.note ?? '');
   try {
     const owns = await query('SELECT id, pipeline_id FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE', [id, tenantId]);
     if (!owns.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }

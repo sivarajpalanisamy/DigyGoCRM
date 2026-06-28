@@ -9,6 +9,7 @@ import { normalizePhone, maskPhone } from '../utils/phone';
 import { triggerWorkflows } from './workflows';
 import { decrypt } from '../utils/crypto';
 import { backfillCustomFields, cleanFieldKey } from '../utils/customFields';
+import { cleanText } from '../utils/sanitize';
 import { parseMetaFieldData } from '../utils/meta';
 import https from 'https';
 import { emitToTenant } from '../socket';
@@ -392,7 +393,9 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 // POST /api/leads
 router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(CreateLeadSchema), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { name, email, pipeline_id, stage_id, notes, tags } = req.body;
+  const { email, pipeline_id, stage_id, tags } = req.body;
+  const name = cleanText(req.body.name);
+  const notes = req.body.notes !== undefined ? cleanText(req.body.notes) : req.body.notes;
   const source: string = 'Manual';
   const phone = req.body.phone ? normalizePhone(req.body.phone) : req.body.phone;
 
@@ -532,9 +535,10 @@ router.patch('/:id', checkPermission('leads:edit'), validate(UpdateLeadSchema), 
   const updates: string[] = [];
   const params: any[] = [];
 
+  const TEXT_FIELDS = new Set(['name', 'notes']); // free-text → XSS-sanitize
   for (const field of allowed) {
     if (req.body[field] !== undefined) {
-      params.push(req.body[field]);
+      params.push(TEXT_FIELDS.has(field) ? cleanText(req.body[field]) : req.body[field]);
       updates.push(`${field} = $${params.length}`);
     }
   }
@@ -709,7 +713,8 @@ router.get('/:id/notes', async (req: AuthRequest, res: Response) => {
 // POST /api/leads/:id/notes
 router.post('/:id/notes', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
-  const { title, content } = req.body;
+  const title = cleanText(req.body.title);
+  const content = cleanText(req.body.content);
   if (!content) { res.status(400).json({ error: 'Content is required' }); return; }
   try {
     const result = await query(
@@ -736,8 +741,8 @@ router.patch('/:id/notes/:noteId', async (req: AuthRequest, res: Response) => {
   const { title, content } = req.body;
   if (content !== undefined && !String(content).trim()) { res.status(400).json({ error: 'Content cannot be empty' }); return; }
   const updates: string[] = []; const params: any[] = [];
-  if (title !== undefined)   { params.push(title);   updates.push(`title=$${params.length}`); }
-  if (content !== undefined) { params.push(content); updates.push(`content=$${params.length}`); }
+  if (title !== undefined)   { params.push(cleanText(title));   updates.push(`title=$${params.length}`); }
+  if (content !== undefined) { params.push(cleanText(content)); updates.push(`content=$${params.length}`); }
   if (!updates.length) { res.status(400).json({ error: 'Nothing to update' }); return; }
   params.push(req.params.noteId, req.params.id, tenantId);
   try {
@@ -785,7 +790,9 @@ router.get('/:id/followups', checkPermission('followups:view'), async (req: Auth
 // POST /api/leads/:id/followups
 router.post('/:id/followups', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
-  const { title, description, due_at, assigned_to, type: followupType } = req.body;
+  const { due_at, assigned_to, type: followupType } = req.body;
+  const title = cleanText(req.body.title);
+  const description = cleanText(req.body.description);
   if (!title || !due_at) { res.status(400).json({ error: 'Title and due_at are required' }); return; }
   try {
     const result = await query(
@@ -813,8 +820,8 @@ router.patch('/:id/followups/:fuId', async (req: AuthRequest, res: Response) => 
   const { tenantId, userId } = req.user!;
   const { title, description, due_at, completed } = req.body;
   const updates: string[] = []; const params: any[] = [];
-  if (title !== undefined)       { params.push(title);       updates.push(`title=$${params.length}`); }
-  if (description !== undefined) { params.push(description); updates.push(`description=$${params.length}`); }
+  if (title !== undefined)       { params.push(cleanText(title));       updates.push(`title=$${params.length}`); }
+  if (description !== undefined) { params.push(cleanText(description)); updates.push(`description=$${params.length}`); }
   if (due_at !== undefined)      { params.push(due_at);      updates.push(`due_at=$${params.length}`); }
   if (completed !== undefined) {
     params.push(completed); updates.push(`completed=$${params.length}`);
@@ -1239,7 +1246,7 @@ router.post('/import', checkPermission('leads:create'), async (req: AuthRequest,
         await query(
           `INSERT INTO lead_notes (lead_id, tenant_id, title, content, created_by)
            VALUES ($1,$2,'Import Note',$3,$4)`,
-          [leadId, tenantId, notesText, userId]
+          [leadId, tenantId, cleanText(notesText), userId]
         );
       }
 

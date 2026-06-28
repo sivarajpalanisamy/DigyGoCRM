@@ -4,6 +4,7 @@ import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission, hasPermission } from '../middleware/permissions';
 import { checkUsage, incrementUsage } from '../middleware/plan';
 import { triggerWorkflows } from './workflows';
+import { cleanText } from '../utils/sanitize';
 import * as XLSX from 'xlsx';
 
 const router = Router();
@@ -226,7 +227,9 @@ router.get('/export', checkPermission('contacts:export'), async (req: AuthReques
 
 // POST /api/contacts
 router.post('/', checkPermission('contacts:create'), checkUsage('contacts'), async (req: AuthRequest, res: Response) => {
-  const { name, email, phone, company, lead_id } = req.body;
+  const { email, phone, lead_id } = req.body;
+  const name = cleanText(req.body.name);
+  const company = cleanText(req.body.company) || null;
   if (!name) { res.status(400).json({ error: 'Name required' }); return; }
   try {
     const result = await query(
@@ -253,10 +256,10 @@ router.patch('/:id', checkPermission('contacts:edit'), async (req: AuthRequest, 
 
   const fields: string[] = [];
   const params: any[] = [];
-  if (name    !== undefined) { params.push(name);    fields.push(`name=$${params.length}`); }
+  if (name    !== undefined) { params.push(cleanText(name));    fields.push(`name=$${params.length}`); }
   if (email   !== undefined) { params.push(email);   fields.push(`email=$${params.length}`); }
   if (phone   !== undefined) { params.push(phone);   fields.push(`phone=$${params.length}`); }
-  if (company !== undefined) { params.push(company); fields.push(`company=$${params.length}`); }
+  if (company !== undefined) { params.push(cleanText(company)); fields.push(`company=$${params.length}`); }
   if (!fields.length) { res.status(400).json({ error: 'Nothing to update' }); return; }
   params.push(req.params.id, req.user!.tenantId);
   try {
