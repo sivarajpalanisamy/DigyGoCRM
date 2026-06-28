@@ -13,6 +13,7 @@ import { invalidateDomainCache, setCachedDomain } from '../utils/domainCache';
 import { addAllowedOrigin, removeAllowedOrigin } from '../utils/corsOrigins';
 import { hashPassword, needsRehash } from '../utils/password';
 import { blockIp, unblockIp, isIpBlocked, listBlockedIps } from '../middleware/ipBlock';
+import { cacheJson } from '../lib/cache';
 import { sendEmail, getTenantEmailIdentity } from '../services/email';
 import { emitToTenant } from '../socket';
 
@@ -873,8 +874,10 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 // GET /api/auth/tenants/dashboard — super admin dashboard analytics
 router.get('/tenants/dashboard', requireAuth, requireSuperAdmin, async (_req: AuthRequest, res: Response) => {
   try {
+    // Cached 60s (in-memory if Redis is off) so repeated admin loads are instant.
+    const data = await cacheJson('superadmin:dashboard', 60, async () => {
     const [
-      kpiRes, accountsRes, planDistRes, growthRes, inactiveRes, usageRes,
+      kpiRes, accountsRes, planDistRes, growthRes, inactiveRes,
     ] = await Promise.all([
       // KPI totals
       query(`
@@ -884,27 +887,23 @@ router.get('/tenants/dashboard', requireAuth, requireSuperAdmin, async (_req: Au
           (SELECT COUNT(*) FROM users WHERE is_active=TRUE AND role<>'super_admin')::int AS total_users,
           (SELECT COUNT(*) FROM leads l JOIN pipeline_stages ps ON ps.id=l.stage_id WHERE l.is_deleted=FALSE AND ps.is_won=TRUE)::int AS total_won
       `),
-      // Per-account breakdown
+      // Per-account breakdown. Uses correlated subqueries (each an indexed
+      // tenant_id scan) instead of a 6-way LEFT JOIN + COUNT(DISTINCT), which
+      // fanned out to leads×pipelines×forms×workflows rows per tenant and was the
+      // cause of the slow load.
       query(`
         SELECT
           t.id, t.name, t.plan, t.billing_cycle, t.subscription_status, t.subscription_expires_at,
           t.created_at,
-          COUNT(DISTINCT u.id) FILTER (WHERE u.is_active=TRUE AND u.role<>'super_admin')::int AS user_count,
-          COUNT(DISTINCT l.id)::int AS lead_count,
-          COUNT(DISTINCT l.id) FILTER (WHERE ps.is_won=TRUE)::int AS won_count,
-          COUNT(DISTINCT p.id)::int AS pipeline_count,
-          COUNT(DISTINCT cf.id)::int AS form_count,
-          COUNT(DISTINCT w.id)::int AS workflow_count,
-          MAX(l.created_at) AS last_lead_at
+          (SELECT COUNT(*) FROM users u WHERE u.tenant_id=t.id AND u.is_active=TRUE AND u.role<>'super_admin')::int AS user_count,
+          (SELECT COUNT(*) FROM leads l WHERE l.tenant_id=t.id AND l.is_deleted=FALSE)::int AS lead_count,
+          (SELECT COUNT(*) FROM leads l JOIN pipeline_stages ps ON ps.id=l.stage_id WHERE l.tenant_id=t.id AND l.is_deleted=FALSE AND ps.is_won=TRUE)::int AS won_count,
+          (SELECT COUNT(*) FROM pipelines p WHERE p.tenant_id=t.id)::int AS pipeline_count,
+          (SELECT COUNT(*) FROM custom_forms cf WHERE cf.tenant_id=t.id)::int AS form_count,
+          (SELECT COUNT(*) FROM workflows w WHERE w.tenant_id=t.id AND w.status='active')::int AS workflow_count,
+          (SELECT MAX(l.created_at) FROM leads l WHERE l.tenant_id=t.id AND l.is_deleted=FALSE) AS last_lead_at
         FROM tenants t
-        LEFT JOIN users u ON u.tenant_id=t.id
-        LEFT JOIN leads l ON l.tenant_id=t.id AND l.is_deleted=FALSE
-        LEFT JOIN pipeline_stages ps ON ps.id=l.stage_id
-        LEFT JOIN pipelines p ON p.tenant_id=t.id
-        LEFT JOIN custom_forms cf ON cf.tenant_id=t.id
-        LEFT JOIN workflows w ON w.tenant_id=t.id AND w.status='active'
         WHERE t.is_active=TRUE
-        GROUP BY t.id
         ORDER BY lead_count DESC
       `),
       // Plan distribution
@@ -927,26 +926,12 @@ router.get('/tenants/dashboard', requireAuth, requireSuperAdmin, async (_req: Au
       // Inactive accounts (no leads in 30 days)
       query(`
         SELECT t.id, t.name, t.plan, t.billing_cycle,
-          MAX(l.created_at)::text AS last_lead_at,
-          EXTRACT(DAY FROM NOW() - COALESCE(MAX(l.created_at), t.created_at))::int AS inactive_days
+          (SELECT MAX(l.created_at) FROM leads l WHERE l.tenant_id=t.id AND l.is_deleted=FALSE)::text AS last_lead_at,
+          EXTRACT(DAY FROM NOW() - COALESCE((SELECT MAX(l.created_at) FROM leads l WHERE l.tenant_id=t.id AND l.is_deleted=FALSE), t.created_at))::int AS inactive_days
         FROM tenants t
-        LEFT JOIN leads l ON l.tenant_id=t.id AND l.is_deleted=FALSE
         WHERE t.is_active=TRUE
-        GROUP BY t.id
-        HAVING COALESCE(MAX(l.created_at), t.created_at) < NOW() - INTERVAL '30 days'
+          AND COALESCE((SELECT MAX(l.created_at) FROM leads l WHERE l.tenant_id=t.id AND l.is_deleted=FALSE), t.created_at) < NOW() - INTERVAL '30 days'
         ORDER BY inactive_days DESC
-      `),
-      // Accounts nearing plan limits
-      query(`
-        SELECT t.id, t.name, t.plan,
-          COUNT(DISTINCT l.id)::int AS lead_count,
-          COUNT(DISTINCT u.id) FILTER (WHERE u.is_active=TRUE AND u.role<>'super_admin')::int AS user_count
-        FROM tenants t
-        LEFT JOIN leads l ON l.tenant_id=t.id AND l.is_deleted=FALSE
-        LEFT JOIN users u ON u.tenant_id=t.id
-        WHERE t.is_active=TRUE
-        GROUP BY t.id
-        ORDER BY lead_count DESC
       `),
     ]);
 
@@ -961,14 +946,22 @@ router.get('/tenants/dashboard', requireAuth, requireSuperAdmin, async (_req: Au
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
-    res.json({
+    // "Accounts nearing plan limits" is a subset of the per-account data — derive
+    // it instead of re-running another fan-out query.
+    const usage = accountsRes.rows.map((a: any) => ({
+      id: a.id, name: a.name, plan: a.plan, lead_count: a.lead_count, user_count: a.user_count,
+    }));
+
+    return {
       kpi: kpiRes.rows[0],
       accounts: accountsRes.rows,
       plan_distribution: planDistRes.rows,
       growth: top5Growth,
       inactive: inactiveRes.rows,
-      usage: usageRes.rows,
+      usage,
+    };
     });
+    res.json(data);
   } catch (err) {
     console.error('[super-admin dashboard]', err);
     res.status(500).json({ error: 'Server error' });
