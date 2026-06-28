@@ -328,22 +328,36 @@ function streamFile(req: AuthRequest, res: Response, filePath: string, relPath: 
 interface DispositionDef {
   key: string;
   label: string;
+  icon: string;
+  color: string;
   lead_quality?: string | null;
-  terminal: boolean;
 }
 
 const DEFAULT_DISPOSITIONS: DispositionDef[] = [
-  { key: 'interested',      label: 'Interested',      lead_quality: 'Hot',  terminal: false },
-  { key: 'callback_later',  label: 'Callback Later',  lead_quality: null,   terminal: false },
-  { key: 'not_reachable',   label: 'Not Reachable',   lead_quality: null,   terminal: false },
-  { key: 'not_interested',  label: 'Not Interested',  lead_quality: 'Cold', terminal: true  },
-  { key: 'hot_lead',        label: 'Hot Lead',         lead_quality: 'Hot',  terminal: false },
-  { key: 'deal_closed',     label: 'Deal Closed',     lead_quality: null,   terminal: true  },
+  { key: 'interested',      label: 'Interested',      icon: '👍', color: 'emerald', lead_quality: 'Hot'  },
+  { key: 'callback_later',  label: 'Callback Later',  icon: '🕐', color: 'blue',    lead_quality: null   },
+  { key: 'not_reachable',   label: 'Not Reachable',   icon: '📵', color: 'red',     lead_quality: null   },
+  { key: 'not_interested',  label: 'Not Interested',  icon: '😕', color: 'gray',    lead_quality: 'Cold' },
+  { key: 'hot_lead',        label: 'Hot Lead',         icon: '⭐', color: 'orange',  lead_quality: 'Hot'  },
+  { key: 'deal_closed',     label: 'Deal Closed',     icon: '✓',  color: 'purple',  lead_quality: null   },
 ];
 
-// GET /api/calls/dispositions - list available post-call outcomes
-router.get('/dispositions', async (_req: AuthRequest, res: Response) => {
-  res.json(DEFAULT_DISPOSITIONS);
+async function getTenantDispositions(tenantId: string): Promise<DispositionDef[]> {
+  const r = await query(
+    `SELECT call_dispositions FROM company_settings WHERE tenant_id=$1::uuid`,
+    [tenantId],
+  );
+  const custom = r.rows[0]?.call_dispositions;
+  if (Array.isArray(custom) && custom.length > 0) return custom;
+  return DEFAULT_DISPOSITIONS;
+}
+
+// GET /api/calls/dispositions - list available post-call outcomes for this tenant
+router.get('/dispositions', async (req: AuthRequest, res: Response) => {
+  try {
+    const disps = await getTenantDispositions(req.user!.tenantId!);
+    res.json(disps);
+  } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
 // POST /api/calls/:callId/post-call - log outcome + optional follow-up after a call
@@ -359,10 +373,11 @@ router.post('/:callId/post-call', async (req: AuthRequest, res: Response) => {
 
   if (!disposition_key) { res.status(400).json({ error: 'disposition_key is required' }); return; }
 
-  const dispDef = DEFAULT_DISPOSITIONS.find((d) => d.key === disposition_key);
-  if (!dispDef) { res.status(400).json({ error: 'Invalid disposition_key' }); return; }
-
   try {
+    const disps = await getTenantDispositions(tenantId!);
+    const dispDef = disps.find((d) => d.key === disposition_key);
+    if (!dispDef) { res.status(400).json({ error: 'Invalid disposition_key' }); return; }
+
     // Fetch call - verify tenant + ownership
     const isSuper = role === 'super_admin';
     let ownershipFilter = '';
@@ -401,9 +416,9 @@ router.post('/:callId/post-call', async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // 3. Create follow-up if date provided and outcome is not terminal
+    // 3. Create follow-up if date provided
     let followUp = null;
-    if (call.lead_id && follow_up_date && !dispDef.terminal) {
+    if (call.lead_id && follow_up_date) {
       const dueAt = follow_up_time
         ? `${follow_up_date}T${follow_up_time}:00`
         : `${follow_up_date}T09:00:00`;
@@ -415,7 +430,6 @@ router.post('/:callId/post-call', async (req: AuthRequest, res: Response) => {
       );
       followUp = fuRes.rows[0];
 
-      // Activity log
       await query(
         `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
          VALUES ($1::uuid, $2::uuid, 'followup', $3, $4::uuid)`,
