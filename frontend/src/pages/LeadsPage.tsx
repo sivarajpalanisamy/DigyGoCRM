@@ -1249,6 +1249,70 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
   const [saving, setSaving] = useState(false);
   const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
 
+  // Outcome chips fetched from tenant config
+  const COLOR_MAP: Record<string, string> = {
+    emerald: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+    blue: 'border-blue-300 bg-blue-50 text-blue-700',
+    red: 'border-red-300 bg-red-50 text-red-700',
+    gray: 'border-gray-300 bg-gray-50 text-gray-600',
+    orange: 'border-orange-300 bg-orange-50 text-orange-700',
+    purple: 'border-purple-300 bg-purple-50 text-purple-700',
+    amber: 'border-amber-300 bg-amber-50 text-amber-700',
+    pink: 'border-pink-300 bg-pink-50 text-pink-700',
+    cyan: 'border-cyan-300 bg-cyan-50 text-cyan-700',
+    yellow: 'border-yellow-300 bg-yellow-50 text-yellow-700',
+  };
+  const [outcomeOptions, setOutcomeOptions] = useState<{ key: string; label: string; icon: string; color: string }[]>([]);
+  const [selectedOutcome, setSelectedOutcome] = useState('');
+
+  const FALLBACK_OUTCOMES = [
+    { key: 'interested',      label: 'Interested',      icon: '👍', color: 'emerald' },
+    { key: 'callback_later',  label: 'Callback Later',  icon: '🕐', color: 'blue'    },
+    { key: 'not_reachable',   label: 'Not Reachable',   icon: '📵', color: 'red'     },
+    { key: 'not_interested',  label: 'Not Interested',  icon: '😕', color: 'gray'    },
+    { key: 'deal_closed',     label: 'Deal Closed',     icon: '🤝', color: 'orange'  },
+    { key: 'follow_up_set',   label: 'Follow-up Set',   icon: '📅', color: 'purple'  },
+  ];
+  useEffect(() => {
+    if (!isEdit && !isNote) {
+      api.get<any[]>('/api/settings/dispositions').then((d) => setOutcomeOptions(d?.length ? d : FALLBACK_OUTCOMES)).catch(() => setOutcomeOptions(FALLBACK_OUTCOMES));
+    }
+  }, [isEdit, isNote]);
+
+  // Quick-tap date/time helpers
+  const [selectedDateIdx, setSelectedDateIdx] = useState(-1);
+  const [selectedTimeIdx, setSelectedTimeIdx] = useState(-1);
+  const today = new Date();
+  const dateOptions = [
+    { label: 'Today', sub: today.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), value: today },
+    { label: 'Tomorrow', sub: new Date(Date.now() + 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), value: new Date(Date.now() + 86400000) },
+    { label: 'In 3 days', sub: new Date(Date.now() + 3 * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), value: new Date(Date.now() + 3 * 86400000) },
+  ];
+  const timeOptions = [
+    { label: '9 AM', hour: 9 },
+    { label: '12 PM', hour: 12 },
+    { label: '3 PM', hour: 15 },
+    { label: '6 PM', hour: 18 },
+  ];
+
+  const applyQuickDate = (idx: number, date: Date) => {
+    setSelectedDateIdx(idx);
+    const h = selectedTimeIdx >= 0 ? timeOptions[selectedTimeIdx].hour : 9;
+    const d = new Date(date); d.setHours(h, 0, 0, 0);
+    setDueAt(d.toISOString().slice(0, 16));
+  };
+  const applyQuickTime = (idx: number) => {
+    setSelectedTimeIdx(idx);
+    if (!dueAt) {
+      const d = new Date(); d.setHours(timeOptions[idx].hour, 0, 0, 0);
+      setDueAt(d.toISOString().slice(0, 16));
+      setSelectedDateIdx(0);
+    } else {
+      const d = new Date(dueAt); d.setHours(timeOptions[idx].hour, 0, 0, 0);
+      setDueAt(d.toISOString().slice(0, 16));
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     // ── EDIT existing note / follow-up (PATCH) ──
@@ -1274,6 +1338,7 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
       } catch (err: any) { toast.error(err.message ?? 'Failed to update follow-up'); } finally { setSaving(false); }
       return;
     }
+    // ── CREATE note ──
     if (isNote) {
       const content = notes.trim() || title.trim();
       if (!content) { toast.error('Note content is required'); return; }
@@ -1293,79 +1358,160 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
       }
       return;
     }
-    if (!title.trim()) { toast.error('Title is required'); return; }
+    // ── CREATE follow-up (new quick-tap flow) ──
+    if (!selectedOutcome) { toast.error('Select an outcome'); return; }
+    const outcomeDef = outcomeOptions.find((o) => o.key === selectedOutcome)!;
+    const autoTitle = `Follow up - ${outcomeDef.label}`;
     setSaving(true);
     try {
-      const created = await api.post<any>(`/api/leads/${leadId}/followups`, {
-        title: title.trim(),
-        description: notes.trim() || undefined,
-        due_at: dueAt ? new Date(dueAt).toISOString() : undefined,
-        assigned_to: currentUser?.id,
-      });
-      const fu = {
-        id: created.id, leadId,
-        dueAt: created.due_at,
-        note: title.trim(),
-        completed: false,
-        assignedTo: currentUser?.id ?? '',
-        createdAt: created.created_at ?? new Date().toISOString(),
-      };
-      addFollowUp(fu);
-      onCreated?.(fu);
-      toast.success('Follow-up scheduled');
+      if (dueAt) {
+        const created = await api.post<any>(`/api/leads/${leadId}/followups`, {
+          title: autoTitle,
+          description: notes.trim() || undefined,
+          due_at: new Date(dueAt).toISOString(),
+          assigned_to: currentUser?.id,
+        });
+        const fu = {
+          id: created.id, leadId,
+          dueAt: created.due_at,
+          note: autoTitle,
+          completed: false,
+          assignedTo: currentUser?.id ?? '',
+          createdAt: created.created_at ?? new Date().toISOString(),
+        };
+        addFollowUp(fu);
+        onCreated?.(fu);
+        toast.success('Follow-up scheduled');
+      } else {
+        // No date selected - save outcome as a note
+        const noteText = [outcomeDef.label, notes.trim()].filter(Boolean).join(' - ');
+        if (noteText) {
+          const created = await api.post<any>(`/api/leads/${leadId}/notes`, {
+            title: outcomeDef.label,
+            content: noteText,
+          });
+          onNoteCreated?.({ ...created, created_by_name: currentUser?.name ?? '' });
+        }
+        toast.success(`Marked as ${outcomeDef.label}`);
+      }
       onClose();
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to schedule follow-up');
+      toast.error(err.message ?? 'Failed to save');
     } finally {
       setSaving(false);
     }
   };
 
+  // ── EDIT / NOTE mode ── (legacy form UI)
+  if (isEdit || isNote) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
+            <h3 className="font-headline font-bold text-[#1c1410] text-[17px]">{isEdit ? (editItem?.kind === 'note' ? 'Edit Note' : 'Edit Follow-Up') : 'Add Note'}</h3>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+          </div>
+          <form onSubmit={submit} className="px-6 py-5 space-y-4">
+            <div>
+              <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">
+                Title {!(isNote || editItem?.kind === 'note') && <span className="text-red-400">*</span>}
+              </label>
+              <input className={inputCls} placeholder="e.g. Call back for pre-sales pitch" value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">
+                {(isNote || editItem?.kind === 'note') ? <>Note Content <span className="text-red-400">*</span></> : 'Notes'}
+              </label>
+              <textarea className={inputCls + ' resize-none h-20'} placeholder={(isNote || editItem?.kind === 'note') ? 'Write your note...' : 'Add any notes...'} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </div>
+            {!(isNote || editItem?.kind === 'note') && (
+              <div>
+                <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">Due Date & Time</label>
+                <input type="datetime-local" className={inputCls} value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+              </div>
+            )}
+            <div className="flex items-center justify-end gap-3 pt-1">
+              <button type="button" onClick={onClose} className="px-5 py-2 rounded-xl text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
+              <button type="submit" disabled={saving} className="px-6 py-2 rounded-xl text-[13px] font-bold text-white hover:-translate-y-0.5 transition-all disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
+                {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Save Note'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ── NEW FOLLOW-UP mode ── (quick-tap UI)
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
-          <h3 className="font-headline font-bold text-[#1c1410] text-[17px]">{isEdit ? (isNote ? 'Edit Note' : 'Edit Follow-Up') : (isNote ? 'Add Note' : 'Set Follow-Up')}</h3>
+          <h3 className="font-headline font-bold text-[#1c1410] text-[17px]">Set Follow-Up</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-4 h-4" /></button>
         </div>
-        <form onSubmit={submit} className="px-6 py-5 space-y-4">
-          {/* Note toggle — hidden in edit mode (can't convert a note↔follow-up) */}
-          {!isEdit && (
-            <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
-              <input
-                type="checkbox"
-                checked={isNote}
-                onChange={(e) => setIsNote(e.target.checked)}
-                className="w-4 h-4 rounded accent-primary cursor-pointer"
-              />
-              <span className="text-[13px] font-medium text-[#6b4f30]">Save as note instead of follow-up</span>
-            </label>
-          )}
+        <form onSubmit={submit} className="px-6 py-5 space-y-5">
+          {/* HOW DID IT GO? */}
+          <div>
+            <label className="text-[11px] font-bold text-[#1c1410] tracking-wide mb-3 block">HOW DID IT GO?</label>
+            <div className="grid grid-cols-3 gap-2">
+              {outcomeOptions.map((o) => (
+                <button key={o.key} type="button" onClick={() => {
+                  setSelectedOutcome(o.key);
+                }}
+                  className={cn('flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all text-center',
+                    selectedOutcome === o.key ? (COLOR_MAP[o.color] ?? 'border-gray-300 bg-gray-50 text-gray-600') + ' ring-1 ring-offset-1 ring-current' : 'border-gray-100 bg-white hover:border-gray-200')}>
+                  <span className="text-lg">{o.icon}</span>
+                  <span className={cn('text-[11px] font-semibold leading-tight', selectedOutcome === o.key ? '' : 'text-[#1c1410]')}>{o.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-          <div>
-            <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">
-              Title {!isNote && <span className="text-red-400">*</span>}
-            </label>
-            <input className={inputCls} placeholder="e.g. Call back for pre-sales pitch" value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">
-              {isNote ? <>Note Content <span className="text-red-400">*</span></> : 'Notes'}
-            </label>
-            <textarea className={inputCls + ' resize-none h-20'} placeholder={isNote ? 'Write your note...' : 'Add any notes...'} value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
-          {!isNote && (
-            <div>
-              <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">Due Date & Time</label>
-              <input type="datetime-local" className={inputCls} value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+          {/* NEXT FOLLOW-UP */}
+          {selectedOutcome && (
+            <div className="space-y-3">
+              <label className="text-[11px] font-bold text-[#1c1410] tracking-wide block">NEXT FOLLOW-UP</label>
+              <div className="flex gap-2">
+                {dateOptions.map((d, i) => (
+                  <button key={i} type="button" onClick={() => applyQuickDate(i, d.value)}
+                    className={cn('flex-1 py-2 rounded-xl border text-center transition-colors',
+                      selectedDateIdx === i ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 hover:border-[#ea580c]/40')}>
+                    <span className={cn('block text-[12px] font-bold', selectedDateIdx === i ? 'text-white' : 'text-[#1c1410]')}>{d.label}</span>
+                    <span className={cn('block text-[10px]', selectedDateIdx === i ? 'text-white/70' : 'text-[#7a6b5c]')}>{d.sub}</span>
+                  </button>
+                ))}
+                <button type="button" onClick={() => {
+                  const el = document.getElementById('fu-datetime') as HTMLInputElement | null;
+                  el?.showPicker?.();
+                }}
+                  className={cn('px-3 py-2 rounded-xl border text-center transition-colors',
+                    selectedDateIdx === 3 ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 hover:border-[#ea580c]/40')}>
+                  <span className={cn('block text-[12px] font-bold', selectedDateIdx === 3 ? 'text-white' : 'text-[#1c1410]')}>Pick</span>
+                  <span className={cn('block text-[10px]', selectedDateIdx === 3 ? 'text-white/70' : 'text-[#7a6b5c]')}>Custom</span>
+                </button>
+              </div>
+              <div className="flex gap-2">
+                {timeOptions.map((t, i) => (
+                  <button key={i} type="button" onClick={() => applyQuickTime(i)}
+                    className={cn('flex-1 py-2.5 rounded-xl border text-[13px] font-bold transition-colors',
+                      selectedTimeIdx === i ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 text-[#1c1410] hover:border-[#ea580c]/40')}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <input id="fu-datetime" type="datetime-local" className="sr-only" value={dueAt}
+                onChange={(e) => { setDueAt(e.target.value); setSelectedDateIdx(3); setSelectedTimeIdx(-1); }} />
             </div>
           )}
-          <div className="flex items-center justify-end gap-3 pt-1">
-            <button type="button" onClick={onClose} className="px-5 py-2 rounded-xl text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-            <button type="submit" disabled={saving} className="px-6 py-2 rounded-xl text-[13px] font-bold text-white hover:-translate-y-0.5 transition-all disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
-              {saving ? 'Saving…' : isEdit ? 'Save Changes' : isNote ? 'Save Note' : 'Schedule'}
-            </button>
-          </div>
+
+          {/* Note (optional) */}
+          <input className={inputCls} placeholder="Add a note (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+
+          {/* Submit */}
+          <button type="submit" disabled={saving || !selectedOutcome} className="w-full py-3 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
+            {saving ? 'Saving...' : dueAt ? 'Save & set follow-up' : 'Save outcome'}
+          </button>
         </form>
       </div>
     </div>

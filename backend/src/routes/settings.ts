@@ -172,6 +172,47 @@ router.put('/', checkAnyPermission('settings:manage','settings:company'), async 
   } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
+// ── Call Dispositions (tenant-configurable outcomes) ─────────────────────────
+
+// GET /api/settings/dispositions — tenant's call outcome options
+router.get('/dispositions', async (req: AuthRequest, res: Response) => {
+  try {
+    const r = await query(
+      `SELECT call_dispositions FROM company_settings WHERE tenant_id=$1::uuid`,
+      [req.user!.tenantId],
+    );
+    const custom = r.rows[0]?.call_dispositions;
+    const defaults = [
+      { key: 'interested',      label: 'Interested',      icon: '👍', color: 'emerald', lead_quality: 'Hot'  },
+      { key: 'callback_later',  label: 'Callback Later',  icon: '🕐', color: 'blue',    lead_quality: null   },
+      { key: 'not_reachable',   label: 'Not Reachable',   icon: '📵', color: 'red',     lead_quality: null   },
+      { key: 'not_interested',  label: 'Not Interested',  icon: '😕', color: 'gray',    lead_quality: 'Cold' },
+      { key: 'hot_lead',        label: 'Hot Lead',         icon: '⭐', color: 'orange',  lead_quality: 'Hot'  },
+      { key: 'deal_closed',     label: 'Deal Closed',     icon: '✓',  color: 'purple',  lead_quality: null   },
+    ];
+    res.json(Array.isArray(custom) && custom.length > 0 ? custom : defaults);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// PUT /api/settings/dispositions — save tenant's custom call outcomes
+router.put('/dispositions', checkAnyPermission('settings:manage', 'settings:company'), async (req: AuthRequest, res: Response) => {
+  const { dispositions } = req.body as { dispositions: any[] };
+  if (!Array.isArray(dispositions) || dispositions.length === 0) {
+    res.status(400).json({ error: 'At least one disposition is required' }); return;
+  }
+  // Validate shape
+  for (const d of dispositions) {
+    if (!d.key || !d.label) { res.status(400).json({ error: 'Each disposition needs key and label' }); return; }
+  }
+  try {
+    await query(
+      `UPDATE company_settings SET call_dispositions=$1::jsonb WHERE tenant_id=$2::uuid`,
+      [JSON.stringify(dispositions), req.user!.tenantId],
+    );
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 // ── Branding (tenant self-service) ────────────────────────────────────────────
 
 // GET /api/settings/branding — current tenant's branding

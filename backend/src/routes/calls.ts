@@ -47,7 +47,7 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
         `SELECT cl.id, cl.cdr_id, cl.direction, cl.outcome, cl.caller_phone, cl.superfone_number,
                 cl.duration_seconds, cl.started_at, cl.ended_at, cl.staff_name,
                 cl.recording_url, cl.recording_path, cl.recording_downloaded,
-                cl.is_unknown, cl.created_at, cl.notes, cl.disposition, cl.source,
+                cl.is_unknown, cl.created_at, cl.notes, cl.disposition, cl.disposition_key, cl.source,
                 l.id AS lead_id, COALESCE(l.name, cl.caller_phone) AS lead_name
          FROM call_logs cl
          LEFT JOIN leads l ON l.id = cl.lead_id
@@ -59,6 +59,77 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
       query(`SELECT COUNT(*) FROM call_logs cl WHERE ${where}`, params),
     ]);
     res.json({ calls: rows.rows, total: parseInt(countRow.rows[0].count) });
+  } catch (e) { res.status(500).json({ error: 'Server error' }); }
+});
+
+// GET /api/calls/stats — aggregated stats for charts
+router.get('/stats', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  const { direction, outcome, staff_name, date_from, date_to, source } = req.query as Record<string, string>;
+
+  const isSuper = role === 'super_admin';
+  let viewAll = false;
+  if (isSuper) {
+    viewAll = true;
+  } else {
+    const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+    viewAll = isOwner || await hasPermission(userId, 'calls:view_all', tenantId);
+  }
+
+  const params: any[] = [tenantId];
+  const conditions: string[] = ['cl.tenant_id=$1::uuid'];
+
+  if (!viewAll) { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
+
+  if (source)     { params.push(source);                   conditions.push(`cl.source=$${params.length}`); }
+  if (direction)  { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
+  if (outcome)    { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
+  if (staff_name) { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
+  if (date_from)  { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
+  if (date_to)    { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+
+  const where = conditions.join(' AND ');
+
+  try {
+    const [kpiRes, dailyRes, outcomesRes, agentsRes] = await Promise.all([
+      query(
+        `SELECT COUNT(*)::int AS total,
+                COUNT(*) FILTER (WHERE cl.outcome='ANSWERED')::int AS answered,
+                COUNT(*) FILTER (WHERE cl.outcome IN ('MISSED','NO_ANSWER'))::int AS missed,
+                COALESCE(ROUND(AVG(cl.duration_seconds) FILTER (WHERE cl.duration_seconds > 0)), 0)::int AS avg_duration
+         FROM call_logs cl WHERE ${where}`,
+        params,
+      ),
+      query(
+        `SELECT DATE(COALESCE(cl.started_at, cl.created_at)) AS date,
+                COUNT(*) FILTER (WHERE cl.direction='INBOUND')::int AS inbound,
+                COUNT(*) FILTER (WHERE cl.direction='OUTBOUND')::int AS outbound
+         FROM call_logs cl WHERE ${where}
+         GROUP BY 1 ORDER BY 1`,
+        params,
+      ),
+      query(
+        `SELECT cl.outcome, COUNT(*)::int AS count
+         FROM call_logs cl WHERE ${where}
+         GROUP BY 1 ORDER BY 2 DESC`,
+        params,
+      ),
+      query(
+        `SELECT cl.staff_name, COUNT(*)::int AS total,
+                COUNT(*) FILTER (WHERE cl.outcome='ANSWERED')::int AS answered,
+                COUNT(*) FILTER (WHERE cl.outcome IN ('MISSED','NO_ANSWER','REJECTED'))::int AS missed
+         FROM call_logs cl WHERE ${where} AND cl.staff_name IS NOT NULL
+         GROUP BY 1 ORDER BY 2 DESC LIMIT 10`,
+        params,
+      ),
+    ]);
+
+    res.json({
+      kpi: kpiRes.rows[0],
+      daily: dailyRes.rows,
+      outcomes: outcomesRes.rows,
+      agents: agentsRes.rows,
+    });
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
 
@@ -251,5 +322,135 @@ function streamFile(req: AuthRequest, res: Response, filePath: string, relPath: 
     fs.createReadStream(filePath).pipe(res);
   }
 }
+
+// --- Post-Call Disposition ---
+
+interface DispositionDef {
+  key: string;
+  label: string;
+  icon: string;
+  color: string;
+  lead_quality?: string | null;
+}
+
+const DEFAULT_DISPOSITIONS: DispositionDef[] = [
+  { key: 'interested',      label: 'Interested',      icon: '👍', color: 'emerald', lead_quality: 'Hot'  },
+  { key: 'callback_later',  label: 'Callback Later',  icon: '🕐', color: 'blue',    lead_quality: null   },
+  { key: 'not_reachable',   label: 'Not Reachable',   icon: '📵', color: 'red',     lead_quality: null   },
+  { key: 'not_interested',  label: 'Not Interested',  icon: '😕', color: 'gray',    lead_quality: 'Cold' },
+  { key: 'hot_lead',        label: 'Hot Lead',         icon: '⭐', color: 'orange',  lead_quality: 'Hot'  },
+  { key: 'deal_closed',     label: 'Deal Closed',     icon: '✓',  color: 'purple',  lead_quality: null   },
+];
+
+async function getTenantDispositions(tenantId: string): Promise<DispositionDef[]> {
+  const r = await query(
+    `SELECT call_dispositions FROM company_settings WHERE tenant_id=$1::uuid`,
+    [tenantId],
+  );
+  const custom = r.rows[0]?.call_dispositions;
+  if (Array.isArray(custom) && custom.length > 0) return custom;
+  return DEFAULT_DISPOSITIONS;
+}
+
+// GET /api/calls/dispositions - list available post-call outcomes for this tenant
+router.get('/dispositions', async (req: AuthRequest, res: Response) => {
+  try {
+    const disps = await getTenantDispositions(req.user!.tenantId!);
+    res.json(disps);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// POST /api/calls/:callId/post-call - log outcome + optional follow-up after a call
+router.post('/:callId/post-call', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  const { callId } = req.params;
+  const { disposition_key, follow_up_date, follow_up_time, note } = req.body as {
+    disposition_key: string;
+    follow_up_date?: string;
+    follow_up_time?: string;
+    note?: string;
+  };
+
+  if (!disposition_key) { res.status(400).json({ error: 'disposition_key is required' }); return; }
+
+  try {
+    const disps = await getTenantDispositions(tenantId!);
+    const dispDef = disps.find((d) => d.key === disposition_key);
+    if (!dispDef) { res.status(400).json({ error: 'Invalid disposition_key' }); return; }
+
+    // Fetch call - verify tenant + ownership
+    const isSuper = role === 'super_admin';
+    let ownershipFilter = '';
+    const fetchParams: any[] = [callId, tenantId];
+    if (!isSuper) {
+      const isOwner = (await query('SELECT is_owner FROM users WHERE id=$1', [userId])).rows[0]?.is_owner === true;
+      const canViewAll = isOwner || await hasPermission(userId, 'calls:view_all', tenantId);
+      if (!canViewAll) {
+        fetchParams.push(userId);
+        ownershipFilter = ` AND cl.staff_user_id=$${fetchParams.length}::uuid`;
+      }
+    }
+
+    const callRes = await query(
+      `SELECT cl.id, cl.lead_id, cl.staff_user_id, cl.staff_name, cl.caller_phone
+       FROM call_logs cl
+       WHERE cl.id=$1 AND cl.tenant_id=$2::uuid${ownershipFilter}`,
+      fetchParams,
+    );
+    const call = callRes.rows[0];
+    if (!call) { res.status(404).json({ error: 'Call not found' }); return; }
+
+    // 1. Update call_logs disposition
+    await query(
+      `UPDATE call_logs SET disposition_key=$2, disposition=$3, notes=COALESCE($4, notes)
+       WHERE id=$1`,
+      [callId, disposition_key, dispDef.label, note ?? null],
+    );
+
+    // 2. Update lead quality if mapping exists and call is linked to a lead
+    if (call.lead_id && dispDef.lead_quality) {
+      await query(
+        `UPDATE leads SET custom_fields = COALESCE(custom_fields, '{}'::jsonb) || $2::jsonb, updated_at=NOW()
+         WHERE id=$1::uuid AND tenant_id=$3::uuid`,
+        [call.lead_id, JSON.stringify({ lead_quality: dispDef.lead_quality }), tenantId],
+      );
+    }
+
+    // 3. Create follow-up if date provided
+    let followUp = null;
+    if (call.lead_id && follow_up_date) {
+      const dueAt = follow_up_time
+        ? `${follow_up_date}T${follow_up_time}:00`
+        : `${follow_up_date}T09:00:00`;
+      const title = `Follow up - ${dispDef.label}`;
+      const fuRes = await query(
+        `INSERT INTO lead_followups (lead_id, tenant_id, title, description, due_at, assigned_to, created_by)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::uuid, $6::uuid) RETURNING *`,
+        [call.lead_id, tenantId, title, note ?? null, dueAt, userId],
+      );
+      followUp = fuRes.rows[0];
+
+      await query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
+         VALUES ($1::uuid, $2::uuid, 'followup', $3, $4::uuid)`,
+        [call.lead_id, tenantId, `Follow-up scheduled: ${title}`, userId],
+      );
+    }
+
+    // 4. Log disposition as activity on lead timeline
+    if (call.lead_id) {
+      await query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+         VALUES ($1::uuid, $2::uuid, 'call_outcome', $3, $4, $5::uuid)`,
+        [call.lead_id, tenantId, `Call outcome: ${dispDef.label}`, note ?? null, userId],
+      );
+    }
+
+    res.json({ ok: true, disposition: dispDef.label, follow_up: followUp });
+  } catch (err: any) {
+    console.error('[post-call]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 export default router;
