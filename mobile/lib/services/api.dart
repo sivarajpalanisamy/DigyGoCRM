@@ -338,6 +338,44 @@ class Api {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
+  // ── Post-call dispositions (mirror the web flow) ─────────────────────────────
+  List<Map<String, dynamic>>? _dispCache;
+
+  /// Tenant's post-call outcome options. Cached in-memory after the first fetch so
+  /// the post-call screen renders instantly; falls back to the cache (or []) on error.
+  Future<List<Map<String, dynamic>>> dispositions({bool force = false}) async {
+    if (_dispCache != null && !force) return _dispCache!;
+    try {
+      final res = await _dio.get('/api/mobile/dispositions');
+      final list = (res.data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      _dispCache = list;
+      return list;
+    } catch (_) {
+      return _dispCache ?? [];
+    }
+  }
+
+  /// Save a post-call disposition (+ optional follow-up) for the call matched by
+  /// phone + start time. follow_up_date is 'yyyy-MM-dd', follow_up_time is 'HH:mm'.
+  Future<Map<String, dynamic>> postCallDisposition({
+    required String phone,
+    required int startedAtMs,
+    required String dispositionKey,
+    String? followUpDate,
+    String? followUpTime,
+    String? note,
+  }) async {
+    final res = await _dio.post('/api/mobile/calls/by-key/post-call', data: {
+      'phone': phone,
+      'startedAt': startedAtMs.toString(),
+      'disposition_key': dispositionKey,
+      if (followUpDate != null && followUpDate.isNotEmpty) 'follow_up_date': followUpDate,
+      if (followUpTime != null && followUpTime.isNotEmpty) 'follow_up_time': followUpTime,
+      if (note != null && note.isNotEmpty) 'note': note,
+    });
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
   // ── Per-call notes ───────────────────────────────────────────────────────────
   static const _notesKey = 'digygo_call_notes';
   Future<Map<String, String>> _allNotes() async {

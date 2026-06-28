@@ -17,7 +17,7 @@ import 'screens/onboarding_gate_screen.dart';
 import 'screens/privacy_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/in_call_screen.dart';
-import 'screens/call_details_page.dart';
+import 'screens/post_call_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -132,9 +132,12 @@ class _DigygoDialerAppState extends State<DigygoDialerApp> with WidgetsBindingOb
     final linked = await Api.instance.hasDeviceToken();
     if (!linked) { _callDetailsOpen = false; return; }
     _lastPostCallKey = key;
+    // Post-call disposition first (outcome + follow-up chips); it continues to the
+    // Call Details page on save/skip.
     await _navKey.currentState?.push(MaterialPageRoute(
-      builder: (_) => CallDetailsPage(
+      builder: (_) => PostCallScreen(
         phone: phone,
+        startedAtMs: (data['date'] is int) ? data['date'] as int : 0,
         direction: (data['direction'] ?? '').toString(),
         outcome: (data['outcome'] ?? '').toString(),
         durationSeconds: (data['duration'] is int) ? data['duration'] as int : null,
