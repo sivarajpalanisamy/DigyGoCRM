@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Users, AlertTriangle, Clock, Target, CheckCircle, Star, PhoneOff, Phone,
 } from 'lucide-react';
-import { useCrmStore } from '@/store/crmStore';
 import { useCompanyStore } from '@/store/companyStore';
 import { useUserLevel } from '@/hooks/useUserLevel';
 import { api } from '@/lib/api';
@@ -746,7 +745,6 @@ function StaffDashboard({ analytics }: { analytics: Analytics }) {
 
 // ── Main Dashboard Page ───────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { leads }     = useCrmStore();
   const level          = useUserLevel();
 
   const [analytics,  setAnalytics]  = useState<Analytics | null>(null);
@@ -754,6 +752,9 @@ export default function DashboardPage() {
   const [range,      setRange]      = useState('this_week');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo,   setCustomTo]   = useState('');
+  // Lead-count time series for the growth chart — server-side & view-scoped, so
+  // the chart no longer iterates every lead in the store.
+  const [timeline, setTimeline] = useState<{ daily: Record<string, number>; hourly: Record<string, number> }>({ daily: {}, hourly: {} });
 
   const apiUrl = useMemo(() => {
     if (range === 'custom' && customFrom && customTo) {
@@ -771,28 +772,28 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, [apiUrl]);
 
+  useEffect(() => {
+    if (range === 'custom' && (!customFrom || !customTo)) return;
+    const tlUrl = range === 'custom' && customFrom && customTo
+      ? `/api/dashboard/lead-timeline?range=custom&from=${customFrom}&to=${customTo}`
+      : `/api/dashboard/lead-timeline?range=${range}`;
+    api.get<{ daily: Record<string, number>; hourly: Record<string, number> }>(tlUrl)
+      .then((r) => setTimeline({ daily: r.daily ?? {}, hourly: r.hourly ?? {} }))
+      .catch(() => setTimeline({ daily: {}, hourly: {} }));
+  }, [apiUrl]);
+
   const lineData = useMemo(() => {
     const today = startOfDay(new Date());
+    const dayCount  = (d: Date) => timeline.daily[format(startOfDay(d), 'yyyy-MM-dd')] ?? 0;
+    const hourCount = (h: number) => timeline.hourly[String(h)] ?? 0;
+    const sumDaily  = (fromD: Date, toD: Date) => {
+      let n = 0;
+      for (let d = startOfDay(fromD); d <= toD; d = addDays(d, 1)) n += dayCount(d);
+      return n;
+    };
 
-    if (range === 'today') {
-      return Array.from({ length: 24 }, (_, h) => {
-        const count = leads.filter((l) => {
-          const d = new Date(l.createdAt);
-          return isToday(d) && d.getHours() === h;
-        }).length;
-        return { day: `${h}:00`, leads: count };
-      });
-    }
-
-    if (range === 'yesterday') {
-      const yesterday = subDays(today, 1);
-      return Array.from({ length: 24 }, (_, h) => {
-        const count = leads.filter((l) => {
-          const d = new Date(l.createdAt);
-          return format(d, 'yyyy-MM-dd') === format(yesterday, 'yyyy-MM-dd') && d.getHours() === h;
-        }).length;
-        return { day: `${h}:00`, leads: count };
-      });
+    if (range === 'today' || range === 'yesterday') {
+      return Array.from({ length: 24 }, (_, h) => ({ day: `${h}:00`, leads: hourCount(h) }));
     }
 
     if (range === 'this_week') {
@@ -802,19 +803,15 @@ export default function DashboardPage() {
       const weekStart = startOfDay(addDays(today, diff));
       return Array.from({ length: 7 }, (_, i) => {
         const d = addDays(weekStart, i);
-        const dayStr = format(d, 'yyyy-MM-dd');
-        const count = d > now ? 0 : leads.filter((l) => format(startOfDay(new Date(l.createdAt)), 'yyyy-MM-dd') === dayStr).length;
-        return { day: format(d, 'EEE'), leads: count };
+        return { day: format(d, 'EEE'), leads: d > now ? 0 : dayCount(d) };
       });
     }
 
     if (range === 'this_month') {
       const dim = getDaysInMonth(today);
       return Array.from({ length: dim }, (_, i) => {
-        const day    = new Date(today.getFullYear(), today.getMonth(), i + 1);
-        const dayStr = format(day, 'yyyy-MM-dd');
-        const count  = leads.filter((l) => format(startOfDay(new Date(l.createdAt)), 'yyyy-MM-dd') === dayStr).length;
-        return { day: String(i + 1), leads: count };
+        const day = new Date(today.getFullYear(), today.getMonth(), i + 1);
+        return { day: String(i + 1), leads: dayCount(day) };
       });
     }
 
@@ -824,10 +821,8 @@ export default function DashboardPage() {
       const diffDays  = Math.round((toDate.getTime() - fromDate.getTime()) / 86400000) + 1;
       const numPoints = Math.min(diffDays, 60);
       return Array.from({ length: numPoints }, (_, i) => {
-        const d      = addDays(fromDate, i);
-        const dayStr = format(d, 'yyyy-MM-dd');
-        const count  = leads.filter((l) => format(startOfDay(new Date(l.createdAt)), 'yyyy-MM-dd') === dayStr).length;
-        return { day: diffDays > 20 ? format(d, 'MMM d') : format(d, 'M/d'), leads: count };
+        const d = addDays(fromDate, i);
+        return { day: diffDays > 20 ? format(d, 'MMM d') : format(d, 'M/d'), leads: dayCount(d) };
       });
     }
 
@@ -839,11 +834,7 @@ export default function DashboardPage() {
       return Array.from({ length: numWeeks }, (_, i) => {
         const weekStart = addDays(quarterStart, i * 7);
         const weekEnd   = addDays(weekStart, 6);
-        const count     = leads.filter((l) => {
-          const d = startOfDay(new Date(l.createdAt));
-          return d >= weekStart && d <= (weekEnd > today ? today : weekEnd);
-        }).length;
-        return { day: format(weekStart, 'MMM d'), leads: count };
+        return { day: format(weekStart, 'MMM d'), leads: sumDaily(weekStart, weekEnd > today ? today : weekEnd) };
       });
     }
 
@@ -851,11 +842,7 @@ export default function DashboardPage() {
       return Array.from({ length: 13 }, (_, i) => {
         const weekStart = subDays(today, (12 - i) * 7);
         const weekEnd   = addDays(weekStart, 6);
-        const count = leads.filter((l) => {
-          const d = startOfDay(new Date(l.createdAt));
-          return d >= weekStart && d <= weekEnd;
-        }).length;
-        return { day: format(weekStart, 'MMM d'), leads: count };
+        return { day: format(weekStart, 'MMM d'), leads: sumDaily(weekStart, weekEnd) };
       });
     }
 
@@ -863,18 +850,17 @@ export default function DashboardPage() {
       return Array.from({ length: 12 }, (_, i) => {
         const month    = startOfMonth(subMonths(today, 11 - i));
         const monthStr = format(month, 'yyyy-MM');
-        const count    = leads.filter((l) => format(new Date(l.createdAt), 'yyyy-MM') === monthStr).length;
+        const count    = Object.entries(timeline.daily)
+          .reduce((n, [k, v]) => (k.startsWith(monthStr) ? n + v : n), 0);
         return { day: format(month, 'MMM'), leads: count };
       });
     }
 
     return Array.from({ length: 30 }, (_, i) => {
-      const day    = subDays(today, 29 - i);
-      const dayStr = format(day, 'yyyy-MM-dd');
-      const count  = leads.filter((l) => format(startOfDay(new Date(l.createdAt)), 'yyyy-MM-dd') === dayStr).length;
-      return { day: format(day, 'd'), leads: count };
+      const day = subDays(today, 29 - i);
+      return { day: format(day, 'd'), leads: dayCount(day) };
     });
-  }, [leads, range, customFrom, customTo]);
+  }, [timeline, range, customFrom, customTo]);
 
   // owner → strategic view; manager (staff:manage) → operational view; staff → personal view
 

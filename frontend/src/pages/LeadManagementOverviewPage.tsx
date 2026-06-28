@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '@/lib/api';
 import {
   Plus, Trash2, GripVertical, Search, Pencil, Copy, X, Eye,
   Layers, ChevronRight, MoreHorizontal,
@@ -245,25 +246,25 @@ function AllStagesModal({ pipeline, totalLeads, stageStats, onClose, onOpen }: {
 }
 
 // ─── Pipeline Card ─────────────────────────────────────────────────────────────
-function PipelineCard({ pipeline, onEdit, onClone, onDelete, onView, canManage }: {
+function PipelineCard({ pipeline, onEdit, onClone, onDelete, onView, canManage, stageCounts, total }: {
   pipeline: Pipeline;
   onEdit: () => void;
   onClone: () => void;
   onDelete: () => void;
   onView: () => void;
   canManage: boolean;
+  stageCounts: Record<string, number>;  // stageId -> count (server-side, view-scoped)
+  total: number;                        // total leads in this pipeline
 }) {
-  const { leads } = useCrmStore();
   const [showAllStages, setShowAllStages] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  const pipelineLeads = leads.filter((l) => l.pipelineId === pipeline.id);
-  const totalLeads = pipelineLeads.length;
+  const totalLeads = total;
 
   const stageStats = pipeline.stages.map((stage) => ({
     id: stage.id,
     name: stage.name,
-    count: pipelineLeads.filter((l) => l.stage === stage.name).length,
+    count: stageCounts[stage.id] ?? 0,
   }));
 
   const hasMore = stageStats.length > PREVIEW_LIMIT;
@@ -378,7 +379,15 @@ function PipelineCard({ pipeline, onEdit, onClone, onDelete, onView, canManage }
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function LeadManagementOverviewPage() {
   const navigate = useNavigate();
-  const { pipelines, leads, deletePipeline, clonePipeline } = useCrmStore();
+  const { pipelines, deletePipeline, clonePipeline } = useCrmStore();
+  // Lead counts come from the server (view-scoped) so the page doesn't depend on
+  // every lead being loaded into the store.
+  const [counts, setCounts] = useState<{ stages: Record<string, number>; pipelines: Record<string, number> }>({ stages: {}, pipelines: {} });
+  useEffect(() => {
+    api.get<{ stages: Record<string, number>; pipelines: Record<string, number> }>('/api/leads/pipeline-counts')
+      .then((d) => setCounts({ stages: d.stages ?? {}, pipelines: d.pipelines ?? {} }))
+      .catch(() => {});
+  }, []);
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [editPipeline, setEditPipeline] = useState<Pipeline | null>(null);
@@ -390,8 +399,6 @@ export default function LeadManagementOverviewPage() {
   const filtered = pipelines.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
-
-  const totalLeads = leads.length;
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -446,6 +453,8 @@ export default function LeadManagementOverviewPage() {
               key={p.id}
               pipeline={p}
               canManage={canManage}
+              stageCounts={counts.stages}
+              total={counts.pipelines[p.id] ?? 0}
               onView={() => navigate(`/leads?pipeline=${p.id}`)}
               onEdit={() => setEditPipeline(p)}
               onClone={() => { clonePipeline(p.id); toast.success('Pipeline cloned'); }}

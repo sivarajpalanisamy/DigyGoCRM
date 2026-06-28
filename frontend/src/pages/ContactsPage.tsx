@@ -560,21 +560,27 @@ export default function ContactsPage() {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
 
-  const allSources = useMemo(() => ['All', ...Array.from(new Set(leads.map((l) => l.source)))].filter(Boolean), [leads]);
-  const allTags = useMemo(() => ['All', ...Array.from(new Set(leads.flatMap((l) => l.tags)))], [leads]);
+  // Stats + facets come from the server (view-scoped) so the page doesn't depend
+  // on every lead being in memory. Re-fetched when the lead set changes (socket /
+  // poll bumps leads.length), so counts stay fresh.
+  const [summary, setSummary] = useState<{ total: number; active: number; newThisMonth: number; whatsapp: number; sources: string[]; tags: string[] }>(
+    { total: 0, active: 0, newThisMonth: 0, whatsapp: 0, sources: [], tags: [] },
+  );
+  useEffect(() => {
+    api.get<typeof summary>('/api/leads/summary')
+      .then((d) => setSummary({
+        total: d.total ?? 0, active: d.active ?? 0, newThisMonth: d.newThisMonth ?? 0,
+        whatsapp: d.whatsapp ?? 0, sources: d.sources ?? [], tags: d.tags ?? [],
+      }))
+      .catch(() => {});
+  }, [leads.length]);
 
-  // Single pass over leads (was 3 separate .filter() scans on every render).
-  const { totalContacts, activeContacts, newThisMonth, whatsappContacts } = useMemo(() => {
-    const now = new Date();
-    let active = 0, month = 0, wa = 0;
-    for (const l of leads) {
-      if (l.stage !== 'Closed Won') active++;
-      const c = new Date(l.createdAt);
-      if (c.getMonth() === now.getMonth() && c.getFullYear() === now.getFullYear()) month++;
-      if (l.source === 'WhatsApp' || l.source === 'whatsapp') wa++;
-    }
-    return { totalContacts: leads.length, activeContacts: active, newThisMonth: month, whatsappContacts: wa };
-  }, [leads]);
+  const allSources = useMemo(() => ['All', ...summary.sources], [summary.sources]);
+  const allTags = useMemo(() => ['All', ...summary.tags], [summary.tags]);
+  const totalContacts = summary.total;
+  const activeContacts = summary.active;
+  const newThisMonth = summary.newThisMonth;
+  const whatsappContacts = summary.whatsapp;
 
   const statCards = [
     { label: 'Total Contacts', value: totalContacts, icon: Users, color: 'text-primary' },
