@@ -208,6 +208,83 @@ router.get('/stage-counts', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/leads/pipeline-counts — per-pipeline total + per-stage counts, view-scoped.
+// Powers the Lead Management Overview cards without loading every lead.
+router.get('/pipeline-counts', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  try {
+    const viewAll = await resolveViewAll(userId, tenantId, role);
+    const params: any[] = [tenantId];
+    let scope = '';
+    if (!viewAll) {
+      params.push(userId);
+      scope = ` AND (l.assigned_to = $${params.length}::uuid OR $${params.length}::uuid = ANY(l.team_members))`;
+    }
+    const r = await query(`
+      SELECT p.id AS pipeline_id, ps.id AS stage_id, COUNT(l.id)::int AS count
+      FROM pipelines p
+      JOIN pipeline_stages ps ON ps.pipeline_id = p.id
+      LEFT JOIN leads l ON l.stage_id = ps.id AND l.is_deleted = FALSE AND l.tenant_id = $1${scope}
+      WHERE p.tenant_id = $1
+      GROUP BY p.id, ps.id`, params);
+    const stages: Record<string, number> = {};
+    const pipelines: Record<string, number> = {};
+    for (const row of r.rows) {
+      stages[row.stage_id] = row.count;
+      pipelines[row.pipeline_id] = (pipelines[row.pipeline_id] ?? 0) + row.count;
+    }
+    res.json({ stages, pipelines });
+  } catch (err: any) {
+    console.error('[GET /leads/pipeline-counts]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/leads/summary — aggregate stats + facets (sources, tags) for the
+// Contacts page, view-scoped, without shipping every row to the client.
+router.get('/summary', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  try {
+    const viewAll = await resolveViewAll(userId, tenantId, role);
+    const params: any[] = [tenantId];
+    let scope = '';
+    if (!viewAll) {
+      params.push(userId);
+      scope = ` AND (l.assigned_to = $${params.length}::uuid OR $${params.length}::uuid = ANY(l.team_members))`;
+    }
+    const [stats, sourcesRes, tagsRes] = await Promise.all([
+      query(`
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE COALESCE(ps.is_won, FALSE) = FALSE)::int AS active,
+          COUNT(*) FILTER (WHERE l.created_at >= date_trunc('month', NOW()))::int AS new_this_month,
+          COUNT(*) FILTER (WHERE LOWER(COALESCE(l.source, '')) = 'whatsapp')::int AS whatsapp
+        FROM leads l LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
+        WHERE l.tenant_id = $1 AND l.is_deleted = FALSE${scope}`, params),
+      query(`
+        SELECT DISTINCT l.source AS s FROM leads l
+        WHERE l.tenant_id = $1 AND l.is_deleted = FALSE AND l.source IS NOT NULL AND l.source <> ''${scope}
+        ORDER BY l.source`, params),
+      query(`
+        SELECT DISTINCT t AS tag FROM leads l, UNNEST(l.tags) AS t
+        WHERE l.tenant_id = $1 AND l.is_deleted = FALSE AND t <> ''${scope}
+        ORDER BY t`, params),
+    ]);
+    const row = stats.rows[0] ?? {};
+    res.json({
+      total: row.total ?? 0,
+      active: row.active ?? 0,
+      newThisMonth: row.new_this_month ?? 0,
+      whatsapp: row.whatsapp ?? 0,
+      sources: sourcesRes.rows.map((r: any) => r.s),
+      tags: tagsRes.rows.map((r: any) => r.tag),
+    });
+  } catch (err: any) {
+    console.error('[GET /leads/summary]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/leads/trash — soft-deleted leads, recoverable. Gated by leads:delete
 // (only users who can delete should see/restore the trash). View-scoped.
 router.get('/trash', checkPermission('leads:delete'), async (req: AuthRequest, res: Response) => {

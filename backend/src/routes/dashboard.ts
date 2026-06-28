@@ -461,4 +461,68 @@ router.get('/analytics', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/dashboard/lead-timeline?range=&from=&to= — server-side counts for the
+// Business Growth chart, so the dashboard no longer iterates every lead in memory.
+// Returns IST-bucketed daily counts (+ hourly for single-day ranges); the frontend
+// builds the display buckets/labels and looks counts up. View-scoped.
+router.get('/lead-timeline', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  if (!tenantId) { res.json({ daily: {}, hourly: {} }); return; }
+  const isPrivileged = role === 'super_admin' || role === 'owner';
+  const rangeParam = (req.query.range as string) || 'last_30';
+  const fromParam = req.query.from as string | undefined;
+  const toParam = req.query.to as string | undefined;
+
+  let onlyAssigned = false;
+  if (!isPrivileged) {
+    try { onlyAssigned = await hasPermission(userId, 'leads:only_assigned', tenantId); } catch { onlyAssigned = true; }
+  }
+
+  // Resolve the [start,end] window. Single-day ranges also return hourly buckets.
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let start: Date, end: Date = new Date(), single = false;
+  switch (rangeParam) {
+    case 'today':        start = startOfToday; single = true; break;
+    case 'yesterday':    start = new Date(startOfToday.getTime() - 86400000); end = new Date(startOfToday.getTime() - 1); single = true; break;
+    case 'this_week':    { const dow = now.getDay(); start = new Date(startOfToday.getTime() - ((dow === 0 ? 6 : dow - 1) * 86400000)); break; }
+    case 'this_month':   start = new Date(now.getFullYear(), now.getMonth(), 1); break;
+    case 'this_quarter': start = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1); break;
+    case '90d':          start = new Date(Date.now() - 90 * 86400000); break;
+    case 'all':          start = new Date(0); break;
+    case 'custom':       start = fromParam ? new Date(fromParam) : new Date(Date.now() - 30 * 86400000); end = toParam ? new Date(toParam + 'T23:59:59') : new Date(); break;
+    default:             start = new Date(Date.now() - 30 * 86400000);
+  }
+
+  const params: any[] = [tenantId, start, end];
+  let scope = '';
+  if (onlyAssigned) { params.push(userId); scope = ` AND l.assigned_to = $${params.length}`; }
+
+  try {
+    const dailyRes = await query(
+      `SELECT to_char((l.created_at AT TIME ZONE 'Asia/Kolkata')::date, 'YYYY-MM-DD') AS k, COUNT(*)::int AS c
+       FROM leads l
+       WHERE l.tenant_id = $1 AND l.is_deleted = FALSE AND l.created_at >= $2 AND l.created_at <= $3${scope}
+       GROUP BY k`, params
+    );
+    const daily: Record<string, number> = {};
+    for (const row of dailyRes.rows) daily[row.k] = row.c;
+
+    const hourly: Record<string, number> = {};
+    if (single) {
+      const hourRes = await query(
+        `SELECT EXTRACT(HOUR FROM (l.created_at AT TIME ZONE 'Asia/Kolkata'))::int AS h, COUNT(*)::int AS c
+         FROM leads l
+         WHERE l.tenant_id = $1 AND l.is_deleted = FALSE AND l.created_at >= $2 AND l.created_at <= $3${scope}
+         GROUP BY h`, params
+      );
+      for (const row of hourRes.rows) hourly[String(row.h)] = row.c;
+    }
+    res.json({ daily, hourly });
+  } catch (err: any) {
+    console.error('[dashboard:lead-timeline]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;
