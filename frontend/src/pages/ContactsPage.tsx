@@ -535,8 +535,43 @@ function WorkflowTriggerModal({ leadIds, workflows, onClose, onSuccess }: {
   );
 }
 
+// Map an /api/leads row to the Lead shape the contacts table renders.
+function mapContactRow(l: any): Lead {
+  const parts = (l.name ?? '').split(' ');
+  return {
+    id: l.id,
+    firstName: parts[0] ?? '',
+    lastName: parts.slice(1).join(' ') ?? '',
+    email: l.email ?? '',
+    phone: l.phone ?? '',
+    stage: l.stage_name ?? '',
+    stageId: l.stage_id ?? '',
+    pipelineId: l.pipeline_id ?? '',
+    source: l.source ?? 'Manual',
+    tags: l.tags ?? [],
+    assignedTo: l.assigned_to ?? '',
+    assignedName: l.assigned_name ?? '',
+    createdAt: l.created_at ?? new Date().toISOString(),
+    lastActivity: l.updated_at ?? l.created_at ?? new Date().toISOString(),
+    businessName: '',
+    city: '',
+    notes: l.notes ?? '',
+    dealValue: Number(l.deal_value ?? 0),
+    value: 0,
+    probability: 0,
+    nextFollowUp: null,
+    customFields: [],
+    leadQuality: l.custom_fields?.lead_quality ?? '',
+  } as Lead;
+}
+
 export default function ContactsPage() {
-  const { leads, pipelines, staff, updateLead, deleteLead, workflows } = useCrmStore();
+  const { pipelines, staff, updateLead, deleteLead, workflows } = useCrmStore();
+  // Contacts are leads; fetch them server-side (cursor, capped, server search) so
+  // the page doesn't depend on the whole leads array being in the store.
+  const [apiContacts, setApiContacts] = useState<Lead[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(true);
+  const [reloadContacts, setReloadContacts] = useState(0);
   const canEditContact   = usePermission('leads:edit');
   const canDeleteContact = usePermission('leads:delete');
   const canExport        = usePermission('contacts:export');
@@ -555,7 +590,7 @@ export default function ContactsPage() {
   const [customTo, setCustomTo] = useState('');      // yyyy-MM-dd
   const [showFilters, setShowFilters] = useState(false);
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const selectedContact = leads.find((l) => l.id === selectedContactId) ?? null;
+  const selectedContact = apiContacts.find((l) => l.id === selectedContactId) ?? null;
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
@@ -573,7 +608,34 @@ export default function ContactsPage() {
         whatsapp: d.whatsapp ?? 0, sources: d.sources ?? [], tags: d.tags ?? [],
       }))
       .catch(() => {});
-  }, [leads.length]);
+  }, [reloadContacts]);
+
+  // Fetch contacts (= leads) server-side: cursor-paginated, capped, server search.
+  // Client-side facet filters below run on this loaded set (cap covers all but the
+  // largest tenants; a search narrows the set server-side).
+  useEffect(() => {
+    let cancelled = false;
+    setContactsLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const MAX = 3000;
+        let rows: any[] = [];
+        let cursor = '';
+        while (true) {
+          const p = new URLSearchParams({ after: cursor, limit: '2000' });
+          if (debouncedSearch.trim()) p.set('search', debouncedSearch.trim());
+          const data = await api.get<{ leads: any[]; nextCursor: string | null }>(`/api/leads?${p}`);
+          if (cancelled) return;
+          rows = [...rows, ...data.leads];
+          if (!data.nextCursor || rows.length >= MAX) break;
+          cursor = data.nextCursor;
+        }
+        setApiContacts(rows.map(mapContactRow));
+      } catch { /* keep previous */ }
+      if (!cancelled) setContactsLoading(false);
+    }, debouncedSearch ? 0 : 0);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [debouncedSearch, reloadContacts]);
 
   const allSources = useMemo(() => ['All', ...summary.sources], [summary.sources]);
   const allTags = useMemo(() => ['All', ...summary.tags], [summary.tags]);
@@ -591,7 +653,7 @@ export default function ContactsPage() {
 
   const filtered = useMemo(() => {
     const now = new Date();
-    return leads.filter((l) => {
+    return apiContacts.filter((l) => {
       if (debouncedSearch.trim()) {
         const q = debouncedSearch.toLowerCase();
         if (!(l.firstName.toLowerCase().includes(q) || l.lastName.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.phone.toLowerCase().includes(q))) return false;
@@ -624,7 +686,7 @@ export default function ContactsPage() {
       }
       return true;
     });
-  }, [leads, debouncedSearch, sourceFilter, typeFilter, tagFilter, pipelineFilter, stageFilter, dateFilter, customFrom, customTo]);
+  }, [apiContacts, debouncedSearch, sourceFilter, typeFilter, tagFilter, pipelineFilter, stageFilter, dateFilter, customFrom, customTo]);
 
   const activeFiltersCount = [sourceFilter !== 'All', typeFilter !== 'All', tagFilter !== 'All', pipelineFilter !== 'All', stageFilter !== 'All', dateFilter !== 'All time'].filter(Boolean).length;
 
@@ -632,7 +694,7 @@ export default function ContactsPage() {
   // DOM nodes at once. This is the main fix for the Contacts page being heavy.
   const PAGE_SIZE = 50;
   const [page, setPage] = useState(1);
-  useEffect(() => { setPage(1); }, [search, sourceFilter, typeFilter, tagFilter, pipelineFilter, stageFilter, dateFilter, customFrom, customTo, leads.length]);
+  useEffect(() => { setPage(1); }, [search, sourceFilter, typeFilter, tagFilter, pipelineFilter, stageFilter, dateFilter, customFrom, customTo, apiContacts.length]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paged = useMemo(() => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE), [filtered, safePage]);
@@ -650,6 +712,7 @@ export default function ContactsPage() {
     const done = selected.length - failed;
     if (done > 0) toast.success(`${done} contact${done !== 1 ? 's' : ''} deleted`);
     if (failed > 0) toast.error(`${failed} could not be deleted`);
+    setApiContacts((prev) => prev.filter((l) => !selected.includes(l.id)));
     setSelected([]);
     setShowBulkDeleteConfirm(false);
   };
@@ -657,6 +720,7 @@ export default function ContactsPage() {
   const deleteSingle = async (id: string) => {
     await api.delete(`/api/leads/${id}`);
     deleteLead(id);
+    setApiContacts((prev) => prev.filter((l) => l.id !== id));
     toast.success('Contact deleted');
     setOpenMenu(null);
     setDeleteTargetId(null);
@@ -1005,6 +1069,7 @@ export default function ContactsPage() {
                                     try {
                                       await api.patch(`/api/leads/${lead.id}`, stageId ? { stage_id: stageId } : {});
                                       updateLead(lead.id, { stage: newStage, ...(stageId ? { stageId } : {}) });
+                                      setApiContacts((prev) => prev.map((c) => c.id === lead.id ? { ...c, stage: newStage, ...(stageId ? { stageId } : {}) } : c));
                                       toast.success(isCustomer ? 'Converted to Lead' : 'Converted to Customer');
                                     } catch { toast.error('Failed to update contact'); }
                                     setOpenMenu(null);
@@ -1040,7 +1105,7 @@ export default function ContactsPage() {
       </div>
     </div>
 
-    {selectedContact && <ContactDetailModal lead={selectedContact} onClose={() => setSelectedContactId(null)} />}
+    {selectedContact && <ContactDetailModal lead={selectedContact} onClose={() => { setSelectedContactId(null); setReloadContacts((n) => n + 1); }} />}
 
     {showExportModal && (
       <ExportModal
@@ -1109,7 +1174,7 @@ export default function ContactsPage() {
     )}
 
     {deleteTargetId && (() => {
-      const lead = leads.find((l) => l.id === deleteTargetId);
+      const lead = apiContacts.find((l) => l.id === deleteTargetId);
       return lead ? (
         <ConfirmDeleteModal
           title="Delete Contact?"
