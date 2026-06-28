@@ -8,6 +8,7 @@ import { usePermission } from '@/hooks/usePermission';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
+import LeadTrashModal from '@/components/LeadTrashModal';
 import { Lead, Pipeline } from '@/data/mockData';
 import {
   Search, Filter, Plus, GripVertical, Phone, X, MessageCircle, Calendar,
@@ -4559,6 +4560,7 @@ export default function LeadsPage() {
   const [showWorkflow, setShowWorkflow] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const [showBulkStage, setShowBulkStage] = useState(false);
   const [showBulkAssign, setShowBulkAssign] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -5184,6 +5186,14 @@ export default function LeadsPage() {
                     <button onClick={() => { setShowMoreMenu(false); setSearch(''); setFilters({ ...emptyFilters }); setSelectedIds([]); toast.success('Reset'); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                       <RotateCcw className="w-3.5 h-3.5 text-[#7a6b5c]" /> Reset filters
                     </button>
+                    {canDeleteLead && (
+                      <>
+                        <div className="border-t border-black/5 my-1" />
+                        <button onClick={() => { setShowMoreMenu(false); setShowTrash(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                          <Trash2 className="w-3.5 h-3.5 text-[#7a6b5c]" /> Trash
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -5437,6 +5447,7 @@ export default function LeadsPage() {
       {showAddLead && <AddLeadModal onClose={() => setShowAddLead(false)} />}
       {showNewPipeline && <NewPipelineModal onClose={() => setShowNewPipeline(false)} />}
       {showImport && <ImportModal onClose={() => setShowImport(false)} />}
+      <LeadTrashModal open={showTrash} onClose={() => setShowTrash(false)} />
       {showExportModal && (
         <ExportModal
           title="Export Leads"

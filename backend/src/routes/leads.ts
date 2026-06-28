@@ -208,6 +208,66 @@ router.get('/stage-counts', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/leads/trash — soft-deleted leads, recoverable. Gated by leads:delete
+// (only users who can delete should see/restore the trash). View-scoped.
+router.get('/trash', checkPermission('leads:delete'), async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  const limit = Math.min(200, Math.max(1, parseInt((req.query.limit as string)) || 100));
+  try {
+    const viewAll = await resolveViewAll(userId, tenantId, role);
+    const params: any[] = [tenantId];
+    let sql = `
+      SELECT l.id, l.name, l.email, l.phone, l.source, l.pipeline_id, l.stage_id,
+             l.assigned_to, l.updated_at, l.created_at,
+             ps.name AS stage_name, p.name AS pipeline_name, u.name AS assigned_name
+      FROM leads l
+      LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
+      LEFT JOIN pipelines p ON p.id = l.pipeline_id
+      LEFT JOIN users u ON u.id = l.assigned_to
+      WHERE l.tenant_id = $1 AND l.is_deleted = TRUE`;
+    if (!viewAll) {
+      params.push(userId);
+      sql += ` AND (l.assigned_to = $${params.length}::uuid OR $${params.length}::uuid = ANY(l.team_members))`;
+    }
+    params.push(limit);
+    sql += ` ORDER BY l.updated_at DESC LIMIT $${params.length}`;
+    const r = await query(sql, params);
+    res.json(r.rows);
+  } catch (err: any) {
+    console.error('[GET /leads/trash]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/leads/:id/restore — recover a soft-deleted lead. Gated by leads:delete.
+router.post('/:id/restore', checkPermission('leads:delete'), async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  try {
+    const r = await query(
+      `UPDATE leads SET is_deleted = FALSE, updated_at = NOW()
+       WHERE id = $1 AND tenant_id = $2 AND is_deleted = TRUE RETURNING *`,
+      [req.params.id, tenantId]
+    );
+    if (!r.rows[0]) { res.status(404).json({ error: 'Lead not found in trash' }); return; }
+    await query(
+      `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
+       VALUES ($1,$2,'restored','Lead restored from trash',$3)`,
+      [req.params.id, tenantId, userId]
+    ).catch(() => null);
+    const withName = await query(
+      `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id = l.assigned_to WHERE l.id=$1`,
+      [r.rows[0].id]
+    );
+    const payload = withName.rows[0] ?? r.rows[0];
+    emitToTenant(tenantId!, 'lead:created', payload); // reappears on boards in real time
+    bumpTenantCacheVersion(tenantId!).catch(() => {});
+    res.json(payload);
+  } catch (err: any) {
+    console.error('[POST /leads/:id/restore]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/leads/tags — all unique tags used across tenant leads (for workflow editor dropdown)
 router.get('/tags', async (req: AuthRequest, res: Response) => {
   try {
