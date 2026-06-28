@@ -24,7 +24,11 @@ function build(label: string): Redis {
   const r = new Redis(config.redisUrl, {
     lazyConnect: false,
     maxRetriesPerRequest: 2,
-    enableOfflineQueue: false, // fail fast instead of buffering when down
+    // Buffer commands issued before the socket is ready (e.g. rate-limit-redis's
+    // SCRIPT LOAD at boot, pub/sub subscribes) so they run once connected instead
+    // of throwing. Down-state is handled by try/catch + isRedisHealthy +
+    // passOnStoreError, so this never wedges the app.
+    enableOfflineQueue: true,
     retryStrategy: (times) => Math.min(times * 200, 5000),
   });
   r.on('ready', () => { if (label === 'main') healthy = true; console.log(`[redis:${label}] ready`); });
