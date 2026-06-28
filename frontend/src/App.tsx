@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -6,63 +7,72 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useCompanyStore } from "@/store/companyStore";
 
-import DashboardPage from "./pages/DashboardPage";
-import LeadGenerationPage from "./pages/LeadGenerationPage";
-import MetaFormsPage from "./pages/MetaFormsPage";
-import CustomFormsPage from "./pages/CustomFormsPage";
-import CustomFormDetailPage from "./pages/CustomFormDetailPage";
-import LeadManagementOverviewPage from "./pages/LeadManagementOverviewPage";
-import LeadsPage from "./pages/LeadsPage";
-import ContactsPage from "./pages/ContactsPage";
-import ContactGroupPage from "./pages/ContactGroupPage";
-import AutomationOverviewPage from "./pages/AutomationOverviewPage";
-import AutomationPage from "./pages/AutomationPage";
-import AutomationTemplatesPage from "./pages/AutomationTemplatesPage";
-import WorkflowEditorPage from "./pages/WorkflowEditorPage";
-import WaPersonalTemplateEditorPage from "./pages/WaPersonalTemplateEditorPage";
-import WABATemplateEditorPage from "./pages/WABATemplateEditorPage";
-import WaPersonalOverviewPage from "./pages/WaPersonalOverviewPage";
-import WorkflowAnalyticsPage from "./pages/WorkflowAnalyticsPage";
-import InboxPage from "./pages/InboxPage";
-import InboxOverviewPage from "./pages/InboxOverviewPage";
-import FieldsPage from "./pages/FieldsPage";
-import StaffPage from "./pages/StaffPage";
-import SettingsPage from "./pages/SettingsPage";
-import CompanyDetailsPage from "./pages/CompanyDetailsPage";
-import BrandingPage from "./pages/BrandingPage";
-import SecurityPage from "./pages/SecurityPage";
-import DevicesPage from "./pages/DevicesPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import AssignmentRulesPage from "./pages/AssignmentRulesPage";
-import IntegrationsPage from "./pages/IntegrationsPage";
-import LoginPage from "./pages/LoginPage";
-import AcceptInvitePage from "./pages/AcceptInvitePage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import ActivatePage from "./pages/ActivatePage";
-import PublicFormPage from "./pages/PublicFormPage";
-import SuperAdminPage from "./pages/SuperAdminPage";
-import SuperAdminDashboardPage from "./pages/SuperAdminDashboardPage";
-import CreateBusinessPage from "./pages/CreateBusinessPage";
-import SuperAdminTeamPage from "./pages/SuperAdminTeamPage";
-import FollowUpsPage from "./pages/FollowUpsPage";
-import CalendarPage from "./pages/CalendarPage";
-import CalendarEditPage from "./pages/CalendarEditPage";
-import PublicBookingPage from "./pages/PublicBookingPage";
-import NotFound from "./pages/NotFound";
-import PincodeRoutingPage from "./pages/PincodeRoutingPage";
-import WhatsAppDevicesPage from "./pages/WhatsAppDevicesPage";
-import WhatsAppSingleSendPage from "./pages/WhatsAppSingleSendPage";
-import WhatsAppSetupPage from "./pages/WhatsAppSetupPage";
-import WABABroadcastPage from "./pages/WABABroadcastPage";
-import WABASingleSendPage from "./pages/WABASingleSendPage";
-import ReportsPage from "./pages/ReportsPage";
-import CallsPage from "./pages/CallsPage";
-import LandingPagesPage from "./pages/LandingPagesPage";
-import LandingPageBuilderPage from "./pages/LandingPageBuilderPage";
-import PublicLandingPage from "./pages/PublicLandingPage";
+// Pages are code-split (React.lazy) so the initial bundle stays small — each route
+// loads its own chunk on demand instead of shipping all ~60 pages up front.
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const LeadGenerationPage = lazy(() => import("./pages/LeadGenerationPage"));
+const MetaFormsPage = lazy(() => import("./pages/MetaFormsPage"));
+const CustomFormsPage = lazy(() => import("./pages/CustomFormsPage"));
+const CustomFormDetailPage = lazy(() => import("./pages/CustomFormDetailPage"));
+const LeadManagementOverviewPage = lazy(() => import("./pages/LeadManagementOverviewPage"));
+const LeadsPage = lazy(() => import("./pages/LeadsPage"));
+const ContactsPage = lazy(() => import("./pages/ContactsPage"));
+const ContactGroupPage = lazy(() => import("./pages/ContactGroupPage"));
+const AutomationOverviewPage = lazy(() => import("./pages/AutomationOverviewPage"));
+const AutomationPage = lazy(() => import("./pages/AutomationPage"));
+const AutomationTemplatesPage = lazy(() => import("./pages/AutomationTemplatesPage"));
+const WorkflowEditorPage = lazy(() => import("./pages/WorkflowEditorPage"));
+const WaPersonalTemplateEditorPage = lazy(() => import("./pages/WaPersonalTemplateEditorPage"));
+const WABATemplateEditorPage = lazy(() => import("./pages/WABATemplateEditorPage"));
+const WaPersonalOverviewPage = lazy(() => import("./pages/WaPersonalOverviewPage"));
+const WorkflowAnalyticsPage = lazy(() => import("./pages/WorkflowAnalyticsPage"));
+const InboxPage = lazy(() => import("./pages/InboxPage"));
+const InboxOverviewPage = lazy(() => import("./pages/InboxOverviewPage"));
+const FieldsPage = lazy(() => import("./pages/FieldsPage"));
+const StaffPage = lazy(() => import("./pages/StaffPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const CompanyDetailsPage = lazy(() => import("./pages/CompanyDetailsPage"));
+const BrandingPage = lazy(() => import("./pages/BrandingPage"));
+const SecurityPage = lazy(() => import("./pages/SecurityPage"));
+const DevicesPage = lazy(() => import("./pages/DevicesPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const AssignmentRulesPage = lazy(() => import("./pages/AssignmentRulesPage"));
+const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const AcceptInvitePage = lazy(() => import("./pages/AcceptInvitePage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const ActivatePage = lazy(() => import("./pages/ActivatePage"));
+const PublicFormPage = lazy(() => import("./pages/PublicFormPage"));
+const SuperAdminPage = lazy(() => import("./pages/SuperAdminPage"));
+const SuperAdminDashboardPage = lazy(() => import("./pages/SuperAdminDashboardPage"));
+const CreateBusinessPage = lazy(() => import("./pages/CreateBusinessPage"));
+const SuperAdminTeamPage = lazy(() => import("./pages/SuperAdminTeamPage"));
+const FollowUpsPage = lazy(() => import("./pages/FollowUpsPage"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const CalendarEditPage = lazy(() => import("./pages/CalendarEditPage"));
+const PublicBookingPage = lazy(() => import("./pages/PublicBookingPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const PincodeRoutingPage = lazy(() => import("./pages/PincodeRoutingPage"));
+const WhatsAppDevicesPage = lazy(() => import("./pages/WhatsAppDevicesPage"));
+const WhatsAppSingleSendPage = lazy(() => import("./pages/WhatsAppSingleSendPage"));
+const WhatsAppSetupPage = lazy(() => import("./pages/WhatsAppSetupPage"));
+const WABABroadcastPage = lazy(() => import("./pages/WABABroadcastPage"));
+const WABASingleSendPage = lazy(() => import("./pages/WABASingleSendPage"));
+const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+const CallsPage = lazy(() => import("./pages/CallsPage"));
+const LandingPagesPage = lazy(() => import("./pages/LandingPagesPage"));
+const LandingPageBuilderPage = lazy(() => import("./pages/LandingPageBuilderPage"));
+const PublicLandingPage = lazy(() => import("./pages/PublicLandingPage"));
 
 const queryClient = new QueryClient();
+
+// Lightweight fallback shown while a route chunk loads.
+const PageFallback = () => (
+  <div className="flex items-center justify-center h-[60vh] w-full">
+    <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+  </div>
+);
 
 // Superfone calls page is gated by the per-tenant Superfone feature flag.
 const SuperfoneCallsRoute = () => {
@@ -75,6 +85,7 @@ const App = () => (
     <TooltipProvider>
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Suspense fallback={<PageFallback />}>
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
@@ -162,6 +173,7 @@ const App = () => (
 
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
