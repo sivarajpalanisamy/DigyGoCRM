@@ -29,6 +29,7 @@ interface CallLog {
   lead_name: string | null;
   notes: string | null;
   disposition: string | null;
+  disposition_key: string | null;
   source: string | null;
 }
 
@@ -42,6 +43,15 @@ interface CallStats {
 const OUTCOME_COLORS: Record<string, string> = {
   ANSWERED: '#10b981', MISSED: '#ef4444', NO_ANSWER: '#f59e0b', REJECTED: '#f43f5e',
   BUSY: '#8b5cf6', IVR_TIMEOUT: '#6b7280', UNKNOWN: '#9ca3af',
+};
+
+const DISPOSITION_STYLES: Record<string, { bg: string; text: string }> = {
+  interested:     { bg: 'bg-emerald-50',  text: 'text-emerald-700' },
+  callback_later: { bg: 'bg-blue-50',     text: 'text-blue-700' },
+  not_reachable:  { bg: 'bg-amber-50',    text: 'text-amber-700' },
+  not_interested: { bg: 'bg-gray-100',    text: 'text-gray-600' },
+  hot_lead:       { bg: 'bg-orange-50',   text: 'text-orange-700' },
+  deal_closed:    { bg: 'bg-purple-50',   text: 'text-purple-700' },
 };
 
 const tooltipStyle = { borderRadius: 10, border: 'none', background: '#1c1410', color: '#fff', fontSize: 11 };
@@ -367,6 +377,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Outcome</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Duration</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Agent</th>
+                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Disposition</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Date & Time</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Note</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Recording</th>
@@ -374,10 +385,10 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {loading ? (
-                <tr><td colSpan={9} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
+                <tr><td colSpan={10} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
               ) : visible.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-16">
+                  <td colSpan={10} className="text-center py-16">
                     <PhoneIncoming className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                     <p className="text-[14px] font-semibold text-[#7a6b5c]">No calls found</p>
                     <p className="text-[12px] text-[#b09e8d] mt-1">{source === 'superfone' ? 'Calls will appear here after Superfone syncs' : 'Calls will appear here once the DigyGo Dialer app syncs'}</p>
@@ -414,17 +425,20 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                       </td>
                       <td className="px-4 py-3 text-[#7a6b5c] font-medium">{durLabel(c.duration_seconds)}</td>
                       <td className="px-4 py-3 text-[#7a6b5c]">{c.staff_name ?? '-'}</td>
+                      <td className="px-4 py-3">
+                        {c.disposition_key ? (() => {
+                          const s = DISPOSITION_STYLES[c.disposition_key!] ?? { bg: 'bg-orange-50', text: 'text-orange-700' };
+                          return <span className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold', s.bg, s.text)}>{c.disposition ?? c.disposition_key}</span>;
+                        })() : c.disposition ? (
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-700">{c.disposition}</span>
+                        ) : (
+                          <span className="text-[11px] text-[#b09e8d]">-</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-[#7a6b5c]">{dateLabel(c.started_at ?? c.created_at)}</td>
                       <td className="px-4 py-3 max-w-[200px]">
                         {c.notes ? (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[#1c1410] whitespace-pre-wrap break-words" title={c.notes}>{c.notes}</span>
-                            {c.disposition && (
-                              <span className="self-start px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-700">{c.disposition}</span>
-                            )}
-                          </div>
-                        ) : c.disposition ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-700">{c.disposition}</span>
+                          <span className="text-[#1c1410] whitespace-pre-wrap break-words line-clamp-2" title={c.notes}>{c.notes}</span>
                         ) : (
                           <span className="text-[11px] text-[#b09e8d]">-</span>
                         )}
@@ -454,7 +468,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                     </tr>
                     {playingId === c.id && audioUrls[c.id] && (
                       <tr key={`${c.id}-audio`} className="bg-orange-50/50">
-                        <td colSpan={9} className="px-4 py-2">
+                        <td colSpan={10} className="px-4 py-2">
                           <audio
                             src={audioUrls[c.id]}
                             autoPlay
