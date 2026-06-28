@@ -392,6 +392,9 @@ const emptyFilters = {
 };
 type FilterState = typeof emptyFilters;
 
+// One kanban column's loaded slice for per-column infinite scroll.
+type BoardCol = { leads: Lead[]; cursor: string; done: boolean; loading: boolean };
+
 const FILTER_CATS = [
   { key: 'assignedTo',     label: 'Assigned to',       Icon: User },
   { key: 'contactType',    label: 'Lead | Customer',    Icon: FileText },
@@ -4222,8 +4225,10 @@ const STAGE_ACCENT_COLORS = [
   '#f43f5e', '#06b6d4', '#84cc16', '#ec4899', '#0ea5e9',
 ];
 
-function StageColumn({ stage, leads: stageLeads, onLeadClick, onFollowUp, onNote, onAssign, showPhone, stageIndex, highlightId, canAssign = true }: {
-  stage: string; leads: Lead[]; onLeadClick: (l: Lead) => void;
+function StageColumn({ stage, leads: stageLeads, totalCount, countExact = true, hasMore = false, loadingMore = false, onLoadMore, onLeadClick, onFollowUp, onNote, onAssign, showPhone, stageIndex, highlightId, canAssign = true }: {
+  stage: string; leads: Lead[]; totalCount?: number; countExact?: boolean;
+  hasMore?: boolean; loadingMore?: boolean; onLoadMore?: () => void;
+  onLeadClick: (l: Lead) => void;
   onFollowUp: (l: Lead) => void; onNote: (l: Lead) => void; onAssign: (l: Lead) => void;
   showPhone: boolean; stageIndex: number; highlightId?: string | null; canAssign?: boolean;
 }) {
@@ -4232,7 +4237,27 @@ function StageColumn({ stage, leads: stageLeads, onLeadClick, onFollowUp, onNote
   const accent  = (stageIndex % STAGE_ACCENT_COLORS.length) === 0
     ? brandHex()
     : STAGE_ACCENT_COLORS[stageIndex % STAGE_ACCENT_COLORS.length];
-  const isEmpty = stageLeads.length === 0;
+  const isFirstLoading = loadingMore && stageLeads.length === 0;
+  const isEmpty = stageLeads.length === 0 && !isFirstLoading;
+  const badge = (totalCount ?? stageLeads.length) + (!countExact && hasMore ? '+' : '');
+
+  // Per-column infinite scroll: an IntersectionObserver on the bottom sentinel
+  // asks the parent for the next page as it scrolls into view. Created once; the
+  // latest callback + flags live in refs so it never re-subscribes.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadRef = useRef(onLoadMore); loadRef.current = onLoadMore;
+  const flagsRef = useRef({ hasMore, loadingMore }); flagsRef.current = { hasMore, loadingMore };
+  const setScrollRef = useCallback((el: HTMLDivElement | null) => { scrollRef.current = el; setNodeRef(el); }, [setNodeRef]);
+  useEffect(() => {
+    const root = scrollRef.current, target = sentinelRef.current;
+    if (!root || !target) return;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && flagsRef.current.hasMore && !flagsRef.current.loadingMore) loadRef.current?.();
+    }, { root, rootMargin: '300px' });
+    obs.observe(target);
+    return () => obs.disconnect();
+  }, []);
 
   return (
     <div
@@ -4249,16 +4274,16 @@ function StageColumn({ stage, leads: stageLeads, onLeadClick, onFollowUp, onNote
           className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white shrink-0 ml-2 tabular-nums"
           style={{ background: accent }}
         >
-          {stageLeads.length}
+          {badge}
         </span>
       </div>
 
       {/* Drop zone + cards */}
       <div
-        ref={setNodeRef}
+        ref={setScrollRef}
         className={cn(
           'flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-3 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/20 [&::-webkit-scrollbar-track]:bg-transparent',
-          isEmpty ? 'flex flex-col items-center justify-center' : 'space-y-2.5'
+          (isEmpty || isFirstLoading) ? 'flex flex-col items-center justify-center' : 'space-y-2.5'
         )}
       >
         <SortableContext items={stageLeads.map((l) => l.id)} strategy={verticalListSortingStrategy}>
@@ -4274,6 +4299,9 @@ function StageColumn({ stage, leads: stageLeads, onLeadClick, onFollowUp, onNote
             />
           ))}
         </SortableContext>
+        {isFirstLoading && (
+          <div className="w-6 h-6 border-2 border-black/10 border-t-black/40 rounded-full animate-spin" />
+        )}
         {isEmpty && (
           <div className="flex flex-col items-center justify-center gap-2 py-10 w-full">
             <div
@@ -4284,6 +4312,13 @@ function StageColumn({ stage, leads: stageLeads, onLeadClick, onFollowUp, onNote
             </div>
             <p className="text-[11px] font-semibold text-[#c4b09e]">No leads</p>
             <p className="text-[10px] text-[#d4c4b4]">Drag here to move</p>
+          </div>
+        )}
+        {/* Load-more sentinel (kept mounted so the observer attaches once) */}
+        <div ref={sentinelRef} className="h-px w-full" />
+        {loadingMore && stageLeads.length > 0 && (
+          <div className="flex justify-center py-2">
+            <div className="w-5 h-5 border-2 border-black/10 border-t-black/40 rounded-full animate-spin" />
           </div>
         )}
       </div>
@@ -4752,7 +4787,7 @@ export default function LeadsPage() {
 
     const onLeadCreated = (lead: any) => {
       const stageName = stageMap[lead.stage_id] ?? lead.stage_name ?? '';
-      useCrmStore.getState().addLead({
+      const mapped = {
         id: lead.id,
         firstName: (lead.name ?? '').split(' ')[0],
         lastName: (lead.name ?? '').split(' ').slice(1).join(' '),
@@ -4760,6 +4795,7 @@ export default function LeadsPage() {
         phone: lead.phone ?? '',
         pipelineId: lead.pipeline_id ?? '',
         stage: stageName,
+        stageId: lead.stage_id ?? '',
         source: lead.source ?? '',
         dealValue: lead.deal_value ?? 0,
         tags: lead.tags ?? [],
@@ -4770,13 +4806,16 @@ export default function LeadsPage() {
         teamMembers: lead.team_members ?? [],
         createdAt: lead.created_at ?? new Date().toISOString(),
         lastActivity: lead.updated_at ?? new Date().toISOString(),
-      });
+      };
+      useCrmStore.getState().addLead(mapped as any);
+      // Live-insert into the board's loaded column (deduped) instead of reloading.
+      boardOpsRef.current.add(mapped as any);
     };
 
     const onLeadUpdated = (lead: any) => {
       const stageName = stageMap[lead.stage_id] ?? lead.stage_name ?? '';
       const parts = (lead.name ?? '').split(' ');
-      useCrmStore.getState().updateLead(lead.id, {
+      const patch = {
         firstName: parts[0] ?? '',
         lastName: parts.slice(1).join(' ') ?? '',
         email: lead.email ?? '',
@@ -4791,7 +4830,12 @@ export default function LeadsPage() {
         dealValue: Number(lead.deal_value ?? 0),
         lastActivity: lead.updated_at ?? new Date().toISOString(),
         leadQuality: lead.custom_fields?.lead_quality ?? undefined,
-      });
+      };
+      useCrmStore.getState().updateLead(lead.id, patch);
+      // Keep the board's loaded columns live: a lead with no stage (removed from
+      // the pipeline) drops out; otherwise patch in place or move to its column.
+      if (!lead.stage_id) boardOpsRef.current.remove(lead.id);
+      else boardOpsRef.current.move(lead.id, lead.stage_id, patch as any);
     };
 
     socket.on('lead:created', onLeadCreated);
@@ -4820,13 +4864,16 @@ export default function LeadsPage() {
   const [apiLeads, setApiLeads] = useState<Lead[] | null>(null);
   const [filterLoading, setFilterLoading] = useState(false);
 
-  // The board/list are ALWAYS server-driven now (cursor-paginated), so the page
-  // no longer depends on the store holding every lead. We load up to MAX_BOARD
-  // rows (newest-first) for the current pipeline+filters; stage badges below the
-  // cap are exact. dashFilter (stale/converted) is cross-pipeline and handled in
-  // filteredLeads from the store, so we skip the server fetch for it.
+  // The desktop kanban now loads per-column on scroll (see "Board: per-column
+  // infinite scroll" below) so the board path skips this. The List view and the
+  // mobile single-stage list still read `filteredLeads` (apiLeads ?? leads), so
+  // we keep this batch fetch for them only - capped at MAX_BOARD newest-first
+  // rows for the current pipeline+filters. dashFilter (stale/converted) is
+  // cross-pipeline and resolved server-side via `quick`.
+  const boardActive = kanbanView && !isMobile;
   const MAX_BOARD = 3000;
   useEffect(() => {
+    if (boardActive) return; // board uses per-column infinite scroll instead
     let cancelled = false;
     const delay = search ? 300 : 0;
     setFilterLoading(true);
@@ -4835,7 +4882,6 @@ export default function LeadsPage() {
         let allLeads: any[] = [];
         let cursor = '';
         while (true) {
-          // dashFilter (stale/converted) is cross-pipeline and resolved server-side via `quick`.
           const params = buildLeadsParams(filters, search, dashFilter ? null : selectedPipelineId, dashFilter ? undefined : selectedPipeline, cursor);
           if (dashFilter) params.set('quick', dashFilter);
           const data = await api.get<{ leads: any[]; nextCursor: string | null }>(`/api/leads?${params}`);
@@ -4852,7 +4898,155 @@ export default function LeadsPage() {
     // `leads.length` is intentionally a dep: when a new lead enters the store
     // (realtime lead:created socket → addLead, the manual Add Lead modal, or the
     // 30s background poll), this re-fetches the snapshot so it shows immediately.
-  }, [filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, leads.length]);
+  }, [boardActive, filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, leads.length]);
+
+  // ── Board: per-column infinite scroll (desktop kanban) ──────────────────────
+  // Each stage column loads its own page from the server (stage= + cursor) and
+  // fetches the next page on scroll via an IntersectionObserver in StageColumn,
+  // so the DOM only ever holds the cards scrolled into view - no more loading
+  // thousands of rows up front (the cause of the scroll lag on big pipelines).
+  // Exact totals come from /leads/stage-counts so the badges stay correct even
+  // for cards that haven't been loaded yet.
+  const BOARD_PAGE = 25;
+  const [boardCols, setBoardCols] = useState<Record<string, BoardCol>>({});
+  const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
+  const boardColsRef = useRef(boardCols);
+  boardColsRef.current = boardCols;
+
+  // Search/extra filters aren't reflected by /stage-counts (pipeline+view-scope
+  // only), so badges fall back to the loaded count (with a "+") while narrowing.
+  const anyNarrowingFilter =
+    filters.assignedTo.length > 0 || filters.contactType.length > 0 || filters.stage.length > 0 ||
+    filters.tags.length > 0 || filters.leadQuality.length > 0 || filters.opportunityValue.length > 0 ||
+    !!filters.initialCallDate || !!filters.createdOn || !!filters.updatedOn || !!filters.calendar || !!filters.followUp;
+  const countsAreExact = !search && !dashFilter && !anyNarrowingFilter;
+
+  // Kept in a ref so the IntersectionObserver (created once per column) and the
+  // reset effect always call the latest closure without re-subscribing.
+  const fetchStagePageRef = useRef<(stageId: string, reset: boolean) => Promise<void>>(async () => {});
+  fetchStagePageRef.current = async (stageId: string, reset: boolean) => {
+    // A single-stage filter narrows the board to that one column; keep the rest empty.
+    const stageFilterId = filters.stage.length === 1
+      ? (selectedPipeline?.stages.find((s) => s.name === filters.stage[0])?.id ?? null) : null;
+    if (stageFilterId && stageFilterId !== stageId) {
+      setBoardCols((prev) => ({ ...prev, [stageId]: { leads: [], cursor: '', done: true, loading: false } }));
+      return;
+    }
+    const existing = boardColsRef.current[stageId];
+    if (!reset && (existing?.loading || existing?.done)) return;
+    const cursor = reset ? '' : (existing?.cursor ?? '');
+    setBoardCols((prev) => ({
+      ...prev,
+      [stageId]: { leads: reset ? [] : (prev[stageId]?.leads ?? []), cursor, done: false, loading: true },
+    }));
+    try {
+      const params = buildLeadsParams(filters, search, dashFilter ? null : selectedPipelineId, dashFilter ? undefined : selectedPipeline, cursor);
+      params.set('stage', stageId);
+      params.set('limit', String(BOARD_PAGE));
+      if (dashFilter) params.set('quick', dashFilter);
+      const data = await api.get<{ leads: any[]; nextCursor: string | null }>(`/api/leads?${params}`);
+      const mapped = mapApiLeadsToStore(data.leads, stageMap);
+      setBoardCols((prev) => {
+        const cur = prev[stageId];
+        const base = reset ? [] : (cur?.leads ?? []);
+        const seen = new Set(base.map((l) => l.id));
+        const merged = [...base, ...mapped.filter((l) => !seen.has(l.id))];
+        return { ...prev, [stageId]: { leads: merged, cursor: data.nextCursor ?? '', done: !data.nextCursor, loading: false } };
+      });
+    } catch {
+      setBoardCols((prev) => prev[stageId] ? { ...prev, [stageId]: { ...prev[stageId], loading: false } } : prev);
+    }
+  };
+
+  // Reset + load the first page of every column when pipeline / filters / search change.
+  useEffect(() => {
+    if (!boardActive) return;
+    const stages = selectedPipeline?.stages ?? [];
+    setBoardCols({});
+    boardColsRef.current = {};
+    setFilterLoading(true);
+    const t = setTimeout(async () => {
+      await Promise.all(stages.map((s) => fetchStagePageRef.current(s.id, true)));
+      setFilterLoading(false);
+    }, search ? 300 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardActive, filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter]);
+
+  // Exact per-stage badge counts (cheap COUNT(*) GROUP BY). Refreshed on board
+  // open, pipeline switch, and whenever the store lead count changes (create/
+  // delete/realtime) so the totals stay live without reloading any cards.
+  const refreshStageCounts = useCallback(async () => {
+    try {
+      const qs = selectedPipelineId ? `?pipeline_id=${selectedPipelineId}` : '';
+      const data = await api.get<{ counts: Record<string, number> }>(`/api/leads/stage-counts${qs}`);
+      setStageCounts(data.counts ?? {});
+    } catch { /* badges fall back to loaded count */ }
+  }, [selectedPipelineId]);
+  useEffect(() => { if (boardActive) refreshStageCounts(); }, [boardActive, leads.length, refreshStageCounts]);
+
+  // Board mutation helpers - keep the loaded columns + badge counts in sync with
+  // create / move / delete / realtime without a full reload (which would reset
+  // every column's scroll position).
+  const boardAddLead = useCallback((lead: Lead) => {
+    if (!lead.stageId) return;
+    setBoardCols((prev) => {
+      const col = prev[lead.stageId!];
+      if (!col || col.leads.some((l) => l.id === lead.id)) return prev; // not loaded / dup
+      return { ...prev, [lead.stageId!]: { ...col, leads: [lead, ...col.leads] } };
+    });
+    setStageCounts((prev) => ({ ...prev, [lead.stageId!]: (prev[lead.stageId!] ?? 0) + 1 }));
+  }, []);
+  const boardRemoveLead = useCallback((leadId: string) => {
+    setBoardCols((prev) => {
+      let changed = false;
+      const next: Record<string, BoardCol> = {};
+      for (const [sid, col] of Object.entries(prev)) {
+        if (col.leads.some((l) => l.id === leadId)) { changed = true; next[sid] = { ...col, leads: col.leads.filter((l) => l.id !== leadId) }; setStageCounts((c) => ({ ...c, [sid]: Math.max(0, (c[sid] ?? 1) - 1) })); }
+        else next[sid] = col;
+      }
+      return changed ? next : prev;
+    });
+  }, []);
+  const boardMoveLead = useCallback((leadId: string, toStageId: string | undefined, patch?: Partial<Lead>) => {
+    if (!toStageId) return;
+    setBoardCols((prev) => {
+      let moved: Lead | undefined;
+      let fromSid: string | undefined;
+      for (const [sid, col] of Object.entries(prev)) {
+        const hit = col.leads.find((l) => l.id === leadId);
+        if (hit) { moved = hit; fromSid = sid; break; }
+      }
+      if (!moved || fromSid === toStageId) {
+        // already in target (or not loaded) - just patch in place if present
+        if (moved && patch) return { ...prev, [fromSid!]: { ...prev[fromSid!], leads: prev[fromSid!].leads.map((l) => l.id === leadId ? { ...l, ...patch } : l) } };
+        return prev;
+      }
+      const next = { ...prev };
+      next[fromSid!] = { ...next[fromSid!], leads: next[fromSid!].leads.filter((l) => l.id !== leadId) };
+      const target = next[toStageId];
+      const updated = { ...moved, ...patch, stageId: toStageId } as Lead;
+      if (target) next[toStageId] = { ...target, leads: [updated, ...target.leads.filter((l) => l.id !== leadId)] };
+      setStageCounts((c) => ({ ...c, [fromSid!]: Math.max(0, (c[fromSid!] ?? 1) - 1), [toStageId]: (c[toStageId] ?? 0) + 1 }));
+      return next;
+    });
+  }, []);
+  const boardPatchLead = useCallback((leadId: string, patch: Partial<Lead>) => {
+    setBoardCols((prev) => {
+      let changed = false;
+      const next: Record<string, BoardCol> = {};
+      for (const [sid, col] of Object.entries(prev)) {
+        if (col.leads.some((l) => l.id === leadId)) { changed = true; next[sid] = { ...col, leads: col.leads.map((l) => l.id === leadId ? { ...l, ...patch } : l) }; }
+        else next[sid] = col;
+      }
+      return changed ? next : prev;
+    });
+  }, []);
+
+  // Latest board ops in a ref so the socket effect (declared earlier) and other
+  // handlers can call them without re-subscribing or stale closures.
+  const boardOpsRef = useRef({ add: boardAddLead, remove: boardRemoveLead, move: boardMoveLead, patch: boardPatchLead });
+  boardOpsRef.current = { add: boardAddLead, remove: boardRemoveLead, move: boardMoveLead, patch: boardPatchLead };
 
   const filteredLeads = useMemo(() => {
     // Server-fetched snapshot (board/list/dashFilter all resolved server-side);
@@ -4979,6 +5173,8 @@ export default function LeadsPage() {
         (prev ?? []).map((l) => l.id === leadId ? { ...l, stage: newStage!, stageId: newStageId ?? l.stageId } : l)
       );
     }
+    // Move the card between the board's loaded columns + adjust badge counts.
+    boardMoveLead(leadId, newStageId, { stage: newStage });
 
     toast.success(`Lead moved to ${newStage}`);
     if (newStageId) api.patch(`/api/leads/${leadId}`, { stage_id: newStageId }).catch(() => null);
@@ -4992,6 +5188,7 @@ export default function LeadsPage() {
     if (apiLeads) {
       setApiLeads((prev) => (prev ?? []).map((l) => l.id === leadId ? { ...l, stage, stageId: stageId ?? l.stageId } : l));
     }
+    boardMoveLead(leadId, stageId, { stage });
     toast.success(`Lead moved to ${stage}`);
     if (stageId) api.patch(`/api/leads/${leadId}`, { stage_id: stageId }).catch(() => null);
   };
@@ -5011,6 +5208,24 @@ export default function LeadsPage() {
         if (aOverdue && bOverdue) return ta! - tb!;
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
+  };
+
+  // Desktop kanban: a stage column's loaded slice + exact total. Cards are kept
+  // in server order (newest-first) so the cursor pagination stays stable; an
+  // undefined column means "first page is still loading" (show the spinner, not
+  // the empty state). hasMore drives the IntersectionObserver in StageColumn.
+  const boardColFor = (stageName: string) => {
+    const sid = selectedPipeline?.stages.find((s) => s.name === stageName)?.id ?? '';
+    const col = boardCols[sid];
+    const leadsArr = col?.leads ?? [];
+    return {
+      stageId: sid,
+      leads: leadsArr,
+      loading: col ? col.loading : true,
+      hasMore: col ? !col.done : false,
+      total: countsAreExact ? (stageCounts[sid] ?? leadsArr.length) : leadsArr.length,
+      countExact: countsAreExact,
+    };
   };
 
   // Active stage tab on mobile — fall back to first stage if the stored one is gone.
@@ -5063,7 +5278,7 @@ export default function LeadsPage() {
   const bulkDelete = async () => {
     let failed = 0;
     await Promise.all(selectedIds.map((id) =>
-      api.delete(`/api/leads/${id}`).then(() => deleteLead(id)).catch(() => { failed++; })
+      api.delete(`/api/leads/${id}`).then(() => { deleteLead(id); boardRemoveLead(id); }).catch(() => { failed++; })
     ));
     const done = selectedIds.length - failed;
     if (done > 0) toast.success(`${done} contact${done !== 1 ? 's' : ''} deleted`);
@@ -5464,10 +5679,17 @@ export default function LeadsPage() {
       ) : kanbanView ? (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex gap-4 overflow-x-scroll overflow-y-hidden flex-1 min-h-0 items-stretch [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-black/[0.06] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/30 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-black/45">
-            {activeStages.map((stage, stageIndex) => (
+            {activeStages.map((stage, stageIndex) => {
+              const col = boardColFor(stage);
+              return (
               <StageColumn
                 key={stage} stage={stage}
-                leads={stageLeadsFor(stage)}
+                leads={col.leads}
+                totalCount={col.total}
+                countExact={col.countExact}
+                hasMore={col.hasMore}
+                loadingMore={col.loading}
+                onLoadMore={() => fetchStagePageRef.current(col.stageId, false)}
                 onLeadClick={(l) => setSelectedLeadId(l.id)}
                 onFollowUp={setQuickFollowUpLead}
                 onNote={setQuickNoteLead}
@@ -5477,7 +5699,8 @@ export default function LeadsPage() {
                 stageIndex={stageIndex}
                 highlightId={highlightId}
               />
-            ))}
+              );
+            })}
           </div>
           <DragOverlay>{activeLead && <div className="bg-card rounded-lg border-2 border-primary p-3 shadow-2xl opacity-90 w-[280px]"><span className="font-semibold text-sm">{activeLead.firstName} {activeLead.lastName}</span></div>}</DragOverlay>
         </DndContext>
@@ -5599,6 +5822,9 @@ export default function LeadsPage() {
         if (apiLeads) {
           setApiLeads((prev) => prev?.map((l) => l.id === id ? { ...l, ...updates } : l) ?? null);
         }
+        // Reflect the edit on the board immediately (don't wait for the socket).
+        if (!updates.stageId) boardRemoveLead(id);
+        else boardMoveLead(id, updates.stageId, { stage: updates.stage, tags: updates.tags });
       }} />}
       {showAddLead && <AddLeadModal onClose={() => setShowAddLead(false)} />}
       {showNewPipeline && <NewPipelineModal onClose={() => setShowNewPipeline(false)} />}
