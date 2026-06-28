@@ -326,7 +326,7 @@ function streamFile(req: AuthRequest, res: Response, filePath: string, relPath: 
 
 // --- Post-Call Disposition ---
 
-interface DispositionDef {
+export interface DispositionDef {
   key: string;
   label: string;
   icon: string;
@@ -343,7 +343,7 @@ const DEFAULT_DISPOSITIONS: DispositionDef[] = [
   { key: 'deal_closed',     label: 'Deal Closed',     icon: '✓',  color: 'purple',  lead_quality: null   },
 ];
 
-async function getTenantDispositions(tenantId: string): Promise<DispositionDef[]> {
+export async function getTenantDispositions(tenantId: string): Promise<DispositionDef[]> {
   const r = await query(
     `SELECT call_dispositions FROM company_settings WHERE tenant_id=$1::uuid`,
     [tenantId],

@@ -16,6 +16,7 @@ import { sendCallLoggedNotification } from '../utils/notifications';
 import { normalizePhone } from '../utils/phone';
 import { RECORDINGS_DIR } from '../utils/recordingDownloader';
 import { cleanText } from '../utils/sanitize';
+import { getTenantDispositions } from './calls';
 
 const router = Router();
 
@@ -583,6 +584,99 @@ router.post('/calls/by-key/note', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/mobile/dispositions — tenant's post-call outcome options (device auth).
+// Mirrors the web /api/calls/dispositions so the mobile post-call screen shows the
+// same chips. Returns the tenant's custom list or the shared defaults.
+router.get('/dispositions', async (req: AuthRequest, res: Response) => {
+  try {
+    res.json(await getTenantDispositions(req.user!.tenantId!));
+  } catch (err: any) {
+    console.error('[mobile/dispositions]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/mobile/calls/by-key/post-call — set disposition + optional follow-up for
+// the call matched by phone + start time. The mobile post-call screen is opened from
+// the device call log (phone + timestamp), so we match by key rather than callId —
+// mirrors the web POST /api/calls/:id/post-call logic otherwise.
+// Body: { phone, startedAt(ms), disposition_key, follow_up_date?, follow_up_time?, note? }
+router.post('/calls/by-key/post-call', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const phone = normalizePhone((req.body?.phone ?? '').toString());
+  const startedAtMs = parseInt((req.body?.startedAt ?? '0').toString(), 10);
+  const dispositionKey = (req.body?.disposition_key ?? '').toString();
+  const followUpDate = (req.body?.follow_up_date ?? '').toString(); // yyyy-MM-dd
+  const followUpTime = (req.body?.follow_up_time ?? '').toString(); // HH:mm
+  const note = cleanText(req.body?.note ?? '');
+  if (!phone) { res.status(400).json({ error: 'phone required' }); return; }
+  if (!dispositionKey) { res.status(400).json({ error: 'disposition_key required' }); return; }
+
+  try {
+    const disps = await getTenantDispositions(tenantId!);
+    const dispDef = disps.find((d) => d.key === dispositionKey);
+    if (!dispDef) { res.status(400).json({ error: 'Invalid disposition_key' }); return; }
+
+    const digits = phone.replace(/\D/g, '');
+    const suffix = digits.length > 9 ? digits.slice(-9) : digits;
+    const startIso = startedAtMs > 0 ? new Date(startedAtMs).toISOString() : null;
+    const match = await query(
+      `SELECT id, lead_id FROM call_logs
+       WHERE tenant_id=$1::uuid
+         AND regexp_replace(COALESCE(caller_phone,''), '\\D', '', 'g') LIKE '%' || $2
+         AND ($3::timestamptz IS NULL OR ABS(EXTRACT(EPOCH FROM (COALESCE(started_at, created_at) - $3::timestamptz))) < 300)
+       ORDER BY ABS(EXTRACT(EPOCH FROM (COALESCE(started_at, created_at) - COALESCE($3::timestamptz, NOW())))) ASC
+       LIMIT 1`,
+      [tenantId, suffix, startIso]
+    );
+    const row = match.rows[0];
+    if (!row) { res.status(404).json({ error: 'No matching call' }); return; }
+
+    // 1. disposition on the call
+    await query(
+      `UPDATE call_logs SET disposition_key=$2, disposition=$3, notes=COALESCE($4, notes) WHERE id=$1::uuid`,
+      [row.id, dispositionKey, dispDef.label, note || null]
+    );
+    // 2. lead quality (if the disposition maps to one and the call is linked)
+    if (row.lead_id && dispDef.lead_quality) {
+      await query(
+        `UPDATE leads SET custom_fields = COALESCE(custom_fields,'{}'::jsonb) || $2::jsonb, updated_at=NOW()
+         WHERE id=$1::uuid AND tenant_id=$3::uuid`,
+        [row.lead_id, JSON.stringify({ lead_quality: dispDef.lead_quality }), tenantId]
+      );
+    }
+    // 3. follow-up (if a date was chosen and the call is linked to a lead)
+    let followUp: any = null;
+    if (row.lead_id && followUpDate) {
+      const dueAt = followUpTime ? `${followUpDate}T${followUpTime}:00` : `${followUpDate}T09:00:00`;
+      const title = `Follow up - ${dispDef.label}`;
+      const fu = await query(
+        `INSERT INTO lead_followups (lead_id, tenant_id, title, description, due_at, assigned_to, created_by)
+         VALUES ($1::uuid,$2::uuid,$3,$4,$5,$6::uuid,$6::uuid) RETURNING id, title, due_at`,
+        [row.lead_id, tenantId, title, note || null, dueAt, userId]
+      );
+      followUp = fu.rows[0];
+      query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
+         VALUES ($1::uuid,$2::uuid,'followup',$3,$4::uuid)`,
+        [row.lead_id, tenantId, `Follow-up scheduled: ${title}`, userId]
+      ).catch(() => null);
+    }
+    // 4. log the outcome on the lead timeline
+    if (row.lead_id) {
+      query(
+        `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+         VALUES ($1::uuid,$2::uuid,'call_outcome',$3,$4,$5::uuid)`,
+        [row.lead_id, tenantId, `Call outcome: ${dispDef.label}`, note || null, userId]
+      ).catch(() => null);
+    }
+    res.json({ ok: true, callId: row.id, disposition: dispDef.label, follow_up: followUp });
+  } catch (err: any) {
+    console.error('[mobile/by-key/post-call]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /api/mobile/calls/:callId/recording — upload audio for a logged call
 router.post('/calls/:callId/recording', upload.single('recording'), async (req: AuthRequest, res: Response) => {
   const { tenantId } = req.user!;
@@ -999,6 +1093,7 @@ router.get('/leads/:id/details', async (req: AuthRequest, res: Response) => {
 
     const calls = await query(
       `SELECT id, direction, outcome, duration_seconds, started_at,
+              disposition_key, disposition,
               (recording_path IS NOT NULL OR recording_url IS NOT NULL) AS has_recording
        FROM call_logs WHERE lead_id=$1 AND tenant_id=$2::uuid ORDER BY started_at DESC LIMIT 50`,
       [id, tenantId]
