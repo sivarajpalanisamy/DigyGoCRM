@@ -364,21 +364,33 @@ router.post('/verify-number', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/mobile/me — refresh identity + permissions on app launch
+// GET /api/mobile/me — refresh identity + permissions on app launch. Also returns
+// the CRM-integration card data for the More page: the number this device is
+// linked with, the company (tenant), the account owner, and this staff member.
 router.get('/me', async (req: AuthRequest, res: Response) => {
-  const { userId, role, tenantId } = req.user!;
+  const { userId, role } = req.user!;
+  const deviceId = req.deviceId ?? null;
   try {
     const ctx = await query(
-      `SELECT u.id, u.name, u.email, u.role, t.id AS tenant_id, t.name AS tenant_name
+      `SELECT u.id, u.name, u.email, u.role, u.phone,
+              t.id AS tenant_id, t.name AS tenant_name,
+              (SELECT name FROM users WHERE tenant_id = u.tenant_id AND is_owner = TRUE AND is_active = TRUE LIMIT 1) AS owner_name,
+              COALESCE(
+                (SELECT phone_number FROM mobile_devices WHERE id = $2::uuid),
+                (SELECT phone_number FROM mobile_device_numbers WHERE device_id = $2::uuid AND verified = TRUE LIMIT 1),
+                u.phone
+              ) AS device_number
        FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.id = $1::uuid`,
-      [userId]
+      [userId, deviceId]
     );
     const permRow = await query(`SELECT permissions FROM user_permissions WHERE user_id = $1::uuid`, [userId]);
     const u = ctx.rows[0];
     const isPrivileged = role === 'owner' || role === 'super_admin';
     res.json({
-      user: { id: u.id, name: u.name, email: u.email, role: u.role },
+      user: { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone ?? null },
       tenant: { id: u.tenant_id, name: u.tenant_name },
+      owner_name: u.owner_name ?? null,
+      device: { number: u.device_number ?? null },
       permissions: isPrivileged ? { all: true } : (permRow.rows[0]?.permissions ?? {}),
     });
   } catch (err: any) {

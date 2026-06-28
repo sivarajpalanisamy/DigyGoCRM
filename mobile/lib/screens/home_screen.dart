@@ -85,6 +85,24 @@ class _MorePage extends StatefulWidget {
 }
 
 class _MorePageState extends State<_MorePage> {
+  Map<String, dynamic>? _me;
+  bool _loadingMe = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMe();
+  }
+
+  Future<void> _loadMe() async {
+    try {
+      final me = await Api.instance.me();
+      if (mounted) setState(() { _me = me; _loadingMe = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loadingMe = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -94,6 +112,8 @@ class _MorePageState extends State<_MorePage> {
         children: [
           const Text('More', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Brand.ink)),
           const SizedBox(height: 16),
+          _integrationCard(),
+          const SizedBox(height: 6),
           _tile(
             icon: Icons.fiber_manual_record,
             title: 'Call recording setup',
@@ -121,6 +141,75 @@ class _MorePageState extends State<_MorePage> {
               await Api.instance.clearToken();
               await widget.onSignOut();
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // CRM integration summary: the number this device is linked with, the company
+  // it syncs to, the account owner, and which staff member this device is.
+  Widget _integrationCard() {
+    final user = (_me?['user'] as Map?) ?? const {};
+    final tenant = (_me?['tenant'] as Map?) ?? const {};
+    final device = (_me?['device'] as Map?) ?? const {};
+    final number = (device['number'] ?? user['phone'] ?? '').toString();
+    final company = (tenant['name'] ?? '').toString();
+    final owner = (_me?['owner_name'] ?? '').toString();
+    final staff = (user['name'] ?? '').toString();
+    String orDash(String s) => s.trim().isEmpty ? '-' : s.trim();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x12000000)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            CircleAvatar(
+              backgroundColor: const Color(0x14EA580C),
+              child: const Icon(Icons.verified_user_outlined, color: Brand.accent, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('CRM Integration',
+                  style: TextStyle(fontWeight: FontWeight.w800, color: Brand.ink, fontSize: 15)),
+            ),
+            if (_loadingMe)
+              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Brand.accent)),
+          ]),
+          const SizedBox(height: 6),
+          const Divider(height: 18, color: Color(0x10000000)),
+          _infoRow(Icons.sim_card_outlined, 'Integrated number', orDash(number)),
+          _infoRow(Icons.business_outlined, 'Company', orDash(company)),
+          _infoRow(Icons.workspace_premium_outlined, 'Owner', orDash(owner)),
+          _infoRow(Icons.badge_outlined, 'Assigned staff', orDash(staff)),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 17, color: Brand.muted),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 120,
+            child: Text(label, style: const TextStyle(color: Brand.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+          ),
+          Expanded(
+            child: Text(value,
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: Brand.ink, fontSize: 13, fontWeight: FontWeight.w700)),
           ),
         ],
       ),

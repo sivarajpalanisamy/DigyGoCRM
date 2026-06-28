@@ -2,7 +2,7 @@ name: digygo_dialer
 description: "DigyGo Dialer - call + CRM sync"
 publish_to: 'none'
 
-version: 1.2.1+4
+version: 1.2.2+5
 
 environment:
   sdk: ^3.10.4
