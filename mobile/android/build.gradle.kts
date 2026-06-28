@@ -5,7 +5,7 @@ allprojects {
     }
 }
 
-// Build OUTSIDE OneDrive — OneDrive sync locks files under the synced folder and
+// Build OUTSIDE OneDrive - OneDrive sync locks files under the synced folder and
 // breaks `mergeReleaseNativeLibs` with AccessDeniedException. This keeps all build
 // intermediates on local-only disk.
 val newBuildDir: Directory =

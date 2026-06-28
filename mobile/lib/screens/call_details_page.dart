@@ -214,7 +214,7 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
           _quickAction(Icons.event, 'Appointment', () => _openFollowupDialog(defaultTitle: 'Appointment')),
         ]),
         const SizedBox(height: 18),
-        // Activity timeline (full, incl. calls — recordings play inline on call rows)
+        // Activity timeline (full, incl. calls - recordings play inline on call rows)
         _sectionTitle('Activity Timeline'),
         if (_activities.isEmpty)
           const Text('No activity yet', style: TextStyle(color: Brand.muted, fontSize: 13))
@@ -686,7 +686,7 @@ class _CallDetailsPageState extends State<CallDetailsPage> {
     final title = (a['title'] ?? '').toString();
     final by = (a['by_name'] ?? '').toString();
     final isCall = type == 'call';
-    // For call rows, `detail` is the call_log id (used only for the player) — never shown.
+    // For call rows, `detail` is the call_log id (used only for the player) - never shown.
     final callId = isCall ? (a['call_id'] ?? a['detail'] ?? '').toString() : '';
     final detail = isCall ? '' : (a['detail'] ?? '').toString();
     final hasRec = isCall && _callHasRec(callId);

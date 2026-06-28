@@ -1,4 +1,4 @@
-# Flutter / Dart embedding — keep the engine + plugin registrant
+# Flutter / Dart embedding - keep the engine + plugin registrant
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
 -keep class io.flutter.embedding.** { *; }
