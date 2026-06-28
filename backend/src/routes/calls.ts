@@ -5,6 +5,7 @@ import { query } from '../db';
 import { requireAuth, requireTenant, AuthRequest } from '../middleware/auth';
 import { checkPermission, hasPermission } from '../middleware/permissions';
 import { RECORDINGS_DIR } from '../utils/recordingDownloader';
+import { cleanText } from '../utils/sanitize';
 
 const router = Router();
 router.use(requireAuth);
@@ -372,6 +373,8 @@ router.post('/:callId/post-call', async (req: AuthRequest, res: Response) => {
   };
 
   if (!disposition_key) { res.status(400).json({ error: 'disposition_key is required' }); return; }
+  // XSS-harden the free-text note (consistent with the lead/contact note endpoints).
+  const cleanNote = note != null ? cleanText(note) : null;
 
   try {
     const disps = await getTenantDispositions(tenantId!);
@@ -404,7 +407,7 @@ router.post('/:callId/post-call', async (req: AuthRequest, res: Response) => {
     await query(
       `UPDATE call_logs SET disposition_key=$2, disposition=$3, notes=COALESCE($4, notes)
        WHERE id=$1`,
-      [callId, disposition_key, dispDef.label, note ?? null],
+      [callId, disposition_key, dispDef.label, cleanNote],
     );
 
     // 2. Update lead quality if mapping exists and call is linked to a lead
@@ -426,7 +429,7 @@ router.post('/:callId/post-call', async (req: AuthRequest, res: Response) => {
       const fuRes = await query(
         `INSERT INTO lead_followups (lead_id, tenant_id, title, description, due_at, assigned_to, created_by)
          VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::uuid, $6::uuid) RETURNING *`,
-        [call.lead_id, tenantId, title, note ?? null, dueAt, userId],
+        [call.lead_id, tenantId, title, cleanNote, dueAt, userId],
       );
       followUp = fuRes.rows[0];
 
