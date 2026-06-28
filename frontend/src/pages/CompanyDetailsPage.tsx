@@ -119,7 +119,17 @@ export default function CompanyDetailsPage() {
         industry:   s.industry                     ?? '',
       });
     }).catch(() => null).finally(() => setLoading(false));
-    api.get<DispositionItem[]>('/api/settings/dispositions').then(setDispositions).catch(() => {});
+    const defaultDisps: DispositionItem[] = [
+      { key: 'interested',      label: 'Interested',      icon: '👍', color: 'emerald', lead_quality: 'Hot'  },
+      { key: 'callback_later',  label: 'Callback Later',  icon: '🕐', color: 'blue',    lead_quality: null   },
+      { key: 'not_reachable',   label: 'Not Reachable',   icon: '📵', color: 'red',     lead_quality: null   },
+      { key: 'not_interested',  label: 'Not Interested',  icon: '😕', color: 'gray',    lead_quality: 'Cold' },
+      { key: 'deal_closed',     label: 'Deal Closed',     icon: '🤝', color: 'orange',  lead_quality: null   },
+      { key: 'follow_up_set',   label: 'Follow-up Set',   icon: '📅', color: 'purple',  lead_quality: null   },
+    ];
+    api.get<DispositionItem[]>('/api/settings/dispositions')
+      .then((d) => setDispositions(d?.length ? d : defaultDisps))
+      .catch(() => setDispositions(defaultDisps));
   }, []);
 
   const update = (key: string, val: string) => setForm((f) => ({ ...f, [key]: val }));

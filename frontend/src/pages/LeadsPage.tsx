@@ -1262,9 +1262,17 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
   const [outcomeOptions, setOutcomeOptions] = useState<{ key: string; label: string; icon: string; color: string }[]>([]);
   const [selectedOutcome, setSelectedOutcome] = useState('');
 
+  const FALLBACK_OUTCOMES = [
+    { key: 'interested',      label: 'Interested',      icon: '👍', color: 'emerald' },
+    { key: 'callback_later',  label: 'Callback Later',  icon: '🕐', color: 'blue'    },
+    { key: 'not_reachable',   label: 'Not Reachable',   icon: '📵', color: 'red'     },
+    { key: 'not_interested',  label: 'Not Interested',  icon: '😕', color: 'gray'    },
+    { key: 'deal_closed',     label: 'Deal Closed',     icon: '🤝', color: 'orange'  },
+    { key: 'follow_up_set',   label: 'Follow-up Set',   icon: '📅', color: 'purple'  },
+  ];
   useEffect(() => {
     if (!isEdit && !isNote) {
-      api.get<any[]>('/api/settings/dispositions').then(setOutcomeOptions).catch(() => {});
+      api.get<any[]>('/api/settings/dispositions').then((d) => setOutcomeOptions(d?.length ? d : FALLBACK_OUTCOMES)).catch(() => setOutcomeOptions(FALLBACK_OUTCOMES));
     }
   }, [isEdit, isNote]);
 
