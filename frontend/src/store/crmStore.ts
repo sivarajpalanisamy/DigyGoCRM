@@ -71,6 +71,7 @@ interface CrmState {
   deleteWfFolder: (id: string) => void;
   moveWfToFolder: (wfId: string, folderId: string) => void;
 
+  hydrated: boolean; // true once the first initFromApi() completes — gates skeletons
   pipelines: Pipeline[];
   leads: Lead[];
   conversations: Conversation[];
@@ -220,6 +221,7 @@ export const useCrmStore = create<CrmState>((set) => ({
     ),
   })),
 
+  hydrated: false,
   pipelines: [],
   leads: [],
   conversations: [],
@@ -803,6 +805,7 @@ export const useCrmStore = create<CrmState>((set) => ({
           : (Array.isArray(valueTokensRes)
               ? valueTokensRes.map((v: any) => ({ id: v.id, name: v.name, replace_with: v.replace_with }))
               : []),
+        hydrated: true,
       });
     } catch (e) {
       // SessionExpiredError: logout already triggered asynchronously — don't stomp the store

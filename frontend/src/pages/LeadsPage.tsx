@@ -10,6 +10,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import LeadTrashModal from '@/components/LeadTrashModal';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Lead, Pipeline } from '@/data/mockData';
 import {
   Search, Filter, Plus, GripVertical, Phone, X, MessageCircle, Calendar,
@@ -4453,6 +4454,7 @@ const LEAD_EXPORT_FIELDS = [
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function LeadsPage() {
   const { leads, moveLeadStage, followUps, completeFollowUp, pipelines, updateLead, deleteLead, staff, bookingLinks } = useCrmStore();
+  const hydrated = useCrmStore((s) => s.hydrated);
   const currentUser = useAuthStore((s) => s.currentUser);
   const canViewOwn    = usePermission('leads:view_own');
   const canViewAll    = usePermission('leads:view_all');
@@ -5247,7 +5249,26 @@ export default function LeadsPage() {
 
       {/* ── Board ── */}
       <div className={cn('flex-1 flex flex-col min-h-0 overflow-hidden -mb-6 transition-opacity duration-200', filterLoading && 'opacity-50 pointer-events-none')}>
-      {isMobile ? (
+      {!hydrated && leads.length === 0 ? (
+        /* First-load skeleton — placeholder columns of cards while data loads */
+        <div className="flex gap-4 overflow-hidden flex-1 min-h-0 items-stretch">
+          {Array.from({ length: 4 }).map((_, ci) => (
+            <div key={ci} className="min-w-[280px] w-[280px] flex flex-col rounded-2xl border border-black/5 bg-white overflow-hidden">
+              <div className="h-[3px] bg-black/10" />
+              <div className="px-4 pt-3 pb-2.5 flex items-center justify-between">
+                <Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-6 rounded-full" />
+              </div>
+              <div className="flex-1 px-3 pb-3 space-y-2.5">
+                {Array.from({ length: 4 }).map((_, ri) => (
+                  <div key={ri} className="rounded-xl border border-black/5 p-3 space-y-2">
+                    <Skeleton className="h-3.5 w-3/4" /><Skeleton className="h-3 w-1/2" /><Skeleton className="h-3 w-2/3" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : isMobile ? (
         /* ── Mobile Board — stage tabs + single-stage list ── */
         <div className="flex flex-col flex-1 min-h-0">
           {/* Stage tabs */}
