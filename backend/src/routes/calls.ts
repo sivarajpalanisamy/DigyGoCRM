@@ -14,7 +14,7 @@ router.use(requireTenant);
 // GET /api/calls — all calls for tenant with filters + pagination
 router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { direction, outcome, staff_name, date_from, date_to, source, page = '1', limit = '50' } = req.query as Record<string, string>;
+  const { direction, outcome, staff_name, date_from, date_to, source, pipeline_id, stage_id, page = '1', limit = '50' } = req.query as Record<string, string>;
 
   // Scope: owner/super_admin and calls:view_all → see all; calls:view_own only → own calls
   const isSuper = role === 'super_admin';
@@ -32,12 +32,17 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
   if (!viewAll) { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
 
   // Source filter: 'mobile' = DigyGo Dialer, 'superfone' = Superfone integration
-  if (source)     { params.push(source);                   conditions.push(`cl.source=$${params.length}`); }
-  if (direction)  { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
-  if (outcome)    { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
-  if (staff_name) { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
-  if (date_from)  { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
-  if (date_to)    { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+  if (source)      { params.push(source);                   conditions.push(`cl.source=$${params.length}`); }
+  if (direction)   { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
+  if (outcome)     { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
+  if (staff_name)  { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
+  if (date_from)   { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
+  if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+  if (pipeline_id) { params.push(pipeline_id);              conditions.push(`l.pipeline_id = $${params.length}::uuid`); }
+  if (stage_id)    { params.push(stage_id);                 conditions.push(`l.stage_id = $${params.length}::uuid`); }
+
+  // When filtering by pipeline/stage we need INNER JOIN so calls without a lead are excluded
+  const leadJoin = (pipeline_id || stage_id) ? 'JOIN' : 'LEFT JOIN';
 
   const offset = (Math.max(1, parseInt(page)) - 1) * parseInt(limit);
   const where  = conditions.join(' AND ');
@@ -49,15 +54,23 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
                 cl.duration_seconds, cl.started_at, cl.ended_at, cl.staff_name,
                 cl.recording_url, cl.recording_path, cl.recording_downloaded,
                 cl.is_unknown, cl.created_at, cl.notes, cl.disposition, cl.disposition_key, cl.source,
-                l.id AS lead_id, COALESCE(l.name, cl.caller_phone) AS lead_name
+                l.id AS lead_id, COALESCE(l.name, cl.caller_phone) AS lead_name,
+                p.name AS pipeline_name, ps.name AS stage_name
          FROM call_logs cl
-         LEFT JOIN leads l ON l.id = cl.lead_id
+         ${leadJoin} leads l ON l.id = cl.lead_id
+         LEFT JOIN pipelines p ON p.id = l.pipeline_id
+         LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
          WHERE ${where}
          ORDER BY COALESCE(cl.started_at, cl.created_at) DESC
          LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
         [...params, parseInt(limit), offset],
       ),
-      query(`SELECT COUNT(*) FROM call_logs cl WHERE ${where}`, params),
+      query(
+        `SELECT COUNT(*) FROM call_logs cl
+         ${leadJoin} leads l ON l.id = cl.lead_id
+         WHERE ${where}`,
+        params,
+      ),
     ]);
     res.json({ calls: rows.rows, total: parseInt(countRow.rows[0].count) });
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
@@ -66,7 +79,7 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
 // GET /api/calls/stats — aggregated stats for charts
 router.get('/stats', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { direction, outcome, staff_name, date_from, date_to, source } = req.query as Record<string, string>;
+  const { direction, outcome, staff_name, date_from, date_to, source, pipeline_id, stage_id } = req.query as Record<string, string>;
 
   const isSuper = role === 'super_admin';
   let viewAll = false;
@@ -80,38 +93,47 @@ router.get('/stats', checkPermission('calls:view_own'), async (req: AuthRequest,
   const params: any[] = [tenantId];
   const conditions: string[] = ['cl.tenant_id=$1::uuid'];
 
-  if (!viewAll) { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
+  if (!viewAll)    { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
 
-  if (source)     { params.push(source);                   conditions.push(`cl.source=$${params.length}`); }
-  if (direction)  { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
-  if (outcome)    { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
-  if (staff_name) { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
-  if (date_from)  { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
-  if (date_to)    { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+  if (source)      { params.push(source);                   conditions.push(`cl.source=$${params.length}`); }
+  if (direction)   { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
+  if (outcome)     { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
+  if (staff_name)  { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
+  if (date_from)   { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
+  if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+  if (pipeline_id) { params.push(pipeline_id);              conditions.push(`l.pipeline_id = $${params.length}::uuid`); }
+  if (stage_id)    { params.push(stage_id);                 conditions.push(`l.stage_id = $${params.length}::uuid`); }
+
+  // When filtering by pipeline/stage, use INNER JOIN so calls without a lead are excluded
+  const needsLeadJoin = !!(pipeline_id || stage_id);
+  const statsLeadJoin = needsLeadJoin ? 'JOIN leads l ON l.id = cl.lead_id' : '';
 
   const where = conditions.join(' AND ');
 
   try {
-    const [kpiRes, dailyRes, outcomesRes, agentsRes] = await Promise.all([
+    const [kpiRes, dailyRes, outcomesRes, agentsRes, dispositionsRes, pipelinesRes] = await Promise.all([
       query(
         `SELECT COUNT(*)::int AS total,
                 COUNT(*) FILTER (WHERE cl.outcome='ANSWERED')::int AS answered,
                 COUNT(*) FILTER (WHERE cl.outcome IN ('MISSED','NO_ANSWER'))::int AS missed,
-                COALESCE(ROUND(AVG(cl.duration_seconds) FILTER (WHERE cl.duration_seconds > 0)), 0)::int AS avg_duration
-         FROM call_logs cl WHERE ${where}`,
+                COALESCE(ROUND(AVG(cl.duration_seconds) FILTER (WHERE cl.duration_seconds > 0)), 0)::int AS avg_duration,
+                COUNT(*) FILTER (WHERE cl.lead_id IS NULL)::int AS unknown_calls,
+                COUNT(*) FILTER (WHERE cl.direction='OUTBOUND')::int AS outbound,
+                COUNT(*) FILTER (WHERE cl.direction='INBOUND')::int AS inbound
+         FROM call_logs cl ${statsLeadJoin} WHERE ${where}`,
         params,
       ),
       query(
         `SELECT DATE(COALESCE(cl.started_at, cl.created_at)) AS date,
                 COUNT(*) FILTER (WHERE cl.direction='INBOUND')::int AS inbound,
                 COUNT(*) FILTER (WHERE cl.direction='OUTBOUND')::int AS outbound
-         FROM call_logs cl WHERE ${where}
+         FROM call_logs cl ${statsLeadJoin} WHERE ${where}
          GROUP BY 1 ORDER BY 1`,
         params,
       ),
       query(
         `SELECT cl.outcome, COUNT(*)::int AS count
-         FROM call_logs cl WHERE ${where}
+         FROM call_logs cl ${statsLeadJoin} WHERE ${where}
          GROUP BY 1 ORDER BY 2 DESC`,
         params,
       ),
@@ -119,7 +141,22 @@ router.get('/stats', checkPermission('calls:view_own'), async (req: AuthRequest,
         `SELECT cl.staff_name, COUNT(*)::int AS total,
                 COUNT(*) FILTER (WHERE cl.outcome='ANSWERED')::int AS answered,
                 COUNT(*) FILTER (WHERE cl.outcome IN ('MISSED','NO_ANSWER','REJECTED'))::int AS missed
-         FROM call_logs cl WHERE ${where} AND cl.staff_name IS NOT NULL
+         FROM call_logs cl ${statsLeadJoin} WHERE ${where} AND cl.staff_name IS NOT NULL
+         GROUP BY 1 ORDER BY 2 DESC LIMIT 10`,
+        params,
+      ),
+      query(
+        `SELECT cl.disposition_key, cl.disposition, COUNT(*)::int AS count
+         FROM call_logs cl ${statsLeadJoin} WHERE ${where} AND cl.disposition_key IS NOT NULL
+         GROUP BY 1, 2 ORDER BY 3 DESC`,
+        params,
+      ),
+      query(
+        `SELECT p.name AS pipeline_name, COUNT(*)::int AS count
+         FROM call_logs cl
+         JOIN leads l ON l.id = cl.lead_id
+         JOIN pipelines p ON p.id = l.pipeline_id
+         WHERE ${where} AND cl.lead_id IS NOT NULL
          GROUP BY 1 ORDER BY 2 DESC LIMIT 10`,
         params,
       ),
@@ -130,6 +167,8 @@ router.get('/stats', checkPermission('calls:view_own'), async (req: AuthRequest,
       daily: dailyRes.rows,
       outcomes: outcomesRes.rows,
       agents: agentsRes.rows,
+      dispositions: dispositionsRes.rows,
+      pipelines: pipelinesRes.rows,
     });
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
@@ -137,7 +176,7 @@ router.get('/stats', checkPermission('calls:view_own'), async (req: AuthRequest,
 // GET /api/calls/export — Excel export
 router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { direction, outcome, staff_name, date_from, date_to, source } = req.query as Record<string, string>;
+  const { direction, outcome, staff_name, date_from, date_to, source, pipeline_id, stage_id } = req.query as Record<string, string>;
 
   const isSuper = role === 'super_admin';
   let viewAll = false;
@@ -151,14 +190,18 @@ router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest
   const params: any[] = [tenantId];
   const conditions: string[] = ['cl.tenant_id=$1::uuid'];
 
-  if (!viewAll) { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
+  if (!viewAll)    { params.push(userId); conditions.push(`cl.staff_user_id=$${params.length}::uuid`); }
 
-  if (source)     { params.push(source);                   conditions.push(`cl.source=$${params.length}`); }
-  if (direction)  { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
-  if (outcome)    { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
-  if (staff_name) { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
-  if (date_from)  { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
-  if (date_to)    { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+  if (source)      { params.push(source);                   conditions.push(`cl.source=$${params.length}`); }
+  if (direction)   { params.push(direction.toUpperCase());  conditions.push(`cl.direction=$${params.length}`); }
+  if (outcome)     { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
+  if (staff_name)  { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
+  if (date_from)   { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
+  if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+  if (pipeline_id) { params.push(pipeline_id);              conditions.push(`l.pipeline_id = $${params.length}::uuid`); }
+  if (stage_id)    { params.push(stage_id);                 conditions.push(`l.stage_id = $${params.length}::uuid`); }
+
+  const leadJoin = (pipeline_id || stage_id) ? 'JOIN' : 'LEFT JOIN';
 
   const where = conditions.join(' AND ');
   try {
@@ -166,9 +209,12 @@ router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest
       `SELECT cl.cdr_id, cl.direction, cl.outcome, cl.caller_phone, cl.superfone_number,
               cl.duration_seconds, cl.started_at, cl.ended_at, cl.staff_name, cl.is_unknown,
               cl.disposition, cl.notes,
-              COALESCE(l.name, cl.caller_phone) AS lead_name
+              COALESCE(l.name, cl.caller_phone) AS lead_name,
+              p.name AS pipeline_name, ps.name AS stage_name
        FROM call_logs cl
-       LEFT JOIN leads l ON l.id = cl.lead_id
+       ${leadJoin} leads l ON l.id = cl.lead_id
+       LEFT JOIN pipelines p ON p.id = l.pipeline_id
+       LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
        WHERE ${where}
        ORDER BY COALESCE(cl.started_at, cl.created_at) DESC
        LIMIT 5000`,
@@ -191,6 +237,8 @@ router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest
       { header: 'Ended At',      key: 'ended_at',          width: 22 },
       { header: 'Disposition',   key: 'disposition',       width: 16 },
       { header: 'Note',          key: 'notes',             width: 40 },
+      { header: 'Pipeline',      key: 'pipeline_name',     width: 20 },
+      { header: 'Stage',         key: 'stage_name',        width: 20 },
       { header: 'Unknown',       key: 'is_unknown',        width: 10 },
     ];
     ws.getRow(1).font = { bold: true };

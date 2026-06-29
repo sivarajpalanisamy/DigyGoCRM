@@ -31,13 +31,17 @@ interface CallLog {
   disposition: string | null;
   disposition_key: string | null;
   source: string | null;
+  pipeline_name: string | null;
+  stage_name: string | null;
 }
 
 interface CallStats {
-  kpi: { total: number; answered: number; missed: number; avg_duration: number };
+  kpi: { total: number; answered: number; missed: number; avg_duration: number; unknown_calls: number; outbound: number; inbound: number };
   daily: { date: string; inbound: number; outbound: number }[];
   outcomes: { outcome: string; count: number }[];
   agents: { staff_name: string; total: number; answered: number; missed: number }[];
+  dispositions: { disposition_key: string; disposition: string; count: number }[];
+  pipelines: { pipeline_name: string; count: number }[];
 }
 
 const OUTCOME_COLORS: Record<string, string> = {
@@ -52,6 +56,11 @@ const DISPOSITION_STYLES: Record<string, { bg: string; text: string }> = {
   not_interested: { bg: 'bg-gray-100',    text: 'text-gray-600' },
   hot_lead:       { bg: 'bg-orange-50',   text: 'text-orange-700' },
   deal_closed:    { bg: 'bg-purple-50',   text: 'text-purple-700' },
+};
+
+const DISPOSITION_CHART_COLORS: Record<string, string> = {
+  interested: '#10b981', callback_later: '#3b82f6', not_reachable: '#f59e0b',
+  not_interested: '#6b7280', hot_lead: '#f97316', deal_closed: '#8b5cf6',
 };
 
 const tooltipStyle = { borderRadius: 10, border: 'none', background: '#1c1410', color: '#fff', fontSize: 11 };
@@ -74,7 +83,7 @@ function dateLabel(ts: string | null) {
 }
 
 export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' } = {}) {
-  const { staff } = useCrmStore();
+  const { staff, pipelines } = useCrmStore();
 
   const [calls, setCalls] = useState<CallLog[]>([]);
   const [total, setTotal] = useState(0);
@@ -89,6 +98,8 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
   const [dateFrom, setDateFrom]   = useState('');
   const [dateTo, setDateTo]       = useState('');
   const [search, setSearch]       = useState('');
+  const [pipelineId, setPipelineId] = useState('');
+  const [stageId, setStageId]       = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   // Stats
@@ -101,14 +112,16 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
 
   const buildParams = useCallback(() => {
     const p = new URLSearchParams();
-    if (source)    p.set('source', source);
-    if (direction) p.set('direction', direction);
-    if (outcome)   p.set('outcome', outcome);
-    if (staffName) p.set('staff_name', staffName);
-    if (dateFrom)  p.set('date_from', dateFrom);
-    if (dateTo)    p.set('date_to', dateTo);
+    if (source)     p.set('source', source);
+    if (direction)  p.set('direction', direction);
+    if (outcome)    p.set('outcome', outcome);
+    if (staffName)  p.set('staff_name', staffName);
+    if (dateFrom)   p.set('date_from', dateFrom);
+    if (dateTo)     p.set('date_to', dateTo);
+    if (pipelineId) p.set('pipeline_id', pipelineId);
+    if (stageId)    p.set('stage_id', stageId);
     return p;
-  }, [source, direction, outcome, staffName, dateFrom, dateTo]);
+  }, [source, direction, outcome, staffName, dateFrom, dateTo, pipelineId, stageId]);
 
   const load = useCallback(async (pg = 1) => {
     setLoading(true);
@@ -136,12 +149,14 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
   const handleExport = async () => {
     try {
       const params = new URLSearchParams();
-      if (source)    params.set('source', source);
-      if (direction) params.set('direction', direction);
-      if (outcome)   params.set('outcome', outcome);
-      if (staffName) params.set('staff_name', staffName);
-      if (dateFrom)  params.set('date_from', dateFrom);
-      if (dateTo)    params.set('date_to', dateTo);
+      if (source)     params.set('source', source);
+      if (direction)  params.set('direction', direction);
+      if (outcome)    params.set('outcome', outcome);
+      if (staffName)  params.set('staff_name', staffName);
+      if (dateFrom)   params.set('date_from', dateFrom);
+      if (dateTo)     params.set('date_to', dateTo);
+      if (pipelineId) params.set('pipeline_id', pipelineId);
+      if (stageId)    params.set('stage_id', stageId);
       await downloadBlob(`/api/calls/export?${params}`, 'call-logs.xlsx');
       toast.success('Export downloaded');
     } catch (e: any) {
@@ -162,9 +177,14 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
 
   const clearFilters = () => {
     setDirection(''); setOutcome(''); setStaffName(''); setDateFrom(''); setDateTo('');
+    setPipelineId(''); setStageId('');
   };
 
-  const activeFilterCount = [direction, outcome, staffName, dateFrom, dateTo].filter(Boolean).length;
+  const activeFilterCount = [direction, outcome, staffName, dateFrom, dateTo, pipelineId, stageId].filter(Boolean).length;
+
+  const selectedPipelineStages = pipelineId
+    ? pipelines.find((p) => p.id === pipelineId)?.stages ?? []
+    : [];
 
   // Client-side search filter on lead_name / caller_phone
   const visible = search.trim()
@@ -224,7 +244,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
 
       {/* Filter panel */}
       {showFilters && (
-        <div className="bg-white border border-black/[0.07] rounded-2xl p-4 mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="bg-white border border-black/[0.07] rounded-2xl p-4 mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Direction</label>
             <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
@@ -247,6 +267,23 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               value={staffName} onChange={(e) => setStaffName(e.target.value)}>
               <option value="">All Agents</option>
               {staff.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Pipeline</label>
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+              value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setStageId(''); }}>
+              <option value="">All Pipelines</option>
+              {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Stage</label>
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+              value={stageId} onChange={(e) => setStageId(e.target.value)}
+              disabled={!pipelineId}>
+              <option value="">All Stages</option>
+              {selectedPipelineStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div>
@@ -275,13 +312,27 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
       {showCharts && stats && (
         <div className="space-y-4 mb-4">
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             <div className="bg-white rounded-xl border border-black/5 p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Phone className="w-4 h-4 text-blue-500" />
                 <span className="text-[11px] font-medium text-[#7a6b5c]">Total Calls</span>
               </div>
               <p className="text-[22px] font-bold text-[#1c1410]">{stats.kpi.total.toLocaleString()}</p>
+            </div>
+            <div className="bg-white rounded-xl border border-black/5 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <PhoneIncoming className="w-4 h-4 text-emerald-500" />
+                <span className="text-[11px] font-medium text-[#7a6b5c]">Inbound</span>
+              </div>
+              <p className="text-[22px] font-bold text-emerald-600">{(stats.kpi.inbound ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="bg-white rounded-xl border border-black/5 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <PhoneOutgoing className="w-4 h-4 text-blue-500" />
+                <span className="text-[11px] font-medium text-[#7a6b5c]">Outbound</span>
+              </div>
+              <p className="text-[22px] font-bold text-blue-600">{(stats.kpi.outbound ?? 0).toLocaleString()}</p>
             </div>
             <div className="bg-white rounded-xl border border-black/5 p-4">
               <div className="flex items-center gap-2 mb-1">
@@ -346,7 +397,48 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
             </div>
           </div>
 
-          {/* Row 3: Agent Performance */}
+          {/* Row 3: Disposition Breakdown + Calls by Pipeline */}
+          {((stats.dispositions && stats.dispositions.length > 0) || (stats.pipelines && stats.pipelines.length > 0)) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Disposition Breakdown */}
+              {stats.dispositions && stats.dispositions.length > 0 && (
+                <div className="bg-white rounded-xl border border-black/5 p-4">
+                  <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Disposition Breakdown</h3>
+                  <ResponsiveContainer width="100%" height={Math.max(160, stats.dispositions.length * 36)}>
+                    <BarChart data={stats.dispositions} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" horizontal={false} />
+                      <XAxis type="number" fontSize={10} fill="#8a7c6e" axisLine={false} tickLine={false} allowDecimals={false} />
+                      <YAxis type="category" dataKey="disposition" fontSize={10} fill="#8a7c6e" axisLine={false} tickLine={false} width={110} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [value, 'Calls']} />
+                      <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
+                        {stats.dispositions.map((entry) => (
+                          <Cell key={entry.disposition_key} fill={DISPOSITION_CHART_COLORS[entry.disposition_key] || '#9ca3af'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Calls by Pipeline */}
+              {stats.pipelines && stats.pipelines.length > 0 && (
+                <div className="bg-white rounded-xl border border-black/5 p-4">
+                  <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Calls by Pipeline</h3>
+                  <ResponsiveContainer width="100%" height={Math.max(160, stats.pipelines.length * 36)}>
+                    <BarChart data={stats.pipelines} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" horizontal={false} />
+                      <XAxis type="number" fontSize={10} fill="#8a7c6e" axisLine={false} tickLine={false} allowDecimals={false} />
+                      <YAxis type="category" dataKey="pipeline_name" fontSize={10} fill="#8a7c6e" axisLine={false} tickLine={false} width={110} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [value, 'Calls']} />
+                      <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20} fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Row 4: Agent Performance */}
           {stats.agents.length > 0 && (
             <div className="bg-white rounded-xl border border-black/5 p-4">
               <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Agent Performance</h3>
@@ -373,6 +465,8 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c] w-10">#</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Lead</th>
+                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Pipeline</th>
+                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Stage</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Direction</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Outcome</th>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Duration</th>
@@ -385,10 +479,10 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {loading ? (
-                <tr><td colSpan={10} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
+                <tr><td colSpan={12} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
               ) : visible.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-center py-16">
+                  <td colSpan={12} className="text-center py-16">
                     <PhoneIncoming className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                     <p className="text-[14px] font-semibold text-[#7a6b5c]">No calls found</p>
                     <p className="text-[12px] text-[#b09e8d] mt-1">{source === 'superfone' ? 'Calls will appear here after Superfone syncs' : 'Calls will appear here once the Hawcus Dialer app syncs'}</p>
@@ -410,6 +504,8 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                         <p className="font-semibold text-[#1c1410] truncate max-w-[160px]">{c.lead_name ?? '-'}</p>
                         <p className="text-[11px] text-[#b09e8d]">{c.caller_phone ?? ''}</p>
                       </td>
+                      <td className="px-4 py-3 text-[#7a6b5c]">{c.pipeline_name ?? '-'}</td>
+                      <td className="px-4 py-3 text-[#7a6b5c]">{c.stage_name ?? '-'}</td>
                       <td className="px-4 py-3">
                         <span className={cn('flex items-center gap-1.5 font-medium', dirColor)}>
                           <DirIcon className="w-4 h-4 shrink-0" />
@@ -468,7 +564,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                     </tr>
                     {playingId === c.id && audioUrls[c.id] && (
                       <tr key={`${c.id}-audio`} className="bg-orange-50/50">
-                        <td colSpan={10} className="px-4 py-2">
+                        <td colSpan={12} className="px-4 py-2">
                           <audio
                             src={audioUrls[c.id]}
                             autoPlay
