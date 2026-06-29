@@ -955,6 +955,47 @@ router.post('/razorpay/:tenantId', bookingLimiter, async (req: Request, res: Res
           leadId = leadRes.rows[0]?.id ?? null;
         }
 
+        // Auto-create lead if no match found and we have contact info
+        if (!leadId && status === 'captured' && (email || phone)) {
+          try {
+            // Find default pipeline + first stage
+            const pipeResult = await query(
+              `SELECT p.id AS pipeline_id, ps.id AS stage_id
+               FROM pipelines p
+               JOIN pipeline_stages ps ON ps.pipeline_id = p.id
+               WHERE p.tenant_id=$1::uuid AND p.is_default=TRUE
+               ORDER BY ps.stage_order ASC LIMIT 1`,
+              [tenantId]
+            );
+            let pipelineId: string | null = pipeResult.rows[0]?.pipeline_id ?? null;
+            let stageId: string | null = pipeResult.rows[0]?.stage_id ?? null;
+            if (!pipelineId) {
+              const anyPipe = await query(
+                `SELECT p.id AS pipeline_id, ps.id AS stage_id
+                 FROM pipelines p
+                 JOIN pipeline_stages ps ON ps.pipeline_id = p.id
+                 WHERE p.tenant_id=$1::uuid
+                 ORDER BY p.created_at ASC, ps.stage_order ASC LIMIT 1`,
+                [tenantId]
+              );
+              pipelineId = anyPipe.rows[0]?.pipeline_id ?? null;
+              stageId = anyPipe.rows[0]?.stage_id ?? null;
+            }
+
+            const leadName = customerName || email || phone;
+            const newLead = await query(
+              `INSERT INTO leads (tenant_id, name, email, phone, source, pipeline_id, stage_id)
+               VALUES ($1::uuid, $2, $3, $4, 'Razorpay', $5::uuid, $6::uuid)
+               RETURNING id`,
+              [tenantId, leadName, email || null, phone || null, pipelineId, stageId]
+            );
+            leadId = newLead.rows[0]?.id ?? null;
+            console.log(`[razorpay] Auto-created lead ${leadId} for tenant ${tenantId}`);
+          } catch (autoErr) {
+            console.error('[razorpay] Auto-create lead failed:', autoErr);
+          }
+        }
+
         // Upsert payment
         await query(
           `INSERT INTO payments (tenant_id, lead_id, razorpay_payment_id, razorpay_order_id,
