@@ -674,6 +674,18 @@ function GoogleSheetsIcon() {
   );
 }
 
+// ── Razorpay icon ────────────────────────────────────────────────────────────
+
+function RazorpayIcon() {
+  return (
+    <div className="w-12 h-12 rounded-2xl bg-[#072654] flex items-center justify-center shrink-0">
+      <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white">
+        <path d="M22.436 0l-11.91 7.083-1.604 4.819 4.95-2.946L7.558 24h3.504L22.436 0zM7.097 11.662l-3.593 2.139L1.564 24h3.504l2.029-12.338z"/>
+      </svg>
+    </div>
+  );
+}
+
 // ── Google Sheets modal ───────────────────────────────────────────────────────
 
 function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
@@ -1198,7 +1210,7 @@ function SuperfoneModal({ onClose, onSaved, tenantId }: { onClose: () => void; o
   );
 }
 
-type ModalType = 'waba' | 'smtp' | 'wa_personal' | 'superfone' | 'google_sheets';
+type ModalType = 'waba' | 'smtp' | 'wa_personal' | 'superfone' | 'google_sheets' | 'razorpay';
 
 interface IntegCardProps {
   icon: React.ReactNode;
@@ -1281,6 +1293,81 @@ function IntegCard({ icon, name, tagline, connected, onConnect, onConfigure, onD
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
+// ── Razorpay modal ──────────────────────────────────────────────────────────
+
+function RazorpayModal({ onClose, onSaved, webhookUrl }: { onClose: () => void; onSaved: () => void; webhookUrl: string }) {
+  const [secret, setSecret] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleSave = async () => {
+    if (!secret.trim() || secret.trim().length < 8) { toast.error('Enter a valid webhook secret (min 8 characters)'); return; }
+    setSaving(true);
+    try {
+      await api.post('/api/integrations/razorpay/connect', { webhook_secret: secret.trim() });
+      toast.success('Razorpay connected');
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to connect');
+    } finally { setSaving(false); }
+  };
+
+  const copyUrl = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Modal title="Connect Razorpay" onClose={onClose} footer={
+      <div className="flex justify-end gap-2">
+        <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-gray-600 bg-gray-100 hover:bg-gray-200">Cancel</button>
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60">
+          {saving ? 'Connecting...' : 'Connect'}
+        </button>
+      </div>
+    }>
+      <div className="space-y-4">
+        {/* Step 1: Webhook URL */}
+        <div>
+          <p className="text-[13px] font-semibold text-[#1c1410] mb-2">Step 1: Copy your Webhook URL</p>
+          <div className="flex items-center gap-2">
+            <input readOnly value={webhookUrl} className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-[12px] text-[#7a6b5c] bg-gray-50 outline-none" />
+            <button onClick={copyUrl} className="px-3 py-2 rounded-lg border border-gray-200 text-[12px] font-semibold text-[#1c1410] hover:bg-gray-50 transition-colors">
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+        </div>
+
+        {/* Step 2: Instructions */}
+        <div>
+          <p className="text-[13px] font-semibold text-[#1c1410] mb-2">Step 2: Add webhook in Razorpay</p>
+          <ol className="text-[12px] text-[#7a6b5c] space-y-1.5 list-decimal pl-4">
+            <li>Login to your <span className="font-semibold text-[#1c1410]">Razorpay Dashboard</span></li>
+            <li>Go to <span className="font-semibold text-[#1c1410]">Settings &gt; Webhooks &gt; Add New Webhook</span></li>
+            <li>Paste the webhook URL above</li>
+            <li>Select events: <span className="font-semibold text-[#1c1410]">payment.captured</span>, <span className="font-semibold text-[#1c1410]">payment.failed</span>, <span className="font-semibold text-[#1c1410]">refund.created</span></li>
+            <li>Copy the <span className="font-semibold text-[#1c1410]">Webhook Secret</span> that Razorpay generates</li>
+          </ol>
+        </div>
+
+        {/* Step 3: Paste secret */}
+        <div>
+          <p className="text-[13px] font-semibold text-[#1c1410] mb-2">Step 3: Paste your Webhook Secret</p>
+          <input
+            type="password"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            placeholder="Enter Razorpay webhook secret"
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+          />
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export default function IntegrationsPage() {
   const navigate = useNavigate();
   const [modal, setModal] = useState<ModalType | null>(null);
@@ -1293,8 +1380,10 @@ export default function IntegrationsPage() {
     smtp: false,
     superfone: false,
     sheets: false,
+    razorpay: false,
   });
   const [sheetsInfo, setSheetsInfo] = useState<{ email: string | null; configs: any[] }>({ email: null, configs: [] });
+  const [razorpayInfo, setRazorpayInfo] = useState<{ webhook_url: string; last_payment_at: string | null }>({ webhook_url: '', last_payment_at: null });
   const [metaHealth, setMetaHealth] = useState<{ needsReconnect: boolean; lastError: string | null }>({ needsReconnect: false, lastError: null });
   const [waSessions, setWaSessions] = useState<{ session_id: string; session_name: string; status: string; phone_number: string | null; connected_at: string | null }[]>([]);
   const [waQrSessionId, setWaQrSessionId] = useState<string | null>(null);
@@ -1313,7 +1402,7 @@ export default function IntegrationsPage() {
   };
 
   const loadStatus = async () => {
-    const [meta, waba, smtp, configs, waPersStatus, superfone, sheets] = await Promise.allSettled([
+    const [meta, waba, smtp, configs, waPersStatus, superfone, sheets, razorpay] = await Promise.allSettled([
       api.get<{ connected: boolean; needsReconnect?: boolean; lastError?: string | null }>('/api/integrations/meta/status'),
       api.get<{ connected: boolean }>('/api/integrations/waba/status'),
       api.get<{ connected: boolean }>('/api/integrations/smtp/status'),
@@ -1321,6 +1410,7 @@ export default function IntegrationsPage() {
       api.get<{ status: string; phone: string | null }>('/api/whatsapp-personal/status'),
       api.get<{ connected: boolean }>('/api/integrations/superfone/status'),
       api.get<{ connected: boolean; email: string | null; configs: any[] }>('/api/integrations/sheets/status'),
+      api.get<{ connected: boolean; webhook_url: string; last_payment_at: string | null }>('/api/integrations/razorpay/status'),
     ]);
 
     setStatus({
@@ -1329,6 +1419,7 @@ export default function IntegrationsPage() {
       smtp:      smtp.status      === 'fulfilled' && !!smtp.value?.connected,
       superfone: superfone.status === 'fulfilled' && !!superfone.value?.connected,
       sheets:    sheets.status    === 'fulfilled' && !!sheets.value?.connected,
+      razorpay:  razorpay.status  === 'fulfilled' && !!razorpay.value?.connected,
     });
 
     if (meta.status === 'fulfilled' && meta.value) {
@@ -1337,6 +1428,10 @@ export default function IntegrationsPage() {
 
     if (sheets.status === 'fulfilled' && sheets.value) {
       setSheetsInfo({ email: sheets.value.email, configs: sheets.value.configs ?? [] });
+    }
+
+    if (razorpay.status === 'fulfilled' && razorpay.value) {
+      setRazorpayInfo({ webhook_url: razorpay.value.webhook_url ?? '', last_payment_at: razorpay.value.last_payment_at ?? null });
     }
 
     if (waPersStatus.status === 'fulfilled') {
@@ -1580,6 +1675,16 @@ export default function IntegrationsPage() {
           onDisconnect={() => disconnect('sheets', '/api/integrations/sheets/disconnect')}
         />
 
+        <IntegCard
+          icon={<RazorpayIcon />}
+          name="Razorpay"
+          tagline="Capture payment data from Razorpay into CRM leads automatically via webhooks."
+          connected={status.razorpay}
+          onConnect={() => setModal('razorpay')}
+          onConfigure={() => setModal('razorpay')}
+          onDisconnect={() => disconnect('razorpay', '/api/integrations/razorpay/disconnect')}
+        />
+
       </div>
 
       {/* Modals */}
@@ -1594,6 +1699,7 @@ export default function IntegrationsPage() {
           configs={sheetsInfo.configs}
         />
       )}
+      {modal === 'razorpay' && <RazorpayModal onClose={() => setModal(null)} onSaved={() => onSaved('razorpay')} webhookUrl={razorpayInfo.webhook_url} />}
 
     </div>
   );

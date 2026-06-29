@@ -61,6 +61,7 @@ const WABABroadcastPage = lazy(() => import("./pages/WABABroadcastPage"));
 const WABASingleSendPage = lazy(() => import("./pages/WABASingleSendPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const CallsPage = lazy(() => import("./pages/CallsPage"));
+const PaymentsPage = lazy(() => import("./pages/PaymentsPage"));
 const LandingPagesPage = lazy(() => import("./pages/LandingPagesPage"));
 const LandingPageBuilderPage = lazy(() => import("./pages/LandingPageBuilderPage"));
 const PublicLandingPage = lazy(() => import("./pages/PublicLandingPage"));
@@ -134,6 +135,7 @@ const App = () => (
             <Route path="/calendar/edit/:id" element={<CalendarEditPage />} />
 
             <Route path="/calls" element={<CallsPage source="mobile" />} />
+            <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/superfone-calls" element={<SuperfoneCallsRoute />} />
             <Route path="/inbox" element={<InboxPage />} />
             <Route path="/inbox/overview" element={<InboxOverviewPage />} />

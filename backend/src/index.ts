@@ -43,6 +43,7 @@ import reportsRoutes          from './routes/reports';
 import contactGroupsRoutes    from './routes/contact_groups';
 import waPersonalTemplatesRoutes from './routes/wa_personal_templates';
 import callsRoutes from './routes/calls';
+import paymentsRoutes from './routes/payments';
 import devicesRoutes from './routes/devices';
 import mobileRoutes from './routes/mobile';
 import googleSheetsRoutes from './routes/google_sheets';
@@ -237,6 +238,7 @@ app.use('/api/contact-groups',    contactGroupsRoutes);
 app.use('/api/whatsapp-personal', waPersonalRoutes);
 app.use('/api/wa-personal-templates', waPersonalTemplatesRoutes);
 app.use('/api/calls',             callsRoutes);
+app.use('/api/payments',          paymentsRoutes);
 app.use('/api/devices',           devicesRoutes);
 app.use('/api/mobile',            mobileRoutes); // device-token auth (mobile dialer app)
 app.use('/api/integrations/sheets', googleSheetsRoutes);

@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { query, pool } from '../db';
@@ -885,6 +886,106 @@ router.post('/page/:slug/submit', pageSubmitLimiter, async (req: Request, res: R
     res.json({ success: true, duplicate: isDuplicate });
   } catch (err: any) {
     console.error('[page submit]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/public/razorpay/:tenantId - Razorpay webhook receiver
+router.post('/razorpay/:tenantId', bookingLimiter, async (req: Request, res: Response) => {
+  const tenantId = req.params.tenantId;
+
+  try {
+    // 1. Verify tenant exists
+    const tenantRes = await query('SELECT id FROM tenants WHERE id=$1::uuid LIMIT 1', [tenantId]);
+    if (!tenantRes.rows[0]) { res.status(404).json({ error: 'Not found' }); return; }
+
+    // 2. Get webhook secret from integration_configs
+    const configRes = await query(
+      `SELECT config_json FROM integration_configs WHERE tenant_id=$1::uuid AND integration_id='razorpay' AND is_active=TRUE`,
+      [tenantId]
+    );
+    const secret = configRes.rows[0]?.config_json?.webhook_secret;
+    if (!secret) { res.status(400).json({ error: 'Razorpay not configured' }); return; }
+
+    // 3. Verify signature
+    const signature = req.headers['x-razorpay-signature'] as string;
+    if (!signature) { res.status(400).json({ error: 'Missing signature' }); return; }
+
+    const body = JSON.stringify(req.body);
+    const expected = crypto.createHmac('sha256', secret).update(body).digest('hex');
+    if (signature !== expected) { res.status(400).json({ error: 'Invalid signature' }); return; }
+
+    // 4. Respond immediately (Razorpay retries on non-2xx)
+    res.json({ status: 'ok' });
+
+    // 5. Process async
+    const event = req.body?.event;
+    const entity = req.body?.payload?.payment?.entity;
+    if (!entity) return;
+
+    setImmediate(async () => {
+      try {
+        const rpId = entity.id;
+        const amount = entity.amount ?? 0; // in paise
+        const currency = entity.currency ?? 'INR';
+        const method = entity.method ?? null;
+        const email = (entity.email ?? '').toLowerCase().trim();
+        const phone = (entity.contact ?? '').replace(/[^0-9]/g, '');
+        const customerName = entity.notes?.customer_name ?? entity.notes?.name ?? null;
+        const orderId = entity.order_id ?? null;
+        const description = entity.description ?? null;
+        const notes = entity.notes ?? {};
+
+        let status = 'captured';
+        if (event === 'payment.failed') status = 'failed';
+        if (event === 'refund.created') status = 'refunded';
+
+        const paidAt = entity.created_at ? new Date(entity.created_at * 1000) : new Date();
+
+        // Lead matching - by email or last 10 digits of phone
+        let leadId: string | null = null;
+        const phoneLast10 = phone.slice(-10);
+        if (email || phoneLast10.length === 10) {
+          const leadRes = await query(
+            `SELECT id FROM leads WHERE tenant_id=$1::uuid AND is_deleted=FALSE
+             AND (($2::text<>'' AND LOWER(email)=$2) OR ($3::text<>'' AND phone LIKE '%' || $3))
+             LIMIT 1`,
+            [tenantId, email, phoneLast10]
+          );
+          leadId = leadRes.rows[0]?.id ?? null;
+        }
+
+        // Upsert payment
+        await query(
+          `INSERT INTO payments (tenant_id, lead_id, razorpay_payment_id, razorpay_order_id,
+            amount, currency, status, method, email, phone, customer_name, description, notes, raw_payload, paid_at)
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, $14::jsonb, $15)
+           ON CONFLICT (tenant_id, razorpay_payment_id) DO UPDATE SET
+             status = EXCLUDED.status, raw_payload = EXCLUDED.raw_payload, lead_id = COALESCE(payments.lead_id, EXCLUDED.lead_id)`,
+          [tenantId, leadId, rpId, orderId, amount, currency, status, method, email, phone, customerName, description, JSON.stringify(notes), JSON.stringify(req.body), paidAt]
+        );
+
+        // Add timeline activity if linked to a lead and payment captured
+        if (leadId && status === 'captured') {
+          const amountRs = (amount / 100).toLocaleString('en-IN');
+          await query(
+            `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+             VALUES ($1::uuid, $2::uuid, 'payment', $3, $4, NULL)`,
+            [leadId, tenantId, `Payment received - Rs ${amountRs} via ${method ?? 'unknown'}`, description ?? null]
+          );
+
+          // Fire payment_received workflow trigger
+          const leadData = await query('SELECT * FROM leads WHERE id=$1::uuid', [leadId]);
+          if (leadData.rows[0]) {
+            triggerWorkflows('payment_received', leadData.rows[0], tenantId, 'webhook').catch(() => null);
+          }
+        }
+      } catch (err) {
+        console.error('[razorpay webhook]', err);
+      }
+    });
+  } catch (err) {
+    console.error('[razorpay webhook outer]', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

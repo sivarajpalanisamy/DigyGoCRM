@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, MessageSquare, Zap, Inbox, Settings,
-  UserCog, SlidersHorizontal, ChevronDown, ChevronRight, X, Database, ShieldCheck, CalendarDays, BarChart2, Phone,
+  UserCog, SlidersHorizontal, ChevronDown, ChevronRight, X, Database, ShieldCheck, CalendarDays, BarChart2, Phone, IndianRupee,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
@@ -40,6 +40,7 @@ const navItems: NavItem[] = [
   { label: 'Inbox',           icon: Inbox,              path: '/inbox',           permKey: 'inbox:view_all' },
   { label: 'Calls',           icon: Phone,              path: '/calls',           anyOf: ['calls:view_all', 'calls:view_own'] },
   { label: 'Superfone',       icon: Phone,              path: '/superfone-calls', anyOf: ['calls:view_all', 'calls:view_own'], feature: 'superfone' },
+  { label: 'Payments',        icon: IndianRupee,        path: '/payments',        permKey: 'integrations:view' },
   { label: 'Fields',          icon: SlidersHorizontal,  path: '/fields',          permKey: 'fields:view' },
   { label: 'Staff',           icon: UserCog,            path: '/staff',           permKey: 'staff:view' },
   { label: 'Settings',        icon: Settings,           path: '/settings',        permKey: 'settings:manage' },

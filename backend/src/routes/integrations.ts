@@ -2205,6 +2205,58 @@ router.delete('/smtp/disconnect', checkPermission('integrations:manage'), async 
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+// ── Razorpay integration ──────────────────────────────────────────────────────
+
+// GET /api/integrations/razorpay/status
+router.get('/razorpay/status', checkPermission('integrations:view'), async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      `SELECT config_json, is_active, updated_at FROM integration_configs WHERE tenant_id=$1 AND integration_id='razorpay'`,
+      [req.user!.tenantId]
+    );
+    const row = result.rows[0];
+    const connected = !!row?.is_active;
+    // Get last payment received time
+    const lastPayment = connected ? await query(
+      'SELECT created_at FROM payments WHERE tenant_id=$1::uuid ORDER BY created_at DESC LIMIT 1',
+      [req.user!.tenantId]
+    ) : null;
+    res.json({
+      connected,
+      webhook_url: `${process.env.WEBHOOK_BASE_URL || 'https://crm.hawcus.in'}/api/public/razorpay/${req.user!.tenantId}`,
+      last_payment_at: lastPayment?.rows[0]?.created_at ?? null,
+    });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// POST /api/integrations/razorpay/connect
+router.post('/razorpay/connect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  const { webhook_secret } = req.body;
+  if (!webhook_secret || typeof webhook_secret !== 'string' || webhook_secret.trim().length < 8) {
+    res.status(400).json({ error: 'Valid webhook secret required (min 8 characters)' }); return;
+  }
+  try {
+    await query(
+      `INSERT INTO integration_configs (tenant_id, integration_id, config_json, is_active)
+       VALUES ($1, 'razorpay', $2::jsonb, TRUE)
+       ON CONFLICT (tenant_id, integration_id) DO UPDATE SET config_json=$2::jsonb, is_active=TRUE, updated_at=NOW()`,
+      [req.user!.tenantId, JSON.stringify({ webhook_secret: webhook_secret.trim() })]
+    );
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// DELETE /api/integrations/razorpay/disconnect
+router.delete('/razorpay/disconnect', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  try {
+    await query(
+      'UPDATE integration_configs SET is_active=FALSE WHERE tenant_id=$1 AND integration_id=$2',
+      [req.user!.tenantId, 'razorpay']
+    );
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 // ── Generic integration configs (Razorpay, n8n, etc.) ─────────────────────────
 
 // GET /api/integrations/configs

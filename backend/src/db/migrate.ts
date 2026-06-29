@@ -128,6 +128,7 @@ const MIGRATIONS = [
   'migration_125_call_disposition_key.sql',
   'migration_126_call_dispositions_config.sql',
   'migration_127_max_users.sql',
+  'migration_128_payments.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
