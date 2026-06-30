@@ -653,14 +653,7 @@ export default function SuperAdminPage() {
             <button onClick={() => setShowDeleted(false)}
               className={cn('px-3 sm:px-4 py-1.5 rounded-full text-[12px] sm:text-[13px] font-semibold transition-all',
                 !showDeleted ? 'bg-primary text-white' : 'bg-transparent text-[#7a6b5c] hover:bg-gray-100')}>
-              Active
-              <span className="hidden sm:inline"> White Label</span>
-            </button>
-            <button onClick={() => setShowDeleted(true)}
-              className={cn('px-3 sm:px-4 py-1.5 rounded-full text-[12px] sm:text-[13px] font-semibold transition-all border',
-                showDeleted ? 'bg-primary text-white border-primary' : 'border-gray-200 text-[#7a6b5c] hover:bg-gray-50')}>
-              Deleted
-              <span className="hidden sm:inline"> White Label</span>
+              All Accounts
             </button>
           </div>
           <div className="flex items-center gap-2">
