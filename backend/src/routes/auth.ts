@@ -987,9 +987,8 @@ router.get('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest, 
       FROM tenants t
       LEFT JOIN users u ON u.tenant_id=t.id
       LEFT JOIN leads l ON l.tenant_id=t.id AND l.is_deleted=FALSE
-      ${showDeleted ? '' : 'WHERE t.is_active = TRUE'}
       GROUP BY t.id
-      ORDER BY t.created_at DESC
+      ORDER BY t.is_active DESC, t.created_at DESC
     `);
     res.json(result.rows);
   } catch (err) {
