@@ -612,7 +612,8 @@ export default function SuperAdminPage() {
       (t.admin_name ?? '').toLowerCase().includes(q) ||
       (t.phone ?? '').includes(q);
     const matchPlan = !filterPlan || cycleOf(t) === filterPlan;
-    const matchSub  = !filterSub  || t.subscription_status === filterSub;
+    const matchSub  = !filterSub
+      || (filterSub === '_suspended' ? !t.is_active : filterSub === '_active' ? t.is_active : t.subscription_status === filterSub);
     return matchSearch && matchPlan && matchSub;
   });
 
@@ -703,10 +704,12 @@ export default function SuperAdminPage() {
             <select value={filterSub} onChange={(e) => setFilterSub(e.target.value)}
               className="pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 text-[12px] text-[#1c1410] outline-none bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors">
               <option value="">Status</option>
-              <option value="active">Active</option>
-              <option value="expired">Expired</option>
-              <option value="suspended">Suspended</option>
-              <option value="trial">Trial</option>
+              <option value="_active">Active Accounts</option>
+              <option value="_suspended">Suspended Accounts</option>
+              <option value="active">Sub: Active</option>
+              <option value="expired">Sub: Expired</option>
+              <option value="suspended">Sub: Suspended</option>
+              <option value="trial">Sub: Trial</option>
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
           </div>
@@ -758,7 +761,10 @@ export default function SuperAdminPage() {
                       {t.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-[#1c1410] text-[14px] truncate">{t.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-semibold text-[#1c1410] text-[14px] truncate">{t.name}</p>
+                        {!t.is_active && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase tracking-wide shrink-0">Suspended</span>}
+                      </div>
                       <p className="text-[11px] text-[#7a6b5c] truncate">{t.admin_name ?? '-'} · {t.admin_email ?? t.email}</p>
                     </div>
                     <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0', CYCLE_BADGE[cycleOf(t)])}>
@@ -836,7 +842,10 @@ export default function SuperAdminPage() {
                           {t.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-[#1c1410] truncate">{t.name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-semibold text-[#1c1410] truncate">{t.name}</p>
+                            {!t.is_active && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase tracking-wide shrink-0">Suspended</span>}
+                          </div>
                           {t.phone && <p className="text-[11px] text-[#7a6b5c]">{t.phone}</p>}
                           <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide', CYCLE_BADGE[cycleOf(t)])}>
                             {CYCLE_LABEL[cycleOf(t)]}
