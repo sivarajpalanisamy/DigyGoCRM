@@ -3831,11 +3831,13 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
   // ── Follow-up & days calculations ──
   const now = new Date();
   const leadFUs = followUps.filter((f) => f.leadId === lead.id);
+  // Last follow = most recent COMPLETED follow-up (what was actually done)
   const lastFU = leadFUs
-    .filter((f) => new Date(f.dueAt) <= now)
+    .filter((f) => f.completed)
     .sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime())[0] ?? null;
+  // Next follow = earliest INCOMPLETE follow-up (pending action, even if overdue)
   const nextFU = leadFUs
-    .filter((f) => !f.completed && new Date(f.dueAt) > now)
+    .filter((f) => !f.completed)
     .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0] ?? null;
   const created = new Date(lead.createdAt);
   const daysInPipeline = Math.max(0, Math.floor(
@@ -3870,12 +3872,8 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
   const daysBg = daysInPipeline <= 2 ? 'bg-emerald-50 text-emerald-700' : daysInPipeline <= 7 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600';
 
   // Follow-up urgency detection
-  const hasOverdueFU = leadFUs.some((f) => !f.completed && new Date(f.dueAt) < now);
-  const hasTodayFU = !hasOverdueFU && leadFUs.some((f) => {
-    if (f.completed) return false;
-    const d = new Date(f.dueAt);
-    return d.toDateString() === now.toDateString();
-  });
+  const hasOverdueFU = nextFU ? new Date(nextFU.dueAt) < now : false;
+  const hasTodayFU = !hasOverdueFU && nextFU ? new Date(nextFU.dueAt).toDateString() === now.toDateString() : false;
   const fuUrgency: 'overdue' | 'today' | null = hasOverdueFU ? 'overdue' : hasTodayFU ? 'today' : null;
 
   return (<>
@@ -3981,18 +3979,16 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
           </div>
           <div className="flex flex-col gap-1 min-w-0 items-end text-right">
             <div className="flex flex-col min-w-0 items-end">
-              <span className={cn("text-[9px] font-medium uppercase tracking-wide leading-none mb-0.5",
-                hasOverdueFU && lastFU && !lastFU.completed ? 'text-red-500' : 'text-[#b0a294]')}>Last Follow</span>
-              <span className={cn("text-[11px] font-medium truncate",
-                lastFU && !lastFU.completed && new Date(lastFU.dueAt) < now ? 'text-red-600 font-semibold' : 'text-[#5c5245]')}>
+              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">
                 {lastFU ? fmtFUDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">-</span>}
               </span>
             </div>
             <div className="flex flex-col min-w-0 items-end">
               <span className={cn("text-[9px] font-medium uppercase tracking-wide leading-none mb-0.5",
-                fuUrgency === 'today' ? 'text-amber-600' : 'text-[#b0a294]')}>Next Follow</span>
+                hasOverdueFU ? 'text-red-500' : hasTodayFU ? 'text-amber-600' : 'text-[#b0a294]')}>Next Follow</span>
               <span className={cn("text-[11px] font-medium truncate",
-                nextFU && new Date(nextFU.dueAt).toDateString() === now.toDateString() ? 'text-amber-600 font-semibold' : 'text-[#5c5245]')}>
+                hasOverdueFU ? 'text-red-600 font-semibold' : hasTodayFU ? 'text-amber-600 font-semibold' : 'text-[#5c5245]')}>
                 {nextFU ? fmtFUDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">-</span>}
               </span>
             </div>
@@ -4041,8 +4037,10 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
 
   const now = new Date();
   const leadFUs = followUps.filter((f) => f.leadId === lead.id);
-  const lastFU = leadFUs.filter((f) => new Date(f.dueAt) <= now).sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime())[0] ?? null;
-  const nextFU = leadFUs.filter((f) => !f.completed && new Date(f.dueAt) > now).sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0] ?? null;
+  // Last follow = most recent COMPLETED follow-up (what was actually done)
+  const lastFU = leadFUs.filter((f) => f.completed).sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime())[0] ?? null;
+  // Next follow = earliest INCOMPLETE follow-up (pending action, even if overdue)
+  const nextFU = leadFUs.filter((f) => !f.completed).sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0] ?? null;
   const created = new Date(lead.createdAt);
   const daysInPipeline = Math.max(0, Math.floor(
     (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
@@ -4076,12 +4074,8 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
   const ageColor = daysInPipeline <= 2 ? 'text-emerald-600' : daysInPipeline <= 7 ? 'text-amber-600' : 'text-red-500';
   const phoneShown = showPhone ? lead.phone : lead.phone.replace(/\d(?=\d{4})/g, '*');
 
-  const hasOverdueFU = leadFUs.some((f) => !f.completed && new Date(f.dueAt) < now);
-  const hasTodayFU = !hasOverdueFU && leadFUs.some((f) => {
-    if (f.completed) return false;
-    const d = new Date(f.dueAt);
-    return d.toDateString() === now.toDateString();
-  });
+  const hasOverdueFU = nextFU ? new Date(nextFU.dueAt) < now : false;
+  const hasTodayFU = !hasOverdueFU && nextFU ? new Date(nextFU.dueAt).toDateString() === now.toDateString() : false;
   const fuUrgency: 'overdue' | 'today' | null = hasOverdueFU ? 'overdue' : hasTodayFU ? 'today' : null;
 
   const act = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); setMenuOpen(false); setMoveOpen(false); fn(); };
@@ -4197,18 +4191,16 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
           </div>
           <div className="flex flex-col gap-1 min-w-0 items-end text-right">
             <div className="flex flex-col min-w-0 items-end">
-              <span className={cn("text-[9px] font-medium uppercase tracking-wide leading-none mb-0.5",
-                hasOverdueFU && lastFU && !lastFU.completed ? 'text-red-500' : 'text-[#b0a294]')}>Last Follow</span>
-              <span className={cn("text-[11px] font-medium truncate",
-                lastFU && !lastFU.completed && new Date(lastFU.dueAt) < now ? 'text-red-600 font-semibold' : 'text-[#5c5245]')}>
+              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
+              <span className="text-[11px] font-medium text-[#5c5245] truncate">
                 {lastFU ? fmtFUDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">-</span>}
               </span>
             </div>
             <div className="flex flex-col min-w-0 items-end">
               <span className={cn("text-[9px] font-medium uppercase tracking-wide leading-none mb-0.5",
-                fuUrgency === 'today' ? 'text-amber-600' : 'text-[#b0a294]')}>Next Follow</span>
+                hasOverdueFU ? 'text-red-500' : hasTodayFU ? 'text-amber-600' : 'text-[#b0a294]')}>Next Follow</span>
               <span className={cn("text-[11px] font-medium truncate",
-                nextFU && new Date(nextFU.dueAt).toDateString() === now.toDateString() ? 'text-amber-600 font-semibold' : 'text-[#5c5245]')}>
+                hasOverdueFU ? 'text-red-600 font-semibold' : hasTodayFU ? 'text-amber-600 font-semibold' : 'text-[#5c5245]')}>
                 {nextFU ? fmtFUDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">-</span>}
               </span>
             </div>
