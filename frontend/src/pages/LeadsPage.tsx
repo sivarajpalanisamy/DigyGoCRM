@@ -1509,7 +1509,7 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
           )}
 
           {/* Note (optional) */}
-          <input className={inputCls} placeholder="Add a note (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <textarea className={inputCls + ' resize-none'} rows={3} placeholder="Add a note (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
           {/* Submit */}
           <button type="submit" disabled={saving || !selectedOutcome} className="w-full py-3 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
