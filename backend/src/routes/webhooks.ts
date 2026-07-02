@@ -728,17 +728,20 @@ async function ingestSuperfoneCall(tenantId: string, payload: Record<string, any
       cdr_id, cdr_phone, cdr_call_type, cdr_disposition,
       cdr_duration, cdr_start, cdr_end, superfone_number,
       staff_first_name, staff_last_name, staff_phone,
-      ivr_inputs, recording_url, event,
+      ivr_inputs, recording_url, cdr_recording_url, event,
     } = payload;
+
+    // Superfone uses cdr_recording_url in CDR_RECORDING_AVAILABLE events
+    const recUrl = recording_url || cdr_recording_url || null;
 
     if (!cdr_id) return;
 
     // Handle CDR_RECORDING_AVAILABLE — update existing call with recording URL
-    if (event === 'CDR_RECORDING_AVAILABLE' && recording_url) {
-      console.log(`[superfone] Recording available for cdr_id=${cdr_id}: ${recording_url}`);
+    if (event === 'CDR_RECORDING_AVAILABLE' && recUrl) {
+      console.log(`[superfone] Recording available for cdr_id=${cdr_id}`);
       await query(
         `UPDATE call_logs SET recording_url=$1 WHERE tenant_id=$2::uuid AND cdr_id=$3`,
-        [recording_url, tenantId, cdr_id]
+        [recUrl, tenantId, cdr_id]
       );
       return;
     }
@@ -799,7 +802,7 @@ async function ingestSuperfoneCall(tenantId: string, payload: Record<string, any
         staffName,
         staffUserId,
         JSON.stringify(ivr_inputs ?? []),
-        recording_url ?? null,
+        recUrl,
         isUnknown,
       ]
     );
