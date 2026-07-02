@@ -534,6 +534,8 @@ export default function FollowUpsPage() {
   const [loading, setLoading]       = useState(true);
   const [filter, setFilter]         = useState<FUFilter>('today');
   const [staffFilter, setStaffFilter] = useState<string>('all');
+  const [pipelineFilter, setPipelineFilter] = useState<string>('');
+  const [stageFilter, setStageFilter] = useState<string>('');
   const [search, setSearch]         = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [scheduleFor, setScheduleFor] = useState<{ id: string; name: string; phone: string } | null>(null);
@@ -543,18 +545,26 @@ export default function FollowUpsPage() {
 
   const isAdminOrOwner = level !== 'staff';
 
+  const selectedPipelineStages = pipelineFilter
+    ? pipelines.find((p) => p.id === pipelineFilter)?.stages ?? []
+    : [];
+
   const load = useCallback(async () => {
     try {
-      const rows = await api.get<any[]>('/api/leads/followups');
+      const params = new URLSearchParams();
+      if (pipelineFilter) params.set('pipeline_id', pipelineFilter);
+      if (stageFilter) params.set('stage_id', stageFilter);
+      const qs = params.toString();
+      const rows = await api.get<any[]>(`/api/leads/followups${qs ? `?${qs}` : ''}`);
       setItems((rows ?? []).map(mapApi));
     } catch {
       toast.error('Failed to load follow-ups');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pipelineFilter, stageFilter]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { setLoading(true); load(); }, [load]);
 
   // ── Toggle complete ──
   // Completing → open modal (no API yet). Un-completing → direct API call.
@@ -710,6 +720,40 @@ export default function FollowUpsPage() {
               >
                 <option value="all">All Staff</option>
                 {staff.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7a6b5c] pointer-events-none" />
+            </div>
+          )}
+
+          {/* Pipeline filter */}
+          {pipelines.length > 0 && (
+            <div className="relative">
+              <select
+                value={pipelineFilter}
+                onChange={(e) => { setPipelineFilter(e.target.value); setStageFilter(''); }}
+                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[12px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
+              >
+                <option value="">All Pipelines</option>
+                {pipelines.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7a6b5c] pointer-events-none" />
+            </div>
+          )}
+
+          {/* Stage filter */}
+          {pipelineFilter && selectedPipelineStages.length > 0 && (
+            <div className="relative">
+              <select
+                value={stageFilter}
+                onChange={(e) => setStageFilter(e.target.value)}
+                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[12px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
+              >
+                <option value="">All Stages</option>
+                {selectedPipelineStages.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>

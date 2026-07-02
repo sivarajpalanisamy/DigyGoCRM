@@ -391,11 +391,16 @@ router.get('/followups', checkPermission('followups:view'), async (req: AuthRequ
       }
     }
 
+    const { pipeline_id, stage_id } = req.query as Record<string, string>;
+
     let sql = `
-      SELECT f.*, l.name AS lead_name, l.phone AS lead_phone, u.name AS assigned_name
+      SELECT f.*, l.name AS lead_name, l.phone AS lead_phone, u.name AS assigned_name,
+             p.name AS pipeline_name, ps.name AS stage_name, l.pipeline_id, l.stage_id
       FROM lead_followups f
       LEFT JOIN leads l ON l.id = f.lead_id
       LEFT JOIN users u ON u.id = f.assigned_to
+      LEFT JOIN pipelines p ON p.id = l.pipeline_id
+      LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
       WHERE f.tenant_id = $1
         AND l.id IS NOT NULL AND l.is_deleted = FALSE
     `;
@@ -405,6 +410,9 @@ router.get('/followups', checkPermission('followups:view'), async (req: AuthRequ
       params.push(userId);
       sql += ` AND (f.assigned_to = $${params.length}::uuid OR l.assigned_to = $${params.length}::uuid OR $${params.length}::uuid = ANY(l.team_members))`;
     }
+
+    if (pipeline_id) { params.push(pipeline_id); sql += ` AND l.pipeline_id = $${params.length}::uuid`; }
+    if (stage_id)    { params.push(stage_id);    sql += ` AND l.stage_id = $${params.length}::uuid`; }
 
     sql += ' ORDER BY f.due_at ASC';
 

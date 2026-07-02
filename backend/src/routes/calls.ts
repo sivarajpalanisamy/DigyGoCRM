@@ -293,10 +293,9 @@ router.get('/:callId/recording', checkPermission('calls:recordings'), async (req
       return streamFile(req, res, filePath, row.recording_path);
     }
 
-    // Recording URL present but not yet downloaded — redirect to source URL temporarily
+    // Recording URL present but not yet downloaded — proxy through our server to avoid CORS
     if (row.recording_url) {
-      res.redirect(302, row.recording_url);
-      return;
+      return proxyRecording(req, res, row.recording_url);
     }
 
     res.status(404).json({ error: 'Recording not available' });
@@ -331,8 +330,8 @@ router.get('/:callId/download', checkPermission('calls:recordings'), async (req:
     }
 
     if (row.recording_url) {
-      res.redirect(302, row.recording_url);
-      return;
+      res.setHeader('Content-Disposition', `attachment; filename="call-${row.cdr_id}.mp3"`);
+      return proxyRecording(req, res, row.recording_url);
     }
 
     res.status(404).json({ error: 'Recording not available' });
@@ -369,6 +368,25 @@ function streamFile(req: AuthRequest, res: Response, filePath: string, relPath: 
       'Accept-Ranges':  'bytes',
     });
     fs.createReadStream(filePath).pipe(res);
+  }
+}
+
+// Proxy a remote recording URL through our server to avoid CORS issues with S3/external URLs.
+async function proxyRecording(_req: AuthRequest, res: Response, url: string): Promise<void> {
+  try {
+    const upstream = await fetch(url);
+    if (!upstream.ok) { res.status(502).json({ error: 'Recording fetch failed' }); return; }
+    const ct = upstream.headers.get('content-type') || 'audio/mpeg';
+    const cl = upstream.headers.get('content-length');
+    res.setHeader('Content-Type', ct);
+    if (cl) res.setHeader('Content-Length', cl);
+    res.setHeader('Accept-Ranges', 'bytes');
+    // Pipe the readable stream from fetch to the Express response
+    const { Readable } = require('stream');
+    const readable = Readable.fromWeb(upstream.body as any);
+    readable.pipe(res);
+  } catch {
+    res.status(502).json({ error: 'Recording proxy failed' });
   }
 }
 
