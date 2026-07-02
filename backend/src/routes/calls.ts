@@ -37,7 +37,7 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
   if (outcome)     { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
   if (staff_name)  { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
   if (date_from)   { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
-  if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+  if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) < $${params.length}::date + INTERVAL '1 day'`); }
   if (pipeline_id) { params.push(pipeline_id);              conditions.push(`l.pipeline_id = $${params.length}::uuid`); }
   if (stage_id)    { params.push(stage_id);                 conditions.push(`l.stage_id = $${params.length}::uuid`); }
 
@@ -100,7 +100,7 @@ router.get('/stats', checkPermission('calls:view_own'), async (req: AuthRequest,
   if (outcome)     { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
   if (staff_name)  { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
   if (date_from)   { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
-  if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+  if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) < $${params.length}::date + INTERVAL '1 day'`); }
   if (pipeline_id) { params.push(pipeline_id);              conditions.push(`l.pipeline_id = $${params.length}::uuid`); }
   if (stage_id)    { params.push(stage_id);                 conditions.push(`l.stage_id = $${params.length}::uuid`); }
 
@@ -197,7 +197,7 @@ router.get('/export', checkPermission('calls:view_own'), async (req: AuthRequest
   if (outcome)     { params.push(outcome.toUpperCase());    conditions.push(`cl.outcome=$${params.length}`); }
   if (staff_name)  { params.push(`%${staff_name}%`);        conditions.push(`cl.staff_name ILIKE $${params.length}`); }
   if (date_from)   { params.push(date_from);                conditions.push(`COALESCE(cl.started_at, cl.created_at) >= $${params.length}::timestamptz`); }
-  if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) <= $${params.length}::timestamptz`); }
+  if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) < $${params.length}::date + INTERVAL '1 day'`); }
   if (pipeline_id) { params.push(pipeline_id);              conditions.push(`l.pipeline_id = $${params.length}::uuid`); }
   if (stage_id)    { params.push(stage_id);                 conditions.push(`l.stage_id = $${params.length}::uuid`); }
 
