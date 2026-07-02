@@ -883,6 +883,9 @@ router.post('/superfone', async (req: Request, res: Response) => {
   res.status(200).json({ received: true }); // ack immediately so Superfone doesn't retry
   try {
     console.log(`[superfone webhook] event=${payload.event ?? 'CDR'} cdr_id=${payload.cdr_id} recording=${!!payload.recording_url}`);
+    if (payload.event === 'CDR_RECORDING_AVAILABLE') {
+      console.log('[superfone webhook] RECORDING PAYLOAD:', JSON.stringify(payload));
+    }
     const num = extractSuperfoneNumber(payload);
     if (!num) { console.warn('[superfone webhook] payload has no business number — cannot route'); return; }
     const tail = last10Digits(num);
