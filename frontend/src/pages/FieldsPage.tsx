@@ -6,8 +6,9 @@ import {
   Type, AlignLeft, Hash, Phone as PhoneIcon, IndianRupee,
   ChevronsUpDown, CircleDot, SquareCheck, CalendarDays,
   FileUp, Mail, Link as LinkIcon, AlertCircle, GripVertical,
-  ArrowLeft, Eye,
+  ArrowLeft, Eye, Tag,
 } from 'lucide-react';
+import { usePermission } from '@/hooks/usePermission';
 import { useCrmStore, AdditionalField as StoreAdditionalField } from '@/store/crmStore';
 import { api } from '@/lib/api';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
@@ -589,7 +590,7 @@ function ValueModal({ value, onClose, onSave }: {
 //  Main Page
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type Tab = 'standard' | 'additional' | 'values';
+type Tab = 'standard' | 'additional' | 'values' | 'tags';
 
 export default function FieldsPage() {
   const {
@@ -619,8 +620,17 @@ export default function FieldsPage() {
   const [values, setValues] = useState<ValueToken[]>([]);
   const [valueModal, setValueModal] = useState<{ open: boolean; editing?: ValueToken }>({ open: false });
 
+  // Tags
+  const { tags: storeTags, addTag: storeAddTag, updateTag: storeUpdateTag, deleteTag: storeDeleteTag } = useCrmStore();
+  const canManageTags = usePermission('tags:manage');
+  const [tagEdit, setTagEdit] = useState<{ id: string; name: string; color: string } | null>(null);
+  const [tagCreating, setTagCreating] = useState(false);
+  const [tagNewName, setTagNewName] = useState('');
+  const [tagNewColor, setTagNewColor] = useState('#94a3b8');
+  const [tagSaving, setTagSaving] = useState(false);
+
   // Delete confirmation modal
-  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'custom' | 'question' | 'value'; id: string; name: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'custom' | 'question' | 'value' | 'tag'; id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const handleDeleteConfirmed = async () => {
@@ -635,6 +645,9 @@ export default function FieldsPage() {
         await api.delete(`/api/fields/questions/${deleteConfirm.id}`);
         setAdditional((p) => p.filter((x) => x.id !== deleteConfirm.id));
         storeDeleteAdditionalField(deleteConfirm.id);
+      } else if (deleteConfirm.type === 'tag') {
+        await api.delete(`/api/tags/${deleteConfirm.id}`);
+        storeDeleteTag(deleteConfirm.id);
       } else {
         await api.delete(`/api/fields/values/${deleteConfirm.id}`);
         setValues((p) => p.filter((x) => x.id !== deleteConfirm.id));
@@ -707,6 +720,7 @@ export default function FieldsPage() {
     { key: 'standard' as const,   label: 'Standard Fields',   count: SYSTEM_STANDARD.length + customStandard.length },
     { key: 'additional' as const, label: 'Additional Fields', count: additional.length },
     { key: 'values' as const,     label: 'Values',             count: values.length },
+    { key: 'tags' as const,       label: 'Tags',               count: storeTags.length },
   ];
 
   const shadowStyle = { background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 12px rgba(234,88,12,0.25)' };
@@ -720,6 +734,7 @@ export default function FieldsPage() {
           onClick={() => {
             if (tab === 'standard') setStdModal({ open: true });
             else if (tab === 'additional') setAddModal({ open: true });
+            else if (tab === 'tags') setTagCreating(true);
             else setValueModal({ open: true });
           }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5"
@@ -729,6 +744,7 @@ export default function FieldsPage() {
           {tab === 'standard' && 'New Field'}
           {tab === 'additional' && 'New Question'}
           {tab === 'values' && 'New Value'}
+          {tab === 'tags' && 'New Tag'}
         </button>
       </div>
 
@@ -1005,6 +1021,177 @@ export default function FieldsPage() {
                     </button>
                   </div>
                 </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════ TAB 4: Tags ═══════════════════════ */}
+      {tab === 'tags' && (
+        <div>
+          {storeTags.length === 0 && !tagCreating ? (
+            <div className="bg-white rounded-2xl border border-dashed border-black/10 py-12 text-center">
+              <Tag className="w-7 h-7 mx-auto text-[#c4b09e] mb-2" />
+              <p className="text-[14px] font-semibold text-[#1c1410]">No tags yet</p>
+              <p className="text-[12px] text-[#7a6b5c] mt-1 mb-3">Create tags to organize and categorize your leads.</p>
+              {canManageTags && (
+                <button onClick={() => setTagCreating(true)} className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white" style={shadowStyle}>
+                  + Create first tag
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+              {/* Table header */}
+              <div className="hidden sm:grid grid-cols-[auto_1fr_120px_120px_100px] gap-3 px-4 py-2.5 border-b border-black/[0.04] bg-[var(--app-bg)]">
+                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider w-8">Color</span>
+                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider">Tag Name</span>
+                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider text-center">Leads</span>
+                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider text-center">Created</span>
+                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider text-right">Actions</span>
+              </div>
+
+              {/* New tag inline row */}
+              {tagCreating && (
+                <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_120px_120px_100px] gap-3 px-4 py-3 border-b border-black/[0.04] bg-amber-50/40 items-center">
+                  <input
+                    type="color"
+                    value={tagNewColor}
+                    onChange={(e) => setTagNewColor(e.target.value)}
+                    className="w-8 h-8 rounded-lg border border-black/10 cursor-pointer p-0.5"
+                  />
+                  <input
+                    autoFocus
+                    value={tagNewName}
+                    onChange={(e) => setTagNewName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && tagNewName.trim()) {
+                        (async () => {
+                          setTagSaving(true);
+                          try {
+                            const created = await api.post<any>('/api/tags', { name: tagNewName.trim(), color: tagNewColor });
+                            storeAddTag({ id: created.id, name: created.name, color: created.color, count: 0 });
+                            setTagNewName(''); setTagNewColor('#94a3b8'); setTagCreating(false);
+                            toast.success(`Tag "${created.name}" created`);
+                          } catch (err: any) {
+                            toast.error(err.message ?? 'Failed to create tag');
+                          } finally { setTagSaving(false); }
+                        })();
+                      } else if (e.key === 'Escape') {
+                        setTagCreating(false); setTagNewName(''); setTagNewColor('#94a3b8');
+                      }
+                    }}
+                    placeholder="Tag name..."
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                  />
+                  <span />
+                  <span />
+                  <div className="flex items-center gap-1 justify-end">
+                    <button
+                      disabled={!tagNewName.trim() || tagSaving}
+                      onClick={async () => {
+                        setTagSaving(true);
+                        try {
+                          const created = await api.post<any>('/api/tags', { name: tagNewName.trim(), color: tagNewColor });
+                          storeAddTag({ id: created.id, name: created.name, color: created.color, count: 0 });
+                          setTagNewName(''); setTagNewColor('#94a3b8'); setTagCreating(false);
+                          toast.success(`Tag "${created.name}" created`);
+                        } catch (err: any) {
+                          toast.error(err.message ?? 'Failed to create tag');
+                        } finally { setTagSaving(false); }
+                      }}
+                      className="w-7 h-7 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary disabled:opacity-40 transition-colors"
+                      title="Save"
+                    ><Check className="w-3.5 h-3.5" /></button>
+                    <button
+                      onClick={() => { setTagCreating(false); setTagNewName(''); setTagNewColor('#94a3b8'); }}
+                      className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#7a6b5c] hover:text-red-500 transition-colors"
+                      title="Cancel"
+                    ><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+              )}
+
+              {/* Tag rows */}
+              {(search ? storeTags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase())) : storeTags).map((t) => {
+                const isEditing = tagEdit?.id === t.id;
+                return (
+                  <div key={t.id} className="group grid grid-cols-1 sm:grid-cols-[auto_1fr_120px_120px_100px] gap-3 px-4 py-3 border-b border-black/[0.04] last:border-b-0 hover:bg-[var(--app-bg)] transition-colors items-center">
+                    {isEditing ? (
+                      <>
+                        <input
+                          type="color"
+                          value={tagEdit!.color}
+                          onChange={(e) => setTagEdit({ ...tagEdit!, color: e.target.value })}
+                          className="w-8 h-8 rounded-lg border border-black/10 cursor-pointer p-0.5"
+                        />
+                        <input
+                          autoFocus
+                          value={tagEdit!.name}
+                          onChange={(e) => setTagEdit({ ...tagEdit!, name: e.target.value })}
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter' && tagEdit!.name.trim()) {
+                              setTagSaving(true);
+                              try {
+                                await api.patch(`/api/tags/${t.id}`, { name: tagEdit!.name.trim(), color: tagEdit!.color });
+                                storeUpdateTag(t.id, { name: tagEdit!.name.trim(), color: tagEdit!.color });
+                                setTagEdit(null);
+                                toast.success('Tag updated');
+                              } catch (err: any) { toast.error(err.message ?? 'Failed to update'); }
+                              finally { setTagSaving(false); }
+                            } else if (e.key === 'Escape') { setTagEdit(null); }
+                          }}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                        />
+                        <span className="text-[13px] text-[#7a6b5c] text-center">{t.count}</span>
+                        <span />
+                        <div className="flex items-center gap-1 justify-end">
+                          <button
+                            disabled={!tagEdit!.name.trim() || tagSaving}
+                            onClick={async () => {
+                              setTagSaving(true);
+                              try {
+                                await api.patch(`/api/tags/${t.id}`, { name: tagEdit!.name.trim(), color: tagEdit!.color });
+                                storeUpdateTag(t.id, { name: tagEdit!.name.trim(), color: tagEdit!.color });
+                                setTagEdit(null);
+                                toast.success('Tag updated');
+                              } catch (err: any) { toast.error(err.message ?? 'Failed to update'); }
+                              finally { setTagSaving(false); }
+                            }}
+                            className="w-7 h-7 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary disabled:opacity-40 transition-colors"
+                          ><Check className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setTagEdit(null)} className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#7a6b5c] hover:text-red-500 transition-colors">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-8 h-8 rounded-lg border border-black/10 shrink-0" style={{ backgroundColor: t.color ?? '#94a3b8' }} />
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] text-[#1c1410] font-medium">{t.name}</span>
+                        </div>
+                        <span className="text-[13px] text-[#7a6b5c] text-center">{t.count}</span>
+                        <span className="text-[12px] text-[#b09e8d] text-center">-</span>
+                        {canManageTags && (
+                          <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setTagEdit({ id: t.id, name: t.name, color: t.color })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#7a6b5c] hover:text-primary transition-colors">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm({ type: 'tag' as any, id: t.id, name: t.name })}
+                              title="Delete"
+                              className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#7a6b5c] hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 );
               })}
             </div>

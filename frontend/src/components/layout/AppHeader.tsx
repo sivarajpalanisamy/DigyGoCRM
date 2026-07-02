@@ -64,6 +64,7 @@ const sectionNavs: Record<string, NavItem[]> = {
     { label: 'Standard Fields', path: '/fields' },
     { label: 'Additional Fields', path: '/fields?tab=additional' },
     { label: 'Values', path: '/fields?tab=values' },
+    { label: 'Tags', path: '/fields?tab=tags' },
   ],
   '/staff': [
     { label: 'Team', path: '/staff' },
