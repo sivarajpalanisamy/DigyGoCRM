@@ -529,22 +529,23 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           <table className="w-full text-[13px] table-fixed">
             <thead className="sticky top-0 bg-[var(--app-bg)] border-b border-black/[0.07] z-10">
               <tr>
-                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[40px]">#</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[36px]">#</th>
                 <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c]">Lead</th>
-                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[90px]">Direction</th>
-                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[100px]">Outcome</th>
-                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[70px]">Duration</th>
-                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[120px]">Agent</th>
-                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[130px]">Date & Time</th>
-                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[110px]">Recording</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[120px]">Pipeline</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[70px]">Dir</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[90px]">Outcome</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[55px]">Dur</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[100px]">Agent</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[110px]">Date</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[90px]">Rec</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {loading ? (
-                <tr><td colSpan={8} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
+                <tr><td colSpan={9} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
               ) : visible.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-16">
+                  <td colSpan={9} className="text-center py-16">
                     <PhoneIncoming className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                     <p className="text-[14px] font-semibold text-[#7a6b5c]">No calls found</p>
                     <p className="text-[12px] text-[#b09e8d] mt-1">{source === 'superfone' ? 'Calls will appear here after Superfone syncs' : 'Calls will appear here once the Hawcus Dialer app syncs'}</p>
@@ -591,6 +592,10 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                         )}
                       </td>
                       <td className="px-3 py-2.5">
+                        <p className="text-[12px] text-[#1c1410] truncate">{c.pipeline_name ?? '-'}</p>
+                        {c.stage_name && <p className="text-[11px] text-[#b09e8d] truncate">{c.stage_name}</p>}
+                      </td>
+                      <td className="px-3 py-2.5">
                         <span className={cn('flex items-center gap-1 text-[12px] font-medium', dirColor)}>
                           <DirIcon className="w-3.5 h-3.5 shrink-0" />
                           {isOutbound ? 'Out' : 'In'}
@@ -631,7 +636,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                     </tr>
                     {playingId === c.id && audioUrls[c.id] && (
                       <tr key={`${c.id}-audio`} className="bg-orange-50/50">
-                        <td colSpan={8} className="px-3 py-2">
+                        <td colSpan={9} className="px-3 py-2">
                           <audio
                             src={audioUrls[c.id]}
                             autoPlay
