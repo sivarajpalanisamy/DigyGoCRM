@@ -104,7 +104,8 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
 
   // Stats
   const [stats, setStats] = useState<CallStats | null>(null);
-  const [showCharts, setShowCharts] = useState(true);
+  const [showCharts, setShowCharts] = useState(false);
+  const [quickDate, setQuickDate] = useState<'today' | 'yesterday' | '7days' | 'month' | ''>('');
 
   // Audio
   const [playingId, setPlayingId]   = useState<string | null>(null);
@@ -175,9 +176,29 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
     } catch { toast.error('Recording not available'); }
   };
 
+  const applyQuickDate = (key: typeof quickDate) => {
+    setQuickDate(key);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    const today = new Date();
+    if (key === 'today') {
+      setDateFrom(fmt(today)); setDateTo(fmt(today));
+    } else if (key === 'yesterday') {
+      const y = new Date(today); y.setDate(y.getDate() - 1);
+      setDateFrom(fmt(y)); setDateTo(fmt(y));
+    } else if (key === '7days') {
+      const w = new Date(today); w.setDate(w.getDate() - 6);
+      setDateFrom(fmt(w)); setDateTo(fmt(today));
+    } else if (key === 'month') {
+      const m = new Date(today.getFullYear(), today.getMonth(), 1);
+      setDateFrom(fmt(m)); setDateTo(fmt(today));
+    } else {
+      setDateFrom(''); setDateTo('');
+    }
+  };
+
   const clearFilters = () => {
     setDirection(''); setOutcome(''); setStaffName(''); setDateFrom(''); setDateTo('');
-    setPipelineId(''); setStageId('');
+    setPipelineId(''); setStageId(''); setQuickDate('');
   };
 
   const activeFilterCount = [direction, outcome, staffName, dateFrom, dateTo, pipelineId, stageId].filter(Boolean).length;
@@ -212,7 +233,30 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
         </button>
       </div>
 
-      {/* Toolbar */}
+      {/* Quick date pills + Toolbar */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        {([
+          ['today', 'Today'],
+          ['yesterday', 'Yesterday'],
+          ['7days', 'Last 7 Days'],
+          ['month', 'This Month'],
+          ['', 'All Time'],
+        ] as const).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => applyQuickDate(key)}
+            className={cn(
+              'px-3 py-1.5 rounded-full text-[12px] font-semibold transition-colors',
+              quickDate === key
+                ? 'bg-primary text-white'
+                : 'bg-white border border-black/10 text-[#7a6b5c] hover:bg-[#faf0e8] hover:border-primary/30'
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-xs">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -289,12 +333,62 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">From Date</label>
             <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
-              value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setQuickDate(''); }} />
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">To Date</label>
             <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
-              value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              value={dateTo} onChange={(e) => { setDateTo(e.target.value); setQuickDate(''); }} />
+          </div>
+        </div>
+      )}
+
+      {/* KPI Cards — always visible */}
+      {stats && (
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
+          <div className="bg-white rounded-xl border border-black/5 p-3">
+            <div className="flex items-center gap-2 mb-0.5">
+              <Phone className="w-3.5 h-3.5 text-blue-500" />
+              <span className="text-[10px] font-medium text-[#7a6b5c]">Total Calls</span>
+            </div>
+            <p className="text-[20px] font-bold text-[#1c1410]">{stats.kpi.total.toLocaleString()}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-black/5 p-3">
+            <div className="flex items-center gap-2 mb-0.5">
+              <PhoneIncoming className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-[10px] font-medium text-[#7a6b5c]">Inbound</span>
+            </div>
+            <p className="text-[20px] font-bold text-emerald-600">{(stats.kpi.inbound ?? 0).toLocaleString()}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-black/5 p-3">
+            <div className="flex items-center gap-2 mb-0.5">
+              <PhoneOutgoing className="w-3.5 h-3.5 text-blue-500" />
+              <span className="text-[10px] font-medium text-[#7a6b5c]">Outbound</span>
+            </div>
+            <p className="text-[20px] font-bold text-blue-600">{(stats.kpi.outbound ?? 0).toLocaleString()}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-black/5 p-3">
+            <div className="flex items-center gap-2 mb-0.5">
+              <PhoneIncoming className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-[10px] font-medium text-[#7a6b5c]">Answer Rate</span>
+            </div>
+            <p className="text-[20px] font-bold text-emerald-600">
+              {stats.kpi.total ? Math.round((stats.kpi.answered / stats.kpi.total) * 100) : 0}%
+            </p>
+          </div>
+          <div className="bg-white rounded-xl border border-black/5 p-3">
+            <div className="flex items-center gap-2 mb-0.5">
+              <Clock className="w-3.5 h-3.5 text-blue-500" />
+              <span className="text-[10px] font-medium text-[#7a6b5c]">Avg Duration</span>
+            </div>
+            <p className="text-[20px] font-bold text-[#1c1410]">{durLabel(stats.kpi.avg_duration)}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-black/5 p-3">
+            <div className="flex items-center gap-2 mb-0.5">
+              <PhoneOff className="w-3.5 h-3.5 text-red-500" />
+              <span className="text-[10px] font-medium text-[#7a6b5c]">Missed Calls</span>
+            </div>
+            <p className="text-[20px] font-bold text-red-600">{stats.kpi.missed.toLocaleString()}</p>
           </div>
         </div>
       )}
@@ -302,63 +396,15 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
       {/* Analytics toggle */}
       <button
         onClick={() => setShowCharts((v) => !v)}
-        className="flex items-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] hover:text-[#1c1410] mb-3 transition-colors"
+        className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:text-[var(--brand-dark)] mb-3 transition-colors"
       >
         {showCharts ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        {showCharts ? 'Hide Analytics' : 'Show Analytics'}
+        {showCharts ? 'Hide Charts' : 'Show Charts'}
       </button>
 
-      {/* Analytics */}
+      {/* Charts — collapsible, default hidden */}
       {showCharts && stats && (
         <div className="space-y-4 mb-4">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-            <div className="bg-white rounded-xl border border-black/5 p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Phone className="w-4 h-4 text-blue-500" />
-                <span className="text-[11px] font-medium text-[#7a6b5c]">Total Calls</span>
-              </div>
-              <p className="text-[22px] font-bold text-[#1c1410]">{stats.kpi.total.toLocaleString()}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-black/5 p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <PhoneIncoming className="w-4 h-4 text-emerald-500" />
-                <span className="text-[11px] font-medium text-[#7a6b5c]">Inbound</span>
-              </div>
-              <p className="text-[22px] font-bold text-emerald-600">{(stats.kpi.inbound ?? 0).toLocaleString()}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-black/5 p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <PhoneOutgoing className="w-4 h-4 text-blue-500" />
-                <span className="text-[11px] font-medium text-[#7a6b5c]">Outbound</span>
-              </div>
-              <p className="text-[22px] font-bold text-blue-600">{(stats.kpi.outbound ?? 0).toLocaleString()}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-black/5 p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <PhoneIncoming className="w-4 h-4 text-emerald-500" />
-                <span className="text-[11px] font-medium text-[#7a6b5c]">Answer Rate</span>
-              </div>
-              <p className="text-[22px] font-bold text-emerald-600">
-                {stats.kpi.total ? Math.round((stats.kpi.answered / stats.kpi.total) * 100) : 0}%
-              </p>
-            </div>
-            <div className="bg-white rounded-xl border border-black/5 p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Clock className="w-4 h-4 text-blue-500" />
-                <span className="text-[11px] font-medium text-[#7a6b5c]">Avg Duration</span>
-              </div>
-              <p className="text-[22px] font-bold text-[#1c1410]">{durLabel(stats.kpi.avg_duration)}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-black/5 p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <PhoneOff className="w-4 h-4 text-red-500" />
-                <span className="text-[11px] font-medium text-[#7a6b5c]">Missed Calls</span>
-              </div>
-              <p className="text-[22px] font-bold text-red-600">{stats.kpi.missed.toLocaleString()}</p>
-            </div>
-          </div>
-
           {/* Row 2: Call Volume + Outcome Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Call Volume Trend */}
