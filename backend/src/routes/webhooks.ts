@@ -728,10 +728,20 @@ async function ingestSuperfoneCall(tenantId: string, payload: Record<string, any
       cdr_id, cdr_phone, cdr_call_type, cdr_disposition,
       cdr_duration, cdr_start, cdr_end, superfone_number,
       staff_first_name, staff_last_name, staff_phone,
-      ivr_inputs, recording_url,
+      ivr_inputs, recording_url, event,
     } = payload;
 
     if (!cdr_id) return;
+
+    // Handle CDR_RECORDING_AVAILABLE — update existing call with recording URL
+    if (event === 'CDR_RECORDING_AVAILABLE' && recording_url) {
+      console.log(`[superfone] Recording available for cdr_id=${cdr_id}: ${recording_url}`);
+      await query(
+        `UPDATE call_logs SET recording_url=$1 WHERE tenant_id=$2::uuid AND cdr_id=$3`,
+        [recording_url, tenantId, cdr_id]
+      );
+      return;
+    }
 
     // Build staff name from payload
     const staffName = [staff_first_name, staff_last_name].filter(Boolean).join(' ') || null;
@@ -771,8 +781,9 @@ async function ingestSuperfoneCall(tenantId: string, payload: Record<string, any
           duration_seconds, started_at, ended_at, staff_phone, staff_name, staff_user_id,
           ivr_inputs, recording_url, is_unknown)
        VALUES ($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16)
-       ON CONFLICT (tenant_id, cdr_id) DO NOTHING
-       RETURNING id`,
+       ON CONFLICT (tenant_id, cdr_id) DO UPDATE
+         SET recording_url = COALESCE(EXCLUDED.recording_url, call_logs.recording_url)
+       RETURNING id, (xmax = 0) AS inserted`,
       [
         tenantId,
         leadId,
@@ -793,10 +804,13 @@ async function ingestSuperfoneCall(tenantId: string, payload: Record<string, any
       ]
     );
 
-    // If duplicate (ON CONFLICT DO NOTHING), insertResult.rows is empty — skip
     if (!insertResult.rows[0]) return;
 
     const callLogId = insertResult.rows[0].id;
+    const isNewInsert = insertResult.rows[0].inserted;
+
+    // If this was an update (duplicate cdr_id), skip timeline activity creation
+    if (!isNewInsert) return;
 
     // Emit real-time event to tenant
     emitToTenant(tenantId, 'call:logged', {
@@ -868,6 +882,7 @@ router.post('/superfone', async (req: Request, res: Response) => {
   const payload = req.body as Record<string, any>;
   res.status(200).json({ received: true }); // ack immediately so Superfone doesn't retry
   try {
+    console.log(`[superfone webhook] event=${payload.event ?? 'CDR'} cdr_id=${payload.cdr_id} recording=${!!payload.recording_url}`);
     const num = extractSuperfoneNumber(payload);
     if (!num) { console.warn('[superfone webhook] payload has no business number — cannot route'); return; }
     const tail = last10Digits(num);
