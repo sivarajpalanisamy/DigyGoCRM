@@ -2476,6 +2476,15 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
       .finally(() => setEnquiryLoading(false));
   };
 
+  // Lead 360 stats
+  const [leadStats, setLeadStats] = useState<{
+    calls: { total: number; inbound: number; outbound: number; missed: number; totalDuration: number };
+    messages: { total: number; whatsapp: number; email: number; templates: number; inbound: number };
+    followups: { total: number; completed: number; overdue: number };
+    firstTouchDelayMs: number | null;
+  } | null>(null);
+  const [timelineFilter, setTimelineFilter] = useState<'all' | 'call' | 'message' | 'followup' | 'note' | 'stage_change'>('all');
+
   const [showWaDropdown, setShowWaDropdown] = useState(false);
   const [showWaSendModal, setShowWaSendModal] = useState(false);
   const [waMessage, setWaMessage] = useState('');
@@ -2517,6 +2526,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     api.get<any[]>(`/api/leads/${lead.id}/activities`).then((data) =>
       setLeadActivities(data.map((a) => ({ id: a.id, leadId: lead.id, type: a.type, title: a.title, detail: a.type === 'call' ? null : a.detail, timestamp: a.created_at, createdBy: a.created_by_name ?? a.created_by, callLogId: a.type === 'call' ? a.detail : undefined, hasRecording: a.has_recording === true })))
     ).catch(() => null);
+    api.get<typeof leadStats>(`/api/leads/${lead.id}/stats`).then(setLeadStats).catch(() => null);
     setFields((lead.customFields as any) ?? []); // seed from store for the (possibly new) lead, then refresh
     loadFields();
   }, [lead.id]);
@@ -2983,6 +2993,51 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   <span className="text-[11px] font-medium text-[#1c1410]">{format(new Date(lead.lastActivity), 'dd MMM yyyy, hh:mm:ss a')}</span>
                 </div>
               </div>
+
+              {/* 360 KPI Cards */}
+              {leadStats && (
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/5 mt-1">
+                  {/* 1st Touch */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl px-3 py-2.5 border border-blue-100">
+                    <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide">1st Touch</p>
+                    <p className="text-[15px] font-bold text-[#1c1410] mt-0.5">
+                      {leadStats.firstTouchDelayMs !== null
+                        ? leadStats.firstTouchDelayMs < 60000 ? '<1m'
+                          : leadStats.firstTouchDelayMs < 3600000 ? `${Math.round(leadStats.firstTouchDelayMs / 60000)}m`
+                          : leadStats.firstTouchDelayMs < 86400000 ? `${Math.round(leadStats.firstTouchDelayMs / 3600000)}h`
+                          : `${Math.round(leadStats.firstTouchDelayMs / 86400000)}d`
+                        : '-'}
+                    </p>
+                    <p className="text-[10px] text-blue-600/70 mt-0.5">Response time</p>
+                  </div>
+                  {/* Calls */}
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl px-3 py-2.5 border border-orange-100">
+                    <p className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide">Calls</p>
+                    <p className="text-[15px] font-bold text-[#1c1410] mt-0.5">{leadStats.calls.total}</p>
+                    <p className="text-[10px] text-orange-600/70 mt-0.5">
+                      {leadStats.calls.inbound}↓ {leadStats.calls.outbound}↑ {leadStats.calls.missed > 0 ? `${leadStats.calls.missed} missed` : ''}
+                    </p>
+                  </div>
+                  {/* Messages */}
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl px-3 py-2.5 border border-emerald-100">
+                    <p className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wide">Messages</p>
+                    <p className="text-[15px] font-bold text-[#1c1410] mt-0.5">{leadStats.messages.total}</p>
+                    <p className="text-[10px] text-emerald-600/70 mt-0.5">
+                      {leadStats.messages.whatsapp > 0 ? `${leadStats.messages.whatsapp} WA` : ''}
+                      {leadStats.messages.email > 0 ? ` ${leadStats.messages.email} email` : ''}
+                      {leadStats.messages.inbound > 0 ? ` ${leadStats.messages.inbound}↓` : ''}
+                    </p>
+                  </div>
+                  {/* Follow-ups */}
+                  <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl px-3 py-2.5 border border-amber-100">
+                    <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-wide">Follow-ups</p>
+                    <p className="text-[15px] font-bold text-[#1c1410] mt-0.5">{leadStats.followups.total}</p>
+                    <p className="text-[10px] text-amber-600/70 mt-0.5">
+                      {leadStats.followups.completed} done{leadStats.followups.overdue > 0 ? ` · ${leadStats.followups.overdue} overdue` : ''}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -3341,12 +3396,44 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
         {/* Activity Timeline */}
         {!editMode && (
           <div className="px-5 py-4">
-            <h4 className="text-[13px] font-bold text-[#1c1410] mb-3">Activity Timeline</h4>
-            {timeline.length === 0 ? (
-              <p className="text-[12px] text-[#b09e8d] text-center py-4">No activity yet</p>
-            ) : (
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-[13px] font-bold text-[#1c1410]">Activity Timeline</h4>
+            </div>
+            {/* Type filter pills */}
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {([
+                ['all', 'All'],
+                ['call', 'Calls'],
+                ['message', 'Messages'],
+                ['followup', 'Follow-ups'],
+                ['note', 'Notes'],
+                ['stage_change', 'Stages'],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setTimelineFilter(key)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors',
+                    timelineFilter === key
+                      ? 'bg-primary text-white'
+                      : 'bg-black/[0.04] text-[#7a6b5c] hover:bg-black/[0.08]'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {(() => {
+              const MESSAGE_TYPES = new Set(['whatsapp', 'email', 'wa_template_sent', 'wa_broadcast', 'wa_message_in', 'wa_button_click']);
+              const filtered = timelineFilter === 'all' ? timeline
+                : timelineFilter === 'message' ? timeline.filter((e) => MESSAGE_TYPES.has(e.type))
+                : timelineFilter === 'stage_change' ? timeline.filter((e) => e.type === 'stage_change' || e.type === 'assigned' || e.type === 'created')
+                : timeline.filter((e) => e.type === timelineFilter);
+              return filtered.length === 0 ? (
+                <p className="text-[12px] text-[#b09e8d] text-center py-4">No activity yet</p>
+              ) : (
               <div className="space-y-3">
-                {timeline.map((entry) => {
+                {filtered.map((entry) => {
                   const { Icon, bg, color } = iconForType(entry.type);
                   const isNote = entry.type === 'note' && entry.id.startsWith('note-');
                   const noteId = isNote ? entry.id.slice(5) : '';
@@ -3419,7 +3506,8 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   );
                 })}
               </div>
-            )}
+              );
+            })()}
           </div>
         )}
 

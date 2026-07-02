@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Lead } from '@/data/mockData';
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
+import { LeadDetailPanel } from './LeadsPage';
 
 function getSourceLabel(lead: { source: string; meta_form_name?: string }) {
   const s = lead.source ?? '';
@@ -1108,7 +1109,7 @@ export default function ContactsPage() {
       </div>
     </div>
 
-    {selectedContact && <ContactDetailModal lead={selectedContact} onClose={() => { setSelectedContactId(null); setReloadContacts((n) => n + 1); }} />}
+    {selectedContact && <LeadDetailPanel lead={selectedContact} onClose={() => { setSelectedContactId(null); setReloadContacts((n) => n + 1); }} />}
 
     {showExportModal && (
       <ExportModal

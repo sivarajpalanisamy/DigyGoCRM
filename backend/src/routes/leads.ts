@@ -1066,6 +1066,103 @@ router.delete('/:id/followups/:fuId', async (req: AuthRequest, res: Response) =>
   }
 });
 
+// ── Lead Stats (360 View KPIs) ─────────────────────────────────────────────────
+
+// GET /api/leads/:id/stats — communication KPIs for a single lead
+router.get('/:id/stats', async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const leadId = req.params.id;
+  try {
+    // Run all queries in parallel
+    const [callsR, msgsR, fuR, createdR] = await Promise.all([
+      // Call stats from lead_activities (type='call') + call_logs
+      query(
+        `SELECT
+           COUNT(*) AS total,
+           COUNT(*) FILTER (WHERE cl.direction = 'INBOUND') AS inbound,
+           COUNT(*) FILTER (WHERE cl.direction = 'OUTBOUND') AS outbound,
+           COUNT(*) FILTER (WHERE cl.outcome IN ('MISSED','NO_ANSWER','REJECTED')) AS missed,
+           COALESCE(SUM(cl.duration_seconds) FILTER (WHERE cl.duration_seconds > 0), 0) AS total_duration,
+           MIN(cl.started_at) AS first_call_at
+         FROM lead_activities a
+         JOIN call_logs cl ON cl.id::text = a.detail
+         WHERE a.lead_id = $1 AND a.tenant_id = $2::uuid AND a.type = 'call'`,
+        [leadId, tenantId]
+      ),
+      // Message stats from lead_activities
+      query(
+        `SELECT
+           COUNT(*) AS total,
+           COUNT(*) FILTER (WHERE a.type = 'whatsapp') AS whatsapp,
+           COUNT(*) FILTER (WHERE a.type = 'email') AS email,
+           COUNT(*) FILTER (WHERE a.type IN ('wa_template_sent','wa_broadcast')) AS templates,
+           COUNT(*) FILTER (WHERE a.type = 'wa_message_in') AS inbound,
+           MIN(a.created_at) FILTER (WHERE a.type IN ('whatsapp','wa_template_sent','email')) AS first_message_at
+         FROM lead_activities a
+         WHERE a.lead_id = $1 AND a.tenant_id = $2::uuid
+           AND a.type IN ('whatsapp','email','wa_template_sent','wa_broadcast','wa_message_in','wa_button_click')`,
+        [leadId, tenantId]
+      ),
+      // Follow-up stats
+      query(
+        `SELECT
+           COUNT(*) AS total,
+           COUNT(*) FILTER (WHERE f.completed = true) AS completed,
+           COUNT(*) FILTER (WHERE f.completed = false AND f.due_at < NOW()) AS overdue
+         FROM follow_ups f
+         WHERE f.lead_id = $1 AND f.tenant_id = $2::uuid`,
+        [leadId, tenantId]
+      ),
+      // Lead created_at for 1st touch calculation
+      query(
+        `SELECT created_at FROM leads WHERE id = $1 AND tenant_id = $2::uuid`,
+        [leadId, tenantId]
+      ),
+    ]);
+
+    const calls = callsR.rows[0];
+    const msgs = msgsR.rows[0];
+    const fus = fuR.rows[0];
+    const leadCreatedAt = createdR.rows[0]?.created_at;
+
+    // First touch = earliest of first_call or first_message
+    const firstCallAt = calls.first_call_at ? new Date(calls.first_call_at).getTime() : null;
+    const firstMsgAt = msgs.first_message_at ? new Date(msgs.first_message_at).getTime() : null;
+    const createdMs = leadCreatedAt ? new Date(leadCreatedAt).getTime() : null;
+    let firstTouchMs: number | null = null;
+    if (firstCallAt && firstMsgAt) firstTouchMs = Math.min(firstCallAt, firstMsgAt);
+    else firstTouchMs = firstCallAt || firstMsgAt;
+
+    const firstTouchDelay = (firstTouchMs && createdMs) ? firstTouchMs - createdMs : null;
+
+    res.json({
+      calls: {
+        total: parseInt(calls.total),
+        inbound: parseInt(calls.inbound),
+        outbound: parseInt(calls.outbound),
+        missed: parseInt(calls.missed),
+        totalDuration: parseInt(calls.total_duration),
+      },
+      messages: {
+        total: parseInt(msgs.total),
+        whatsapp: parseInt(msgs.whatsapp),
+        email: parseInt(msgs.email),
+        templates: parseInt(msgs.templates),
+        inbound: parseInt(msgs.inbound),
+      },
+      followups: {
+        total: parseInt(fus.total),
+        completed: parseInt(fus.completed),
+        overdue: parseInt(fus.overdue),
+      },
+      firstTouchDelayMs: firstTouchDelay,
+    });
+  } catch (err) {
+    console.error('[lead stats]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ── Activities ─────────────────────────────────────────────────────────────────
 
 // GET /api/leads/:id/activities
