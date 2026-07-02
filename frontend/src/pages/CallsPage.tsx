@@ -4,6 +4,8 @@ import { api, downloadBlob, fetchBlob } from '@/lib/api';
 import { useCrmStore } from '@/store/crmStore';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { LeadDetailPanel } from './LeadsPage';
+import { Lead } from '@/data/mockData';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, Cell,
@@ -110,6 +112,26 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
   // Audio
   const [playingId, setPlayingId]   = useState<string | null>(null);
   const [audioUrls, setAudioUrls]   = useState<Record<string, string>>({});
+
+  // Lead detail panel
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const openLeadDetail = async (leadId: string) => {
+    try {
+      const data = await api.get<any>(`/api/leads/${leadId}`);
+      const [firstName, ...rest] = (data.name ?? '').split(' ');
+      setSelectedLead({
+        id: data.id, firstName, lastName: rest.join(' '),
+        phone: data.phone ?? '', email: data.email ?? '',
+        source: data.source ?? '', pipelineId: data.pipeline_id ?? '',
+        stage: data.stage_name ?? '', stageId: data.stage_id ?? '',
+        assignedTo: data.assigned_to ?? '', assignedName: data.assigned_name ?? '',
+        tags: data.tags ?? [], dealValue: data.deal_value ?? 0,
+        leadQuality: data.lead_quality ?? '', createdAt: data.created_at,
+        lastActivity: data.updated_at ?? data.created_at,
+        customFields: [], teamMembers: data.team_members ?? [],
+      } as Lead);
+    } catch { toast.error('Could not load lead details'); }
+  };
 
   const buildParams = useCallback(() => {
     const p = new URLSearchParams();
@@ -503,30 +525,26 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
 
       {/* Table */}
       <div className="flex-1 bg-white border border-black/[0.07] rounded-2xl overflow-hidden flex flex-col min-h-0">
-        <div className="overflow-auto flex-1">
-          <table className="w-full text-[13px]">
+        <div className="overflow-y-auto flex-1">
+          <table className="w-full text-[13px] table-fixed">
             <thead className="sticky top-0 bg-[var(--app-bg)] border-b border-black/[0.07] z-10">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c] w-10">#</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Lead</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Pipeline</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Stage</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Direction</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Outcome</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Duration</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Agent</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Disposition</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Date & Time</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Note</th>
-                <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c]">Recording</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[40px]">#</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c]">Lead</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[90px]">Direction</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[100px]">Outcome</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[70px]">Duration</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[120px]">Agent</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[130px]">Date & Time</th>
+                <th className="text-left px-3 py-3 font-semibold text-[#7a6b5c] w-[110px]">Recording</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {loading ? (
-                <tr><td colSpan={12} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
+                <tr><td colSpan={8} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
               ) : visible.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="text-center py-16">
+                  <td colSpan={8} className="text-center py-16">
                     <PhoneIncoming className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                     <p className="text-[14px] font-semibold text-[#7a6b5c]">No calls found</p>
                     <p className="text-[12px] text-[#b09e8d] mt-1">{source === 'superfone' ? 'Calls will appear here after Superfone syncs' : 'Calls will appear here once the Hawcus Dialer app syncs'}</p>
@@ -539,76 +557,81 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                 const DirIcon    = isOutbound ? PhoneOutgoing : notConnected ? PhoneMissed : PhoneIncoming;
                 const dirColor   = isOutbound ? 'text-blue-500' : notConnected ? 'text-red-500' : 'text-emerald-500';
                 const hasRec     = !!(c.recording_path || c.recording_url);
+                const dispStyle  = c.disposition_key ? (DISPOSITION_STYLES[c.disposition_key] ?? { bg: 'bg-orange-50', text: 'text-orange-700' }) : null;
 
                 return (
                   <>
                     <tr key={c.id} className="hover:bg-[var(--app-bg)] transition-colors">
-                      <td className="px-4 py-3 text-[#b09e8d]">{(page - 1) * LIMIT + idx + 1}</td>
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-[#1c1410] truncate max-w-[160px]">{c.lead_name ?? '-'}</p>
-                        <p className="text-[11px] text-[#b09e8d]">{c.caller_phone ?? ''}</p>
+                      <td className="px-3 py-2.5 text-[#b09e8d] text-[12px]">{(page - 1) * LIMIT + idx + 1}</td>
+                      <td className="px-3 py-2.5">
+                        {c.lead_id ? (
+                          <button onClick={() => openLeadDetail(c.lead_id!)} className="text-left group">
+                            <p className="font-semibold text-primary group-hover:underline truncate">{c.lead_name ?? c.caller_phone}</p>
+                            <p className="text-[11px] text-[#b09e8d]">{c.caller_phone ?? ''}</p>
+                          </button>
+                        ) : (
+                          <div>
+                            <p className="font-semibold text-[#1c1410] truncate">{c.lead_name ?? c.caller_phone ?? '-'}</p>
+                            {c.lead_name && <p className="text-[11px] text-[#b09e8d]">{c.caller_phone ?? ''}</p>}
+                          </div>
+                        )}
+                        {(c.disposition || c.notes) && (
+                          <div className="flex items-center gap-1.5 mt-1">
+                            {c.disposition && (
+                              <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold', dispStyle?.bg ?? 'bg-orange-50', dispStyle?.text ?? 'text-orange-700')}>
+                                {c.disposition}
+                              </span>
+                            )}
+                            {c.notes && (
+                              <span className="text-[10px] text-[#b09e8d] truncate max-w-[150px]" title={c.notes}>
+                                {c.notes}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-[#7a6b5c]">{c.pipeline_name ?? '-'}</td>
-                      <td className="px-4 py-3 text-[#7a6b5c]">{c.stage_name ?? '-'}</td>
-                      <td className="px-4 py-3">
-                        <span className={cn('flex items-center gap-1.5 font-medium', dirColor)}>
-                          <DirIcon className="w-4 h-4 shrink-0" />
-                          {isOutbound ? 'Outbound' : 'Inbound'}
+                      <td className="px-3 py-2.5">
+                        <span className={cn('flex items-center gap-1 text-[12px] font-medium', dirColor)}>
+                          <DirIcon className="w-3.5 h-3.5 shrink-0" />
+                          {isOutbound ? 'Out' : 'In'}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold',
+                      <td className="px-3 py-2.5">
+                        <span className={cn('px-2 py-0.5 rounded-full text-[11px] font-semibold',
                           isAnswered   ? 'bg-emerald-50 text-emerald-700' :
                           notConnected ? 'bg-red-50 text-red-600' :
                                          'bg-amber-50 text-amber-700'
                         )}>{outcomeLabel(c.outcome)}</span>
                       </td>
-                      <td className="px-4 py-3 text-[#7a6b5c] font-medium">{durLabel(c.duration_seconds)}</td>
-                      <td className="px-4 py-3 text-[#7a6b5c]">{c.staff_name ?? '-'}</td>
-                      <td className="px-4 py-3">
-                        {c.disposition_key ? (() => {
-                          const s = DISPOSITION_STYLES[c.disposition_key!] ?? { bg: 'bg-orange-50', text: 'text-orange-700' };
-                          return <span className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold', s.bg, s.text)}>{c.disposition ?? c.disposition_key}</span>;
-                        })() : c.disposition ? (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-700">{c.disposition}</span>
-                        ) : (
-                          <span className="text-[11px] text-[#b09e8d]">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-[#7a6b5c]">{dateLabel(c.started_at ?? c.created_at)}</td>
-                      <td className="px-4 py-3 max-w-[200px]">
-                        {c.notes ? (
-                          <span className="text-[#1c1410] whitespace-pre-wrap break-words line-clamp-2" title={c.notes}>{c.notes}</span>
-                        ) : (
-                          <span className="text-[11px] text-[#b09e8d]">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2.5 text-[#7a6b5c] font-medium text-[12px]">{durLabel(c.duration_seconds)}</td>
+                      <td className="px-3 py-2.5 text-[#7a6b5c] text-[12px] truncate">{c.staff_name ?? '-'}</td>
+                      <td className="px-3 py-2.5 text-[#7a6b5c] text-[12px]">{dateLabel(c.started_at ?? c.created_at)}</td>
+                      <td className="px-3 py-2.5">
                         {hasRec ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <button
                               onClick={() => handlePlay(c.id)}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-[11px] font-semibold transition-colors"
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-[11px] font-semibold transition-colors"
                             >
                               {playingId === c.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                               {playingId === c.id ? 'Stop' : 'Play'}
                             </button>
                             <button
                               onClick={() => downloadBlob(`/api/calls/${c.id}/download`, `call-${c.cdr_id}.mp3`)}
-                              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                              className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
                               title="Download"
                             >
                               <Download className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ) : (
-                          <span className="text-[11px] text-[#b09e8d]">No recording</span>
+                          <span className="text-[10px] text-[#b09e8d]">-</span>
                         )}
                       </td>
                     </tr>
                     {playingId === c.id && audioUrls[c.id] && (
                       <tr key={`${c.id}-audio`} className="bg-orange-50/50">
-                        <td colSpan={12} className="px-4 py-2">
+                        <td colSpan={8} className="px-3 py-2">
                           <audio
                             src={audioUrls[c.id]}
                             autoPlay
@@ -648,6 +671,11 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           </div>
         )}
       </div>
+
+      {/* Lead Detail Panel */}
+      {selectedLead && (
+        <LeadDetailPanel lead={selectedLead} onClose={() => setSelectedLead(null)} />
+      )}
     </div>
   );
 }
