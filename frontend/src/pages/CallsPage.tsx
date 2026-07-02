@@ -220,41 +220,39 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">{source === 'superfone' ? 'Superfone Call Logs' : 'Dialer Call Logs'}</h1>
           <p className="text-[13px] text-[#7a6b5c] mt-0.5">{total} total calls</p>
         </div>
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-black/10 bg-white text-[13px] font-semibold text-[#1c1410] hover:bg-[#faf0e8] hover:border-primary/30 transition-colors"
-        >
-          <Download className="w-4 h-4" /> Export Excel
-        </button>
-      </div>
-
-      {/* Quick date pills + Toolbar */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        {([
-          ['today', 'Today'],
-          ['yesterday', 'Yesterday'],
-          ['7days', 'Last 7 Days'],
-          ['month', 'This Month'],
-          ['', 'All Time'],
-        ] as const).map(([key, label]) => (
+        <div className="flex items-center gap-2">
+          {([
+            ['today', 'Today'],
+            ['yesterday', 'Yesterday'],
+            ['7days', '7 Days'],
+            ['month', 'This Month'],
+            ['', 'All'],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => applyQuickDate(key)}
+              className={cn(
+                'px-3 py-1.5 rounded-full text-[12px] font-semibold transition-colors',
+                quickDate === key
+                  ? 'bg-primary text-white'
+                  : 'bg-white border border-black/10 text-[#7a6b5c] hover:bg-[#faf0e8] hover:border-primary/30'
+              )}
+            >
+              {label}
+            </button>
+          ))}
           <button
-            key={key}
-            onClick={() => applyQuickDate(key)}
-            className={cn(
-              'px-3 py-1.5 rounded-full text-[12px] font-semibold transition-colors',
-              quickDate === key
-                ? 'bg-primary text-white'
-                : 'bg-white border border-black/10 text-[#7a6b5c] hover:bg-[#faf0e8] hover:border-primary/30'
-            )}
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-black/10 bg-white text-[13px] font-semibold text-[#1c1410] hover:bg-[#faf0e8] hover:border-primary/30 transition-colors ml-2"
           >
-            {label}
+            <Download className="w-4 h-4" /> Export
           </button>
-        ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-3 mb-4">
