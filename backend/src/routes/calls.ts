@@ -627,7 +627,7 @@ router.post('/:callId/create-lead', checkPermission('leads:create'), async (req:
     }
 
     const leadName = (name?.trim()) || call.caller_phone || 'Unknown';
-    const leadSource = call.source === 'superfone' ? 'Superfone' : call.source === 'mobile' ? 'Dialer' : 'Phone Call';
+    const leadSource = call.source === 'superfone' ? 'Superfone' : 'Dialer';
 
     // Create the lead
     const leadRes = await query(
