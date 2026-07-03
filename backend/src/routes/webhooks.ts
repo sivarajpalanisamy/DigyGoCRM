@@ -736,14 +736,17 @@ async function ingestSuperfoneCall(tenantId: string, payload: Record<string, any
 
     if (!cdr_id) return;
 
-    // Handle CDR_RECORDING_AVAILABLE — update existing call with recording URL
+    // CDR_RECORDING_AVAILABLE — try to update existing row first; if no row exists,
+    // fall through to the full insert logic (the payload contains all call data).
     if (event === 'CDR_RECORDING_AVAILABLE' && recUrl) {
       console.log(`[superfone] Recording available for cdr_id=${cdr_id}`);
-      await query(
-        `UPDATE call_logs SET recording_url=$1 WHERE tenant_id=$2::uuid AND cdr_id=$3`,
+      const upd = await query(
+        `UPDATE call_logs SET recording_url=$1 WHERE tenant_id=$2::uuid AND cdr_id=$3 RETURNING id`,
         [recUrl, tenantId, cdr_id]
       );
-      return;
+      if (upd.rows.length > 0) return; // existing row updated, done
+      // No existing row — fall through to create the call log from this payload
+      console.log(`[superfone] No existing call log for cdr_id=${cdr_id}, creating from recording event`);
     }
 
     // Build staff name from payload
