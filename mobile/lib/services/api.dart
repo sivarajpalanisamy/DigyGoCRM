@@ -58,9 +58,10 @@ class Api {
     await _pushSyncConfig();
   }
 
-  // Keep the native auto-sync receiver's config (base URL + token) in sync.
+  // Keep the native auto-sync receiver's config (base URL + token + verified SIMs) in sync.
   Future<void> _pushSyncConfig() async {
     await Native.instance.setSyncConfig(base: _baseUrl, token: _cachedToken);
+    await _pushVerifiedSims();
   }
   Future<void> refreshSyncConfig() => _pushSyncConfig();
 
@@ -151,21 +152,44 @@ class Api {
     final data = Map<String, dynamic>.from(res.data as Map);
     // Only linked (CRM-verified) numbers get a token; otherwise app runs local-only.
     if (data['deviceToken'] != null) await _saveToken(data['deviceToken'] as String);
-    await addLocalNumber(phone);
+    await addLocalNumber(phone, slot: simSlot);
     await markSimStepDone();
     return data;
   }
 
   // ── Local (verified-in-app) numbers - used to auto-link once added in the CRM ──
   static const _numsKey = 'digygo_local_numbers';
+  static const _simsKey = 'digygo_local_sims'; // [{n, slot}] — drives the native SIM gate
   Future<List<String>> localNumbers() async {
     final v = await _store.read(key: _numsKey);
     if (v == null || v.isEmpty) return [];
     try { return (jsonDecode(v) as List).cast<String>(); } catch (_) { return []; }
   }
-  Future<void> addLocalNumber(String n) async {
+  Future<void> addLocalNumber(String n, {int? slot}) async {
     final list = await localNumbers();
     if (!list.contains(n)) { list.add(n); await _store.write(key: _numsKey, value: jsonEncode(list)); }
+    // Track which SIM slot this verified number is on, so the background CallSync can
+    // tell it apart from an unverified SIM's calls on a dual-SIM phone.
+    final sims = await _localSims();
+    final idx = sims.indexWhere((s) => s['n'] == n);
+    if (idx >= 0) { if (slot != null) sims[idx]['slot'] = slot; }
+    else { sims.add({'n': n, 'slot': slot ?? -1}); }
+    await _store.write(key: _simsKey, value: jsonEncode(sims));
+    await _pushVerifiedSims();
+  }
+
+  Future<List<Map<String, dynamic>>> _localSims() async {
+    final v = await _store.read(key: _simsKey);
+    if (v == null || v.isEmpty) return [];
+    try { return (jsonDecode(v) as List).map((e) => Map<String, dynamic>.from(e as Map)).toList(); }
+    catch (_) { return []; }
+  }
+
+  // Mirror app-verified SIMs to native as [{slot, number}] for the background SIM gate.
+  Future<void> _pushVerifiedSims() async {
+    final sims = await _localSims();
+    final payload = sims.map((s) => {'slot': s['slot'] ?? -1, 'number': s['n'] ?? ''}).toList();
+    await Native.instance.setVerifiedSims(jsonEncode(payload));
   }
 
   /// Retry linking: if any locally-verified number has since been added in the CRM,
