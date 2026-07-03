@@ -601,7 +601,7 @@ router.post('/:callId/create-lead', checkPermission('leads:create'), async (req:
   try {
     // Verify call exists and is unmatched
     const callRes = await query(
-      `SELECT id, caller_phone, direction, outcome, duration_seconds, staff_user_id FROM call_logs
+      `SELECT id, caller_phone, direction, outcome, duration_seconds, staff_user_id, source FROM call_logs
        WHERE id=$1 AND tenant_id=$2::uuid`,
       [callId, tenantId],
     );
@@ -627,13 +627,14 @@ router.post('/:callId/create-lead', checkPermission('leads:create'), async (req:
     }
 
     const leadName = (name?.trim()) || call.caller_phone || 'Unknown';
+    const leadSource = call.source === 'superfone' ? 'Superfone' : call.source === 'mobile' ? 'Dialer' : 'Phone Call';
 
     // Create the lead
     const leadRes = await query(
       `INSERT INTO leads (tenant_id, name, phone, source, pipeline_id, stage_id, assigned_to)
-       VALUES ($1::uuid, $2, $3, 'Phone Call', $4::uuid, $5::uuid, $6::uuid)
+       VALUES ($1::uuid, $2, $3, $7, $4::uuid, $5::uuid, $6::uuid)
        RETURNING id, name`,
-      [tenantId, cleanText(leadName), call.caller_phone, pId, sId, userId],
+      [tenantId, cleanText(leadName), call.caller_phone, pId, sId, userId, leadSource],
     );
     const lead = leadRes.rows[0];
 
