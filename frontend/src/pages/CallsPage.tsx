@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Download, Play, Pause, Filter, X, Search, Phone, PhoneOff, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Download, Play, Pause, Filter, X, Search, Phone, PhoneOff, Clock, ChevronDown, ChevronUp, UserPlus, Link2, XCircle, AlertTriangle } from 'lucide-react';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
 import { useCrmStore } from '@/store/crmStore';
 import { toast } from 'sonner';
@@ -109,6 +109,18 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
   const [showCharts, setShowCharts] = useState(false);
   const [quickDate, setQuickDate] = useState<'today' | 'yesterday' | '7days' | 'month' | ''>('');
 
+  // Unmatched calls
+  const [showUnmatched, setShowUnmatched] = useState(false);
+  const [linkModalCall, setLinkModalCall] = useState<CallLog | null>(null);
+  const [linkSearch, setLinkSearch] = useState('');
+  const [linkResults, setLinkResults] = useState<{ id: string; name: string; phone: string }[]>([]);
+  const [linkSearching, setLinkSearching] = useState(false);
+  const [createLeadCall, setCreateLeadCall] = useState<CallLog | null>(null);
+  const [createLeadName, setCreateLeadName] = useState('');
+  const [createLeadPipeline, setCreateLeadPipeline] = useState('');
+  const [createLeadStage, setCreateLeadStage] = useState('');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
   // Audio
   const [playingId, setPlayingId]   = useState<string | null>(null);
   const [audioUrls, setAudioUrls]   = useState<Record<string, string>>({});
@@ -143,8 +155,9 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
     if (dateTo)     p.set('date_to', dateTo);
     if (pipelineId) p.set('pipeline_id', pipelineId);
     if (stageId)    p.set('stage_id', stageId);
+    if (showUnmatched) p.set('is_unknown', 'true');
     return p;
-  }, [source, direction, outcome, staffName, dateFrom, dateTo, pipelineId, stageId]);
+  }, [source, direction, outcome, staffName, dateFrom, dateTo, pipelineId, stageId, showUnmatched]);
 
   const load = useCallback(async (pg = 1) => {
     setLoading(true);
@@ -218,6 +231,64 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
     }
   };
 
+  // Unmatched call actions
+  const handleDismiss = async (callId: string) => {
+    setActionLoading(callId);
+    try {
+      await api.patch(`/api/calls/${callId}/dismiss`);
+      toast.success('Call dismissed');
+      load(page);
+    } catch { toast.error('Failed to dismiss'); }
+    finally { setActionLoading(null); }
+  };
+
+  const handleLinkSearch = async (q: string) => {
+    setLinkSearch(q);
+    if (q.trim().length < 2) { setLinkResults([]); return; }
+    setLinkSearching(true);
+    try {
+      const data = await api.get<{ leads: any[] }>(`/api/leads?search=${encodeURIComponent(q)}&limit=10`);
+      setLinkResults((data.leads ?? []).map((l: any) => ({ id: l.id, name: l.name, phone: l.phone })));
+    } catch { setLinkResults([]); }
+    finally { setLinkSearching(false); }
+  };
+
+  const handleLinkToLead = async (callId: string, leadId: string) => {
+    setActionLoading(callId);
+    try {
+      await api.patch(`/api/calls/${callId}/link`, { lead_id: leadId });
+      toast.success('Call linked to lead');
+      setLinkModalCall(null);
+      setLinkSearch('');
+      setLinkResults([]);
+      load(page);
+    } catch { toast.error('Failed to link'); }
+    finally { setActionLoading(null); }
+  };
+
+  const handleCreateLead = async () => {
+    if (!createLeadCall) return;
+    setActionLoading(createLeadCall.id);
+    try {
+      await api.post(`/api/calls/${createLeadCall.id}/create-lead`, {
+        name: createLeadName.trim() || undefined,
+        pipeline_id: createLeadPipeline || undefined,
+        stage_id: createLeadStage || undefined,
+      });
+      toast.success('Lead created and linked');
+      setCreateLeadCall(null);
+      setCreateLeadName('');
+      setCreateLeadPipeline('');
+      setCreateLeadStage('');
+      load(page);
+    } catch { toast.error('Failed to create lead'); }
+    finally { setActionLoading(null); }
+  };
+
+  const createLeadStages = createLeadPipeline
+    ? pipelines.find((p) => p.id === createLeadPipeline)?.stages ?? []
+    : [];
+
   const clearFilters = () => {
     setDirection(''); setOutcome(''); setStaffName(''); setDateFrom(''); setDateTo('');
     setPipelineId(''); setStageId(''); setQuickDate('');
@@ -287,6 +358,18 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <button
+          onClick={() => setShowUnmatched((v) => !v)}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2 rounded-xl border text-[13px] font-semibold transition-colors',
+            showUnmatched
+              ? 'bg-amber-500 text-white border-amber-500'
+              : 'bg-white border-black/10 text-[#1c1410] hover:bg-[#faf0e8]'
+          )}
+        >
+          <AlertTriangle className="w-4 h-4" />
+          Unmatched {stats?.kpi.unknown_calls ? `(${stats.kpi.unknown_calls})` : ''}
+        </button>
         <button
           onClick={() => setShowFilters((v) => !v)}
           className={cn(
@@ -572,8 +655,35 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                           </button>
                         ) : (
                           <div>
-                            <p className="font-semibold text-[#1c1410] truncate">{c.lead_name ?? c.caller_phone ?? '-'}</p>
-                            {c.lead_name && <p className="text-[11px] text-[#b09e8d]">{c.caller_phone ?? ''}</p>}
+                            <p className="font-semibold text-[#1c1410] truncate">{c.caller_phone ?? '-'}</p>
+                            {c.is_unknown && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <button
+                                  onClick={() => { setCreateLeadCall(c); setCreateLeadName(c.caller_phone ?? ''); }}
+                                  disabled={actionLoading === c.id}
+                                  className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-semibold transition-colors"
+                                  title="Create new lead from this call"
+                                >
+                                  <UserPlus className="w-3 h-3" /> Create
+                                </button>
+                                <button
+                                  onClick={() => { setLinkModalCall(c); setLinkSearch(''); setLinkResults([]); }}
+                                  disabled={actionLoading === c.id}
+                                  className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-semibold transition-colors"
+                                  title="Link to existing lead"
+                                >
+                                  <Link2 className="w-3 h-3" /> Link
+                                </button>
+                                <button
+                                  onClick={() => handleDismiss(c.id)}
+                                  disabled={actionLoading === c.id}
+                                  className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-500 text-[10px] font-semibold transition-colors"
+                                  title="Dismiss - not relevant"
+                                >
+                                  <XCircle className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
                         {(c.disposition || c.notes) && (
@@ -676,6 +786,114 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           </div>
         )}
       </div>
+
+      {/* Link to Lead Modal */}
+      {linkModalCall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setLinkModalCall(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[16px] font-bold text-[#1c1410]">Link to Existing Lead</h3>
+              <button onClick={() => setLinkModalCall(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-[12px] text-[#7a6b5c] mb-3">
+              Call from <span className="font-semibold text-[#1c1410]">{linkModalCall.caller_phone}</span>
+            </p>
+            <div className="relative mb-3">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-black/10 bg-[#faf8f6] text-[13px] outline-none focus:border-primary/40 placeholder:text-gray-400"
+                placeholder="Search leads by name or phone..."
+                value={linkSearch}
+                onChange={(e) => handleLinkSearch(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="max-h-[240px] overflow-y-auto space-y-1">
+              {linkSearching && <p className="text-[12px] text-[#b09e8d] text-center py-4">Searching...</p>}
+              {!linkSearching && linkSearch.trim().length >= 2 && linkResults.length === 0 && (
+                <p className="text-[12px] text-[#b09e8d] text-center py-4">No leads found</p>
+              )}
+              {linkResults.map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => handleLinkToLead(linkModalCall.id, l.id)}
+                  disabled={!!actionLoading}
+                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-[#faf0e8] transition-colors flex items-center justify-between group"
+                >
+                  <div>
+                    <p className="text-[13px] font-semibold text-[#1c1410] group-hover:text-primary">{l.name}</p>
+                    <p className="text-[11px] text-[#b09e8d]">{l.phone}</p>
+                  </div>
+                  <Link2 className="w-4 h-4 text-[#b09e8d] group-hover:text-primary" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Lead Modal */}
+      {createLeadCall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setCreateLeadCall(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[16px] font-bold text-[#1c1410]">Create Lead from Call</h3>
+              <button onClick={() => setCreateLeadCall(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-[12px] text-[#7a6b5c] mb-4">
+              Phone: <span className="font-semibold text-[#1c1410]">{createLeadCall.caller_phone}</span>
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Lead Name</label>
+                <input
+                  className="w-full px-3 py-2.5 rounded-xl border border-black/10 bg-[#faf8f6] text-[13px] outline-none focus:border-primary/40"
+                  placeholder="Enter lead name..."
+                  value={createLeadName}
+                  onChange={(e) => setCreateLeadName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Pipeline</label>
+                <select
+                  className="w-full border border-black/10 rounded-xl px-3 py-2.5 text-[13px] text-[#1c1410] bg-[#faf8f6] outline-none"
+                  value={createLeadPipeline}
+                  onChange={(e) => { setCreateLeadPipeline(e.target.value); setCreateLeadStage(''); }}
+                >
+                  <option value="">Default Pipeline</option>
+                  {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              {createLeadStages.length > 0 && (
+                <div>
+                  <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Stage</label>
+                  <select
+                    className="w-full border border-black/10 rounded-xl px-3 py-2.5 text-[13px] text-[#1c1410] bg-[#faf8f6] outline-none"
+                    value={createLeadStage}
+                    onChange={(e) => setCreateLeadStage(e.target.value)}
+                  >
+                    <option value="">First Stage</option>
+                    {createLeadStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setCreateLeadCall(null)} className="px-4 py-2 rounded-xl border border-black/10 text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateLead}
+                disabled={!!actionLoading}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#c2410c] to-[#ea580c] text-white text-[13px] font-semibold hover:opacity-90 disabled:opacity-50"
+              >
+                {actionLoading ? 'Creating...' : 'Create Lead'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lead Detail Panel */}
       {selectedLead && (

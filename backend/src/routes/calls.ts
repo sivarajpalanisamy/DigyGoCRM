@@ -14,7 +14,7 @@ router.use(requireTenant);
 // GET /api/calls — all calls for tenant with filters + pagination
 router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { direction, outcome, staff_name, date_from, date_to, source, pipeline_id, stage_id, page = '1', limit = '50' } = req.query as Record<string, string>;
+  const { direction, outcome, staff_name, date_from, date_to, source, pipeline_id, stage_id, is_unknown, page = '1', limit = '50' } = req.query as Record<string, string>;
 
   // Scope: owner/super_admin and calls:view_all → see all; calls:view_own only → own calls
   const isSuper = role === 'super_admin';
@@ -40,6 +40,7 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
   if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) < $${params.length}::date + INTERVAL '1 day'`); }
   if (pipeline_id) { params.push(pipeline_id);              conditions.push(`l.pipeline_id = $${params.length}::uuid`); }
   if (stage_id)    { params.push(stage_id);                 conditions.push(`l.stage_id = $${params.length}::uuid`); }
+  if (is_unknown === 'true') { conditions.push(`cl.is_unknown = TRUE`); }
 
   // When filtering by pipeline/stage we need INNER JOIN so calls without a lead are excluded
   const leadJoin = (pipeline_id || stage_id) ? 'JOIN' : 'LEFT JOIN';
@@ -518,6 +519,157 @@ router.post('/:callId/post-call', async (req: AuthRequest, res: Response) => {
     res.json({ ok: true, disposition: dispDef.label, follow_up: followUp });
   } catch (err: any) {
     console.error('[post-call]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// --- Unmatched Call Actions ---
+
+// PATCH /api/calls/:callId/link — link an unmatched call to an existing lead
+router.patch('/:callId/link', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const { callId } = req.params;
+  const { lead_id } = req.body as { lead_id: string };
+
+  if (!lead_id) { res.status(400).json({ error: 'lead_id is required' }); return; }
+
+  try {
+    // Verify call exists and belongs to tenant
+    const callRes = await query(
+      `SELECT id, direction, outcome, duration_seconds, staff_user_id FROM call_logs
+       WHERE id=$1 AND tenant_id=$2::uuid`,
+      [callId, tenantId],
+    );
+    if (!callRes.rows[0]) { res.status(404).json({ error: 'Call not found' }); return; }
+    const call = callRes.rows[0];
+
+    // Verify lead exists and belongs to tenant
+    const leadRes = await query(
+      `SELECT id, name FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE`,
+      [lead_id, tenantId],
+    );
+    if (!leadRes.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }
+
+    // Update call log
+    await query(
+      `UPDATE call_logs SET lead_id=$1::uuid, is_unknown=FALSE WHERE id=$2 AND tenant_id=$3::uuid`,
+      [lead_id, callId, tenantId],
+    );
+
+    // Create lead activity
+    const dir = call.direction === 'OUTBOUND' ? 'Outgoing' : 'Incoming';
+    const dur = Number(call.duration_seconds ?? 0) || 0;
+    const durTxt = dur > 0 ? ` (${Math.floor(dur / 60)}m ${dur % 60}s)` : '';
+    await query(
+      `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+       VALUES ($1::uuid,$2::uuid,'call',$3,$4,$5::uuid)`,
+      [lead_id, tenantId, `${dir} call - ${call.outcome}${durTxt}`, callId, userId],
+    );
+
+    res.json({ ok: true });
+  } catch (e: any) {
+    console.error('[call link]', e.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /api/calls/:callId/dismiss — dismiss an unmatched call (mark as not relevant)
+router.patch('/:callId/dismiss', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
+  const { tenantId } = req.user!;
+  const { callId } = req.params;
+
+  try {
+    const result = await query(
+      `UPDATE call_logs SET is_unknown=FALSE, notes=COALESCE(notes, '') || CASE WHEN notes IS NULL OR notes='' THEN '[Dismissed]' ELSE ' [Dismissed]' END
+       WHERE id=$1 AND tenant_id=$2::uuid AND is_unknown=TRUE RETURNING id`,
+      [callId, tenantId],
+    );
+    if (!result.rows[0]) { res.status(404).json({ error: 'Call not found or already resolved' }); return; }
+    res.json({ ok: true });
+  } catch (e: any) {
+    console.error('[call dismiss]', e.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/calls/:callId/create-lead — create a new lead from an unmatched call and link it
+router.post('/:callId/create-lead', checkPermission('leads:create'), async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId } = req.user!;
+  const { callId } = req.params;
+  const { name, pipeline_id, stage_id } = req.body as { name?: string; pipeline_id?: string; stage_id?: string };
+
+  try {
+    // Verify call exists and is unmatched
+    const callRes = await query(
+      `SELECT id, caller_phone, direction, outcome, duration_seconds, staff_user_id FROM call_logs
+       WHERE id=$1 AND tenant_id=$2::uuid`,
+      [callId, tenantId],
+    );
+    if (!callRes.rows[0]) { res.status(404).json({ error: 'Call not found' }); return; }
+    const call = callRes.rows[0];
+
+    // Resolve pipeline/stage — use provided or fall back to first pipeline's first stage
+    let pId = pipeline_id || null;
+    let sId = stage_id || null;
+    if (!pId) {
+      const defPipeline = await query(
+        `SELECT p.id AS pipeline_id, ps.id AS stage_id
+         FROM pipelines p
+         LEFT JOIN pipeline_stages ps ON ps.pipeline_id = p.id
+         WHERE p.tenant_id=$1::uuid
+         ORDER BY p.sort_order, ps.sort_order LIMIT 1`,
+        [tenantId],
+      );
+      if (defPipeline.rows[0]) {
+        pId = defPipeline.rows[0].pipeline_id;
+        sId = sId || defPipeline.rows[0].stage_id;
+      }
+    }
+
+    const leadName = (name?.trim()) || call.caller_phone || 'Unknown';
+
+    // Create the lead
+    const leadRes = await query(
+      `INSERT INTO leads (tenant_id, name, phone, source, pipeline_id, stage_id, assigned_to, created_by)
+       VALUES ($1::uuid, $2, $3, 'Phone Call', $4::uuid, $5::uuid, $6::uuid, $6::uuid)
+       RETURNING id, name`,
+      [tenantId, cleanText(leadName), call.caller_phone, pId, sId, userId],
+    );
+    const lead = leadRes.rows[0];
+
+    // Link call to the new lead
+    await query(
+      `UPDATE call_logs SET lead_id=$1::uuid, is_unknown=FALSE WHERE id=$2 AND tenant_id=$3::uuid`,
+      [lead.id, callId, tenantId],
+    );
+
+    // Also link any other unmatched calls with the same phone to this lead
+    await query(
+      `UPDATE call_logs SET lead_id=$1::uuid, is_unknown=FALSE
+       WHERE tenant_id=$2::uuid AND lead_id IS NULL AND is_unknown=TRUE AND caller_phone=$3`,
+      [lead.id, tenantId, call.caller_phone],
+    );
+
+    // Create lead activity for the call
+    const dir = call.direction === 'OUTBOUND' ? 'Outgoing' : 'Incoming';
+    const dur = Number(call.duration_seconds ?? 0) || 0;
+    const durTxt = dur > 0 ? ` (${Math.floor(dur / 60)}m ${dur % 60}s)` : '';
+    await query(
+      `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
+       VALUES ($1::uuid,$2::uuid,'call',$3,$4,$5::uuid)`,
+      [lead.id, tenantId, `${dir} call - ${call.outcome}${durTxt}`, callId, userId],
+    );
+
+    // Create "lead created" activity
+    await query(
+      `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
+       VALUES ($1::uuid,$2::uuid,'created','Lead created from unmatched call',$3::uuid)`,
+      [lead.id, tenantId, userId],
+    );
+
+    res.json({ ok: true, lead_id: lead.id, lead_name: lead.name });
+  } catch (e: any) {
+    console.error('[call create-lead]', e.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
