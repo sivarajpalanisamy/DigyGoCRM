@@ -48,7 +48,10 @@ export default function ConversionFunnelReportPage() {
   }, [pipelines, pipelineId]);
 
   useEffect(() => {
-    if (!pipelineId) return;
+    if (!pipelineId) {
+      setLoading(false);
+      return;
+    }
     const load = async () => {
       setLoading(true);
       try {
