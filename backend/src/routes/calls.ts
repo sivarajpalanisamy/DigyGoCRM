@@ -630,8 +630,8 @@ router.post('/:callId/create-lead', checkPermission('leads:create'), async (req:
 
     // Create the lead
     const leadRes = await query(
-      `INSERT INTO leads (tenant_id, name, phone, source, pipeline_id, stage_id, assigned_to, created_by)
-       VALUES ($1::uuid, $2, $3, 'Phone Call', $4::uuid, $5::uuid, $6::uuid, $6::uuid)
+      `INSERT INTO leads (tenant_id, name, phone, source, pipeline_id, stage_id, assigned_to)
+       VALUES ($1::uuid, $2, $3, 'Phone Call', $4::uuid, $5::uuid, $6::uuid)
        RETURNING id, name`,
       [tenantId, cleanText(leadName), call.caller_phone, pId, sId, userId],
     );

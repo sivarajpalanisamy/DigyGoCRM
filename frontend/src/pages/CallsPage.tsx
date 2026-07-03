@@ -659,7 +659,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                             {c.is_unknown && (
                               <div className="flex items-center gap-1 mt-1">
                                 <button
-                                  onClick={() => { setCreateLeadCall(c); setCreateLeadName(c.caller_phone ?? ''); }}
+                                  onClick={() => { setCreateLeadCall(c); setCreateLeadName(''); }}
                                   disabled={actionLoading === c.id}
                                   className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-semibold transition-colors"
                                   title="Create new lead from this call"
