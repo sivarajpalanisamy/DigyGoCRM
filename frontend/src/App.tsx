@@ -60,6 +60,12 @@ const WhatsAppSetupPage = lazy(() => import("./pages/WhatsAppSetupPage"));
 const WABABroadcastPage = lazy(() => import("./pages/WABABroadcastPage"));
 const WABASingleSendPage = lazy(() => import("./pages/WABASingleSendPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+const ReportsOverviewPage = lazy(() => import("./pages/ReportsOverviewPage"));
+const ResponseTimeReportPage = lazy(() => import("./pages/reports/ResponseTimeReportPage"));
+const StaffScorecardReportPage = lazy(() => import("./pages/reports/StaffScorecardReportPage"));
+const ConversionFunnelReportPage = lazy(() => import("./pages/reports/ConversionFunnelReportPage"));
+const FollowupComplianceReportPage = lazy(() => import("./pages/reports/FollowupComplianceReportPage"));
+const SourceRoiReportPage = lazy(() => import("./pages/reports/SourceRoiReportPage"));
 const CallsPage = lazy(() => import("./pages/CallsPage"));
 const PaymentsPage = lazy(() => import("./pages/PaymentsPage"));
 const LandingPagesPage = lazy(() => import("./pages/LandingPagesPage"));
@@ -103,7 +109,13 @@ const App = () => (
           <Route element={<AuthGuard />}>
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/reports"   element={<ReportsPage />} />
+            <Route path="/reports"   element={<ReportsOverviewPage />} />
+            <Route path="/reports/pipeline" element={<ReportsPage />} />
+            <Route path="/reports/response-time" element={<ResponseTimeReportPage />} />
+            <Route path="/reports/staff-scorecard" element={<StaffScorecardReportPage />} />
+            <Route path="/reports/conversion-funnel" element={<ConversionFunnelReportPage />} />
+            <Route path="/reports/followup-compliance" element={<FollowupComplianceReportPage />} />
+            <Route path="/reports/source-roi" element={<SourceRoiReportPage />} />
 
             {/* Lead Generation */}
             <Route path="/lead-generation" element={<LeadGenerationPage />} />

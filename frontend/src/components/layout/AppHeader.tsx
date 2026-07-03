@@ -60,6 +60,15 @@ const sectionNavs: Record<string, NavItem[]> = {
     { label: 'Create / Edit', path: '/calendar?tab=create-edit' },
     { label: 'Appointments', path: '/calendar?tab=appointments' },
   ],
+  '/reports': [
+    { label: 'Overview', path: '/reports' },
+    { label: 'Pipeline', path: '/reports/pipeline' },
+    { label: 'Response Time', path: '/reports/response-time' },
+    { label: 'Staff Scorecard', path: '/reports/staff-scorecard' },
+    { label: 'Funnel', path: '/reports/conversion-funnel' },
+    { label: 'Follow-ups', path: '/reports/followup-compliance' },
+    { label: 'Source ROI', path: '/reports/source-roi' },
+  ],
   '/fields': [
     { label: 'Standard Fields', path: '/fields' },
     { label: 'Additional Fields', path: '/fields?tab=additional' },
