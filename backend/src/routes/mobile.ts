@@ -431,6 +431,41 @@ interface MobileCallInput {
   endedAt?: string;
   disposition?: string;
   notes?: string;
+  simSlot?: number;    // SIM slot the call was made/received on (0/1), if the app resolved it
+  simNumber?: string;  // MSISDN of that SIM, if known
+}
+
+// Last-10-digits of a phone, tolerant of +91 / spacing differences between sources.
+function digitSuffix(phone: string): string {
+  const d = (phone || '').replace(/\D/g, '');
+  return d.length > 10 ? d.slice(-10) : d;
+}
+
+// The set of numbers/SIM-slots that are VERIFIED for this device — i.e. the numbers
+// the admin added + OTP-verified in the CRM dashboard AND that this device registered.
+// A call whose SIM isn't in this set must never be logged (dual-SIM: the skipped SIM).
+interface DeviceAllow { hasVerified: boolean; numbers: Set<string>; slots: Set<number>; }
+async function loadDeviceAllow(deviceId?: string): Promise<DeviceAllow> {
+  const empty: DeviceAllow = { hasVerified: false, numbers: new Set(), slots: new Set() };
+  if (!deviceId) return empty;
+  try {
+    const r = await query(
+      `SELECT phone_number, sim_slot FROM mobile_device_numbers WHERE device_id=$1::uuid AND verified=TRUE
+       UNION
+       SELECT phone_number, NULL::int FROM mobile_devices
+        WHERE id=$1::uuid AND phone_verified=TRUE AND phone_number IS NOT NULL`,
+      [deviceId]
+    );
+    const numbers = new Set<string>();
+    const slots = new Set<number>();
+    for (const row of r.rows) {
+      if (row.phone_number) numbers.add(digitSuffix(normalizePhone(row.phone_number)));
+      if (row.sim_slot !== null && row.sim_slot !== undefined) slots.add(Number(row.sim_slot));
+    }
+    return { hasVerified: numbers.size > 0 || slots.size > 0, numbers, slots };
+  } catch {
+    return empty;
+  }
 }
 
 async function ingestOneCall(
@@ -439,13 +474,30 @@ async function ingestOneCall(
   staffUserId: string,
   staffName: string | null,
   deviceId: string | undefined,
-): Promise<{ clientCallId: string | null; id: string | null; status: 'inserted' | 'duplicate' | 'error'; error?: string }> {
+  allow: DeviceAllow,
+): Promise<{ clientCallId: string | null; id: string | null; status: 'inserted' | 'duplicate' | 'error' | 'rejected'; error?: string }> {
   const clientCallId = call.clientCallId ?? null;
   try {
     const phone = call.phone ?? null;
     const direction = normalizeDirection(call.direction);
     const duration = Number(call.durationSeconds ?? 0) || 0;
     const outcome = normalizeOutcome(call.outcome, duration);
+
+    // SIM gate — only log calls made/received on a CRM-verified number for this device.
+    // The app tags each call with the SIM slot (+ number when known). If the device has
+    // verified numbers and this call carries attribution that matches NONE of them, drop
+    // it (this is the unverified/skipped SIM). Calls with no attribution (older app
+    // builds) fall through unchanged so already-deployed devices keep working.
+    const simSlot = Number.isInteger(call.simSlot) ? (call.simSlot as number) : null;
+    const simNumber = call.simNumber ? normalizePhone(String(call.simNumber)) : null;
+    if (allow.hasVerified) {
+      const hasAttribution = simSlot !== null || simNumber !== null;
+      const numMatch = simNumber !== null && allow.numbers.has(digitSuffix(simNumber));
+      const slotMatch = simSlot !== null && allow.slots.has(simSlot);
+      if (hasAttribution && !numMatch && !slotMatch) {
+        return { clientCallId, id: null, status: 'rejected' };
+      }
+    }
 
     // Match caller/callee phone to a lead (normalized + raw)
     let leadId: string | null = null;
@@ -467,14 +519,16 @@ async function ingestOneCall(
       `INSERT INTO call_logs
          (tenant_id, lead_id, direction, outcome, caller_phone,
           duration_seconds, started_at, ended_at, staff_name, staff_user_id,
-          source, device_id, client_call_id, disposition, notes, is_unknown)
-       VALUES ($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10::uuid,'mobile',$11,$12,$13,$14,$15)
+          source, device_id, client_call_id, disposition, notes, is_unknown,
+          sim_slot, sim_number)
+       VALUES ($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10::uuid,'mobile',$11,$12,$13,$14,$15,$16,$17)
        ON CONFLICT (tenant_id, client_call_id) WHERE client_call_id IS NOT NULL DO NOTHING
        RETURNING id`,
       [
         tenantId, leadId, direction, outcome, phone,
         duration, call.startedAt ?? null, call.endedAt ?? null, staffName, staffUserId,
         deviceId ?? null, clientCallId, call.disposition ?? null, call.notes ?? null, isUnknown,
+        simSlot, simNumber,
       ]
     );
 
@@ -533,17 +587,20 @@ router.post('/calls', async (req: AuthRequest, res: Response) => {
   try {
     const staff = await query(`SELECT name FROM users WHERE id=$1::uuid`, [userId]);
     const staffName = staff.rows[0]?.name ?? null;
+    // Verified-number allow-list for this device — computed once per batch.
+    const allow = await loadDeviceAllow(req.deviceId);
 
     const results = [];
-    let inserted = 0, duplicates = 0, errors = 0;
+    let inserted = 0, duplicates = 0, errors = 0, rejected = 0;
     for (const call of calls) {
-      const r = await ingestOneCall(call, tenantId!, userId, staffName, req.deviceId);
+      const r = await ingestOneCall(call, tenantId!, userId, staffName, req.deviceId, allow);
       if (r.status === 'inserted') inserted++;
       else if (r.status === 'duplicate') duplicates++;
+      else if (r.status === 'rejected') rejected++;
       else errors++;
       results.push(r);
     }
-    res.json({ inserted, duplicates, errors, results });
+    res.json({ inserted, duplicates, errors, rejected, results });
   } catch (err: any) {
     console.error('[mobile/calls]', err.message);
     res.status(500).json({ error: 'Server error' });

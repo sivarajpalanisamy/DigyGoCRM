@@ -149,6 +149,12 @@ class Native {
     try { await _ch.invokeMethod('setSyncConfig', {'base': base, 'token': token}); } catch (_) {}
   }
 
+  /// Mirror the app-verified SIMs (JSON array of {slot, number}) so the background
+  /// CallSync drops calls on an unverified SIM before they ever reach the CRM.
+  Future<void> setVerifiedSims(String json) async {
+    try { await _ch.invokeMethod('setVerifiedSims', {'json': json}); } catch (_) {}
+  }
+
   /// Place a call through the phone's default/system dialer (the OEM dialer records it).
   Future<void> placeCallSystem(String number) async {
     try { await _ch.invokeMethod('placeCallSystem', {'number': number}); } catch (_) {}

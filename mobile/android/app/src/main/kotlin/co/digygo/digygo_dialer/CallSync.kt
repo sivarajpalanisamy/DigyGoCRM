@@ -1,10 +1,15 @@
 package co.digygo.digygo_dialer
 
+import android.Manifest
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Environment
 import android.provider.CallLog
+import android.telephony.SubscriptionManager
+import androidx.core.app.ActivityCompat
+import org.json.JSONArray
 import java.io.File
 import java.io.OutputStream
 import java.net.HttpURLConnection
@@ -65,7 +70,14 @@ object CallSync {
     // post the same call (watermark is read-modify-write).
     private val lock = Any()
 
-    private data class CallRow(val number: String, val type: Int, val duration: Int, val date: Long)
+    private data class CallRow(
+        val number: String, val type: Int, val duration: Int, val date: Long,
+        val phoneAccountId: String? = null,
+        val simSlot: Int? = null, val simNumber: String? = null,
+    )
+
+    // A SIM the user verified in-app (slot + the number they entered for it).
+    private data class SimRef(val slot: Int, val number: String?)
 
     /**
      * @param maxTries number of 1-second polls waiting for the call-log row. Keep ≤8
@@ -95,19 +107,32 @@ object CallSync {
             // burst of calls can't slip through the real-time path.
             val calls = readCallsSince(ctx, watermark)
             if (calls.isEmpty()) return
+            val maxDate = calls.maxOf { it.date }
+
+            // SIM gate — only sync calls made/received on a verified SIM. On a dual-SIM
+            // phone, calls on the SIM the user skipped must NOT reach the CRM. Each kept
+            // call is tagged with its SIM slot + number so the backend can double-check.
+            val toSync = filterAndTag(ctx, calls, readVerifiedSims(prefs))
+
+            // Advance the watermark past EVERYTHING scanned (dropped unverified-SIM calls
+            // included) so they're never rescanned. If nothing survives the gate, we're done.
+            if (toSync.isEmpty()) {
+                prefs.edit().putLong(WATERMARK_KEY, maxDate).apply()
+                return
+            }
 
             // 1) Post the metadata batch FIRST - small + fast, the part the user needs.
             //    Advance the watermark only on success so a network failure retries later.
             try {
-                postCalls(base, token, calls)
-                prefs.edit().putLong(WATERMARK_KEY, calls.maxOf { it.date }).apply()
+                postCalls(base, token, toSync)
+                prefs.edit().putLong(WATERMARK_KEY, maxDate).apply()
             } catch (e: Exception) {
                 return // CRM unreachable → next call / app open retries
             }
 
             // 2) Find + upload each call's recording (best-effort; the recorder may
             //    still be finalising the file, so this retries internally).
-            for (call in calls) {
+            for (call in toSync) {
                 try { uploadRecordingFor(ctx, prefs, base, token, call) } catch (e: Exception) { /* best-effort */ }
             }
         }
@@ -122,7 +147,8 @@ object CallSync {
         try {
             val cursor = ctx.contentResolver.query(
                 CallLog.Calls.CONTENT_URI,
-                arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DURATION, CallLog.Calls.DATE),
+                arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DURATION, CallLog.Calls.DATE,
+                        CallLog.Calls.PHONE_ACCOUNT_ID),
                 "${CallLog.Calls.DATE} > ?", arrayOf(afterMs.toString()),
                 "${CallLog.Calls.DATE} ASC"
             ) ?: return out
@@ -133,7 +159,8 @@ object CallSync {
                         number = it.getString(0) ?: "",
                         type = it.getInt(1),
                         duration = it.getInt(2),
-                        date = it.getLong(3)
+                        date = it.getLong(3),
+                        phoneAccountId = it.getString(4)
                     )
                     val endedAtMs = row.date + row.duration * 1000L
                     if (now - endedAtMs <= RECENT_WINDOW_MS) out.add(row)
@@ -178,11 +205,85 @@ object CallSync {
     // Build one JSON object for a call. Direction + outcome cover every case:
     // incoming answered (INBOUND/ANSWERED), incoming missed (INBOUND/MISSED),
     // incoming rejected (INBOUND/REJECTED), outgoing answered/unanswered.
+    // simSlot/simNumber (when known) let the backend confirm the call is on a verified SIM.
     private fun callJson(c: CallRow): String {
         val direction = if (c.type == CallLog.Calls.OUTGOING_TYPE) "OUTBOUND" else "INBOUND"
         val num = jsonEscape(c.number)
-        return """{"clientCallId":"${num}_${c.date}","phone":"$num","direction":"$direction",""" +
-                """"outcome":"${outcomeOf(c)}","durationSeconds":${c.duration},"startedAt":"${isoUtc(c.date)}"}"""
+        val sb = StringBuilder()
+        sb.append("""{"clientCallId":"${num}_${c.date}","phone":"$num","direction":"$direction",""")
+        sb.append(""""outcome":"${outcomeOf(c)}","durationSeconds":${c.duration},"startedAt":"${isoUtc(c.date)}"""")
+        if (c.simSlot != null) sb.append(""","simSlot":${c.simSlot}""")
+        if (!c.simNumber.isNullOrEmpty()) sb.append(""","simNumber":"${jsonEscape(c.simNumber)}"""")
+        sb.append("}")
+        return sb.toString()
+    }
+
+    // ── SIM gating ───────────────────────────────────────────────────────────────
+    // Keep only calls on a verified SIM, and tag each kept call with its slot + number.
+    // We DROP a call only when we're certain: the phone has ≥2 active SIMs, we resolved
+    // this call's slot, and that slot isn't one the user verified. Anything we can't
+    // positively identify as an unverified SIM is uploaded (the backend re-checks), so a
+    // failed SIM lookup never silently loses a legitimate call.
+    private fun filterAndTag(ctx: Context, calls: List<CallRow>, verified: List<SimRef>): List<CallRow> {
+        val verifiedSlots = verified.mapNotNull { if (it.slot >= 0) it.slot else null }.toSet()
+        val numberBySlot = verified.filter { it.slot >= 0 && !it.number.isNullOrEmpty() }
+            .associate { it.slot to it.number!! }
+        val multiSim = activeSimCount(ctx) > 1
+        val accountSlot = if (multiSim) buildAccountSlotMap(ctx) else emptyMap()
+
+        val out = ArrayList<CallRow>()
+        for (c in calls) {
+            val slot = accountSlot[c.phoneAccountId]
+            if (multiSim && verifiedSlots.isNotEmpty() && slot != null && !verifiedSlots.contains(slot)) {
+                continue // call on the skipped / unverified SIM → never sync
+            }
+            // Tag with the resolved slot. On a single-SIM phone (no ambiguity) fall back to
+            // the only verified slot. NEVER fabricate a slot on a multi-SIM phone — that
+            // could mislabel an unverified SIM's call as the verified one.
+            val tagSlot = slot ?: (if (!multiSim && verifiedSlots.size == 1) verifiedSlots.first() else null)
+            val tagNumber = tagSlot?.let { numberBySlot[it] }
+            out.add(c.copy(simSlot = tagSlot, simNumber = tagNumber))
+        }
+        return out
+    }
+
+    private fun readVerifiedSims(prefs: SharedPreferences): List<SimRef> {
+        val raw = prefs.getString("verified_sims", null) ?: return emptyList()
+        return try {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).map {
+                val o = arr.getJSONObject(it)
+                val n = o.optString("number", "")
+                SimRef(o.optInt("slot", -1), if (n.isEmpty()) null else n)
+            }
+        } catch (e: Exception) { emptyList() }
+    }
+
+    // Map a call-log PHONE_ACCOUNT_ID → SIM slot. Different OEMs put the subscription id
+    // OR the ICCID in PHONE_ACCOUNT_ID, so we index both.
+    private fun buildAccountSlotMap(ctx: Context): Map<String, Int> {
+        val map = HashMap<String, Int>()
+        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.READ_PHONE_STATE)
+            != PackageManager.PERMISSION_GRANTED) return map
+        try {
+            val sm = ctx.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
+            val subs = sm.activeSubscriptionInfoList ?: return map
+            for (info in subs) {
+                map[info.subscriptionId.toString()] = info.simSlotIndex
+                val icc = info.iccId
+                if (!icc.isNullOrEmpty()) map[icc] = info.simSlotIndex
+            }
+        } catch (e: Exception) { /* fall through with what we have */ }
+        return map
+    }
+
+    private fun activeSimCount(ctx: Context): Int {
+        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.READ_PHONE_STATE)
+            != PackageManager.PERMISSION_GRANTED) return 1
+        return try {
+            val sm = ctx.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
+            sm.activeSubscriptionInfoList?.size ?: 1
+        } catch (e: Exception) { 1 }
     }
 
     /** Most-recent call (phone/direction/outcome/duration) for the post-call screen. */

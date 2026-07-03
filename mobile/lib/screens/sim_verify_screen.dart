@@ -88,8 +88,9 @@ class _ConnectSimScreenState extends State<ConnectSimScreen> {
         // Skipped → NEVER link or sync this number. Just complete onboarding locally.
         await Api.instance.markSimStepDone();
       } else {
-        // Verified in-app → remember it so it links (now or later) and syncs to the CRM.
-        await Api.instance.addLocalNumber(_currentPhone);
+        // Verified in-app → remember it (with its SIM slot) so it links (now or later),
+        // syncs to the CRM, and the background gate can tell it from an unverified SIM.
+        await Api.instance.addLocalNumber(_currentPhone, slot: _sim.slot);
         if (await Api.instance.hasDeviceToken()) {
           try {
             await Api.instance.addNumber(phone: _currentPhone, method: method, simSlot: _sim.slot);

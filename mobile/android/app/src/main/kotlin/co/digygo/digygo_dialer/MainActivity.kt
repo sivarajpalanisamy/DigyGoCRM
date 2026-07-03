@@ -85,6 +85,10 @@ class MainActivity : FlutterActivity() {
                     setSyncConfig(call.argument<String>("base"), call.argument<String>("token"))
                     result.success(null)
                 }
+                "setVerifiedSims" -> {
+                    setVerifiedSims(call.argument<String>("json"))
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -351,6 +355,14 @@ class MainActivity : FlutterActivity() {
 
         if (token != null) CallSyncService.start(applicationContext)
         else CallSyncService.stop(applicationContext)
+    }
+
+    // Mirror the app-verified SIMs (JSON array of {slot, number}) so the background
+    // CallSync can drop calls made on an unverified SIM before they reach the CRM.
+    private fun setVerifiedSims(json: String?) {
+        val prefs = getSharedPreferences(CallSync.PREFS, Context.MODE_PRIVATE).edit()
+        if (json != null) prefs.putString("verified_sims", json) else prefs.remove("verified_sims")
+        prefs.apply()
     }
 
     private fun placeCall(number: String) {
