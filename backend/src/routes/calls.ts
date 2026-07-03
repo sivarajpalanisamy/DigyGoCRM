@@ -80,7 +80,7 @@ router.get('/', checkPermission('calls:view_own'), async (req: AuthRequest, res:
 // GET /api/calls/stats — aggregated stats for charts
 router.get('/stats', checkPermission('calls:view_own'), async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
-  const { direction, outcome, staff_name, date_from, date_to, source, pipeline_id, stage_id } = req.query as Record<string, string>;
+  const { direction, outcome, staff_name, date_from, date_to, source, pipeline_id, stage_id, is_unknown } = req.query as Record<string, string>;
 
   const isSuper = role === 'super_admin';
   let viewAll = false;
@@ -104,6 +104,7 @@ router.get('/stats', checkPermission('calls:view_own'), async (req: AuthRequest,
   if (date_to)     { params.push(date_to);                  conditions.push(`COALESCE(cl.started_at, cl.created_at) < $${params.length}::date + INTERVAL '1 day'`); }
   if (pipeline_id) { params.push(pipeline_id);              conditions.push(`l.pipeline_id = $${params.length}::uuid`); }
   if (stage_id)    { params.push(stage_id);                 conditions.push(`l.stage_id = $${params.length}::uuid`); }
+  if (is_unknown === 'true') { conditions.push(`cl.is_unknown = TRUE`); }
 
   // When filtering by pipeline/stage, use INNER JOIN so calls without a lead are excluded
   const needsLeadJoin = !!(pipeline_id || stage_id);
