@@ -568,7 +568,7 @@ export default function SuperAdminPage() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [search, setSearch] = useState('');
   const [filterPlan, setFilterPlan] = useState('');
-  const [filterSub, setFilterSub] = useState('');
+  const [filterSub, setFilterSub] = useState('_active');
   const [editTenant, setEditTenant] = useState<Tenant | null>(null);
   const [domainTenant, setDomainTenant] = useState<Tenant | null>(null);
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
@@ -617,6 +617,8 @@ export default function SuperAdminPage() {
     return matchSearch && matchPlan && matchSub;
   });
 
+  const activeCount = tenants.filter((t) => t.is_active).length;
+  const inactiveCount = tenants.filter((t) => !t.is_active).length;
   const totalUsers = tenants.reduce((a, t) => a + Number(t.user_count), 0);
   const totalLeads = tenants.reduce((a, t) => a + Number(t.lead_count), 0);
 
@@ -624,9 +626,10 @@ export default function SuperAdminPage() {
     <div className="space-y-5 pb-10">
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {[
-          { label: 'Total Accounts', value: tenants.length, icon: Building2, color: 'text-primary', bg: 'bg-primary/10' },
+          { label: 'Active Accounts', value: activeCount, icon: Building2, color: 'text-primary', bg: 'bg-primary/10' },
+          { label: 'Inactive Accounts', value: inactiveCount, icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
           { label: 'Total Users', value: totalUsers, icon: Users, color: 'text-purple-500', bg: 'bg-purple-50' },
           { label: 'Total Leads', value: totalLeads, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
         ].map((s) => (
