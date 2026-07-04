@@ -2576,32 +2576,33 @@ export async function triggerWorkflows(
           [wf.id, enrichedLead.id]
         ).catch(() => null);
       } else {
-        // allow_reentry=false and no force: skip if any execution exists for this lead
+        // allow_reentry=false and no force: skip if already enrolled.
+        // Instead of a racy SELECT-then-INSERT, we rely on the atomic INSERT below
+        // which will hit the unique index (idx_wf_exec_one_enrollment) and be caught
+        // by the 23505 handler. This prevents the TOCTOU race where two concurrent
+        // triggers both pass a SELECT before either inserts.
+        //
+        // We still do a quick SELECT for the common case (already enrolled from a
+        // previous run) to avoid the overhead of a failed INSERT + skip record.
+        // But for concurrent triggers arriving at the same time, the INSERT guard
+        // is the real safety net.
         const existing = await query(
-          `SELECT id FROM workflow_executions WHERE workflow_id=$1 AND lead_id=$2 LIMIT 1`,
+          `SELECT id FROM workflow_executions WHERE workflow_id=$1 AND lead_id=$2
+           AND status NOT IN ('skipped','superseded') LIMIT 1`,
           [wf.id, enrichedLead.id]
         );
         if (existing.rows.length > 0) {
           console.log(`[WF] "${wf.name}" skipped — lead already enrolled & allow_reentry=false`);
-          const skipExec = await query(
+          await query(
             `INSERT INTO workflow_executions
                (workflow_id, tenant_id, lead_id, lead_name, trigger_type, status, enrolled_at, completed_at)
-             VALUES ($1,$2,$3,$4,$5,'skipped',NOW(),NOW()) RETURNING id`,
+             VALUES ($1,$2,$3,$4,$5,'skipped',NOW(),NOW())`,
             [wf.id, tenantId, enrichedLead.id, enrichedLead.name, triggerType]
           ).catch(() => null);
-          if (skipExec?.rows[0]) {
-            await query(
-              `INSERT INTO workflow_execution_logs
-                 (execution_id, workflow_id, tenant_id, node_id, action_type, status, message)
-               VALUES ($1,$2,$3,'reentry_blocked','reentry_blocked','skipped',
-                       'Reentry blocked - contact already enrolled (allow_reentry=false)')`,
-              [skipExec.rows[0].id, wf.id, tenantId]
-            ).catch(() => null);
-            await query(
-              `UPDATE workflows SET skipped=skipped+1, updated_at=NOW() WHERE id=$1`,
-              [wf.id]
-            ).catch(() => null);
-          }
+          await query(
+            `UPDATE workflows SET skipped=skipped+1, updated_at=NOW() WHERE id=$1`,
+            [wf.id]
+          ).catch(() => null);
           continue;
         }
       }
