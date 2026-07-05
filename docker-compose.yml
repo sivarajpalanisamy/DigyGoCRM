@@ -1,17 +1,20 @@
 services:
   db:
-    image: postgres:16-alpine
+    # PG17 to match the existing local `digygo_pgdata` volume (initialized by PG17).
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
+      # These only apply on a FRESH volume; the existing volume was created with
+      # user digygo_user / db digygocrm, so we mirror them here.
       POSTGRES_DB: digygocrm
-      POSTGRES_USER: digygo
-      POSTGRES_PASSWORD: digygo_dev_password
+      POSTGRES_USER: digygo_user
+      POSTGRES_PASSWORD: digygo123
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U digygo -d digygocrm"]
+      test: ["CMD-SHELL", "pg_isready -U digygo_user -d digygocrm"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -46,7 +49,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 4000
-      DATABASE_URL: postgres://digygo:digygo_dev_password@db:5432/digygocrm
+      DATABASE_URL: postgres://digygo_user:digygo123@db:5432/digygocrm
       REDIS_URL: redis://redis:6379
       JWT_SECRET: dev_jwt_secret_change_in_prod
       JWT_EXPIRES_IN: 15m
