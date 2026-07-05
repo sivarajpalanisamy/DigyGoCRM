@@ -325,8 +325,20 @@ class Api {
   }
 
   /// Follow-ups assigned to this device's staff. status: pending | completed | all.
-  Future<List<dynamic>> followups({String status = 'pending'}) async {
-    final res = await _dio.get('/api/mobile/followups', queryParameters: {'status': status});
+  /// Optional date filters (YYYY-MM-DD): [date] = a single day; [from]/[to] = an
+  /// inclusive range. Pass none for all dates.
+  Future<List<dynamic>> followups({
+    String status = 'pending',
+    String? date,
+    String? from,
+    String? to,
+  }) async {
+    final res = await _dio.get('/api/mobile/followups', queryParameters: {
+      'status': status,
+      if (date != null && date.isNotEmpty) 'date': date,
+      if (from != null && from.isNotEmpty) 'from': from,
+      if (to != null && to.isNotEmpty) 'to': to,
+    });
     return (res.data['followups'] as List?) ?? [];
   }
 

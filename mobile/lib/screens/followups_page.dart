@@ -17,6 +17,9 @@ class FollowupsPage extends StatefulWidget {
 class _FollowupsPageState extends State<FollowupsPage> {
   List<dynamic> _items = [];
   String _status = 'pending'; // pending | completed | all
+  String _dateMode = 'today'; // today | all | single | range — defaults to today
+  DateTime? _singleDate;
+  DateTimeRange? _range;
   bool _loading = true;
 
   @override
@@ -28,12 +31,54 @@ class _FollowupsPageState extends State<FollowupsPage> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final list = await Api.instance.followups(status: _status);
+      String? date, from, to;
+      final now = DateTime.now();
+      switch (_dateMode) {
+        case 'today':
+          date = _ymd(now);
+          break;
+        case 'single':
+          if (_singleDate != null) date = _ymd(_singleDate!);
+          break;
+        case 'range':
+          if (_range != null) { from = _ymd(_range!.start); to = _ymd(_range!.end); }
+          break;
+        // 'all' → no date filter
+      }
+      final list = await Api.instance.followups(status: _status, date: date, from: from, to: to);
       if (!mounted) return;
       setState(() { _items = list; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _pickSingle() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _singleDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (d != null) { setState(() { _singleDate = d; _dateMode = 'single'; }); _load(); }
+  }
+
+  Future<void> _pickRange() async {
+    final r = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDateRange: _range,
+    );
+    if (r != null) { setState(() { _range = r; _dateMode = 'range'; }); _load(); }
+  }
+
+  String _ymd(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  String _shortDate(DateTime d) {
+    const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${d.day} ${m[d.month - 1]}';
   }
 
   Future<void> _complete(Map f, bool done) async {
@@ -71,6 +116,32 @@ class _FollowupsPageState extends State<FollowupsPage> {
               ],
             ),
           ),
+          // Date filter — defaults to Today; pick a single day or a from–to range.
+          SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _dateChip(label: 'Today', active: _dateMode == 'today',
+                    onTap: () { setState(() => _dateMode = 'today'); _load(); }),
+                _dateChip(label: 'All dates', active: _dateMode == 'all',
+                    onTap: () { setState(() => _dateMode = 'all'); _load(); }),
+                _dateChip(
+                    icon: Icons.event,
+                    label: _dateMode == 'single' && _singleDate != null ? _shortDate(_singleDate!) : 'Pick date',
+                    active: _dateMode == 'single',
+                    onTap: _pickSingle),
+                _dateChip(
+                    icon: Icons.date_range,
+                    label: _dateMode == 'range' && _range != null
+                        ? '${_shortDate(_range!.start)} – ${_shortDate(_range!.end)}'
+                        : 'Date range',
+                    active: _dateMode == 'range',
+                    onTap: _pickRange),
+              ],
+            ),
+          ),
           const Divider(height: 1, color: Color(0x12000000)),
           Expanded(child: _list()),
         ],
@@ -94,10 +165,41 @@ class _FollowupsPageState extends State<FollowupsPage> {
     );
   }
 
+  Widget _dateChip({required String label, required bool active, required VoidCallback onTap, IconData? icon}) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
+      child: ChoiceChip(
+        avatar: icon != null ? Icon(icon, size: 16, color: active ? Brand.accent : Brand.muted) : null,
+        label: Text(label),
+        selected: active,
+        onSelected: (_) => onTap(),
+        selectedColor: const Color(0x1AEA580C),
+        backgroundColor: Colors.white,
+        side: BorderSide(color: active ? Brand.accent : const Color(0x1A000000)),
+        labelStyle: TextStyle(color: active ? Brand.accent : Brand.ink, fontWeight: active ? FontWeight.w700 : FontWeight.w500, fontSize: 13),
+      ),
+    );
+  }
+
+  String _emptyMessage() {
+    switch (_dateMode) {
+      case 'today':
+        return 'No follow-ups for today';
+      case 'single':
+        return _singleDate != null ? 'No follow-ups on ${_shortDate(_singleDate!)}' : 'No follow-ups';
+      case 'range':
+        return _range != null
+            ? 'No follow-ups from ${_shortDate(_range!.start)} to ${_shortDate(_range!.end)}'
+            : 'No follow-ups';
+      default:
+        return 'No follow-ups';
+    }
+  }
+
   Widget _list() {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_items.isEmpty) {
-      return const Center(child: Text('No follow-ups', style: TextStyle(color: Brand.muted)));
+      return Center(child: Text(_emptyMessage(), style: const TextStyle(color: Brand.muted)));
     }
     return RefreshIndicator(
       onRefresh: _load,

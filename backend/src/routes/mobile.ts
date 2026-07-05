@@ -1039,10 +1039,27 @@ router.get('/leads/lookup', async (req: AuthRequest, res: Response) => {
 router.get('/followups', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId } = req.user!;
   const status = (req.query.status ?? 'pending').toString();
+  // Optional date filters on the follow-up due date (YYYY-MM-DD, compared on the
+  // date portion): `date` = a single day; `from`/`to` = an inclusive range.
+  // due_at is timestamptz; convert it to India time (IST) before taking the date so
+  // the calendar day matches what the user's (India-based) device shows — the server
+  // runs in UTC, and a late-evening IST follow-up would otherwise fall on the wrong day.
+  const IST_DUE_DATE = "(f.due_at AT TIME ZONE 'Asia/Kolkata')::date";
+  const isYmd = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const date = (req.query.date ?? '').toString().trim();
+  const from = (req.query.from ?? '').toString().trim();
+  const to = (req.query.to ?? '').toString().trim();
   try {
+    const params: any[] = [tenantId, userId];
     const conds = ['f.tenant_id=$1::uuid', 'f.assigned_to=$2::uuid', 'l.is_deleted=FALSE'];
     if (status === 'pending') conds.push('f.completed=FALSE');
     else if (status === 'completed') conds.push('f.completed=TRUE');
+    if (isYmd(date)) {
+      params.push(date); conds.push(`${IST_DUE_DATE} = $${params.length}::date`);
+    } else {
+      if (isYmd(from)) { params.push(from); conds.push(`${IST_DUE_DATE} >= $${params.length}::date`); }
+      if (isYmd(to))   { params.push(to);   conds.push(`${IST_DUE_DATE} <= $${params.length}::date`); }
+    }
     const r = await query(
       `SELECT f.id, f.title, f.description, f.due_at, f.completed, f.completed_at,
               f.lead_id, l.name AS lead_name, l.phone AS lead_phone,
@@ -1054,7 +1071,7 @@ router.get('/followups', async (req: AuthRequest, res: Response) => {
        WHERE ${conds.join(' AND ')}
        ORDER BY f.completed ASC, f.due_at ASC
        LIMIT 300`,
-      [tenantId, userId]
+      params
     );
     res.json({ followups: r.rows });
   } catch (err: any) {
