@@ -89,6 +89,7 @@ class MainActivity : FlutterActivity() {
                     setVerifiedSims(call.argument<String>("json"))
                     result.success(null)
                 }
+                "simGateInfo" -> result.success(CallSync.simGateInfo(applicationContext))
                 else -> result.notImplemented()
             }
         }

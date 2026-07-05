@@ -66,6 +66,61 @@ class SimInfo {
       );
 }
 
+/// Snapshot of the SIM-verification gate, so the in-app call harvester applies the
+/// exact same rule as the background sync: only calls on a CRM-verified SIM are kept.
+class SimGate {
+  SimGate({
+    required this.multiSim,
+    required this.simCount,
+    required this.accountSlot,
+    required this.verifiedSlots,
+    required this.numberBySlot,
+  });
+
+  /// Device has (or ever had) ≥2 active SIMs — the case where attribution matters.
+  final bool multiSim;
+  /// Live SIM count to report to the backend.
+  final int simCount;
+  /// call-log PHONE_ACCOUNT_ID → SIM slot.
+  final Map<String, int> accountSlot;
+  /// Slots the user verified in the CRM.
+  final Set<int> verifiedSlots;
+  /// Verified slot → its phone number (for tagging).
+  final Map<int, String> numberBySlot;
+
+  static const empty = SimGate._empty();
+  const SimGate._empty()
+      : multiSim = false,
+        simCount = 1,
+        accountSlot = const <String, int>{},
+        verifiedSlots = const <int>{},
+        numberBySlot = const <int, String>{};
+
+  factory SimGate.fromMap(Map m) {
+    final acc = <String, int>{};
+    (m['accountSlot'] as Map?)?.forEach((k, v) {
+      if (v is num) acc['$k'] = v.toInt();
+    });
+    final nbs = <int, String>{};
+    (m['numberBySlot'] as Map?)?.forEach((k, v) {
+      final slot = int.tryParse('$k');
+      if (slot != null && v != null) nbs[slot] = '$v';
+    });
+    return SimGate(
+      multiSim: m['multiSim'] == true,
+      simCount: (m['simCount'] as num?)?.toInt() ?? 1,
+      accountSlot: acc,
+      verifiedSlots: ((m['verifiedSlots'] as List?) ?? const [])
+          .map((e) => (e as num).toInt())
+          .toSet(),
+      numberBySlot: nbs,
+    );
+  }
+
+  /// Resolve a call's SIM slot from its PHONE_ACCOUNT_ID (null if unknown).
+  int? slotFor(String? accountId) => accountId == null ? null : accountSlot[accountId];
+}
+
 /// Result of the per-device call-recording self-test.
 enum RecordingTier { full, partial, micOnly, unsupported }
 
@@ -153,6 +208,17 @@ class Native {
   /// CallSync drops calls on an unverified SIM before they ever reach the CRM.
   Future<void> setVerifiedSims(String json) async {
     try { await _ch.invokeMethod('setVerifiedSims', {'json': json}); } catch (_) {}
+  }
+
+  /// Current SIM-gate snapshot (verified slots + account→slot map) so the in-app call
+  /// harvester can drop unverified-SIM calls exactly like the background sync does.
+  Future<SimGate> simGateInfo() async {
+    try {
+      final m = await _ch.invokeMethod<Map>('simGateInfo');
+      return m == null ? SimGate.empty : SimGate.fromMap(m);
+    } catch (_) {
+      return SimGate.empty;
+    }
   }
 
   /// Place a call through the phone's default/system dialer (the OEM dialer records it).

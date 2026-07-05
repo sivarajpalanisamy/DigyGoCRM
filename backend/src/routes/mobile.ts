@@ -444,29 +444,42 @@ function digitSuffix(phone: string): string {
 // The set of numbers/SIM-slots that are VERIFIED for this device — i.e. the numbers
 // the admin added + OTP-verified in the CRM dashboard AND that this device registered.
 // A call whose SIM isn't in this set must never be logged (dual-SIM: the skipped SIM).
-interface DeviceAllow { hasVerified: boolean; numbers: Set<string>; slots: Set<number>; }
+// `multiSim` is true when the device has ≥2 physical SIMs (from mobile_devices.sim_count):
+// on such a device a call with NO attribution cannot be proven to be the verified SIM.
+interface DeviceAllow { hasVerified: boolean; numbers: Set<string>; slots: Set<number>; multiSim: boolean; }
 async function loadDeviceAllow(deviceId?: string): Promise<DeviceAllow> {
-  const empty: DeviceAllow = { hasVerified: false, numbers: new Set(), slots: new Set() };
+  const empty: DeviceAllow = { hasVerified: false, numbers: new Set(), slots: new Set(), multiSim: false };
   if (!deviceId) return empty;
   try {
     const r = await query(
-      `SELECT phone_number, sim_slot FROM mobile_device_numbers WHERE device_id=$1::uuid AND verified=TRUE
-       UNION
-       SELECT phone_number, NULL::int FROM mobile_devices
-        WHERE id=$1::uuid AND phone_verified=TRUE AND phone_number IS NOT NULL`,
+      `SELECT phone_number, sim_slot, NULL::int AS sim_count FROM mobile_device_numbers
+        WHERE device_id=$1::uuid AND verified=TRUE
+       UNION ALL
+       SELECT CASE WHEN phone_verified=TRUE THEN phone_number END AS phone_number,
+              NULL::int AS sim_slot, sim_count
+         FROM mobile_devices WHERE id=$1::uuid`,
       [deviceId]
     );
     const numbers = new Set<string>();
     const slots = new Set<number>();
+    let multiSim = false;
     for (const row of r.rows) {
+      // The mobile_devices row also contributes its (verified) primary number.
       if (row.phone_number) numbers.add(digitSuffix(normalizePhone(row.phone_number)));
       if (row.sim_slot !== null && row.sim_slot !== undefined) slots.add(Number(row.sim_slot));
+      if (row.sim_count !== null && row.sim_count !== undefined && Number(row.sim_count) > 1) multiSim = true;
     }
-    return { hasVerified: numbers.size > 0 || slots.size > 0, numbers, slots };
+    return { hasVerified: numbers.size > 0 || slots.size > 0, numbers, slots, multiSim };
   } catch {
     return empty;
   }
 }
+
+// When true, a dual-SIM device that sends a call with NO SIM attribution is rejected
+// even if the client is a legacy (non-tagging) build. This stops the unverified-SIM
+// leak fleet-wide the moment it is enabled, at the cost of pausing call logging on
+// dual-SIM devices until they update to the SIM-tagging app. Default OFF (gated rollout).
+const SIM_GATE_STRICT = String(process.env.SIM_GATE_STRICT ?? '').toLowerCase() === 'true';
 
 async function ingestOneCall(
   call: MobileCallInput,
@@ -475,6 +488,7 @@ async function ingestOneCall(
   staffName: string | null,
   deviceId: string | undefined,
   allow: DeviceAllow,
+  gateCapable: boolean,
 ): Promise<{ clientCallId: string | null; id: string | null; status: 'inserted' | 'duplicate' | 'error' | 'rejected'; error?: string }> {
   const clientCallId = call.clientCallId ?? null;
   try {
@@ -484,17 +498,25 @@ async function ingestOneCall(
     const outcome = normalizeOutcome(call.outcome, duration);
 
     // SIM gate — only log calls made/received on a CRM-verified number for this device.
-    // The app tags each call with the SIM slot (+ number when known). If the device has
-    // verified numbers and this call carries attribution that matches NONE of them, drop
-    // it (this is the unverified/skipped SIM). Calls with no attribution (older app
-    // builds) fall through unchanged so already-deployed devices keep working.
+    // The app tags each call with the SIM slot (+ number when known).
     const simSlot = Number.isInteger(call.simSlot) ? (call.simSlot as number) : null;
     const simNumber = call.simNumber ? normalizePhone(String(call.simNumber)) : null;
     if (allow.hasVerified) {
       const hasAttribution = simSlot !== null || simNumber !== null;
       const numMatch = simNumber !== null && allow.numbers.has(digitSuffix(simNumber));
       const slotMatch = simSlot !== null && allow.slots.has(simSlot);
-      if (hasAttribution && !numMatch && !slotMatch) {
+      if (hasAttribution) {
+        // Attribution present but matches NONE of the verified numbers/slots → this is
+        // the unverified / skipped SIM. Never log it.
+        if (!numMatch && !slotMatch) {
+          return { clientCallId, id: null, status: 'rejected' };
+        }
+      } else if (allow.multiSim && (gateCapable || SIM_GATE_STRICT)) {
+        // Dual-SIM device with NO attribution → we cannot prove the call came from the
+        // verified SIM. A SIM-tagging (new-APK) client drops/tags at source, so a bare
+        // call here is the unverified SIM — reject. SIM_GATE_STRICT extends this to
+        // legacy clients too. Single-SIM devices are unaffected (their only SIM IS the
+        // verified one), so their calls always pass.
         return { clientCallId, id: null, status: 'rejected' };
       }
     }
@@ -590,10 +612,21 @@ router.post('/calls', async (req: AuthRequest, res: Response) => {
     // Verified-number allow-list for this device — computed once per batch.
     const allow = await loadDeviceAllow(req.deviceId);
 
+    // A SIM-aware (new-APK) client reports its live SIM count in the batch envelope.
+    // Its presence marks the client as "gate-capable"; we also persist the count so the
+    // multi-SIM flag stays fresh (and reflects a SIM added/removed after registration).
+    const rawSimCount = Number((body as any)?.simCount);
+    const gateCapable = Number.isFinite(rawSimCount) && rawSimCount > 0;
+    if (gateCapable && req.deviceId) {
+      if (rawSimCount > 1) allow.multiSim = true; // trust the fresh, live value this batch
+      query(`UPDATE mobile_devices SET sim_count=$2 WHERE id=$1::uuid`,
+        [req.deviceId, Math.trunc(rawSimCount)]).catch(() => null);
+    }
+
     const results = [];
     let inserted = 0, duplicates = 0, errors = 0, rejected = 0;
     for (const call of calls) {
-      const r = await ingestOneCall(call, tenantId!, userId, staffName, req.deviceId, allow);
+      const r = await ingestOneCall(call, tenantId!, userId, staffName, req.deviceId, allow, gateCapable);
       if (r.status === 'inserted') inserted++;
       else if (r.status === 'duplicate') duplicates++;
       else if (r.status === 'rejected') rejected++;

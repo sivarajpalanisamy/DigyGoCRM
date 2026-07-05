@@ -356,9 +356,12 @@ class Api {
     await _dio.post('/api/mobile/leads/$leadId/assign', data: {'assignedTo': assignedTo});
   }
 
-  /// Post one or many calls (offline batch). Returns the ingest summary.
-  Future<Map<String, dynamic>> postCalls(List<Map<String, dynamic>> calls) async {
-    final res = await _dio.post('/api/mobile/calls', data: calls);
+  /// Post one or many calls (offline batch). Returns the ingest summary. When [simCount]
+  /// is given, the batch is sent as an envelope so the backend knows this is a SIM-aware
+  /// client and whether the device is multi-SIM (drives its fail-closed SIM enforcement).
+  Future<Map<String, dynamic>> postCalls(List<Map<String, dynamic>> calls, {int? simCount}) async {
+    final data = simCount != null ? {'calls': calls, 'simCount': simCount} : calls;
+    final res = await _dio.post('/api/mobile/calls', data: data);
     return Map<String, dynamic>.from(res.data as Map);
   }
 

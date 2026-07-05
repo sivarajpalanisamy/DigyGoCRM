@@ -43,6 +43,9 @@ object CallSync {
     const val PREFS = "digygo_sync"
     private const val WATERMARK_KEY = "last_synced_call_date"
     private const val REC_WATERMARK_KEY = "last_uploaded_rec_ms"
+    // Max active-SIM count ever seen — persisted so a later permission revocation can't
+    // silently downgrade a dual-SIM phone to "single SIM" and let the skipped SIM leak.
+    private const val SIM_TOTAL_KEY = "sim_total_seen"
     private const val RECENT_WINDOW_MS = 5 * 60 * 1000L     // only sync calls that just ended
     private const val REC_MATCH_WINDOW_MS = 6 * 60 * 1000L  // recording file ↔ call time tolerance
 
@@ -112,7 +115,8 @@ object CallSync {
             // SIM gate — only sync calls made/received on a verified SIM. On a dual-SIM
             // phone, calls on the SIM the user skipped must NOT reach the CRM. Each kept
             // call is tagged with its SIM slot + number so the backend can double-check.
-            val toSync = filterAndTag(ctx, calls, readVerifiedSims(prefs))
+            val toSync = filterAndTag(ctx, prefs, calls, readVerifiedSims(prefs))
+            val simCount = reportedSimCount(ctx, prefs)
 
             // Advance the watermark past EVERYTHING scanned (dropped unverified-SIM calls
             // included) so they're never rescanned. If nothing survives the gate, we're done.
@@ -124,7 +128,7 @@ object CallSync {
             // 1) Post the metadata batch FIRST - small + fast, the part the user needs.
             //    Advance the watermark only on success so a network failure retries later.
             try {
-                postCalls(base, token, toSync)
+                postCalls(base, token, toSync, simCount)
                 prefs.edit().putLong(WATERMARK_KEY, maxDate).apply()
             } catch (e: Exception) {
                 return // CRM unreachable → next call / app open retries
@@ -220,31 +224,64 @@ object CallSync {
 
     // ── SIM gating ───────────────────────────────────────────────────────────────
     // Keep only calls on a verified SIM, and tag each kept call with its slot + number.
-    // We DROP a call only when we're certain: the phone has ≥2 active SIMs, we resolved
-    // this call's slot, and that slot isn't one the user verified. Anything we can't
-    // positively identify as an unverified SIM is uploaded (the backend re-checks), so a
-    // failed SIM lookup never silently loses a legitimate call.
-    private fun filterAndTag(ctx: Context, calls: List<CallRow>, verified: List<SimRef>): List<CallRow> {
+    // FAIL CLOSED on a dual-SIM phone: a call is uploaded only when we positively resolve
+    // its SIM slot AND that slot is one the user verified in the CRM. A call whose slot we
+    // cannot resolve, or that resolves to an unverified (skipped) SIM, is DROPPED — the
+    // unverified SIM must never reach the CRM. On a single-SIM phone there is no ambiguity
+    // (the only SIM is the verified one), so calls are kept and tagged with it.
+    private fun filterAndTag(ctx: Context, prefs: SharedPreferences, calls: List<CallRow>, verified: List<SimRef>): List<CallRow> {
         val verifiedSlots = verified.mapNotNull { if (it.slot >= 0) it.slot else null }.toSet()
         val numberBySlot = verified.filter { it.slot >= 0 && !it.number.isNullOrEmpty() }
             .associate { it.slot to it.number!! }
-        val multiSim = activeSimCount(ctx) > 1
+        val multiSim = isMultiSim(ctx, prefs)
         val accountSlot = if (multiSim) buildAccountSlotMap(ctx) else emptyMap()
 
         val out = ArrayList<CallRow>()
         for (c in calls) {
             val slot = accountSlot[c.phoneAccountId]
-            if (multiSim && verifiedSlots.isNotEmpty() && slot != null && !verifiedSlots.contains(slot)) {
-                continue // call on the skipped / unverified SIM → never sync
+            if (multiSim && verifiedSlots.isNotEmpty()) {
+                // Dual-SIM: the slot MUST resolve AND be verified, else drop (fail closed).
+                if (slot == null || !verifiedSlots.contains(slot)) continue
+                out.add(c.copy(simSlot = slot, simNumber = numberBySlot[slot]))
+            } else {
+                // Single active SIM (or nothing verified to compare): keep and, when the sole
+                // verified slot is known, tag with it. NEVER fabricate a slot on multi-SIM.
+                val tagSlot = slot ?: (if (verifiedSlots.size == 1) verifiedSlots.first() else null)
+                out.add(c.copy(simSlot = tagSlot, simNumber = tagSlot?.let { numberBySlot[it] }))
             }
-            // Tag with the resolved slot. On a single-SIM phone (no ambiguity) fall back to
-            // the only verified slot. NEVER fabricate a slot on a multi-SIM phone — that
-            // could mislabel an unverified SIM's call as the verified one.
-            val tagSlot = slot ?: (if (!multiSim && verifiedSlots.size == 1) verifiedSlots.first() else null)
-            val tagNumber = tagSlot?.let { numberBySlot[it] }
-            out.add(c.copy(simSlot = tagSlot, simNumber = tagNumber))
         }
         return out
+    }
+
+    // True if the device has (or has ever had) ≥2 active SIMs. Persists the max count seen
+    // so a permission blip can't downgrade a dual-SIM phone to single-SIM mid-life.
+    private fun isMultiSim(ctx: Context, prefs: SharedPreferences): Boolean {
+        val live = activeSimCount(ctx)
+        val seen = prefs.getInt(SIM_TOTAL_KEY, 0)
+        if (live > seen) prefs.edit().putInt(SIM_TOTAL_KEY, live).apply()
+        return maxOf(live, seen) > 1
+    }
+
+    // The live SIM count to report to the backend (≥1). Uses the persisted max so the
+    // server's multi-SIM enforcement stays correct even if the permission is later revoked.
+    private fun reportedSimCount(ctx: Context, prefs: SharedPreferences): Int =
+        maxOf(activeSimCount(ctx), prefs.getInt(SIM_TOTAL_KEY, 0)).coerceAtLeast(1)
+
+    // Public SIM-gate snapshot for the in-app (Dart) call harvester, so BOTH ingest paths
+    // apply the exact same gate. Keys mirror the fields used by filterAndTag.
+    fun simGateInfo(ctx: Context): Map<String, Any?> {
+        val prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val verified = readVerifiedSims(prefs)
+        val multiSim = isMultiSim(ctx, prefs)
+        val accountSlot = if (multiSim) buildAccountSlotMap(ctx) else emptyMap()
+        return mapOf(
+            "multiSim" to multiSim,
+            "simCount" to reportedSimCount(ctx, prefs),
+            "accountSlot" to accountSlot,                                   // {accountId(String) -> slot(Int)}
+            "verifiedSlots" to verified.mapNotNull { if (it.slot >= 0) it.slot else null }, // [Int]
+            "numberBySlot" to verified.filter { it.slot >= 0 && !it.number.isNullOrEmpty() }
+                .associate { it.slot.toString() to it.number!! }            // {slot(String) -> number(String)}
+        )
     }
 
     private fun readVerifiedSims(prefs: SharedPreferences): List<SimRef> {
@@ -299,9 +336,12 @@ object CallSync {
         )
     }
 
-    private fun postCalls(base: String, token: String, calls: List<CallRow>) {
+    private fun postCalls(base: String, token: String, calls: List<CallRow>, simCount: Int) {
         if (calls.isEmpty()) return
-        val body = calls.joinToString(prefix = "[", postfix = "]", separator = ",") { callJson(it) }
+        val arr = calls.joinToString(prefix = "[", postfix = "]", separator = ",") { callJson(it) }
+        // Envelope carries the live SIM count so the backend knows this is a SIM-aware
+        // client and whether the device is multi-SIM (drives its fail-closed enforcement).
+        val body = """{"calls":$arr,"simCount":$simCount}"""
 
         val conn = (URL(base.trimEnd('/') + "/api/mobile/calls").openConnection() as HttpURLConnection)
         try {

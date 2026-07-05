@@ -67,12 +67,31 @@ class DialerData {
   // ── Background CRM sync ───────────────────────────────────────────────────
   // Posts recent call logs to the CRM (deduped server-side by clientCallId).
   // Best-effort and silent - never blocks or surfaces errors in the dialer UI.
+  //
+  // SIM gate (mirrors the native background sync): on a dual-SIM phone, a call is
+  // uploaded ONLY when we can positively resolve its SIM slot AND that slot is one the
+  // user verified in the CRM. Calls on the skipped/unverified SIM — or whose slot we
+  // can't resolve — are DROPPED so they never reach the CRM. Single-SIM phones have no
+  // ambiguity, so every call is kept and tagged with the sole verified SIM.
   Future<void> syncToCrm(List<CallLogEntry> logs) async {
     if (logs.isEmpty) return;
     // Only sync when this number is linked to the CRM (device token present).
     if (!await Api.instance.hasDeviceToken()) return;
     try {
-      final batch = logs.take(200).map((e) {
+      final gate = await Native.instance.simGateInfo();
+      final batch = <Map<String, dynamic>>[];
+      for (final e in logs.take(200)) {
+        final slot = gate.slotFor(e.phoneAccountId);
+        int? tagSlot;
+        if (gate.multiSim && gate.verifiedSlots.isNotEmpty) {
+          // Dual-SIM: must resolve the slot AND it must be verified, else skip (fail closed).
+          if (slot == null || !gate.verifiedSlots.contains(slot)) continue;
+          tagSlot = slot;
+        } else {
+          // Single SIM (or nothing to compare): tag with the sole verified slot when known.
+          tagSlot = slot ?? (gate.verifiedSlots.length == 1 ? gate.verifiedSlots.first : null);
+        }
+
         final ts = e.timestamp ?? 0;
         final started = DateTime.fromMillisecondsSinceEpoch(ts).toUtc().toIso8601String();
         final isOutgoing = e.callType == CallType.outgoing;
@@ -89,16 +108,20 @@ class DialerData {
         } else {
           outcome = isOutgoing ? 'NO_ANSWER' : 'MISSED';
         }
-        return {
+        batch.add({
           'clientCallId': '${e.number ?? 'unknown'}_$ts',
           'phone': e.number ?? '',
           'direction': isOutgoing ? 'OUTBOUND' : 'INBOUND',
           'outcome': outcome,
           'durationSeconds': dur,
           'startedAt': started,
-        };
-      }).toList();
-      await Api.instance.postCalls(batch);
+          if (tagSlot != null) 'simSlot': tagSlot,
+          if (tagSlot != null && gate.numberBySlot[tagSlot] != null)
+            'simNumber': gate.numberBySlot[tagSlot],
+        });
+      }
+      if (batch.isEmpty) return;
+      await Api.instance.postCalls(batch, simCount: gate.simCount);
     } catch (_) {
       // silent - sync retries on next refresh
     }

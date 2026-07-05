@@ -131,6 +131,7 @@ const MIGRATIONS = [
   'migration_128_payments.sql',
   'migration_129_call_sim_attribution.sql',
   'migration_130_wf_exec_dedup_fix.sql',
+  'migration_131_mobile_sim_count.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.
