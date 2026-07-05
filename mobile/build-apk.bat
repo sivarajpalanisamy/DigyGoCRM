@@ -19,12 +19,12 @@ call flutter build apk --release --split-per-abi --obfuscate ^
   --dart-define=DIGYGO_API=https://crm.digygo.in
 
 set "APK=C:\digygo_build\app\outputs\flutter-apk\app-arm64-v8a-release.apk"
-set "DEST=%USERPROFILE%\OneDrive\Desktop\DigyGo-Dialer-LIVE.apk"
+set "DEST=%USERPROFILE%\OneDrive\Desktop\Hawcus-Dialer.apk"
 
 if exist "%APK%" (
   copy /Y "%APK%" "%DEST%" >nul
   echo.
-  echo  Done: small arm64-v8a APK copied to Desktop as DigyGo-Dialer-LIVE.apk
+  echo  Done: small arm64-v8a APK copied to Desktop as Hawcus-Dialer.apk
   echo  ^(armeabi-v7a build for old 32-bit phones is in C:\digygo_build\app\outputs\flutter-apk\^)
 ) else (
   echo.
