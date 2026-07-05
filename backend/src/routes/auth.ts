@@ -659,7 +659,7 @@ router.post('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest,
 
     // Welcome + activation email to the new owner (login email + activation link + PIN)
     const ownerEmail = email.toLowerCase().trim();
-    const frontendUrl = process.env.FRONTEND_URL ?? 'https://crm.digygo.in';
+    const frontendUrl = process.env.FRONTEND_URL ?? 'https://app.hawcus.com';
     const activateLink = `${frontendUrl}/activate?token=${activationToken}`;
     setImmediate(() => sendEmail({
       to: ownerEmail,
@@ -803,7 +803,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     );
 
     // Resolve tenant frontend URL + white-label identity
-    let frontendUrl = process.env.FRONTEND_URL ?? 'https://crm.digygo.in';
+    let frontendUrl = process.env.FRONTEND_URL ?? 'https://app.hawcus.com';
     let brand = 'Hawcus CRM';
     let replyTo: string | undefined;
     if (user.tenant_id) {
@@ -1201,11 +1201,12 @@ router.get('/audit-log', requireAuth, requireSuperAdmin, async (_req: AuthReques
 // ── Domain Management (Super Admin) ──────────────────────────────────────────
 
 const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?(\.[a-z]{2,})+$/i;
-const BLOCKED_DOMAINS = new Set(['crm.digygo.in', 'localhost', '127.0.0.1', 'digygo.in']);
+const BLOCKED_DOMAINS = new Set(['crm.digygo.in', 'app.hawcus.com', 'hawcus.com', 'localhost', '127.0.0.1', 'digygo.in']);
 
 function isBlockedDomain(d: string): boolean {
   if (BLOCKED_DOMAINS.has(d)) return true;
   if (d.endsWith('.digygo.in')) return true;
+  if (d.endsWith('.hawcus.com')) return true;
   return false;
 }
 
@@ -1261,7 +1262,7 @@ router.post('/tenants/:id/domain', requireAuth, requireSuperAdmin, async (req: A
       dns_instructions: {
         type: 'CNAME',
         name: subdomain,
-        value: 'crm.digygo.in',
+        value: 'app.hawcus.com',
         full_domain: custom_domain,
         ttl: 3600,
       },
@@ -1313,7 +1314,7 @@ router.post('/tenants/:id/domain/verify', requireAuth, requireSuperAdmin, async 
       if (!dnsOk) {
         try {
           const cnames = await resolver.resolveCname(domain);
-          dnsOk = cnames.some((c) => c.includes('crm.digygo.in'));
+          dnsOk = cnames.some((c) => c.includes('app.hawcus.com') || c.includes('crm.digygo.in'));
         } catch { /* continue */ }
       }
 
@@ -1333,7 +1334,7 @@ router.post('/tenants/:id/domain/verify', requireAuth, requireSuperAdmin, async 
           [`DNS not pointing to server. Resolved to: ${resolvedStr}. Expected: ${serverIp}`, req.params.id]
         );
         res.status(400).json({
-          error: `DNS not pointing to server. Current: ${resolvedStr}. Expected: ${serverIp}. Add CNAME: ${domain} → crm.digygo.in`,
+          error: `DNS not pointing to server. Current: ${resolvedStr}. Expected: ${serverIp}. Add CNAME: ${domain} → app.hawcus.com`,
         }); return;
       }
     } else {

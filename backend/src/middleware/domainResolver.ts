@@ -8,6 +8,7 @@ export async function resolveDomain(req: Request, _res: Response, next: NextFunc
   // Fast exit for main domain and local dev — zero DB hit, zero latency
   if (
     !hostname ||
+    hostname === 'app.hawcus.com' ||
     hostname === 'crm.digygo.in' ||
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||

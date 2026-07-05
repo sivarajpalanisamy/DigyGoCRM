@@ -20,7 +20,7 @@ export async function getTenantFrontendUrl(tenantId: string): Promise<string> {
       return `https://${t.custom_domain}`;
     }
   } catch { /* non-fatal */ }
-  return process.env.FRONTEND_URL ?? 'https://crm.digygo.in';
+  return process.env.FRONTEND_URL ?? 'https://app.hawcus.com';
 }
 
 // Canonical full-access permissions — all keys true except the two that default off.

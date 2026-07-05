@@ -149,7 +149,7 @@ export const useBrandingStore = create<BrandingState>((set) => ({
   // Pre-login: fetch branding for the current custom domain (login page)
   fetchBranding: async () => {
     const hostname = window.location.hostname;
-    const isCustom = hostname !== 'crm.digygo.in' && hostname !== 'localhost' && hostname !== '127.0.0.1';
+    const isCustom = hostname !== 'app.hawcus.com' && hostname !== 'crm.digygo.in' && hostname !== 'localhost' && hostname !== '127.0.0.1';
 
     if (!isCustom) {
       set({ isCustomDomain: false, loaded: true });

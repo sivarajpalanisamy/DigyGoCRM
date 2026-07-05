@@ -16,7 +16,7 @@ cd /d "%~dp0"
 
 call flutter build apk --release --split-per-abi --obfuscate ^
   --split-debug-info=build\symbols ^
-  --dart-define=DIGYGO_API=https://crm.digygo.in
+  --dart-define=DIGYGO_API=https://app.hawcus.com
 
 set "APK=C:\digygo_build\app\outputs\flutter-apk\app-arm64-v8a-release.apk"
 set "DEST=%USERPROFILE%\OneDrive\Desktop\Hawcus-Dialer.apk"
