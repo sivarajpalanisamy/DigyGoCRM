@@ -67,7 +67,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const [tip, setTip] = useState<{ label: string; top: number; left: number } | null>(null);
 
   const currentUser = useAuthStore((s) => s.currentUser);
-  const { branded, tenantName, logoUrl } = useBrandingStore();
+  const { branded, tenantName, logoUrl, faviconUrl } = useBrandingStore();
   const permissions = useAuthStore((s) => s.permissions);
   const permAll = useAuthStore((s) => s.permAll);
   const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
@@ -138,7 +138,21 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
           style={{ height: '64px' }}
         >
           {collapsed ? (
-            <img src="/favicon.png" alt="Hawcus" className="w-8 h-8 object-contain" />
+            faviconUrl ? (
+              // Tenant-uploaded favicon (fixed square that fits the collapsed rail).
+              <img src={faviconUrl} alt={tenantName ?? ''} className="w-9 h-9 object-contain rounded-lg" />
+            ) : tenantName ? (
+              // No favicon uploaded: show the company's first initial (e.g. "Social Eagle" -> "S").
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-[16px] text-white leading-none"
+                style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand-light))' }}
+              >
+                {tenantName.trim().charAt(0).toUpperCase()}
+              </div>
+            ) : (
+              // No tenant context (e.g. super admin / pre-login): fall back to the Hawcus mark.
+              <img src="/favicon.png" alt="Hawcus" className="w-8 h-8 object-contain" />
+            )
           ) : branded && logoUrl ? (
             <img src={logoUrl} alt={tenantName ?? ''} className="max-h-11 max-w-[160px] object-contain" />
           ) : branded && tenantName ? (

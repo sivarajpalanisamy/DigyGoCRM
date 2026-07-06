@@ -186,7 +186,7 @@ export default function BrandingPage() {
                   <Uploader url={form.logo_url} onPick={() => logoRef.current?.click()} onClear={() => upd('logo_url', null)} size="w-16 h-16" />
                 </div>
                 <div className="flex items-center justify-between gap-4 pt-3 border-t border-black/5">
-                  <div><label className={labelCls}>Favicon</label><p className={hintCls}>Browser tab icon · square · max 1 MB</p></div>
+                  <div><label className={labelCls}>Favicon</label><p className={hintCls}>Browser tab &amp; collapsed sidebar · square, e.g. 128×128 · max 1 MB. If empty, your company initial is shown.</p></div>
                   <Uploader url={form.favicon_url} onPick={() => faviconRef.current?.click()} onClear={() => upd('favicon_url', null)} size="w-10 h-10" />
                 </div>
                 <div className="flex items-center justify-between gap-4 pt-3 border-t border-black/5">

@@ -600,20 +600,20 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
       )}
 
       {/* Table */}
-      <div className="flex-1 bg-white border border-black/[0.07] rounded-2xl overflow-hidden flex flex-col min-h-0">
-        <div className="overflow-y-auto flex-1">
+      <div className="flex-1 min-h-[700px] bg-white border border-black/[0.07] rounded-2xl overflow-hidden flex flex-col">
+        <div className="overflow-y-auto flex-1 min-h-0">
           <table className="w-full text-[14px]">
             <thead className="sticky top-0 bg-[var(--app-bg)] border-b border-black/[0.07] z-10">
               <tr>
-                <th className="text-left px-2 py-2.5 font-semibold text-[#7a6b5c] w-8">#</th>
-                <th className="text-left px-2 py-2.5 font-semibold text-[#7a6b5c]">Lead</th>
-                <th className="text-left px-2 py-2.5 font-semibold text-[#7a6b5c]">Pipeline</th>
-                <th className="text-left px-2 py-2.5 font-semibold text-[#7a6b5c] w-14">Dir</th>
-                <th className="text-left px-2 py-2.5 font-semibold text-[#7a6b5c]">Outcome</th>
-                <th className="text-left px-2 py-2.5 font-semibold text-[#7a6b5c] w-12">Dur</th>
-                <th className="text-left px-2 py-2.5 font-semibold text-[#7a6b5c]">Agent</th>
-                <th className="text-left px-2 py-2.5 font-semibold text-[#7a6b5c]">Date</th>
-                <th className="text-left px-2 py-2.5 font-semibold text-[#7a6b5c] w-20">Rec</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-[#7a6b5c] w-16">S.No</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-[#7a6b5c]">Lead</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-[#7a6b5c]">Pipeline</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-[#7a6b5c] w-28">Direction</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-[#7a6b5c]">Outcome</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-[#7a6b5c] w-24">Duration</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-[#7a6b5c]">Agent</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-[#7a6b5c]">Date</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-[#7a6b5c] w-20">Rec</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
@@ -628,7 +628,6 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                   </td>
                 </tr>
               ) : visible.map((c, idx) => {
-                const isAnswered    = c.outcome === 'ANSWERED';
                 const notConnected  = NOT_CONNECTED.has(c.outcome);
                 const isOutbound    = c.direction === 'OUTBOUND';
                 const DirIcon    = isOutbound ? PhoneOutgoing : notConnected ? PhoneMissed : PhoneIncoming;
@@ -639,8 +638,8 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                 return (
                   <>
                     <tr key={c.id} className="hover:bg-[var(--app-bg)] transition-colors">
-                      <td className="px-2 py-2 text-[#b09e8d] text-[13px]">{(page - 1) * LIMIT + idx + 1}</td>
-                      <td className="px-2 py-2">
+                      <td className="px-3 py-2 text-[#b09e8d] text-[13px]">{(page - 1) * LIMIT + idx + 1}</td>
+                      <td className="px-3 py-2">
                         {c.lead_id ? (
                           <button onClick={() => openLeadDetail(c.lead_id!)} className="text-left group">
                             <p className="font-semibold text-primary group-hover:underline truncate">{c.lead_name ?? c.caller_phone}</p>
@@ -694,27 +693,27 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                           </div>
                         )}
                       </td>
-                      <td className="px-2 py-2">
+                      <td className="px-3 py-2">
                         <p className="text-[13px] text-[#1c1410] truncate">{c.pipeline_name ?? '-'}</p>
                         {c.stage_name && <p className="text-[11px] text-[#b09e8d] truncate">{c.stage_name}</p>}
                       </td>
-                      <td className="px-2 py-2">
-                        <span className={cn('flex items-center gap-1 text-[13px] font-medium', dirColor)}>
+                      <td className="px-3 py-2">
+                        <span className={cn('flex items-center gap-1.5 text-[13px] font-medium', dirColor)}>
                           <DirIcon className="w-3.5 h-3.5 shrink-0" />
-                          {isOutbound ? 'Out' : 'In'}
+                          {isOutbound ? 'Outgoing' : 'Incoming'}
                         </span>
                       </td>
-                      <td className="px-2 py-2">
-                        <span className={cn('px-2 py-0.5 rounded-full text-[11px] font-semibold',
-                          isAnswered   ? 'bg-emerald-50 text-emerald-700' :
-                          notConnected ? 'bg-red-50 text-red-600' :
-                                         'bg-amber-50 text-amber-700'
+                      <td className="px-3 py-2">
+                        <span className={cn('text-[13px] font-semibold',
+                          c.outcome === 'ANSWERED' ? 'text-emerald-600' :
+                          notConnected              ? 'text-red-600' :
+                                                      'text-amber-600'
                         )}>{outcomeLabel(c.outcome)}</span>
                       </td>
-                      <td className="px-2 py-2 text-[#7a6b5c] font-medium text-[13px]">{durLabel(c.duration_seconds)}</td>
-                      <td className="px-2 py-2 text-[#7a6b5c] text-[13px] truncate">{c.staff_name ?? '-'}</td>
-                      <td className="px-2 py-2 text-[#7a6b5c] text-[13px]">{dateLabel(c.started_at ?? c.created_at)}</td>
-                      <td className="px-2 py-2">
+                      <td className="px-3 py-2 text-[#7a6b5c] font-medium text-[13px]">{durLabel(c.duration_seconds)}</td>
+                      <td className="px-3 py-2 text-[#7a6b5c] text-[13px] truncate">{c.staff_name ?? '-'}</td>
+                      <td className="px-3 py-2 text-[#7a6b5c] text-[13px]">{dateLabel(c.started_at ?? c.created_at)}</td>
+                      <td className="px-3 py-2">
                         {hasRec ? (
                           <div className="flex items-center gap-1">
                             <button
@@ -739,7 +738,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                     </tr>
                     {playingId === c.id && audioUrls[c.id] && (
                       <tr key={`${c.id}-audio`} className="bg-orange-50/50">
-                        <td colSpan={9} className="px-2 py-2">
+                        <td colSpan={9} className="px-3 py-2">
                           <audio
                             src={audioUrls[c.id]}
                             autoPlay
