@@ -186,10 +186,29 @@ function splitStatements(sql: string): string[] {
   const stmts: string[] = [];
   let current = '';
   let dollarDepth = 0; // tracks open $$ blocks
+  let inSingle = false; // tracks an open '...' string literal (outside $$)
 
   for (let i = 0; i < sql.length; i++) {
     const ch = sql[i];
+
+    // Strip `--` line comments (to end of line) when NOT inside a $$ block or a
+    // string literal. Comments are no-ops to Postgres, but leaving them in means a
+    // `;` inside a comment gets treated as a statement separator — the recurring
+    // splitter bug (broke migrations 030/081/085/087). Dropping them fixes the class.
+    if (ch === '-' && sql[i + 1] === '-' && dollarDepth === 0 && !inSingle) {
+      let j = i + 2;
+      while (j < sql.length && sql[j] !== '\n') j++;
+      i = j - 1; // resume on the newline (re-added next iteration), preserving line breaks
+      continue;
+    }
+
     current += ch;
+
+    // Track single-quoted string literals (only meaningful outside $$ blocks). This
+    // keeps a stray `--` or `;` inside a literal from being mistaken for a comment/split.
+    if (ch === "'" && dollarDepth === 0) {
+      inSingle = !inSingle;
+    }
 
     // Toggle dollar-quote depth on $$
     if (ch === '$' && sql[i + 1] === '$') {
@@ -198,8 +217,8 @@ function splitStatements(sql: string): string[] {
       continue;
     }
 
-    // Split on semicolons only outside dollar-quoted blocks
-    if (ch === ';' && dollarDepth === 0) {
+    // Split on semicolons only outside dollar-quoted blocks and string literals
+    if (ch === ';' && dollarDepth === 0 && !inSingle) {
       const trimmed = current.trim();
       if (trimmed.length > 1) stmts.push(trimmed);
       current = '';

@@ -1,6 +1,6 @@
 -- Clean up duplicate completed executions caused by the legacy double-fire bug
 -- (webhooks.ts fired lead_created AND integrations.ts fired meta_form simultaneously).
--- Keep only the earliest completed record per workflow+lead; delete the rest.
+-- Keep only the earliest completed record per workflow+lead, then delete the rest.
 
 DELETE FROM workflow_execution_logs
 WHERE execution_id IN (
