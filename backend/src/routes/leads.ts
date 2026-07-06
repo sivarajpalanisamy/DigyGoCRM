@@ -1109,7 +1109,7 @@ router.get('/:id/stats', async (req: AuthRequest, res: Response) => {
            COUNT(*) AS total,
            COUNT(*) FILTER (WHERE f.completed = true) AS completed,
            COUNT(*) FILTER (WHERE f.completed = false AND f.due_at < NOW()) AS overdue
-         FROM follow_ups f
+         FROM lead_followups f
          WHERE f.lead_id = $1 AND f.tenant_id = $2::uuid`,
         [leadId, tenantId]
       ),
