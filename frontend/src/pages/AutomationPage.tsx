@@ -1,13 +1,15 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCrmStore } from '@/store/crmStore';
+import { useHeaderSearch } from '@/store/headerSearchStore';
 import { usePermission } from '@/hooks/usePermission';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import {
-  Search, Plus, Zap, MoreVertical, X, CheckCircle2, Clock,
+  Plus, Zap, MoreVertical, X, CheckCircle2, Clock,
   Users, Activity, Pencil, Copy, Trash2, ChevronRight,
   ToggleRight, ToggleLeft, SkipForward, Loader2, User, TrendingUp,
   ChevronDown, ChevronUp, Play, RefreshCw, AlertTriangle, Send,
+  Check, Minus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -38,7 +40,7 @@ function ContactSidebar({
       .then((data) => {
         const raw = data ?? [];
         setAllLogs(raw);
-        // Deduplicate by lead_id — keep only the latest execution per contact
+        // Deduplicate by lead_id - keep only the latest execution per contact
         // (backend returns DESC order so first occurrence = newest).
         // Null-lead_id rows (test-modal runs) are kept individually by execution id.
         const seen = new Set<string>();
@@ -249,17 +251,15 @@ function ContactSidebar({
               title="Select all"
             >
               {(allChecked || someChecked) && (
-                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10" stroke="currentColor" strokeWidth={2}>
-                  {allChecked
-                    ? <path d="M1.5 5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    : <path d="M2 5h6" strokeLinecap="round"/>}
-                </svg>
+                allChecked
+                  ? <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                  : <Minus className="w-2.5 h-2.5 text-white" strokeWidth={3} />
               )}
             </button>
           )}
           <div className="flex items-center gap-1.5 flex-1">
             <Users className="w-3.5 h-3.5 text-[#7a6b5c]" />
-            <span className="text-[12px] font-semibold text-[#1c1410]">
+            <span className="text-[13px] font-semibold text-[#1c1410]">
               {filtered.length} contact{filtered.length !== 1 ? 's' : ''}
             </span>
             {selectedCount > 0 && (
@@ -281,7 +281,7 @@ function ContactSidebar({
         {/* List */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="py-16 text-center text-[13px] text-[#7a6b5c] flex items-center justify-center gap-2">
+            <div className="py-16 text-center text-[14px] text-[#7a6b5c] flex items-center justify-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading…
             </div>
           ) : filtered.length === 0 ? (
@@ -289,8 +289,8 @@ function ContactSidebar({
               <div className="w-12 h-12 bg-[var(--accent-tint)] rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <Users className="w-6 h-6 text-primary" />
               </div>
-              <p className="text-[14px] font-semibold text-[#1c1410] mb-1">No contacts yet</p>
-              <p className="text-[12px] text-[#7a6b5c]">No one in this status yet.</p>
+              <p className="text-[15px] font-semibold text-[#1c1410] mb-1">No contacts yet</p>
+              <p className="text-[13px] text-[#7a6b5c]">No one in this status yet.</p>
             </div>
           ) : (
             <div>
@@ -333,15 +333,13 @@ function ContactSidebar({
                         style={{ width: 18, height: 18 }}
                       >
                         {isChecked && (
-                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10" stroke="currentColor" strokeWidth={2.5}>
-                            <path d="M1.5 5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
+                          <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
                         )}
                       </button>
 
                       {/* Avatar */}
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold"
+                        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[13px] font-bold"
                         style={{ background: bgPalette[ci], color: fgPalette[ci] }}
                       >
                         {rStatus === 'running'
@@ -358,7 +356,7 @@ function ContactSidebar({
                         className="flex-1 min-w-0 cursor-pointer"
                         onClick={() => setExpanded(isOpen ? null : log.id)}
                       >
-                        <p className="text-[13px] font-semibold text-[#1c1410] truncate">{name}</p>
+                        <p className="text-[14px] font-semibold text-[#1c1410] truncate">{name}</p>
                         <p className="text-[11px] text-[#7a6b5c]"><a href={`tel:${phone}`} className="hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{phone}</a>{enrolledAt ? ` · ${enrolledAt}` : ''}</p>
                       </div>
 
@@ -377,7 +375,7 @@ function ContactSidebar({
                     {/* Steps expanded */}
                     {isOpen && (
                       <div className="px-5 pb-3 pt-1 space-y-2 bg-[var(--app-bg)]">
-                        {/* Execution-level error — shown when the whole run crashed */}
+                        {/* Execution-level error - shown when the whole run crashed */}
                         {log.error && (
                           <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-1">
                             <X className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
@@ -387,7 +385,7 @@ function ContactSidebar({
                         {(log.steps ?? []).length === 0 && actionNodes.length === 0 ? (
                           <p className="text-[11px] text-[#b09e8d] py-2">No steps configured.</p>
                         ) : (log.steps ?? []).length > 0 ? (
-                          // Render actual executed steps in order — includes nested branch steps
+                          // Render actual executed steps in order - includes nested branch steps
                           (log.steps as any[]).map((step, ni) => {
                             const node     = allNodesMap.get(step.node_id);
                             const label    = node?.label || step.action_type || 'Action';
@@ -401,7 +399,7 @@ function ContactSidebar({
                                     {ni + 1}
                                   </span>
                                   <div className="min-w-0">
-                                    <span className="text-[12px] text-[#1c1410] truncate block">{label}</span>
+                                    <span className="text-[13px] text-[#1c1410] truncate block">{label}</span>
                                     {(isFailed || isSkip) && step.message && (
                                       <span className={`text-[10px] break-all block select-text font-mono ${isFailed ? 'text-red-600' : 'text-[#b09e8d]'}`}>
                                         {step.message}
@@ -430,14 +428,14 @@ function ContactSidebar({
                             );
                           })
                         ) : (
-                          // Fallback: no step logs yet — show top-level nodes as pending
+                          // Fallback: no step logs yet - show top-level nodes as pending
                           actionNodes.map((node: any, ni: number) => (
                             <div key={node.id} className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-400 text-[9px] flex items-center justify-center font-bold shrink-0">
                                   {ni + 1}
                                 </span>
-                                <span className="text-[12px] text-[#1c1410] truncate block">{node.label}</span>
+                                <span className="text-[13px] text-[#1c1410] truncate block">{node.label}</span>
                               </div>
                               <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">Pending</span>
                             </div>
@@ -452,26 +450,26 @@ function ContactSidebar({
           )}
         </div>
 
-        {/* ── Re-execute footer — shown when contacts are selected ── */}
+        {/* ── Re-execute footer - shown when contacts are selected ── */}
         {selectedCount > 0 && (
           <div className="shrink-0 px-4 py-3 border-t border-black/5 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-bold text-[#1c1410]">
+                <p className="text-[13px] font-bold text-[#1c1410]">
                   {selectedCount} contact{selectedCount !== 1 ? 's' : ''} selected
                 </p>
                 <p className="text-[11px] text-[#7a6b5c]">Workflow will restart from step 1</p>
               </div>
               <button
                 onClick={() => setSelected(new Set())}
-                className="px-3 py-2 rounded-xl text-[12px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors shrink-0"
+                className="px-3 py-2 rounded-xl text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors shrink-0"
               >
                 Clear
               </button>
               <button
                 onClick={handleRerun}
                 disabled={rerunning}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold text-white transition-all disabled:opacity-60 shrink-0"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-60 shrink-0"
                 style={{ background: 'linear-gradient(135deg,var(--brand-dark),var(--brand))', boxShadow: '0 3px 10px rgba(194,65,12,0.3)' }}
               >
                 {rerunning
@@ -544,9 +542,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
           )}
         >
           {selected && (
-            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10" stroke="currentColor" strokeWidth={2.5}>
-              <path d="M1.5 5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
           )}
         </button>
       </div>
@@ -554,7 +550,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
       {/* Automation Name */}
       <div className="flex-1 min-w-0 py-4 pr-4">
         <div className="flex items-center gap-2">
-          <p className="font-semibold text-[13px] text-[#1c1410] truncate">{wf.name}</p>
+          <p className="font-semibold text-[14px] text-[#1c1410] truncate">{wf.name}</p>
           {wf.status === 'inactive' && (
             <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200 leading-none">
               Draft
@@ -579,9 +575,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
           )}
         >
           {wf.allowReentry && (
-            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10" stroke="currentColor" strokeWidth={2.5}>
-              <path d="M1.5 5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
           )}
         </button>
       </div>
@@ -589,7 +583,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
       {/* Done */}
       <div className="w-20 shrink-0 py-4 text-center" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onContactPanel('completed')} className="w-full text-center hover:opacity-70 transition-opacity">
-          <p className="text-[14px] font-bold text-[#1c1410]">{wf.completed}</p>
+          <p className="text-[15px] font-bold text-[#1c1410]">{wf.completed}</p>
           <p className="text-[11px] text-[#7a6b5c]">Done</p>
         </button>
       </div>
@@ -597,7 +591,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
       {/* Errors */}
       <div className="w-20 shrink-0 py-4 text-center" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onContactPanel('completed_with_errors')} className="w-full text-center hover:opacity-70 transition-opacity">
-          <p className={cn('text-[14px] font-bold', wf.completedWithErrors > 0 ? 'text-amber-500' : 'text-[#1c1410]')}>
+          <p className={cn('text-[15px] font-bold', wf.completedWithErrors > 0 ? 'text-amber-500' : 'text-[#1c1410]')}>
             {wf.completedWithErrors}
           </p>
           <p className="text-[11px] text-[#7a6b5c]">Errors</p>
@@ -607,7 +601,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
       {/* Skipped */}
       <div className="w-20 shrink-0 py-4 text-center" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onContactPanel('skipped')} className="w-full text-center hover:opacity-70 transition-opacity">
-          <p className="text-[14px] font-bold text-[#1c1410]">{wf.skipped}</p>
+          <p className="text-[15px] font-bold text-[#1c1410]">{wf.skipped}</p>
           <p className="text-[11px] text-[#7a6b5c]">Skipped</p>
         </button>
       </div>
@@ -615,7 +609,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
       {/* Contacts */}
       <div className="w-24 shrink-0 py-4 text-center" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onContactPanel('all')} className="w-full text-center hover:opacity-70 transition-opacity">
-          <p className="text-[14px] font-bold text-[#1c1410]">{wf.totalContacts}</p>
+          <p className="text-[15px] font-bold text-[#1c1410]">{wf.totalContacts}</p>
           <p className="text-[11px] text-[#7a6b5c]">Contacts</p>
         </button>
       </div>
@@ -623,7 +617,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
       {/* Failed */}
       <div className="w-20 shrink-0 py-4 text-center" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onContactPanel('failed')} className="w-full text-center hover:opacity-70 transition-opacity">
-          <p className="text-[14px] font-bold text-[#1c1410]">{wf.failed}</p>
+          <p className="text-[15px] font-bold text-[#1c1410]">{wf.failed}</p>
           <p className="text-[11px] text-[#7a6b5c]">Failed</p>
         </button>
       </div>
@@ -653,37 +647,37 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
             <div className="fixed inset-0 z-30" onClick={stop(onToggleMenu)} />
             <div className={`absolute right-0 z-40 w-44 bg-white rounded-xl border border-black/5 shadow-xl py-1 overflow-hidden ${flipUp ? 'bottom-9' : 'top-9'}`}>
               {canManageAutomation && (
-                <button onClick={stop(onOpen)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
+                <button onClick={stop(onOpen)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
                   <Pencil className="w-3.5 h-3.5 text-[#7a6b5c]" /> Edit
                 </button>
               )}
-              <button onClick={stop(onAnalytics)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
+              <button onClick={stop(onAnalytics)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
                 <TrendingUp className="w-3.5 h-3.5 text-[#7a6b5c]" /> Analytics
               </button>
               {canManageAutomation && (
-                <button onClick={stop(onDuplicate)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
+                <button onClick={stop(onDuplicate)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
                   <Copy className="w-3.5 h-3.5 text-[#7a6b5c]" /> Duplicate
                 </button>
               )}
               {canManageAutomation && triggerNode?.actionType === 'broadcast_to_group' && (
-                <button onClick={stop(onRunBroadcast)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-emerald-600 hover:bg-emerald-50 transition-colors text-left">
+                <button onClick={stop(onRunBroadcast)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-emerald-600 hover:bg-emerald-50 transition-colors text-left">
                   <Send className="w-3.5 h-3.5" /> Run Broadcast
                 </button>
               )}
               {canManageAutomation && (
-                <button onClick={stop(onRetry)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-[var(--brand-dark)] hover:bg-orange-50 transition-colors text-left">
+                <button onClick={stop(onRetry)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--brand-dark)] hover:bg-orange-50 transition-colors text-left">
                   <RefreshCw className="w-3.5 h-3.5" /> Retry skipped
                 </button>
               )}
               {canManageAutomation && wf.completedWithErrors > 0 && (
-                <button onClick={stop(onRetryErrors)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-amber-600 hover:bg-amber-50 transition-colors text-left">
+                <button onClick={stop(onRetryErrors)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-amber-600 hover:bg-amber-50 transition-colors text-left">
                   <AlertTriangle className="w-3.5 h-3.5" /> Retry {wf.completedWithErrors} error{wf.completedWithErrors !== 1 ? 's' : ''}
                 </button>
               )}
               {canManageAutomation && (
                 <>
                   <div className="border-t border-black/5 my-1" />
-                  <button onClick={stop(onDelete)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-red-500 hover:bg-red-50 transition-colors text-left">
+                  <button onClick={stop(onDelete)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-500 hover:bg-red-50 transition-colors text-left">
                     <Trash2 className="w-3.5 h-3.5" /> Delete
                   </button>
                 </>
@@ -704,7 +698,7 @@ export default function AutomationPage() {
 
   const [workflows, setWorkflows] = useState<WFRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useHeaderSearch('Search workflows');
   const [statusFilter, setStatusFilter] = useState('All');
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -776,7 +770,7 @@ export default function AutomationPage() {
     if (newStatus === 'active') {
       const triggerNode = wf.nodes.find((n) => n.type === 'trigger' && n.actionType);
       if (!triggerNode) { setNoTriggerPopup(true); return; }
-      // Form triggers require at least one form — blank = must stay inactive
+      // Form triggers require at least one form - blank = must stay inactive
       if (FORM_TRIGGERS.includes(triggerNode.actionType)) {
         const forms = triggerNode.config?.forms as string[] | undefined;
         if (!forms || forms.length === 0) {
@@ -991,41 +985,30 @@ export default function AutomationPage() {
         </div>
 
         {canManageAutomation && (
-          <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5 shrink-0" style={shadowStyle}>
+          <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 shrink-0" style={shadowStyle}>
             <Plus className="w-4 h-4" /> Create Workflow
           </button>
         )}
       </div>
 
-      {/* ── Toolbar ── */}
-      <div className="flex items-center gap-3 pb-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
-          <input
-            className="w-full pl-9 pr-4 h-10 text-[13px] bg-white border border-black/10 rounded-xl outline-none focus:border-primary/40 placeholder:text-[#b09e8d] transition-all"
-            placeholder="Search workflows..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </div>
+      {/* Workflow search moved to the navbar (context-aware header search). */}
 
       {/* ── Bulk action bar ── */}
       {canManageAutomation && selectedRows.size > 0 && (
         <div className="flex items-center justify-between gap-3 mb-3 px-4 py-2.5 rounded-xl bg-primary/5 border border-primary/20">
-          <p className="text-[13px] font-semibold text-[#1c1410]">
+          <p className="text-[14px] font-semibold text-[#1c1410]">
             {selectedRows.size} selected
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelectedRows(new Set())}
-              className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[#7a6b5c] hover:bg-black/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-black/5 transition-colors"
             >
               Clear
             </button>
             <button
               onClick={() => setBulkDeleteConfirm(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" /> Delete selected ({selectedRows.size})
             </button>
@@ -1058,11 +1041,9 @@ export default function AutomationPage() {
                 )}
               >
                 {filtered.length > 0 && filtered.some((w) => selectedRows.has(w.id)) && (
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 10 10" stroke="currentColor" strokeWidth={2}>
-                    {filtered.every((w) => selectedRows.has(w.id))
-                      ? <path d="M1.5 5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      : <path d="M2 5h6" strokeLinecap="round"/>}
-                  </svg>
+                  filtered.every((w) => selectedRows.has(w.id))
+                    ? <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                    : <Minus className="w-2.5 h-2.5 text-white" strokeWidth={3} />
                 )}
               </button>
             </div>
@@ -1087,9 +1068,9 @@ export default function AutomationPage() {
                 <Zap className="w-6 h-6 text-primary" />
               </div>
               <p className="text-[15px] font-bold text-[#1c1410] mb-1">{search ? 'No results' : 'No workflows yet'}</p>
-              <p className="text-[12px] text-[#7a6b5c] mb-4">{search ? 'Try a different search.' : 'Create your first workflow to start automating.'}</p>
+              <p className="text-[13px] text-[#7a6b5c] mb-4">{search ? 'Try a different search.' : 'Create your first workflow to start automating.'}</p>
               {!search && canManageAutomation && (
-                <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold text-white" style={shadowStyle}>
+                <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-bold text-white" style={shadowStyle}>
                   <Plus className="w-4 h-4" /> Create Workflow
                 </button>
               )}
@@ -1133,10 +1114,10 @@ export default function AutomationPage() {
               <span className="text-amber-600 text-lg font-bold">!</span>
             </div>
             <h3 className="text-[15px] font-bold text-[#1c1410] mb-2">No Trigger Set</h3>
-            <p className="text-[13px] text-[#7a6b5c] mb-6">A workflow must have a trigger before it can be activated. Open the editor and choose a trigger first.</p>
+            <p className="text-[14px] text-[#7a6b5c] mb-6">A workflow must have a trigger before it can be activated. Open the editor and choose a trigger first.</p>
             <button
               onClick={() => setNoTriggerPopup(false)}
-              className="w-full py-2.5 rounded-xl bg-[var(--brand-dark)] hover:bg-[var(--brand)] text-white text-[13px] font-bold transition-colors"
+              className="w-full py-2.5 rounded-xl bg-[var(--brand-dark)] hover:bg-[var(--brand)] text-white text-[14px] font-bold transition-colors"
             >
               Got it
             </button>

@@ -8,6 +8,7 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { useHeaderSearch } from '@/store/headerSearchStore';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import { useCrmStore } from '@/store/crmStore';
@@ -141,13 +142,13 @@ function CreateModal({
               {step === 'search' ? 'New Follow-up' : `Follow-up · ${selectedLead?.name}`}
             </h3>
             {step === 'form' && selectedLead?.phone && (
-              <a href={`tel:${selectedLead.phone}`} className="text-[12px] text-[#7a6b5c] mt-0.5 hover:text-primary transition-colors block">{selectedLead.phone}</a>
+              <a href={`tel:${selectedLead.phone}`} className="text-[13px] text-[#7a6b5c] mt-0.5 hover:text-primary transition-colors block">{selectedLead.phone}</a>
             )}
           </div>
           <div className="flex items-center gap-2">
             {step === 'form' && !preselectedLead && (
               <button onClick={() => setStep('search')}
-                className="text-[12px] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors font-medium">
+                className="text-[13px] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors font-medium">
                 Change lead
               </button>
             )}
@@ -158,7 +159,7 @@ function CreateModal({
           </div>
         </div>
 
-        {/* Step 1 — Lead Search */}
+        {/* Step 1 - Lead Search */}
         {step === 'search' && (
           <div className="px-5 py-4">
             <div className="relative">
@@ -168,16 +169,16 @@ function CreateModal({
                 placeholder="Search lead by name or phone…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 h-11 rounded-xl border border-black/10 text-[13px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                className="w-full pl-10 pr-4 h-11 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
               />
               {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--brand-dark)] animate-spin" />}
             </div>
 
             <div className="mt-3 max-h-60 overflow-y-auto space-y-1">
               {search.trim().length < 2 ? (
-                <p className="text-[12px] text-[#b09e8d] text-center py-6">Type at least 2 characters to search</p>
+                <p className="text-[13px] text-[#b09e8d] text-center py-6">Type at least 2 characters to search</p>
               ) : results.length === 0 && !searching ? (
-                <p className="text-[12px] text-[#b09e8d] text-center py-6">No leads found</p>
+                <p className="text-[13px] text-[#b09e8d] text-center py-6">No leads found</p>
               ) : results.map((lead) => (
                 <button key={lead.id} onClick={() => selectLead(lead)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#faf0e8] transition-colors text-left">
@@ -185,7 +186,7 @@ function CreateModal({
                     {(lead.name ?? '?')[0].toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-[#1c1410] truncate">{lead.name}</p>
+                    <p className="text-[14px] font-semibold text-[#1c1410] truncate">{lead.name}</p>
                     {lead.phone && <a href={`tel:${lead.phone}`} className="text-[11px] text-[#7a6b5c] hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{lead.phone}</a>}
                   </div>
                 </button>
@@ -194,7 +195,7 @@ function CreateModal({
           </div>
         )}
 
-        {/* Step 2 — Form */}
+        {/* Step 2 - Form */}
         {step === 'form' && (
           <div className="px-5 py-4 space-y-4">
             <div>
@@ -206,7 +207,7 @@ function CreateModal({
                 placeholder="e.g. Call back after demo"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 h-10 rounded-xl border border-black/10 text-[13px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
               />
             </div>
 
@@ -218,7 +219,7 @@ function CreateModal({
                   value={date}
                   min={format(new Date(), 'yyyy-MM-dd')}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-3 h-10 rounded-xl border border-black/10 text-[13px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                  className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
                 />
               </div>
               <div>
@@ -227,7 +228,7 @@ function CreateModal({
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="w-full px-3 h-10 rounded-xl border border-black/10 text-[13px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                  className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
                 />
               </div>
             </div>
@@ -239,19 +240,19 @@ function CreateModal({
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 rounded-xl border border-black/10 text-[13px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all resize-none"
+                className="w-full px-3 py-2 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all resize-none"
               />
             </div>
 
             <div className="flex gap-3 pt-1">
               <button onClick={onClose}
-                className="flex-1 h-10 rounded-xl border border-black/10 text-[13px] font-semibold text-[#7a6b5c] hover:bg-[var(--accent-tint)] transition-colors">
+                className="flex-1 h-10 rounded-xl border border-black/10 text-[14px] font-semibold text-[#7a6b5c] hover:bg-[var(--accent-tint)] transition-colors">
                 Cancel
               </button>
               <button
                 onClick={submit}
                 disabled={saving || !title.trim() || !date || !time}
-                className="flex-1 h-10 rounded-xl text-[13px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 h-10 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Schedule</>}
@@ -329,7 +330,7 @@ function CompleteModal({
           <div className="flex-1 min-w-0 pr-3">
             <p className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide mb-1">Mark as Done</p>
             <h3 className="text-[15px] font-bold text-[#1c1410] truncate">{fu.leadName}</h3>
-            {fu.leadPhone && <p className="text-[12px] text-[#7a6b5c] mt-0.5">{fu.leadPhone}</p>}
+            {fu.leadPhone && <p className="text-[13px] text-[#7a6b5c] mt-0.5">{fu.leadPhone}</p>}
             <p className="text-[11px] text-[#b09e8d] mt-1.5 line-clamp-1">"{fu.title}"</p>
           </div>
           <button onClick={onCancel}
@@ -340,7 +341,7 @@ function CompleteModal({
 
         {/* Schedule next */}
         <div className="px-5 py-5 space-y-4">
-          <p className="text-[13px] font-bold text-[#1c1410]">Schedule next follow-up</p>
+          <p className="text-[14px] font-bold text-[#1c1410]">Schedule next follow-up</p>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -351,7 +352,7 @@ function CompleteModal({
                 value={date}
                 min={format(new Date(), 'yyyy-MM-dd')}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 h-10 rounded-xl border border-black/10 text-[13px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
               />
             </div>
             <div>
@@ -360,7 +361,7 @@ function CompleteModal({
                 type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full px-3 h-10 rounded-xl border border-black/10 text-[13px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
               />
             </div>
           </div>
@@ -371,7 +372,7 @@ function CompleteModal({
               placeholder="What to follow up on…"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full px-3 h-10 rounded-xl border border-black/10 text-[13px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+              className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
             />
           </div>
 
@@ -379,14 +380,14 @@ function CompleteModal({
             <button
               onClick={markDoneOnly}
               disabled={saving}
-              className="flex-1 h-10 rounded-xl border border-black/10 text-[12px] font-semibold text-[#7a6b5c] hover:bg-[var(--accent-tint)] transition-colors disabled:opacity-50"
+              className="flex-1 h-10 rounded-xl border border-black/10 text-[13px] font-semibold text-[#7a6b5c] hover:bg-[var(--accent-tint)] transition-colors disabled:opacity-50"
             >
               No Follow-up Needed
             </button>
             <button
               onClick={markDoneAndSchedule}
               disabled={saving || !date}
-              className="flex-1 h-10 rounded-xl text-[13px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 h-10 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Done &amp; Schedule</>}
@@ -446,7 +447,7 @@ function FollowUpCard({
       <div className="flex-1 min-w-0 px-4 py-3">
         {/* Lead name + phone */}
         <div className="flex items-center gap-2 mb-1">
-          <p className={cn('text-[13px] font-bold truncate', fu.completed ? 'line-through text-gray-400' : 'text-[#1c1410]')}>
+          <p className={cn('text-[14px] font-bold truncate', fu.completed ? 'line-through text-gray-400' : 'text-[#1c1410]')}>
             {fu.leadName}
           </p>
           <span className={cn('shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border', S[st].bg, S[st].text, S[st].border)}>
@@ -462,7 +463,7 @@ function FollowUpCard({
         )}
 
         {/* Title */}
-        <p className={cn('text-[12px] font-medium', fu.completed ? 'text-gray-400 line-through' : 'text-[#4a3c30]')}>
+        <p className={cn('text-[13px] font-medium', fu.completed ? 'text-gray-400 line-through' : 'text-[#4a3c30]')}>
           {fu.title}
         </p>
 
@@ -536,7 +537,7 @@ export default function FollowUpsPage() {
   const [staffFilter, setStaffFilter] = useState<string>('all');
   const [pipelineFilter, setPipelineFilter] = useState<string>('');
   const [stageFilter, setStageFilter] = useState<string>('');
-  const [search, setSearch]         = useState('');
+  const [search, setSearch]         = useHeaderSearch('Search lead or task');
   const [createOpen, setCreateOpen] = useState(false);
   const [scheduleFor, setScheduleFor] = useState<{ id: string; name: string; phone: string } | null>(null);
   const [pendingComplete, setPendingComplete] = useState<FUItem | null>(null);
@@ -706,17 +707,17 @@ export default function FollowUpsPage() {
       <div className="flex items-start justify-between gap-4 pb-4 flex-wrap">
         <div>
           <h2 className="font-headline text-[24px] font-extrabold text-[#1c1410] leading-tight">Follow-ups</h2>
-          <p className="text-[12px] text-[#7a6b5c] mt-0.5">{items.length} total tasks</p>
+          <p className="text-[13px] text-[#7a6b5c] mt-0.5">{items.length} total tasks</p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Staff filter — admin/owner only */}
+          {/* Staff filter - admin/owner only */}
           {isAdminOrOwner && staff.length > 0 && (
             <div className="relative">
               <select
                 value={staffFilter}
                 onChange={(e) => setStaffFilter(e.target.value)}
-                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[12px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
+                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[13px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
               >
                 <option value="all">All Staff</option>
                 {staff.map((s) => (
@@ -733,7 +734,7 @@ export default function FollowUpsPage() {
               <select
                 value={pipelineFilter}
                 onChange={(e) => { setPipelineFilter(e.target.value); setStageFilter(''); }}
-                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[12px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
+                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[13px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
               >
                 <option value="">All Pipelines</option>
                 {pipelines.map((p) => (
@@ -750,7 +751,7 @@ export default function FollowUpsPage() {
               <select
                 value={stageFilter}
                 onChange={(e) => setStageFilter(e.target.value)}
-                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[12px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
+                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[13px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
               >
                 <option value="">All Stages</option>
                 {selectedPipelineStages.map((s) => (
@@ -761,26 +762,12 @@ export default function FollowUpsPage() {
             </div>
           )}
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
-            <input
-              placeholder="Search lead or task…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 h-9 rounded-xl border border-black/10 text-[12px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 bg-white transition-all w-48"
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                <X className="w-3.5 h-3.5 text-[#b09e8d]" />
-              </button>
-            )}
-          </div>
+          {/* Search moved to the navbar (context-aware header search). */}
 
           {/* New follow-up */}
           <button
             onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 12px rgba(194,65,12,0.3)' }}
           >
             <Plus className="w-4 h-4" /> New Follow-up
@@ -795,7 +782,7 @@ export default function FollowUpsPage() {
             key={tab.key}
             onClick={() => setFilter(tab.key)}
             className={cn(
-              'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold whitespace-nowrap transition-all',
+              'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all',
               filter === tab.key
                 ? 'bg-[#1c1410] text-white'
                 : 'text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-[#1c1410]'
@@ -822,7 +809,7 @@ export default function FollowUpsPage() {
             <p className="text-[15px] font-bold text-[#1c1410] mb-1">
               {filter === 'today' ? 'Nothing due today' : `No ${filter} follow-ups`}
             </p>
-            <p className="text-[12px] text-[#7a6b5c]">
+            <p className="text-[13px] text-[#7a6b5c]">
               {search ? 'Try a different search term.' : 'You\'re all caught up!'}
             </p>
           </div>

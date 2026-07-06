@@ -161,11 +161,11 @@ export default function PaymentsPage() {
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">Payments</h1>
-          <p className="text-[13px] text-[#7a6b5c] mt-0.5">{total} total payments</p>
+          <p className="text-[14px] text-[#7a6b5c] mt-0.5">{total} total payments</p>
         </div>
         <button
           onClick={handleExport}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-black/10 bg-white text-[13px] font-semibold text-[#1c1410] hover:bg-[#faf0e8] hover:border-primary/30 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-black/10 bg-white text-[14px] font-semibold text-[#1c1410] hover:bg-[#faf0e8] hover:border-primary/30 transition-colors"
         >
           <Download className="w-4 h-4" /> Export Excel
         </button>
@@ -176,7 +176,7 @@ export default function PaymentsPage() {
         <div className="relative flex-1 max-w-xs">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
-            className="w-full pl-9 pr-3 py-2 rounded-xl border border-black/10 bg-white text-[13px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-400"
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-black/10 bg-white text-[14px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-400"
             placeholder="Search customer or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -185,7 +185,7 @@ export default function PaymentsPage() {
         <button
           onClick={() => setShowFilters((v) => !v)}
           className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-xl border text-[13px] font-semibold transition-colors',
+            'flex items-center gap-2 px-4 py-2 rounded-xl border text-[14px] font-semibold transition-colors',
             showFilters || activeFilterCount > 0
               ? 'bg-primary text-white border-primary'
               : 'bg-white border-black/10 text-[#1c1410] hover:bg-[#faf0e8]'
@@ -195,7 +195,7 @@ export default function PaymentsPage() {
           Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
         </button>
         {activeFilterCount > 0 && (
-          <button onClick={clearFilters} className="flex items-center gap-1 text-[12px] text-[#7a6b5c] hover:text-red-500 transition-colors">
+          <button onClick={clearFilters} className="flex items-center gap-1 text-[13px] text-[#7a6b5c] hover:text-red-500 transition-colors">
             <X className="w-3.5 h-3.5" /> Clear
           </button>
         )}
@@ -206,7 +206,7 @@ export default function PaymentsPage() {
         <div className="bg-white border border-black/[0.07] rounded-2xl p-4 mb-4 grid grid-cols-2 gap-3 md:grid-cols-3">
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Status</label>
-            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">All</option>
               {STATUSES.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
@@ -214,7 +214,7 @@ export default function PaymentsPage() {
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Method</label>
-            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={method} onChange={(e) => setMethod(e.target.value)}>
               <option value="">All</option>
               {METHODS.map((m) => <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
@@ -222,7 +222,7 @@ export default function PaymentsPage() {
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Pipeline</label>
-            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={pipelineId} onChange={(e) => setPipelineId(e.target.value)}>
               <option value="">All Pipelines</option>
               {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -230,12 +230,12 @@ export default function PaymentsPage() {
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">From Date</label>
-            <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">To Date</label>
-            <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </div>
         </div>
@@ -244,7 +244,7 @@ export default function PaymentsPage() {
       {/* Analytics toggle */}
       <button
         onClick={() => setShowCharts((v) => !v)}
-        className="flex items-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] hover:text-[#1c1410] mb-3 transition-colors"
+        className="flex items-center gap-1.5 text-[13px] font-semibold text-[#7a6b5c] hover:text-[#1c1410] mb-3 transition-colors"
       >
         {showCharts ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         {showCharts ? 'Hide Analytics' : 'Show Analytics'}
@@ -297,7 +297,7 @@ export default function PaymentsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Revenue Trend */}
             <div className="bg-white rounded-xl border border-black/5 p-4">
-              <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Revenue Trend</h3>
+              <h3 className="text-[14px] font-semibold text-[#1c1410] mb-3">Revenue Trend</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={stats.daily}>
                   <defs>
@@ -319,7 +319,7 @@ export default function PaymentsPage() {
 
             {/* Payment Methods */}
             <div className="bg-white rounded-xl border border-black/5 p-4">
-              <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Payment Methods</h3>
+              <h3 className="text-[14px] font-semibold text-[#1c1410] mb-3">Payment Methods</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={stats.methods} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" horizontal={false} />
@@ -343,7 +343,7 @@ export default function PaymentsPage() {
       {/* Table */}
       <div className="flex-1 bg-white border border-black/[0.07] rounded-2xl overflow-hidden flex flex-col min-h-0">
         <div className="overflow-auto flex-1">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[14px]">
             <thead className="sticky top-0 bg-[var(--app-bg)] border-b border-black/[0.07] z-10">
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-[#7a6b5c] w-10">#</th>
@@ -363,8 +363,8 @@ export default function PaymentsPage() {
                 <tr>
                   <td colSpan={8} className="text-center py-16">
                     <CreditCard className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                    <p className="text-[14px] font-semibold text-[#7a6b5c]">No payments found</p>
-                    <p className="text-[12px] text-[#b09e8d] mt-1">Payments will appear here once Razorpay is connected</p>
+                    <p className="text-[15px] font-semibold text-[#7a6b5c]">No payments found</p>
+                    <p className="text-[13px] text-[#b09e8d] mt-1">Payments will appear here once Razorpay is connected</p>
                   </td>
                 </tr>
               ) : visible.map((p, idx) => {
@@ -395,7 +395,7 @@ export default function PaymentsPage() {
                       {p.stage_name && <p className="text-[10px] text-[#b09e8d]">{p.stage_name}</p>}
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-[#7a6b5c] text-[12px] truncate max-w-[140px]" title={p.razorpay_payment_id}>
+                      <p className="text-[#7a6b5c] text-[13px] truncate max-w-[140px]" title={p.razorpay_payment_id}>
                         {p.razorpay_payment_id}
                       </p>
                     </td>
@@ -410,20 +410,20 @@ export default function PaymentsPage() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-black/[0.05] bg-[var(--app-bg)]">
-            <span className="text-[12px] text-[#7a6b5c]">
+            <span className="text-[13px] text-[#7a6b5c]">
               Showing {(page - 1) * LIMIT + 1}-{Math.min(page * LIMIT, total)} of {total}
             </span>
             <div className="flex items-center gap-2">
               <button
                 disabled={page <= 1}
                 onClick={() => load(page - 1)}
-                className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-semibold text-[#1c1410] disabled:opacity-40 hover:bg-[#faf0e8] transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-semibold text-[#1c1410] disabled:opacity-40 hover:bg-[#faf0e8] transition-colors"
               >Prev</button>
-              <span className="text-[12px] text-[#7a6b5c]">{page} / {totalPages}</span>
+              <span className="text-[13px] text-[#7a6b5c]">{page} / {totalPages}</span>
               <button
                 disabled={page >= totalPages}
                 onClick={() => load(page + 1)}
-                className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-semibold text-[#1c1410] disabled:opacity-40 hover:bg-[#faf0e8] transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-semibold text-[#1c1410] disabled:opacity-40 hover:bg-[#faf0e8] transition-colors"
               >Next</button>
             </div>
           </div>

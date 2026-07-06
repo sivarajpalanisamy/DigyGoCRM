@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import { useSearchParams, useLocation } from 'react-router-dom';
+import { useHeaderSearch } from '@/store/headerSearchStore';
 import { useCrmStore, LeadActivity } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
 import { usePermission } from '@/hooks/usePermission';
@@ -152,9 +153,9 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const inputCls = 'w-full bg-[#faf8f6] border border-black/10 rounded-xl px-3.5 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 focus:bg-white transition-all placeholder:text-[#b09e8d]';
+  const inputCls = 'w-full bg-[#faf8f6] border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 focus:bg-white transition-all placeholder:text-[#b09e8d]';
   const lbl = (text: string, required = false) => (
-    <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">{text}{required && <span className="text-primary ml-0.5">*</span>}</label>
+    <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">{text}{required && <span className="text-primary ml-0.5">*</span>}</label>
   );
 
   return (
@@ -179,8 +180,8 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
             <div>
               {lbl('Phone', true)}
               <div className="flex items-center gap-2 bg-[#faf8f6] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all">
-                <span className="text-[13px] font-semibold text-[#7a6b5c] shrink-0">🇮🇳 +91</span>
-                <input className="flex-1 min-w-0 text-[13px] text-[#1c1410] outline-none bg-transparent placeholder:text-[#b09e8d]" placeholder="81234 56789" value={form.phone.replace('+91 ', '')} onChange={(e) => setForm({ ...form, phone: '+91 ' + e.target.value })} />
+                <span className="text-[14px] font-semibold text-[#7a6b5c] shrink-0">🇮🇳 +91</span>
+                <input className="flex-1 min-w-0 text-[14px] text-[#1c1410] outline-none bg-transparent placeholder:text-[#b09e8d]" placeholder="81234 56789" value={form.phone.replace('+91 ', '')} onChange={(e) => setForm({ ...form, phone: '+91 ' + e.target.value })} />
               </div>
             </div>
             <div>
@@ -221,7 +222,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
               {lbl('Lead Value')}
               <input className={inputCls} type="number" placeholder="0" value={form.dealValue || ''} onChange={(e) => setForm({ ...form, dealValue: Number(e.target.value) })} />
             </div>
-            {/* Assign To — multi-select chips */}
+            {/* Assign To - multi-select chips */}
             <div className="sm:col-span-2 relative">
               {lbl('Assign To')}
               <div
@@ -242,7 +243,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                   </div>
                 )}
                 <input
-                  className="w-full text-[13px] outline-none bg-transparent placeholder:text-[#b09e8d]"
+                  className="w-full text-[14px] outline-none bg-transparent placeholder:text-[#b09e8d]"
                   placeholder={form.assignedTo.length === 0 ? 'Search staff…' : ''}
                   value={staffSearch}
                   onChange={(e) => { setStaffSearch(e.target.value); setStaffDropOpen(true); }}
@@ -261,7 +262,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                           <button
                             key={s.id}
                             type="button"
-                            className={`w-full text-left px-3.5 py-2 text-[13px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
+                            className={`w-full text-left px-3.5 py-2 text-[14px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
                             onClick={() => {
                               setForm({ ...form, assignedTo: selected ? form.assignedTo.filter((x) => x !== s.id) : [...form.assignedTo, s.id] });
                             }}
@@ -273,14 +274,14 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                       })
                     }
                     {assignableStaff.filter((s: any) => s.name.toLowerCase().includes(staffSearch.toLowerCase())).length === 0 && (
-                      <p className="px-3.5 py-2 text-[12px] text-[#b09e8d]">No staff found</p>
+                      <p className="px-3.5 py-2 text-[13px] text-[#b09e8d]">No staff found</p>
                     )}
                   </div>
                 </>
               )}
             </div>
 
-            {/* Tags — chips + dropdown */}
+            {/* Tags - chips + dropdown */}
             <div className="sm:col-span-2 relative">
               {lbl('Tags')}
               <div
@@ -297,7 +298,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                   </div>
                 )}
                 <input
-                  className="w-full text-[13px] outline-none bg-transparent placeholder:text-[#b09e8d]"
+                  className="w-full text-[14px] outline-none bg-transparent placeholder:text-[#b09e8d]"
                   placeholder={form.tags.length === 0 ? 'Search or type a tag…' : ''}
                   value={form.tagInput}
                   onChange={(e) => { setForm({ ...form, tagInput: e.target.value }); setTagDropOpen(true); }}
@@ -324,7 +325,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                           <button
                             key={t.id}
                             type="button"
-                            className={`w-full text-left px-3.5 py-2 text-[13px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
+                            className={`w-full text-left px-3.5 py-2 text-[14px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
                             onClick={() => {
                               setForm({ ...form, tags: selected ? form.tags.filter((x) => x !== t.name) : [...form.tags, t.name], tagInput: '' });
                             }}
@@ -341,14 +342,14 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                     {form.tagInput.trim() && !storeTags.some((t) => t.name.toLowerCase() === form.tagInput.trim().toLowerCase()) && (
                       <button
                         type="button"
-                        className="w-full text-left px-3.5 py-2 text-[13px] text-primary hover:bg-gray-50 transition-colors"
+                        className="w-full text-left px-3.5 py-2 text-[14px] text-primary hover:bg-gray-50 transition-colors"
                         onClick={() => { setForm({ ...form, tags: [...form.tags, form.tagInput.trim()], tagInput: '' }); }}
                       >
                         + Create "{form.tagInput.trim()}"
                       </button>
                     )}
                     {storeTags.filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase())).length === 0 && !form.tagInput.trim() && (
-                      <p className="px-3.5 py-2 text-[12px] text-[#b09e8d]">No tags available</p>
+                      <p className="px-3.5 py-2 text-[13px] text-[#b09e8d]">No tags available</p>
                     )}
                   </div>
                 </>
@@ -361,8 +362,8 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-black/5 shrink-0">
           <p className="hidden sm:block text-[11px] text-[#b09e8d]">Created {format(new Date(now), 'dd MMM yyyy, hh:mm aa')}</p>
           <div className="flex gap-2 w-full sm:w-auto">
-            <button onClick={onClose} className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[13px] font-semibold text-[#7a6b5c] bg-white border border-black/10 hover:bg-gray-50 active:scale-95 transition-all">Cancel</button>
-            <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-[13px] font-bold text-white bg-primary hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-60">{saving ? 'Saving…' : 'Save Lead'}</button>
+            <button onClick={onClose} className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] bg-white border border-black/10 hover:bg-gray-50 active:scale-95 transition-all">Cancel</button>
+            <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-[14px] font-bold text-white bg-primary hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-60">{saving ? 'Saving…' : 'Save Lead'}</button>
           </div>
         </div>
       </div>
@@ -435,7 +436,7 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
       <div className={cn('w-4 h-4 rounded border-2 flex items-center justify-center shrink-0', checked ? 'border-primary bg-primary' : 'border-gray-300')}>
         {checked && <Check className="w-2.5 h-2.5 text-white" />}
       </div>
-      <span className="text-[14px] text-[#1c1410]">{label}</span>
+      <span className="text-[15px] text-[#1c1410]">{label}</span>
     </button>
   );
 
@@ -444,7 +445,7 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
       <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0', selected ? 'border-primary' : 'border-gray-300')}>
         {selected && <div className="w-2 h-2 rounded-full bg-primary" />}
       </div>
-      <span className="text-[14px] text-[#1c1410]">{label}</span>
+      <span className="text-[15px] text-[#1c1410]">{label}</span>
     </button>
   );
 
@@ -491,10 +492,10 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
 
   const BottomBar = () => (
     <div className="flex items-center gap-1.5 px-3 py-3 border-t border-black/5 shrink-0">
-      <button onClick={clearAll} className="text-[12px] font-semibold text-red-500 hover:text-red-600 transition-colors shrink-0 mr-1">Clear all</button>
-      <button onClick={onClose} className="px-3 py-1.5 rounded-lg border border-gray-200 text-[12px] font-semibold text-[#1c1410] hover:bg-gray-50 transition-colors shrink-0">Cancel</button>
-      <button onClick={apply} className="flex-1 py-1.5 rounded-lg text-[12px] font-bold text-white whitespace-nowrap" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)' }}>Apply & Save</button>
-      <button onClick={apply} className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-white shrink-0" style={{ background: 'linear-gradient(135deg, #7f1d1d 0%, #b91c1c 100%)' }}>Apply</button>
+      <button onClick={clearAll} className="text-[13px] font-semibold text-red-500 hover:text-red-600 transition-colors shrink-0 mr-1">Clear all</button>
+      <button onClick={onClose} className="px-3 py-1.5 rounded-lg border border-gray-200 text-[13px] font-semibold text-[#1c1410] hover:bg-gray-50 transition-colors shrink-0">Cancel</button>
+      <button onClick={apply} className="flex-1 py-1.5 rounded-lg text-[13px] font-bold text-white whitespace-nowrap" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)' }}>Apply & Save</button>
+      <button onClick={apply} className="px-3 py-1.5 rounded-lg text-[13px] font-bold text-white shrink-0" style={{ background: 'linear-gradient(135deg, #7f1d1d 0%, #b91c1c 100%)' }}>Apply</button>
     </div>
   );
 
@@ -510,8 +511,8 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
                 <ArrowLeft className="w-4 h-4 text-[#7a6b5c]" />
               </button>
             )}
-            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-              <Filter className="w-4 h-4 text-blue-500" />
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Filter className="w-4 h-4 text-primary" />
             </div>
             <span className="font-bold text-[15px] text-[#1c1410]">{subPanel ? activeCat?.label : 'Filters'}</span>
           </div>
@@ -525,7 +526,7 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
           <div className="px-4 py-2.5 border-b border-black/5 shrink-0">
             <input
               autoFocus
-              className="w-full px-3 py-2 text-[13px] bg-gray-50 border border-gray-100 rounded-lg outline-none focus:border-primary/30 placeholder:text-gray-400"
+              className="w-full px-3 py-2 text-[14px] bg-gray-50 border border-gray-100 rounded-lg outline-none focus:border-primary/30 placeholder:text-gray-400"
               placeholder="Search"
               value={subSearch}
               onChange={(e) => setSubSearch(e.target.value)}
@@ -543,7 +544,7 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
                   className={cn('w-full flex items-center gap-3 px-5 py-4 text-left transition-colors', hasActive(key) ? 'bg-green-50' : 'hover:bg-gray-50')}
                 >
                   <Icon className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span className="flex-1 text-[14px] text-[#1c1410]">{label}</span>
+                  <span className="flex-1 text-[15px] text-[#1c1410]">{label}</span>
                   <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
                 </button>
               ))
@@ -629,7 +630,7 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
       {isMobile && <div className="flex justify-center pt-2 pb-1 shrink-0"><div className="w-10 h-1 rounded-full bg-black/15" /></div>}
       <div className="px-4 py-3 border-b border-black/5 flex items-center gap-2 shrink-0">
         <Filter className="w-4 h-4 text-primary" />
-        <h4 className="text-[14px] font-bold text-[#1c1410] flex-1">Filters</h4>
+        <h4 className="text-[15px] font-bold text-[#1c1410] flex-1">Filters</h4>
         {total > 0 && (
           <button onClick={clearAll} className="text-[11px] font-semibold text-red-500 hover:underline">Clear all · {total}</button>
         )}
@@ -643,7 +644,7 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
           <input
             autoFocus={!isMobile}
-            className="w-full pl-8 pr-3 py-1.5 text-[12px] bg-[var(--app-bg)] border border-transparent rounded-lg outline-none focus:border-primary/30 focus:bg-white placeholder:text-gray-400"
+            className="w-full pl-8 pr-3 py-1.5 text-[13px] bg-[var(--app-bg)] border border-transparent rounded-lg outline-none focus:border-primary/30 focus:bg-white placeholder:text-gray-400"
             placeholder="Search filters..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -658,7 +659,7 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
           return (
             <div key={s.key}>
               <button onClick={() => setExpanded(isOpen ? '' : s.key)} className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-[var(--app-bg)] transition-colors">
-                <span className="flex-1 text-left text-[13px] font-semibold text-[#1c1410]">{s.label}</span>
+                <span className="flex-1 text-left text-[14px] font-semibold text-[#1c1410]">{s.label}</span>
                 {sel > 0 && <span className="text-[10px] font-bold bg-primary/10 text-primary rounded-full px-2 py-0.5">{sel}</span>}
                 <ChevronDown className={cn('w-3.5 h-3.5 text-[#b09e8d] transition-transform', isOpen && 'rotate-180')} />
               </button>
@@ -704,7 +705,7 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
             </div>
           );
         })}
-        {matching.length === 0 && <p className="text-[12px] text-[#b09e8d] text-center py-6">No filters match "{search}"</p>}
+        {matching.length === 0 && <p className="text-[13px] text-[#b09e8d] text-center py-6">No filters match "{search}"</p>}
       </div>
 
       <div className={cn('px-4 border-t border-black/5 shrink-0 flex items-center gap-2',
@@ -712,11 +713,11 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
         style={isMobile ? { paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' } : undefined}
       >
         <button onClick={applyFilters}
-          className={cn('flex-1 py-2 rounded-xl text-[13px] font-bold transition-colors',
+          className={cn('flex-1 py-2 rounded-xl text-[14px] font-bold transition-colors',
             hasChanges ? 'bg-primary text-white active:scale-95' : 'bg-primary/60 text-white/80')}
         >Apply{total > 0 ? ` (${total})` : ''}</button>
         {total > 0 && (
-          <button onClick={clearAll} className="px-3 py-2 rounded-xl text-[12px] font-semibold text-red-500 hover:bg-red-50 transition-colors">Clear</button>
+          <button onClick={clearAll} className="px-3 py-2 rounded-xl text-[13px] font-semibold text-red-500 hover:bg-red-50 transition-colors">Clear</button>
         )}
       </div>
     </div>
@@ -767,27 +768,27 @@ function WorkflowModal({ leadIds, onClose }: { leadIds: string[]; onClose: () =>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-4 h-4 text-[#7a6b5c]" /></button>
         </div>
         <div className="px-6 py-5 space-y-3">
-          <label className="text-[13px] font-semibold text-[#1c1410] block">Select Active Workflow</label>
+          <label className="text-[14px] font-semibold text-[#1c1410] block">Select Active Workflow</label>
           <div className="relative">
-            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white appearance-none pr-10">
+            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white appearance-none pr-10">
               <option value="">- Choose a workflow -</option>
               {activeWorkflows.map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
           {activeWorkflows.length === 0 && (
-            <p className="text-[12px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+            <p className="text-[13px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
               No active workflows found. Set a workflow to Active in Automation first.
             </p>
           )}
-          <p className="text-[12px] text-blue-500 flex items-start gap-1.5 pt-1">
+          <p className="text-[13px] text-blue-500 flex items-start gap-1.5 pt-1">
             <Settings className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             {leadIds.length} contact{leadIds.length !== 1 ? 's' : ''} selected - all will be pushed through the chosen workflow.
           </p>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-200 text-[13px] font-bold text-gray-600 hover:bg-gray-300 transition-colors uppercase tracking-wide">Close</button>
-          <button onClick={send} disabled={sending || !selected} className="px-6 py-2 rounded-lg bg-green-500 text-[13px] font-bold text-white hover:bg-green-600 disabled:opacity-50 transition-colors uppercase tracking-wide">
+          <button onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-200 text-[14px] font-bold text-gray-600 hover:bg-gray-300 transition-colors uppercase tracking-wide">Close</button>
+          <button onClick={send} disabled={sending || !selected} className="px-6 py-2 rounded-lg bg-green-500 text-[14px] font-bold text-white hover:bg-green-600 disabled:opacity-50 transition-colors uppercase tracking-wide">
             {sending ? 'Sending…' : 'Send'}
           </button>
         </div>
@@ -985,14 +986,14 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                 {file ? (
                   <>
                     <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2"><Check className="w-5 h-5 text-green-600" /></div>
-                    <p className="font-semibold text-[14px] text-green-700">{file.name}</p>
-                    <p className="text-[12px] text-gray-400 mt-1">{allRows.length} rows detected - click to change</p>
+                    <p className="font-semibold text-[15px] text-green-700">{file.name}</p>
+                    <p className="text-[13px] text-gray-400 mt-1">{allRows.length} rows detected - click to change</p>
                   </>
                 ) : (
                   <>
                     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-2"><Download className="w-5 h-5 text-gray-400" /></div>
-                    <p className="font-semibold text-[14px] text-[#1c1410]">Drag & drop your file here</p>
-                    <p className="text-[12px] text-gray-400 mt-1">or click to browse - CSV or Excel (.xlsx) - max 10 MB</p>
+                    <p className="font-semibold text-[15px] text-[#1c1410]">Drag & drop your file here</p>
+                    <p className="text-[13px] text-gray-400 mt-1">or click to browse - CSV or Excel (.xlsx) - max 10 MB</p>
                   </>
                 )}
               </div>
@@ -1000,19 +1001,19 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               <div className="grid grid-cols-2 gap-4">
                 {/* Pipeline */}
                 <div>
-                  <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Import into Pipeline</label>
+                  <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Import into Pipeline</label>
                   <select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setDefaultStageId(''); }}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary/40 bg-white">
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white">
                     <option value="">No Pipeline</option>
                     {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 {/* Default Stage */}
                 <div>
-                  <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Default Stage</label>
+                  <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Default Stage</label>
                   <select value={defaultStageId} onChange={(e) => setDefaultStageId(e.target.value)}
                     disabled={!pipelineId}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary/40 bg-white disabled:opacity-40">
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white disabled:opacity-40">
                     <option value="">First Stage</option>
                     {stages.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
@@ -1021,11 +1022,11 @@ function ImportModal({ onClose }: { onClose: () => void }) {
 
               {/* Duplicate handling */}
               <div>
-                <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">If duplicate found (same phone or email)</label>
+                <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">If duplicate found (same phone or email)</label>
                 <div className="grid grid-cols-3 gap-2">
                   {([['skip','Skip duplicate'],['update','Update existing'],['create','Always create']] as const).map(([val, label]) => (
                     <button key={val} onClick={() => setDuplicateHandling(val)}
-                      className={cn('py-2.5 px-3 rounded-xl border text-[12px] font-semibold transition-all',
+                      className={cn('py-2.5 px-3 rounded-xl border text-[13px] font-semibold transition-all',
                         duplicateHandling === val ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-[#7a6b5c] hover:border-gray-300'
                       )}>{label}</button>
                   ))}
@@ -1034,7 +1035,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
 
               {/* Download template */}
               <button onClick={downloadTemplate}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-primary/20 text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors">
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-primary/20 text-[14px] font-semibold text-primary hover:bg-primary/5 transition-colors">
                 <Download className="w-4 h-4" /> Download Template (with your custom fields)
               </button>
             </div>
@@ -1044,8 +1045,8 @@ function ImportModal({ onClose }: { onClose: () => void }) {
           {step === 2 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[13px] text-[#7a6b5c]">Map each CSV column to a CRM field. Custom fields are included.</p>
-                <span className="text-[12px] font-semibold text-primary bg-primary/5 px-2.5 py-1 rounded-full">{allRows.length} rows</span>
+                <p className="text-[14px] text-[#7a6b5c]">Map each CSV column to a CRM field. Custom fields are included.</p>
+                <span className="text-[13px] font-semibold text-primary bg-primary/5 px-2.5 py-1 rounded-full">{allRows.length} rows</span>
               </div>
 
               {/* Mapping table */}
@@ -1058,10 +1059,10 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                 <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
                   {headers.map((h, hi) => (
                     <div key={h} className="grid grid-cols-3 gap-3 px-4 py-2.5 items-center hover:bg-gray-50/50">
-                      <span className="text-[13px] text-[#1c1410] font-medium truncate">{h}</span>
+                      <span className="text-[14px] text-[#1c1410] font-medium truncate">{h}</span>
                       <select value={mapping[h] ?? 'skip'}
                         onChange={(e) => setMapping((m) => ({ ...m, [h]: e.target.value }))}
-                        className={cn('border rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-primary/40',
+                        className={cn('border rounded-lg px-2.5 py-1.5 text-[13px] outline-none focus:border-primary/40',
                           mapping[h] && mapping[h] !== 'skip' ? 'border-primary/30 bg-primary/5 text-primary font-semibold' : 'border-gray-200 text-[#7a6b5c]'
                         )}>
                         <optgroup label="── Standard ──">
@@ -1076,7 +1077,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                           <option value="skip">-- Skip --</option>
                         </optgroup>
                       </select>
-                      <span className="text-[12px] text-gray-400 truncate">{previewRows[0]?.[hi] ?? '-'}</span>
+                      <span className="text-[13px] text-gray-400 truncate">{previewRows[0]?.[hi] ?? '-'}</span>
                     </div>
                   ))}
                 </div>
@@ -1085,7 +1086,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               {/* Preview */}
               {previewRows.length > 0 && (
                 <div>
-                  <p className="text-[12px] font-semibold text-[#7a6b5c] mb-2">Preview - first {previewRows.length} rows</p>
+                  <p className="text-[13px] font-semibold text-[#7a6b5c] mb-2">Preview - first {previewRows.length} rows</p>
                   <div className="overflow-x-auto border border-gray-100 rounded-xl">
                     <table className="w-full text-[11px]">
                       <thead className="bg-gray-50">
@@ -1121,24 +1122,24 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               <div className="flex gap-6 mt-1">
                 <div className="text-center px-5 py-4 bg-green-50 rounded-2xl">
                   <p className="text-[28px] font-extrabold text-green-600">{result.imported}</p>
-                  <p className="text-[12px] text-green-700 font-semibold">Imported</p>
+                  <p className="text-[13px] text-green-700 font-semibold">Imported</p>
                 </div>
                 {result.updated > 0 && (
                   <div className="text-center px-5 py-4 bg-blue-50 rounded-2xl">
                     <p className="text-[28px] font-extrabold text-blue-600">{result.updated}</p>
-                    <p className="text-[12px] text-blue-700 font-semibold">Updated</p>
+                    <p className="text-[13px] text-blue-700 font-semibold">Updated</p>
                   </div>
                 )}
                 {result.skipped > 0 && (
                   <div className="text-center px-5 py-4 bg-amber-50 rounded-2xl">
                     <p className="text-[28px] font-extrabold text-amber-600">{result.skipped}</p>
-                    <p className="text-[12px] text-amber-700 font-semibold">Skipped</p>
+                    <p className="text-[13px] text-amber-700 font-semibold">Skipped</p>
                   </div>
                 )}
                 {result.errors.length > 0 && (
                   <div className="text-center px-5 py-4 bg-red-50 rounded-2xl">
                     <p className="text-[28px] font-extrabold text-red-500">{result.errors.length}</p>
-                    <p className="text-[12px] text-red-600 font-semibold">Errors</p>
+                    <p className="text-[13px] text-red-600 font-semibold">Errors</p>
                   </div>
                 )}
               </div>
@@ -1155,29 +1156,29 @@ function ImportModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between px-6 py-4 border-t border-black/5 shrink-0">
           <div>
             {step === 2 && (
-              <p className="text-[12px] text-gray-400">
+              <p className="text-[13px] text-gray-400">
                 {headers.filter(h => mapping[h] && mapping[h] !== 'skip').length} of {headers.length} columns mapped
               </p>
             )}
           </div>
           <div className="flex items-center gap-3">
             {step === 2 && (
-              <button onClick={() => setStep(1)} className="px-5 py-2 rounded-xl border border-gray-200 text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-50 transition-colors">Back</button>
+              <button onClick={() => setStep(1)} className="px-5 py-2 rounded-xl border border-gray-200 text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-50 transition-colors">Back</button>
             )}
             {step === 1 && (
               <button onClick={() => { if (!file) { toast.error('Please upload a file first'); return; } setStep(2); }}
-                className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5" style={btnStyle}>
+                className="px-6 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5" style={btnStyle}>
                 Next: Map Columns →
               </button>
             )}
             {step === 2 && (
               <button onClick={doImport} disabled={importing}
-                className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60" style={btnStyle}>
+                className="px-6 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60" style={btnStyle}>
                 {importing ? 'Importing…' : `Import ${allRows.length} Leads →`}
               </button>
             )}
             {step === 3 && (
-              <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white" style={btnStyle}>Done</button>
+              <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-[14px] font-bold text-white" style={btnStyle}>Done</button>
             )}
           </div>
         </div>
@@ -1193,7 +1194,7 @@ function NoteModal({ leadId, onClose, onCreated }: { leadId: string; onClose: ()
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
-  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
   const submit = async () => {
     if (!title.trim()) { toast.error('Title is required'); return; }
     if (!content.trim()) { toast.error('Note content is required'); return; }
@@ -1219,17 +1220,17 @@ function NoteModal({ leadId, onClose, onCreated }: { leadId: string; onClose: ()
         </div>
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Title <span className="text-red-400">*</span></label>
+            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Title <span className="text-red-400">*</span></label>
             <input className={inputCls} placeholder="e.g. Follow-up call" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Description <span className="text-red-400">*</span></label>
+            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Description <span className="text-red-400">*</span></label>
             <textarea className={inputCls + ' resize-none min-h-[100px]'} placeholder="Write your note..." value={content} onChange={(e) => setContent(e.target.value)} />
           </div>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="px-5 py-2 rounded-xl text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-          <button onClick={submit} disabled={saving} className="px-6 py-2 rounded-xl text-[13px] font-bold text-white hover:-translate-y-0.5 transition-all disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>{saving ? 'Saving…' : 'Save Note'}</button>
+          <button onClick={onClose} className="px-5 py-2 rounded-xl text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={submit} disabled={saving} className="px-6 py-2 rounded-xl text-[14px] font-bold text-white hover:-translate-y-0.5 transition-all disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>{saving ? 'Saving…' : 'Save Note'}</button>
         </div>
       </div>
     </div>
@@ -1250,7 +1251,7 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
   const [notes, setNotes] = useState(editItem?.notes ?? '');
   const [dueAt, setDueAt] = useState(editItem?.dueAt ?? '');
   const [saving, setSaving] = useState(false);
-  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
 
   // Outcome chips fetched from tenant config
   const COLOR_MAP: Record<string, string> = {
@@ -1416,26 +1417,26 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
           </div>
           <form onSubmit={submit} className="px-6 py-5 space-y-4">
             <div>
-              <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">
+              <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">
                 Title {!(isNote || editItem?.kind === 'note') && <span className="text-red-400">*</span>}
               </label>
               <input className={inputCls} placeholder="e.g. Call back for pre-sales pitch" value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div>
-              <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">
+              <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">
                 {(isNote || editItem?.kind === 'note') ? <>Note Content <span className="text-red-400">*</span></> : 'Notes'}
               </label>
               <textarea className={inputCls + ' resize-none h-20'} placeholder={(isNote || editItem?.kind === 'note') ? 'Write your note...' : 'Add any notes...'} value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
             {!(isNote || editItem?.kind === 'note') && (
               <div>
-                <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">Due Date & Time</label>
+                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Due Date & Time</label>
                 <input type="datetime-local" className={inputCls} value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
               </div>
             )}
             <div className="flex items-center justify-end gap-3 pt-1">
-              <button type="button" onClick={onClose} className="px-5 py-2 rounded-xl text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-              <button type="submit" disabled={saving} className="px-6 py-2 rounded-xl text-[13px] font-bold text-white hover:-translate-y-0.5 transition-all disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
+              <button type="button" onClick={onClose} className="px-5 py-2 rounded-xl text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
+              <button type="submit" disabled={saving} className="px-6 py-2 rounded-xl text-[14px] font-bold text-white hover:-translate-y-0.5 transition-all disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
                 {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Save Note'}
               </button>
             </div>
@@ -1480,7 +1481,7 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
                   <button key={i} type="button" onClick={() => applyQuickDate(i, d.value)}
                     className={cn('flex-1 py-2 rounded-xl border text-center transition-colors',
                       selectedDateIdx === i ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 hover:border-[#ea580c]/40')}>
-                    <span className={cn('block text-[12px] font-bold', selectedDateIdx === i ? 'text-white' : 'text-[#1c1410]')}>{d.label}</span>
+                    <span className={cn('block text-[13px] font-bold', selectedDateIdx === i ? 'text-white' : 'text-[#1c1410]')}>{d.label}</span>
                     <span className={cn('block text-[10px]', selectedDateIdx === i ? 'text-white/70' : 'text-[#7a6b5c]')}>{d.sub}</span>
                   </button>
                 ))}
@@ -1490,14 +1491,14 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
                 }}
                   className={cn('px-3 py-2 rounded-xl border text-center transition-colors',
                     selectedDateIdx === 3 ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 hover:border-[#ea580c]/40')}>
-                  <span className={cn('block text-[12px] font-bold', selectedDateIdx === 3 ? 'text-white' : 'text-[#1c1410]')}>Pick</span>
+                  <span className={cn('block text-[13px] font-bold', selectedDateIdx === 3 ? 'text-white' : 'text-[#1c1410]')}>Pick</span>
                   <span className={cn('block text-[10px]', selectedDateIdx === 3 ? 'text-white/70' : 'text-[#7a6b5c]')}>Custom</span>
                 </button>
               </div>
               <div className="flex gap-2">
                 {timeOptions.map((t, i) => (
                   <button key={i} type="button" onClick={() => applyQuickTime(i)}
-                    className={cn('flex-1 py-2.5 rounded-xl border text-[13px] font-bold transition-colors',
+                    className={cn('flex-1 py-2.5 rounded-xl border text-[14px] font-bold transition-colors',
                       selectedTimeIdx === i ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 text-[#1c1410] hover:border-[#ea580c]/40')}>
                     {t.label}
                   </button>
@@ -1512,7 +1513,7 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
           <textarea className={inputCls + ' resize-none'} rows={3} placeholder="Add a note (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
           {/* Submit */}
-          <button type="submit" disabled={saving || !selectedOutcome} className="w-full py-3 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
+          <button type="submit" disabled={saving || !selectedOutcome} className="w-full py-3 rounded-xl text-[15px] font-bold text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
             {saving ? 'Saving...' : dueAt ? 'Save & set follow-up' : 'Save outcome'}
           </button>
         </form>
@@ -1721,15 +1722,15 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
   const field = (label: string, child: React.ReactNode, required = false) => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] text-[#7a6b5c]">
+      <label className="text-[13px] text-[#7a6b5c]">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       {child}
     </div>
   );
 
-  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[13px] text-[#1c1410] bg-white outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 transition-all placeholder:text-gray-300';
-  const readonlyCls = 'w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[13px] text-gray-400 bg-gray-50 outline-none cursor-not-allowed';
+  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1c1410] bg-white outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 transition-all placeholder:text-gray-300';
+  const readonlyCls = 'w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[14px] text-gray-400 bg-gray-50 outline-none cursor-not-allowed';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm">
@@ -1755,7 +1756,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
               key={t.key}
               onClick={() => setActiveTab(t.key)}
               className={cn(
-                'px-4 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all',
+                'px-4 py-1.5 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-all',
                 activeTab === t.key
                   ? 'bg-[#1c1410] text-white'
                   : 'text-gray-500 bg-gray-100 hover:bg-gray-200 hover:text-[#1c1410]'
@@ -1805,7 +1806,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                     ))}
                   </div>
                   <input
-                    className="w-full text-[13px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300"
+                    className="w-full text-[14px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300"
                     placeholder="Type & press Enter to add tags"
                     value={form.tagInput}
                     onChange={(e) => setForm({ ...form, tagInput: e.target.value })}
@@ -1855,17 +1856,17 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             <div className="flex gap-8">
               {/* Left: add form */}
               <div className="w-64 shrink-0 space-y-4 bg-gray-50 rounded-xl p-5 border border-gray-100 self-start">
-                <p className="text-[13px] font-bold text-[#1c1410] mb-1">Add Follow-Up</p>
+                <p className="text-[14px] font-bold text-[#1c1410] mb-1">Add Follow-Up</p>
                 <div>
-                  <label className="text-[12px] text-[#7a6b5c] mb-1.5 block">Title <span className="text-red-400">*</span></label>
+                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Title <span className="text-red-400">*</span></label>
                   <input className={inputCls} placeholder="Enter follow-up title" value={form.fuTitle ?? ''} onChange={(e) => setForm({ ...form, fuTitle: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-[12px] text-[#7a6b5c] mb-1.5 block">Notes</label>
+                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Notes</label>
                   <textarea className={inputCls + ' resize-none h-20'} placeholder="Add any notes..." value={form.fuDesc ?? ''} onChange={(e) => setForm({ ...form, fuDesc: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-[12px] text-[#7a6b5c] mb-1.5 block">Due Date <span className="text-red-400">*</span></label>
+                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Due Date <span className="text-red-400">*</span></label>
                   <input className={inputCls} type="datetime-local" value={form.fuDue ?? ''} onChange={(e) => setForm({ ...form, fuDue: e.target.value })} />
                 </div>
                 <button
@@ -1885,7 +1886,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                       setForm({ ...form, fuTitle: '', fuDesc: '', fuDue: '' });
                     } catch (err: any) { toast.error(err.message ?? 'Failed to add follow-up'); }
                   }}
-                  className="w-full py-2 rounded-xl text-white text-[13px] font-bold transition-all hover:-translate-y-0.5"
+                  className="w-full py-2 rounded-xl text-white text-[14px] font-bold transition-all hover:-translate-y-0.5"
                   style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
                 >ADD</button>
               </div>
@@ -1898,7 +1899,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                     <div className="w-10 h-10 rounded-2xl bg-[#faf0e8] flex items-center justify-center mb-2">
                       <CheckSquare className="w-5 h-5 text-primary" />
                     </div>
-                    <p className="text-[13px] text-[#7a6b5c]">No follow-ups yet.</p>
+                    <p className="text-[14px] text-[#7a6b5c]">No follow-ups yet.</p>
                   </div>
                 )}
                 <div className="space-y-2">
@@ -1927,7 +1928,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                           <div className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', dotCls)} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <p className="text-[13px] font-semibold text-[#1c1410] truncate">{f.note || 'Follow-up'}</p>
+                              <p className="text-[14px] font-semibold text-[#1c1410] truncate">{f.note || 'Follow-up'}</p>
                               <div className="flex items-center gap-1 shrink-0">
                                 <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', badge.cls)}>{badge.label}</span>
                                 <button onClick={() => setEditFu({ id: f.id, title: f.note || '', notes: f.description || '', dueAt: format(new Date(f.dueAt), "yyyy-MM-dd'T'HH:mm") })}
@@ -1945,7 +1946,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             </div>
           )}
 
-          {/* Edit Follow-up — reuses the same modal as Add */}
+          {/* Edit Follow-up - reuses the same modal as Add */}
           {editFu && (
             <FollowUpModal
               leadId={lead.id}
@@ -1964,7 +1965,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             <div className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
                 <div className="sm:col-span-2">
-                  <label className="text-[12px] text-[#7a6b5c] mb-1.5 block">Calendar Event <span className="text-red-400">*</span></label>
+                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Calendar Event <span className="text-red-400">*</span></label>
                   <select className={inputCls} value={form.apptEvent ?? ''} onChange={(e) => {
                     const et = bookingLinks.find((b) => b.id === e.target.value) as any | undefined;
                     setForm({ ...form, apptEvent: e.target.value, apptLink: et?.meetingLink ?? '', apptSlot: '' });
@@ -1978,22 +1979,22 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
                 {form.apptEvent && (<>
                   <div>
-                    <label className="text-[12px] text-[#7a6b5c] mb-1.5 block">Meeting Type</label>
-                    <input className="w-full border border-gray-100 rounded-lg px-3 py-2 text-[13px] text-[#7a6b5c] bg-gray-50 outline-none" value={apptET?.meetingType || '-'} readOnly />
+                    <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Meeting Type</label>
+                    <input className="w-full border border-gray-100 rounded-lg px-3 py-2 text-[14px] text-[#7a6b5c] bg-gray-50 outline-none" value={apptET?.meetingType || '-'} readOnly />
                   </div>
                   <div>
-                    <label className="text-[12px] text-[#7a6b5c] mb-1.5 block">Meeting Link / Address</label>
+                    <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Meeting Link / Address</label>
                     <input className={inputCls} placeholder="Meeting link or address" value={form.apptLink ?? ''} onChange={(e) => setForm({ ...form, apptLink: e.target.value })} />
                   </div>
                 </>)}
 
                 <div>
-                  <label className="text-[12px] text-[#7a6b5c] mb-1.5 block">Event Date <span className="text-red-400">*</span></label>
+                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Event Date <span className="text-red-400">*</span></label>
                   <input className={inputCls} type="date" value={form.apptDate ?? ''} onChange={(e) => setForm({ ...form, apptDate: e.target.value, apptSlot: '' })} />
                 </div>
 
                 <div>
-                  <label className="text-[12px] text-[#7a6b5c] mb-1.5 block">Timezone</label>
+                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Timezone</label>
                   <select className={inputCls} value={form.apptTz ?? 'Asia/Kolkata'} onChange={(e) => setForm({ ...form, apptTz: e.target.value })}>
                     <option value="Asia/Kolkata">Asia/Kolkata</option>
                     <option value="Asia/Dubai">Asia/Dubai</option>
@@ -2003,7 +2004,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="text-[12px] text-[#7a6b5c] mb-1.5 block">Timeslot <span className="text-red-400">*</span></label>
+                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Timeslot <span className="text-red-400">*</span></label>
                   <select className={inputCls} value={form.apptSlot ?? ''} onChange={(e) => setForm({ ...form, apptSlot: e.target.value })} disabled={!form.apptEvent || !form.apptDate}>
                     <option value="">{!form.apptEvent ? 'Select a calendar first' : !form.apptDate ? 'Select a date first' : apptSlots.length === 0 ? 'No slots available this day' : 'Pick a timeslot'}</option>
                     {apptSlots.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -2055,7 +2056,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                       toast.error(err.message ?? 'Failed to book appointment');
                     }
                   }}
-                  className="px-8 py-2 rounded-xl text-white text-[13px] font-bold transition-all hover:-translate-y-0.5"
+                  className="px-8 py-2 rounded-xl text-white text-[14px] font-bold transition-all hover:-translate-y-0.5"
                   style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
                 >Book Appointment</button>
               </div>
@@ -2063,14 +2064,14 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
               {/* Existing appointments */}
               {leadEvents.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-black/5">
-                  <p className="text-[12px] font-semibold text-[#7a6b5c]">Existing Appointments</p>
+                  <p className="text-[13px] font-semibold text-[#7a6b5c]">Existing Appointments</p>
                   {leadEvents.map((ev) => (
                     <div key={ev.id} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--app-bg)] border border-black/5">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <Calendar className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-[13px] font-medium text-[#1c1410]">{ev.title}</p>
+                        <p className="text-[14px] font-medium text-[#1c1410]">{ev.title}</p>
                         <p className="text-[11px] text-[#7a6b5c]">{ev.date} · {ev.time} · {ev.duration} min</p>
                       </div>
                       <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-md', ev.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : ev.status === 'no-show' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600')}>{ev.status}</span>
@@ -2092,11 +2093,11 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="px-5 py-2 rounded-lg text-[13px] font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-all"
+              className="px-5 py-2 rounded-lg text-[14px] font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-all"
             >DELETE</button>
             <button
               onClick={handleUpdate}
-              className="px-5 py-2 rounded-lg text-[13px] font-bold text-white bg-[#1c1410] hover:bg-[#2d1f18] transition-all"
+              className="px-5 py-2 rounded-lg text-[14px] font-bold text-white bg-[#1c1410] hover:bg-[#2d1f18] transition-all"
             >UPDATE</button>
           </div>
         </div>
@@ -2179,22 +2180,22 @@ function EditFieldsDrawer({ lead, onClose, onSaved }: {
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-[13px] text-[#7a6b5c]">Loading fields…</div>
+            <div className="flex items-center justify-center py-16 text-[14px] text-[#7a6b5c]">Loading fields…</div>
           ) : activeDefs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
               <FileText className="w-8 h-8 text-primary/30" />
-              <p className="text-[13px] font-semibold text-[#1c1410]">No fields defined yet</p>
-              <p className="text-[12px] text-[#7a6b5c]">Go to Settings → Fields to create custom fields</p>
+              <p className="text-[14px] font-semibold text-[#1c1410]">No fields defined yet</p>
+              <p className="text-[13px] text-[#7a6b5c]">Go to Settings → Fields to create custom fields</p>
             </div>
           ) : (
             activeDefs.map((def) => (
               <div key={def.id}>
-                <label className="block text-[12px] font-semibold text-[#1c1410] mb-1.5">{def.name}</label>
+                <label className="block text-[13px] font-semibold text-[#1c1410] mb-1.5">{def.name}</label>
                 <input
                   value={values[def.id] ?? ''}
                   onChange={(e) => setValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
                   placeholder={`Enter ${def.name.toLowerCase()}…`}
-                  className="w-full px-3 py-2 rounded-lg border border-black/10 bg-white text-[13px] text-[#1c1410] placeholder:text-[#7a6b5c]/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-colors"
+                  className="w-full px-3 py-2 rounded-lg border border-black/10 bg-white text-[14px] text-[#1c1410] placeholder:text-[#7a6b5c]/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-colors"
                 />
               </div>
             ))
@@ -2203,13 +2204,13 @@ function EditFieldsDrawer({ lead, onClose, onSaved }: {
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-black/5 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors border border-black/10">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors border border-black/10">
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving || loading}
-            className="flex-1 py-2.5 rounded-lg text-[13px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 12px rgba(234,88,12,0.25)' }}
           >
             {saving ? 'Saving…' : 'Save Fields'}
@@ -2254,14 +2255,14 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
     }
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
+  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
 
-  // Empty state — no questions configured for this pipeline
+  // Empty state - no questions configured for this pipeline
   if (pipelineQuestions.length === 0) {
     return (
       <div className="px-5 py-4 border-b border-black/5">
         <h4 className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-2">Additional Info</h4>
-        <p className="text-[12px] text-[#b09e8d] italic">
+        <p className="text-[13px] text-[#b09e8d] italic">
           No questions configured for this pipeline.{' '}
           <a href="/fields" className="text-primary font-semibold hover:underline">Set them up in Fields → Additional Fields</a>
         </p>
@@ -2286,7 +2287,7 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
           const filled = value.trim() !== '';
           return (
             <div key={q.id}>
-              <label className="text-[12px] font-semibold text-[#1c1410] mb-1 flex items-center gap-1">
+              <label className="text-[13px] font-semibold text-[#1c1410] mb-1 flex items-center gap-1">
                 {q.question}
                 {q.required && <span className="text-red-500">*</span>}
                 {filled && <Check className="w-3 h-3 text-green-500 ml-auto" />}
@@ -2295,7 +2296,7 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
               {/* Render input based on type */}
               {q.type === 'Multi Line' && (
                 <textarea
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white resize-none"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white resize-none"
                   rows={2}
                   placeholder="Type answer..."
                   value={value}
@@ -2340,7 +2341,7 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
                         onChange={() => saveAnswer(q.id, q.question, o)}
                         className="w-4 h-4 accent-primary"
                       />
-                      <span className="text-[13px] text-[#1c1410]">{o}</span>
+                      <span className="text-[14px] text-[#1c1410]">{o}</span>
                     </label>
                   ))}
                 </div>
@@ -2361,7 +2362,7 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
                           }}
                           className="w-4 h-4 accent-primary"
                         />
-                        <span className="text-[13px] text-[#1c1410]">{o}</span>
+                        <span className="text-[14px] text-[#1c1410]">{o}</span>
                       </label>
                     );
                   })}
@@ -2370,7 +2371,7 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
               {q.type === 'Checkbox' && (
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={value === 'true'} onChange={(e) => saveAnswer(q.id, q.question, e.target.checked ? 'true' : 'false')} className="w-4 h-4 accent-primary" />
-                  <span className="text-[13px] text-[#1c1410]">Yes</span>
+                  <span className="text-[14px] text-[#1c1410]">Yes</span>
                 </label>
               )}
               {q.type === 'Date' && (
@@ -2496,7 +2497,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
   const [enquiryData, setEnquiryData] = useState<{ enquiries: any[]; leads: any[] } | null>(null);
   const [enquiryLoading, setEnquiryLoading] = useState(false);
   const [cfStatus, setCfStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
-  // Field values live in LOCAL state — the single source of truth for this panel's
+  // Field values live in LOCAL state - the single source of truth for this panel's
   // "Additional Fields" display. This is deliberately NOT read from the global store:
   // store refreshes (30s poll, apiLeads snapshot, initFromApi, socket lead:updated,
   // object swaps for not-yet-in-store leads) used to blank lead.customFields and make
@@ -2506,13 +2507,13 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     () => (lead.customFields as any) ?? []
   );
 
-  // Load persisted custom field values — tracks status so we can tell
+  // Load persisted custom field values - tracks status so we can tell
   // "still loading" / "failed to load" apart from "genuinely empty".
   const loadFields = useCallback(() => {
     setCfStatus('loading');
     api.get<any[]>(`/api/leads/${lead.id}/fields`).then((rows) => {
       const customFields = rows.map((r) => ({ label: r.field_name ?? r.slug, value: r.value, fieldId: r.field_id }));
-      setFields(customFields);                       // local — what the panel renders
+      setFields(customFields);                       // local - what the panel renders
       updateLead(lead.id, { customFields });         // mirror to store for other views
       setCfStatus('loaded');
     }).catch((e) => { console.warn('[lead fields] load failed', e); setCfStatus('error'); });
@@ -2611,7 +2612,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     setLeadActivities((prev) => [act, ...prev]);
   };
 
-  // Inline tag add/remove right from the detail view — no need to enter Edit mode.
+  // Inline tag add/remove right from the detail view - no need to enter Edit mode.
   // Optimistic update with rollback, persisted via the same PATCH as edit mode.
   const persistTags = async (next: string[]) => {
     const prev = lead.tags;
@@ -2731,7 +2732,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     return format(d, 'MMM d, h:mm a');
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
+  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
 
   return (
     <>
@@ -2780,7 +2781,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-[17px] text-[#1c1410] leading-tight">{lead.firstName} {lead.lastName}</h3>
-                <p className="text-[13px] text-[#7a6b5c] mt-0.5">Deal value: <span className="font-semibold text-[#1c1410]">₹{lead.dealValue.toLocaleString()}</span></p>
+                <p className="text-[14px] text-[#7a6b5c] mt-0.5">Deal value: <span className="font-semibold text-[#1c1410]">₹{lead.dealValue.toLocaleString()}</span></p>
               </div>
             </div>
 
@@ -2796,9 +2797,9 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 <div key={i} className="flex items-center gap-3">
                   <Icon className="w-4 h-4 text-[#7a6b5c] shrink-0" />
                   {href ? (
-                    <a href={href} className="text-[13px] text-[#1c1410] font-medium flex-1 break-words hover:text-primary transition-colors">{value}</a>
+                    <a href={href} className="text-[14px] text-[#1c1410] font-medium flex-1 break-words hover:text-primary transition-colors">{value}</a>
                   ) : (
-                    <span className="text-[13px] text-[#1c1410] font-medium flex-1 break-words">{value}</span>
+                    <span className="text-[14px] text-[#1c1410] font-medium flex-1 break-words">{value}</span>
                   )}
                 </div>
               ))}
@@ -2819,7 +2820,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 </div>
               )}
 
-              {/* Tags — add/remove inline so staff can tag without entering Edit mode */}
+              {/* Tags - add/remove inline so staff can tag without entering Edit mode */}
               <div className="pt-0.5">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {lead.tags.map((t) => (
@@ -2836,7 +2837,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                     </button>
                   )}
                   {lead.tags.length === 0 && !canEditLead && (
-                    <span className="text-[12px] text-[#b09e8d] italic">No tags</span>
+                    <span className="text-[13px] text-[#b09e8d] italic">No tags</span>
                   )}
                 </div>
                 {canEditLead && showTagAdd && (
@@ -2851,10 +2852,10 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                           else if (e.key === 'Escape') { setShowTagAdd(false); setTagAddInput(''); }
                         }}
                         placeholder="Type a tag, press Enter"
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
                       />
-                      <button onClick={() => addTagInline(tagAddInput)} disabled={!tagAddInput.trim() || savingTag} className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[12px] font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40">Add</button>
-                      <button onClick={() => { setShowTagAdd(false); setTagAddInput(''); }} className="px-2 py-1.5 rounded-lg text-[#7a6b5c] text-[12px] hover:bg-black/5">Cancel</button>
+                      <button onClick={() => addTagInline(tagAddInput)} disabled={!tagAddInput.trim() || savingTag} className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[13px] font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40">Add</button>
+                      <button onClick={() => { setShowTagAdd(false); setTagAddInput(''); }} className="px-2 py-1.5 rounded-lg text-[#7a6b5c] text-[13px] hover:bg-black/5">Cancel</button>
                     </div>
                     {/* Quick-pick from existing tenant tags */}
                     {(() => {
@@ -2880,7 +2881,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => setShowCustomFields((v) => !v)}
-                    className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:text-[var(--brand-dark)] transition-colors"
+                    className="flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:text-[var(--brand-dark)] transition-colors"
                   >
                     <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showCustomFields ? 'rotate-90' : ''}`} />
                     Additional Fields {fields.length > 0 ? `(${fields.length})` : ''}
@@ -2901,8 +2902,8 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                         <div key={i} className="flex items-start gap-3">
                           <FileText className="w-4 h-4 text-[#7a6b5c] shrink-0 mt-1" />
                           <div className="flex-1 min-w-0">
-                            <span className="text-[12px] text-[#7a6b5c]">{f.label}:</span>
-                            <span className="ml-1.5 text-[12px] font-semibold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded-md inline-block break-words mt-0.5">
+                            <span className="text-[13px] text-[#7a6b5c]">{f.label}:</span>
+                            <span className="ml-1.5 text-[13px] font-semibold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded-md inline-block break-words mt-0.5">
                               {/https?:\/\/\S+/.test(f.value) ? (
                                 <a href={f.value.match(/https?:\/\/\S+/)?.[0]} target="_blank" rel="noreferrer" className="text-blue-600 underline hover:text-blue-800 break-all">{f.value}</a>
                               ) : f.value}
@@ -2911,11 +2912,11 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                         </div>
                       ))
                     ) : cfStatus === 'loading' ? (
-                      <p className="text-[12px] text-[#7a6b5c] pl-1 italic">Loading field values…</p>
+                      <p className="text-[13px] text-[#7a6b5c] pl-1 italic">Loading field values…</p>
                     ) : cfStatus === 'error' ? (
-                      <button onClick={loadFields} className="text-[12px] text-red-500 pl-1 italic hover:underline">Couldn't load fields - tap to retry</button>
+                      <button onClick={loadFields} className="text-[13px] text-red-500 pl-1 italic hover:underline">Couldn't load fields - tap to retry</button>
                     ) : (
-                      <p className="text-[12px] text-[#7a6b5c] pl-1 italic">No field values yet - click Edit Fields to add</p>
+                      <p className="text-[13px] text-[#7a6b5c] pl-1 italic">No field values yet - click Edit Fields to add</p>
                     )}
                   </div>
                 )}
@@ -2925,7 +2926,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               <div>
                 <button
                   onClick={() => { setShowEnquiries((v) => !v); loadEnquiries(); }}
-                  className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:text-[var(--brand-dark)] transition-colors"
+                  className="flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:text-[var(--brand-dark)] transition-colors"
                 >
                   <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showEnquiries ? 'rotate-90' : ''}`} />
                   Enquiry Journey {enquiryData && enquiryData.enquiries.length > 0 ? `(${enquiryData.enquiries.length})` : ''}
@@ -2933,9 +2934,9 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 {showEnquiries && (
                   <div className="mt-2 space-y-2 pl-1">
                     {enquiryLoading ? (
-                      <p className="text-[12px] text-[#7a6b5c] pl-1 italic">Loading…</p>
+                      <p className="text-[13px] text-[#7a6b5c] pl-1 italic">Loading…</p>
                     ) : !enquiryData || enquiryData.enquiries.length === 0 ? (
-                      <p className="text-[12px] text-[#7a6b5c] pl-1 italic">No enquiry history recorded yet</p>
+                      <p className="text-[13px] text-[#7a6b5c] pl-1 italic">No enquiry history recorded yet</p>
                     ) : (
                       <>
                         {enquiryData.leads.length > 1 && (
@@ -2948,7 +2949,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                             <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: e.is_duplicate ? '#f59e0b' : 'var(--brand, #c2410c)' }} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[12px] font-semibold text-[#1c1410]">{e.form_name || e.form_type}</span>
+                                <span className="text-[13px] font-semibold text-[#1c1410]">{e.form_name || e.form_type}</span>
                                 {e.is_duplicate && <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Re-enquiry</span>}
                               </div>
                               <p className="text-[11px] text-[#7a6b5c]">
@@ -2970,7 +2971,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 <div className="flex items-center gap-3">
                   <Star className="w-4 h-4 text-[#7a6b5c] shrink-0" />
                   <span className={cn(
-                    'inline-flex items-center text-[12px] font-semibold px-2.5 py-1 rounded-full',
+                    'inline-flex items-center text-[13px] font-semibold px-2.5 py-1 rounded-full',
                     lead.leadQuality === 'Hot'         ? 'bg-red-100 text-red-700'     :
                     lead.leadQuality === 'Warm'        ? 'bg-amber-100 text-amber-700' :
                     lead.leadQuality === 'Cold'        ? 'bg-blue-100 text-blue-700'   :
@@ -3041,7 +3042,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
             </div>
           </div>
         ) : (
-          /* EDIT MODE — sectioned structure */
+          /* EDIT MODE - sectioned structure */
           <div className="border-b border-black/5">
 
             {/* ═══ CONTACT SECTION ═══ */}
@@ -3110,7 +3111,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   </select>
                 </div>
 
-                {/* Team Members — multi-select with chips */}
+                {/* Team Members - multi-select with chips */}
                 <div className="relative">
                   <label className="text-[11px] text-[#7a6b5c] mb-1.5 block font-medium">Team Members</label>
                   {editForm.teamMembers.length > 0 && (
@@ -3131,7 +3132,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                     onClick={() => setEditTeamDropOpen(true)}
                   >
                     <input
-                      className="w-full text-[12px] outline-none bg-transparent placeholder:text-gray-400"
+                      className="w-full text-[13px] outline-none bg-transparent placeholder:text-gray-400"
                       placeholder="Search staff..."
                       value={editTeamSearch}
                       onChange={(e) => { setEditTeamSearch(e.target.value); setEditTeamDropOpen(true); }}
@@ -3148,7 +3149,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                             <button
                               key={s.id}
                               type="button"
-                              className="w-full text-left px-3.5 py-2 text-[12px] hover:bg-gray-50 transition-colors text-[#1c1410]"
+                              className="w-full text-left px-3.5 py-2 text-[13px] hover:bg-gray-50 transition-colors text-[#1c1410]"
                               onClick={() => { setEditForm({ ...editForm, teamMembers: [...editForm.teamMembers, s.id] }); setEditTeamSearch(''); }}
                             >
                               {s.name}
@@ -3163,7 +3164,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   )}
                 </div>
 
-                {/* Tags — chips + dropdown */}
+                {/* Tags - chips + dropdown */}
                 <div className="relative">
                   <label className="text-[11px] text-[#7a6b5c] mb-1.5 block font-medium">Tags</label>
                   {editForm.tags.length > 0 && (
@@ -3181,7 +3182,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                     onClick={() => setEditTagDropOpen(true)}
                   >
                     <input
-                      className="w-full text-[12px] outline-none bg-transparent placeholder:text-gray-400"
+                      className="w-full text-[13px] outline-none bg-transparent placeholder:text-gray-400"
                       placeholder="Search or type a tag..."
                       value={editForm.tagInput}
                       onChange={(e) => { setEditForm({ ...editForm, tagInput: e.target.value }); setEditTagDropOpen(true); }}
@@ -3206,7 +3207,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                               <button
                                 key={t.id}
                                 type="button"
-                                className={`w-full text-left px-3.5 py-2 text-[12px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
+                                className={`w-full text-left px-3.5 py-2 text-[13px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
                                 onClick={() => {
                                   setEditForm({ ...editForm, tags: selected ? editForm.tags.filter((x) => x !== t.name) : [...editForm.tags, t.name], tagInput: '' });
                                 }}
@@ -3223,7 +3224,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                         {editForm.tagInput.trim() && !storeTags.some((t) => t.name.toLowerCase() === editForm.tagInput.trim().toLowerCase()) && (
                           <button
                             type="button"
-                            className="w-full text-left px-3.5 py-2 text-[12px] text-primary hover:bg-gray-50 transition-colors"
+                            className="w-full text-left px-3.5 py-2 text-[13px] text-primary hover:bg-gray-50 transition-colors"
                             onClick={() => { setEditForm({ ...editForm, tags: [...editForm.tags, editForm.tagInput.trim()], tagInput: '' }); }}
                           >
                             + Create "{editForm.tagInput.trim()}"
@@ -3246,11 +3247,11 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
             <div className="flex gap-2 px-5 py-4 bg-[var(--app-bg)] sticky bottom-0 border-t border-black/5">
               <button
                 onClick={() => { setEditMode(false); setEditForm({ firstName: lead.firstName, lastName: lead.lastName, phone: lead.phone, email: lead.email, dealValue: lead.dealValue, source: lead.source, assignedTo: lead.assignedTo ?? '', tags: [...lead.tags], tagInput: '', leadQuality: lead.leadQuality ?? '', teamMembers: [...(lead.teamMembers ?? [])] }); }}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors"
+                className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors"
               >Cancel</button>
               <button
                 onClick={handleSaveEdit}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-bold text-white transition-all hover:-translate-y-0.5"
+                className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 12px rgba(234,88,12,0.25)' }}
               >Save Changes</button>
             </div>
@@ -3260,7 +3261,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
         {/* Quick Actions */}
         {!editMode && (
           <div className="px-5 py-4 border-b border-black/5">
-            <h4 className="text-[13px] font-bold text-[#1c1410] mb-3">Quick Actions</h4>
+            <h4 className="text-[14px] font-bold text-[#1c1410] mb-3">Quick Actions</h4>
             <div className="grid grid-cols-4 gap-2">
               <button onClick={() => setShowPipelineModal(true)}
                 className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-black/[0.07] bg-white hover:bg-[#faf0e8] hover:border-primary/30 transition-colors">
@@ -3268,7 +3269,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 <span className="text-[10px] font-medium text-[#7a6b5c]">Pipeline</span>
               </button>
 
-              {/* WhatsApp — dropdown when personal WA is also connected */}
+              {/* WhatsApp - dropdown when personal WA is also connected */}
               <div className="relative">
                 <button
                   onClick={waPersonalStatus === 'connected' ? () => setShowWaDropdown((v) => !v) : handleWhatsApp}
@@ -3344,14 +3345,14 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
         )}
 
 
-        {/* Stage Timeline — manager view only; collapsible (shows time spent in each stage) */}
+        {/* Stage Timeline - manager view only; collapsible (shows time spent in each stage) */}
         {!editMode && isManagerView && (
           <div className="px-5 py-4 border-t border-black/5">
             <button
               onClick={() => { const n = !showStageTl; setShowStageTl(n); if (n) loadStageTl(); }}
               className="w-full flex items-center justify-between text-left"
             >
-              <span className="text-[13px] font-bold text-[#1c1410] flex items-center gap-1.5">
+              <span className="text-[14px] font-bold text-[#1c1410] flex items-center gap-1.5">
                 <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showStageTl ? 'rotate-90' : ''}`} />
                 Stage Timeline
               </span>
@@ -3360,9 +3361,9 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
             {showStageTl && (
               <div className="mt-3 pl-1">
                 {stageTlLoading ? (
-                  <p className="text-[12px] text-[#7a6b5c] italic">Loading…</p>
+                  <p className="text-[13px] text-[#7a6b5c] italic">Loading…</p>
                 ) : !stageTl || stageTl.history.length === 0 ? (
-                  <p className="text-[12px] text-[#b09e8d] italic">No stage history yet</p>
+                  <p className="text-[13px] text-[#b09e8d] italic">No stage history yet</p>
                 ) : (
                   <div className="space-y-2.5">
                     {stageTl.history.map((s: any, i: number) => (
@@ -3370,7 +3371,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                         <div className={cn('w-2.5 h-2.5 rounded-full mt-1 shrink-0', s.is_current ? 'bg-primary ring-2 ring-primary/25' : 'bg-[#cbb9a8]')} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-[13px] font-semibold text-[#1c1410] truncate">{s.stage_name || 'Unknown stage'}</span>
+                            <span className="text-[14px] font-semibold text-[#1c1410] truncate">{s.stage_name || 'Unknown stage'}</span>
                             <span className={cn('text-[11px] font-bold shrink-0 px-2 py-0.5 rounded-full',
                               s.duration_ms > 7 * 864e5 ? 'bg-red-50 text-red-600' : s.duration_ms > 3 * 864e5 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')}>
                               {fmtDur(s.duration_ms)}{s.is_current ? ' · ongoing' : ''}
@@ -3397,7 +3398,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
         {!editMode && (
           <div className="px-5 py-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-[13px] font-bold text-[#1c1410]">Activity Timeline</h4>
+              <h4 className="text-[14px] font-bold text-[#1c1410]">Activity Timeline</h4>
             </div>
             {/* Type filter pills */}
             <div className="flex flex-wrap gap-1.5 mb-3">
@@ -3430,7 +3431,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 : timelineFilter === 'stage_change' ? timeline.filter((e) => e.type === 'stage_change' || e.type === 'assigned' || e.type === 'created')
                 : timeline.filter((e) => e.type === timelineFilter);
               return filtered.length === 0 ? (
-                <p className="text-[12px] text-[#b09e8d] text-center py-4">No activity yet</p>
+                <p className="text-[13px] text-[#b09e8d] text-center py-4">No activity yet</p>
               ) : (
               <div className="space-y-3">
                 {filtered.map((entry) => {
@@ -3447,7 +3448,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                       </div>
                       <div className="flex-1 pt-0.5 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-[13px] font-semibold text-[#1c1410]">{entry.title}</p>
+                          <p className="text-[14px] font-semibold text-[#1c1410]">{entry.title}</p>
                           {isNote && canEditLead && (
                             <button onClick={() => setEditNote({ id: noteId, title: entry.title === 'Note' ? '' : entry.title, content: entry.detail ?? '' })}
                               className="p-1 rounded text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-primary shrink-0" title="Edit note"><Pencil className="w-3.5 h-3.5" /></button>
@@ -3457,7 +3458,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                               className="p-1 rounded text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-primary shrink-0" title="Edit follow-up"><Pencil className="w-3.5 h-3.5" /></button>
                           )}
                         </div>
-                        {entry.detail && <p className="text-[12px] text-[#7a6b5c] mt-0.5 break-words whitespace-pre-wrap">{entry.detail}</p>}
+                        {entry.detail && <p className="text-[13px] text-[#7a6b5c] mt-0.5 break-words whitespace-pre-wrap">{entry.detail}</p>}
                         {/* Call recording Play/Download */}
                         {isCall && entry.hasRecording && (
                           <div className="flex items-center gap-2 mt-1.5">
@@ -3511,7 +3512,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
           </div>
         )}
 
-        {/* Edit Note — reuses the same modal as Add */}
+        {/* Edit Note - reuses the same modal as Add */}
         {editNote && (
           <FollowUpModal
             leadId={lead.id}
@@ -3521,7 +3522,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
           />
         )}
 
-        {/* Edit Follow-up — reuses the same modal as Add */}
+        {/* Edit Follow-up - reuses the same modal as Add */}
         {editFu && (
           <FollowUpModal
             leadId={lead.id}
@@ -3541,7 +3542,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
         lead={lead}
         onClose={() => setShowEditFields(false)}
         onSaved={(saved) => {
-          setFields(saved as any);                    // local — drives the panel display
+          setFields(saved as any);                    // local - drives the panel display
           updateLead(lead.id, { customFields: saved }); // mirror to store
           setCfStatus('loaded');
           setShowCustomFields(true);
@@ -3616,7 +3617,7 @@ function QuickEditModal({ lead, onClose, onSaved }: {
     onClose();
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 transition-colors bg-white';
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 transition-colors bg-white';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -3632,7 +3633,7 @@ function QuickEditModal({ lead, onClose, onSaved }: {
         <div className="px-5 py-4 space-y-4">
           {/* Pipeline */}
           <div>
-            <label className="text-[12px] text-[#7a6b5c] mb-1.5 block font-semibold">Pipeline</label>
+            <label className="text-[13px] text-[#7a6b5c] mb-1.5 block font-semibold">Pipeline</label>
             <select className={inputCls} value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setStage(''); }}>
               {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -3640,7 +3641,7 @@ function QuickEditModal({ lead, onClose, onSaved }: {
 
           {/* Stage */}
           <div>
-            <label className="text-[12px] text-[#7a6b5c] mb-1.5 block font-semibold">Stage</label>
+            <label className="text-[13px] text-[#7a6b5c] mb-1.5 block font-semibold">Stage</label>
             <select className={inputCls} value={stage} onChange={(e) => setStage(e.target.value)}>
               <option value="">Select stage</option>
               {stageOptions.map((s) => <option key={s}>{s}</option>)}
@@ -3649,7 +3650,7 @@ function QuickEditModal({ lead, onClose, onSaved }: {
 
           {/* Tags */}
           <div>
-            <label className="text-[12px] text-[#7a6b5c] mb-1.5 block font-semibold">Tags</label>
+            <label className="text-[13px] text-[#7a6b5c] mb-1.5 block font-semibold">Tags</label>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {tags.map((t) => (
                 <span key={t} className="flex items-center gap-1 bg-primary/10 text-primary text-[11px] font-semibold px-2.5 py-1 rounded-full">
@@ -3657,7 +3658,7 @@ function QuickEditModal({ lead, onClose, onSaved }: {
                   <button onClick={() => setTags(tags.filter((x) => x !== t))}><X className="w-3 h-3" /></button>
                 </span>
               ))}
-              {tags.length === 0 && <span className="text-[12px] text-[#c4b09e]">No tags</span>}
+              {tags.length === 0 && <span className="text-[13px] text-[#c4b09e]">No tags</span>}
             </div>
             <div className="flex gap-2">
               <input
@@ -3671,24 +3672,24 @@ function QuickEditModal({ lead, onClose, onSaved }: {
               <datalist id="tag-suggestions">
                 {storeTags.map((t) => <option key={t.id} value={t.name} />)}
               </datalist>
-              <button onClick={() => addTag(tagInput)} disabled={!tagInput.trim()} className="px-3 py-2 rounded-xl bg-primary/10 text-primary text-[12px] font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40">
+              <button onClick={() => addTag(tagInput)} disabled={!tagInput.trim()} className="px-3 py-2 rounded-xl bg-primary/10 text-primary text-[13px] font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40">
                 Add
               </button>
             </div>
           </div>
 
-          {/* Created date — read only */}
+          {/* Created date - read only */}
           <div className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-[var(--app-bg)] border border-black/5">
-            <span className="text-[12px] font-semibold text-[#7a6b5c]">Created</span>
-            <span className="text-[12px] font-bold text-[#1c1410]">
+            <span className="text-[13px] font-semibold text-[#7a6b5c]">Created</span>
+            <span className="text-[13px] font-bold text-[#1c1410]">
               {new Date(lead.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
           </div>
         </div>
 
         <div className="flex gap-2 px-5 pb-5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-          <button onClick={handleSave} className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={handleSave} className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
             Update
           </button>
         </div>
@@ -3735,9 +3736,9 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
     setForm((f) => ({ ...f, event: id, locationValue: et?.meetingLink ?? '', slot: '' }));
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 transition-colors bg-white';
+  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 transition-colors bg-white';
   const lbl = (text: string, required = true) => (
-    <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">
+    <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">
       {text} {required && <span className="text-red-500">*</span>}
     </label>
   );
@@ -3796,9 +3797,9 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
         </div>
 
         <div className="px-6 py-5 space-y-4">
-          {/* Lead name — read only */}
+          {/* Lead name - read only */}
           <input
-            className="w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[13px] text-[#7a6b5c] bg-gray-50 outline-none cursor-default"
+            className="w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[14px] text-[#7a6b5c] bg-gray-50 outline-none cursor-default"
             value={`${lead.firstName} ${lead.lastName}`}
             readOnly
           />
@@ -3814,13 +3815,13 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
             </select>
           </div>
 
-          {/* Location — auto-filled from calendar, editable */}
+          {/* Location - auto-filled from calendar, editable */}
           {form.event && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 {lbl('Meeting Type', false)}
                 <input
-                  className="w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[13px] text-[#7a6b5c] bg-gray-50 outline-none cursor-default"
+                  className="w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[14px] text-[#7a6b5c] bg-gray-50 outline-none cursor-default"
                   value={location || '-'}
                   readOnly
                 />
@@ -3860,7 +3861,7 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
             </div>
           </div>
 
-          {/* Timeslots — from calendar schedule */}
+          {/* Timeslots - from calendar schedule */}
           <div>
             {lbl('Timeslot')}
             <select
@@ -3881,7 +3882,7 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
         <div className="flex items-center justify-end px-6 pb-6">
           <button
             onClick={handleBook}
-            className="px-8 py-2.5 rounded-lg text-[13px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
+            className="px-8 py-2.5 rounded-lg text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
           >
             Book Appointment
@@ -3988,7 +3989,7 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
               {initials}
             </div>
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-[#1c1410] truncate leading-tight">
+              <p className="text-[14px] font-semibold text-[#1c1410] truncate leading-tight">
                 {lead.firstName} {lead.lastName}
               </p>
               <p className="text-[11px] text-[#7a6b5c] truncate">
@@ -4014,20 +4015,20 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
                   <div className="fixed inset-0 z-30" onClick={() => setShowCardMenu(false)} />
                   <div className="absolute right-0 top-7 z-40 w-44 bg-white rounded-xl border border-black/5 shadow-xl overflow-hidden py-1">
                     <button onClick={() => { setShowCardMenu(false); setShowQuickEdit(true); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                       <Pencil className="w-3 h-3 text-[#7a6b5c]" /> Edit
                     </button>
                     <button onClick={() => { setShowCardMenu(false); onFollowUp(); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                       <CheckSquare className="w-3 h-3 text-[#7a6b5c]" /> Follow-up
                     </button>
                     <button onClick={() => { setShowCardMenu(false); setShowAppointment(true); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                       <CalendarPlus className="w-3 h-3 text-[#7a6b5c]" /> Book Appointment
                     </button>
                     {!assignedCardName && canAssign && (
                       <button onClick={() => { setShowCardMenu(false); onAssign(); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                        className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                         <User className="w-3 h-3 text-[#7a6b5c]" /> Assign
                       </button>
                     )}
@@ -4053,7 +4054,7 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
           </div>
         )}
 
-        {/* Row 2 — Created/Updated (left) · Last/Next follow-up (right) — sleek, not bold */}
+        {/* Row 2 - Created/Updated (left) · Last/Next follow-up (right) - sleek, not bold */}
         <div className="flex items-start justify-between gap-3 mt-2 pt-2 border-t border-black/[0.05]">
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex flex-col min-w-0">
@@ -4093,7 +4094,7 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
 }
 
 // ─── Mobile Lead Card ───────────────────────────────────────────────────────────
-// Full-width, touch-first card used on phones. No drag — tap to open, menu to act.
+// Full-width, touch-first card used on phones. No drag - tap to open, menu to act.
 function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFollowUp, onAppointment, onAssign, onMove, selectionMode, selected, onToggleSelect, onEnterSelect, canAssign = true }: {
   lead: Lead; stages: string[]; accent: string; showPhone: boolean;
   onClick: () => void; onEdit: () => void; onFollowUp: () => void;
@@ -4183,7 +4184,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
       <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full" style={{ background: fuUrgency === 'overdue' ? '#ef4444' : fuUrgency === 'today' ? '#f59e0b' : accent }} />
 
       <div className="pl-4 pr-2.5 py-3">
-        {/* Row 1 — identity + menu */}
+        {/* Row 1 - identity + menu */}
         <div className="flex items-start gap-3">
           {selectionMode ? (
             <div className={cn('w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
@@ -4191,7 +4192,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
               <Check className="w-5 h-5" />
             </div>
           ) : (
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-[14px] font-bold shrink-0"
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-bold shrink-0"
               style={{ background: bgPalette[ci], color: fgPalette[ci] }}>
               {initials}
             </div>
@@ -4210,7 +4211,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
               )}
             </div>
             <a href={`tel:${lead.phone}`} onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1.5 mt-0.5 text-[13px] font-semibold text-primary">
+              className="inline-flex items-center gap-1.5 mt-0.5 text-[14px] font-semibold text-primary">
               <Phone className="w-3 h-3" /> {phoneShown}
             </a>
           </div>
@@ -4226,23 +4227,23 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
                 <div className="absolute right-0 top-10 z-50 w-52 bg-white rounded-2xl border border-black/5 shadow-xl overflow-hidden py-1">
                   {!moveOpen ? (
                     <>
-                      {onEnterSelect && <button onClick={act(() => onEnterSelect())} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><CheckSquare className="w-4 h-4 text-[#7a6b5c]" /> Select</button>}
-                      <button onClick={act(onEdit)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><Pencil className="w-4 h-4 text-[#7a6b5c]" /> Edit</button>
-                      <button onClick={act(onFollowUp)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><CheckSquare className="w-4 h-4 text-[#7a6b5c]" /> Add Follow-up</button>
-                      <button onClick={act(onAppointment)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><CalendarPlus className="w-4 h-4 text-[#7a6b5c]" /> Book Appointment</button>
-                      <button onClick={(e) => { e.stopPropagation(); setMoveOpen(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><ArrowLeftRight className="w-4 h-4 text-[#7a6b5c]" /> Move to stage <ChevronRight className="w-3.5 h-3.5 ml-auto text-[#b09e8d]" /></button>
+                      {onEnterSelect && <button onClick={act(() => onEnterSelect())} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><CheckSquare className="w-4 h-4 text-[#7a6b5c]" /> Select</button>}
+                      <button onClick={act(onEdit)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><Pencil className="w-4 h-4 text-[#7a6b5c]" /> Edit</button>
+                      <button onClick={act(onFollowUp)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><CheckSquare className="w-4 h-4 text-[#7a6b5c]" /> Add Follow-up</button>
+                      <button onClick={act(onAppointment)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><CalendarPlus className="w-4 h-4 text-[#7a6b5c]" /> Book Appointment</button>
+                      <button onClick={(e) => { e.stopPropagation(); setMoveOpen(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><ArrowLeftRight className="w-4 h-4 text-[#7a6b5c]" /> Move to stage <ChevronRight className="w-3.5 h-3.5 ml-auto text-[#b09e8d]" /></button>
                       {!assignedName && canAssign && (
-                        <button onClick={act(onAssign)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8]"><User className="w-4 h-4 text-[#7a6b5c]" /> Assign</button>
+                        <button onClick={act(onAssign)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><User className="w-4 h-4 text-[#7a6b5c]" /> Assign</button>
                       )}
                     </>
                   ) : (
                     <>
-                      <button onClick={(e) => { e.stopPropagation(); setMoveOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold text-[#7a6b5c] border-b border-black/5"><ArrowLeft className="w-3.5 h-3.5" /> Move to…</button>
+                      <button onClick={(e) => { e.stopPropagation(); setMoveOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-[#7a6b5c] border-b border-black/5"><ArrowLeft className="w-3.5 h-3.5" /> Move to…</button>
                       <div className="max-h-56 overflow-y-auto">
                         {stages.filter((s) => s !== lead.stage).map((s) => (
-                          <button key={s} onClick={act(() => onMove(s))} className="w-full text-left px-4 py-2.5 text-[13px] text-[#1c1410] active:bg-[#faf0e8] truncate">{s}</button>
+                          <button key={s} onClick={act(() => onMove(s))} className="w-full text-left px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8] truncate">{s}</button>
                         ))}
-                        {stages.filter((s) => s !== lead.stage).length === 0 && <p className="px-4 py-3 text-[12px] text-[#b09e8d]">No other stages</p>}
+                        {stages.filter((s) => s !== lead.stage).length === 0 && <p className="px-4 py-3 text-[13px] text-[#b09e8d]">No other stages</p>}
                       </div>
                     </>
                   )}
@@ -4252,7 +4253,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
           </div>
         </div>
 
-        {/* Row 2 — meta line: age + assignee */}
+        {/* Row 2 - meta line: age + assignee */}
         <div className="flex items-center gap-2 flex-wrap mt-2.5 pl-[52px]">
           <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold', ageColor)}>
             <Clock className="w-3 h-3" /> {daysInPipeline}d
@@ -4265,7 +4266,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
           )}
         </div>
 
-        {/* Row 3 — Created/Updated (left) · Last/Next follow-up (right) — sleek, not bold */}
+        {/* Row 3 - Created/Updated (left) · Last/Next follow-up (right) - sleek, not bold */}
         <div className="flex items-start justify-between gap-3 mt-2.5 pt-2.5 pl-[52px] border-t border-black/[0.05]">
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex flex-col min-w-0">
@@ -4349,7 +4350,7 @@ function StageColumn({ stage, leads: stageLeads, totalCount, countExact = true, 
 
       {/* Column header */}
       <div className="px-4 pt-3 pb-2.5 flex items-center justify-between shrink-0 border-b border-black/[0.06]">
-        <h3 className="text-[13px] font-bold text-[#1c1410] truncate leading-tight">{stage}</h3>
+        <h3 className="text-[14px] font-bold text-[#1c1410] truncate leading-tight">{stage}</h3>
         <span
           className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white shrink-0 ml-2 tabular-nums"
           style={{ background: accent }}
@@ -4443,7 +4444,7 @@ function SortableStageRow({
 
       {/* Stage name input */}
       <input
-        className="flex-1 text-[13px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300"
+        className="flex-1 text-[14px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300"
         value={stage.name}
         onChange={(e) => onRename(stage.id, e.target.value)}
         placeholder="Stage name"
@@ -4536,12 +4537,12 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
 
           {/* Pipeline Name */}
           <div>
-            <label className="text-[12px] text-[#7a6b5c] mb-1.5 block">
+            <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">
               Pipeline Name <span className="text-red-400">*</span>
             </label>
             <input
               autoFocus
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/50 transition-colors"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/50 transition-colors"
               placeholder="e.g. Sales Pipeline, Support Pipeline"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -4552,7 +4553,7 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
           {/* Stages */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[12px] text-[#7a6b5c]">
+              <label className="text-[13px] text-[#7a6b5c]">
                 Stages <span className="text-[11px] text-gray-400">({stages.length})</span>
               </label>
               <span className="text-[11px] text-gray-400 flex items-center gap-1">
@@ -4580,7 +4581,7 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
             {/* Add stage input */}
             <div className="flex items-center gap-2 mt-1">
               <input
-                className="flex-1 border border-dashed border-gray-300 rounded-xl px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/50 transition-colors placeholder:text-gray-400 bg-gray-50"
+                className="flex-1 border border-dashed border-gray-300 rounded-xl px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/50 transition-colors placeholder:text-gray-400 bg-gray-50"
                 placeholder="+ Type a stage name and press Enter"
                 value={stageInput}
                 onChange={(e) => setStageInput(e.target.value)}
@@ -4589,7 +4590,7 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={addStage}
                 disabled={!stageInput.trim()}
-                className="px-3 py-2 rounded-lg text-[12px] font-semibold text-white disabled:opacity-40 transition-all hover:-translate-y-0.5 shrink-0"
+                className="px-3 py-2 rounded-lg text-[13px] font-semibold text-white disabled:opacity-40 transition-all hover:-translate-y-0.5 shrink-0"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)' }}
               >
                 Add
@@ -4600,12 +4601,12 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5"
+            className="px-6 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
           >
             Create Pipeline
@@ -4724,12 +4725,20 @@ export default function LeadsPage() {
   const canDeleteLead = usePermission('leads:delete');
   const canAssign     = usePermission('leads:assign');
   const canExport     = usePermission('leads:export');
-  const [search, setSearch] = useState('');
+  // Search lives in the navbar (context-aware header search); [query, setQuery] shape
+  // matches the old useState, so the rest of the page is unchanged.
+  const [search, setSearch] = useHeaderSearch('Search leads by name or phone');
   const debouncedSearch = useDebounce(search, 300); // filter after typing settles
   const [pipelineSearch, setPipelineSearch] = useState('');
   const [pipelineOpen, setPipelineOpen] = useState(false);
   const [searchParams] = useSearchParams();
   const dashFilter = searchParams.get('filter') as 'stale' | 'converted' | null;
+  // Seed the search from ?search= (e.g. arriving from the dashboard global search).
+  useEffect(() => {
+    const s = searchParams.get('search');
+    if (s) setSearch(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(
     () => searchParams.get('pipeline') ?? localStorage.getItem('crm_selected_pipeline') ?? null
   );
@@ -4749,15 +4758,15 @@ export default function LeadsPage() {
       setPipeline(fromUrl);
       return;
     }
-    // If already on a valid pipeline, do nothing — don't reset on every 30s poll
+    // If already on a valid pipeline, do nothing - don't reset on every 30s poll
     if (selectedPipelineId && pipelines.find((p) => p.id === selectedPipelineId)) return;
-    // Pipeline was deleted or nothing selected yet — fall back to saved or first
+    // Pipeline was deleted or nothing selected yet - fall back to saved or first
     const saved = localStorage.getItem('crm_selected_pipeline');
     const valid = saved && pipelines.find((p) => p.id === saved);
     setPipeline(valid ? saved! : pipelines[0].id);
   }, [pipelines]);
 
-  // Highlight lead from notification click — switch to its pipeline and flash the card
+  // Highlight lead from notification click - switch to its pipeline and flash the card
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const highlightParam = searchParams.get('highlight');
   useEffect(() => {
@@ -5205,7 +5214,7 @@ export default function LeadsPage() {
   }, [followUps]);
   const activeFiltersCount = Object.values(filters).filter((v) => (Array.isArray(v) ? v.length > 0 : !!v)).length;
 
-  // List-view pagination — render one page of rows, not all leads at once.
+  // List-view pagination - render one page of rows, not all leads at once.
   // (Kanban columns are per-stage and already scroll independently.)
   const LIST_PAGE_SIZE = 50;
   const [listPage, setListPage] = useState(1);
@@ -5260,7 +5269,7 @@ export default function LeadsPage() {
     if (newStageId) api.patch(`/api/leads/${leadId}`, { stage_id: newStageId }).catch(() => null);
   };
 
-  // Move a single lead to a stage (mobile menu — no drag). Mirrors handleDragEnd.
+  // Move a single lead to a stage (mobile menu - no drag). Mirrors handleDragEnd.
   const moveSingleLeadStage = (leadId: string, stage: string) => {
     const pl = pipelines.find((p) => p.id === selectedPipelineId) ?? pipelines[0];
     const stageId = pl?.stages.find((s) => s.name === stage)?.id;
@@ -5308,7 +5317,7 @@ export default function LeadsPage() {
     };
   };
 
-  // Active stage tab on mobile — fall back to first stage if the stored one is gone.
+  // Active stage tab on mobile - fall back to first stage if the stored one is gone.
   const currentMobileStage = activeStages.includes(mobileStage) ? mobileStage : (activeStages[0] ?? '');
 
   // Keep the active stage tab scrolled into view (e.g. after a swipe).
@@ -5377,7 +5386,7 @@ export default function LeadsPage() {
           <EyeOff className="w-8 h-8 text-gray-400" />
         </div>
         <h2 className="text-[18px] font-bold text-[#1c1410] mb-2">No access to leads</h2>
-        <p className="text-[14px] text-[#7a6b5c] max-w-sm">You don't have permission to view leads. Contact your admin to request access.</p>
+        <p className="text-[15px] text-[#7a6b5c] max-w-sm">You don't have permission to view leads. Contact your admin to request access.</p>
       </div>
     );
   }
@@ -5387,7 +5396,7 @@ export default function LeadsPage() {
 
       {/* ── Dashboard filter banner ── */}
       {dashFilter && (
-        <div className={`flex items-center gap-3 mb-3 px-4 py-2.5 rounded-xl border text-[13px] font-medium ${dashFilter === 'stale' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+        <div className={`flex items-center gap-3 mb-3 px-4 py-2.5 rounded-xl border text-[14px] font-medium ${dashFilter === 'stale' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
           <span className="flex-1">
             {dashFilter === 'stale'
               ? `Showing ${filteredLeads.length} stale lead${filteredLeads.length !== 1 ? 's' : ''} - no activity in 7+ days`
@@ -5400,27 +5409,27 @@ export default function LeadsPage() {
       {/* ── Smart Toolbar ── */}
       <div className="sticky top-0 z-20 bg-[var(--app-bg)] pt-2 pb-3 space-y-2.5">
 
-        {/* Row 1: Contextual bar — bulk actions when leads selected, else default toolbar */}
+        {/* Row 1: Contextual bar - bulk actions when leads selected, else default toolbar */}
         {(isMobile && mobileSelectMode) ? (
           /* ── Mobile Selection Bar ── */
           <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl border border-primary/30 animate-fade-in" style={{ background: 'linear-gradient(to right, #faf0e8, #fff)' }}>
             <span className="w-6 h-6 shrink-0 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center tabular-nums">{selectedIds.length}</span>
             <div className="relative">
-              <button onClick={() => { setShowBulkStage((v) => !v); setShowBulkAssign(false); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-[#1c1410] active:bg-white whitespace-nowrap"><ArrowLeftRight className="w-3.5 h-3.5" /> Stage</button>
-              {showBulkStage && (<><div className="fixed inset-0 z-30" onClick={() => setShowBulkStage(false)} /><div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-44 py-1 max-h-60 overflow-y-auto">{activeStages.map((s) => (<button key={s} onClick={() => { bulkMove(s); setMobileSelectMode(false); }} className="w-full text-left px-3 py-2 text-[12px] active:bg-[#faf0e8]">{s}</button>))}</div></>)}
+              <button onClick={() => { setShowBulkStage((v) => !v); setShowBulkAssign(false); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[13px] font-semibold text-[#1c1410] active:bg-white whitespace-nowrap"><ArrowLeftRight className="w-3.5 h-3.5" /> Stage</button>
+              {showBulkStage && (<><div className="fixed inset-0 z-30" onClick={() => setShowBulkStage(false)} /><div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-44 py-1 max-h-60 overflow-y-auto">{activeStages.map((s) => (<button key={s} onClick={() => { bulkMove(s); setMobileSelectMode(false); }} className="w-full text-left px-3 py-2 text-[13px] active:bg-[#faf0e8]">{s}</button>))}</div></>)}
             </div>
             <div className="relative">
-              <button onClick={() => { setShowBulkAssign((v) => !v); setShowBulkStage(false); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[12px] font-semibold text-[#1c1410] active:bg-white whitespace-nowrap"><User className="w-3.5 h-3.5" /> Assign</button>
-              {showBulkAssign && (<><div className="fixed inset-0 z-30" onClick={() => setShowBulkAssign(false)} /><div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-48 py-1 max-h-60 overflow-y-auto"><button onClick={() => { bulkAssign(''); setMobileSelectMode(false); }} className="w-full text-left px-3 py-2 text-[12px] italic text-[#7a6b5c] active:bg-gray-50">Unassign</button><div className="border-t border-black/5 my-1" />{staff.map((s) => (<button key={s.id} onClick={() => { bulkAssign(s.id); setMobileSelectMode(false); }} className="w-full flex items-center gap-2 text-left px-3 py-2 text-[12px] active:bg-[#faf0e8]"><span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center">{s.avatar}</span>{s.name}</button>))}</div></>)}
+              <button onClick={() => { setShowBulkAssign((v) => !v); setShowBulkStage(false); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[13px] font-semibold text-[#1c1410] active:bg-white whitespace-nowrap"><User className="w-3.5 h-3.5" /> Assign</button>
+              {showBulkAssign && (<><div className="fixed inset-0 z-30" onClick={() => setShowBulkAssign(false)} /><div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-48 py-1 max-h-60 overflow-y-auto"><button onClick={() => { bulkAssign(''); setMobileSelectMode(false); }} className="w-full text-left px-3 py-2 text-[13px] italic text-[#7a6b5c] active:bg-gray-50">Unassign</button><div className="border-t border-black/5 my-1" />{staff.map((s) => (<button key={s.id} onClick={() => { bulkAssign(s.id); setMobileSelectMode(false); }} className="w-full flex items-center gap-2 text-left px-3 py-2 text-[13px] active:bg-[#faf0e8]"><span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center">{s.avatar}</span>{s.name}</button>))}</div></>)}
             </div>
             {canDeleteLead && (
-              <button aria-label="Delete selected" onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center px-2 py-1.5 rounded-lg text-[12px] font-semibold text-red-500 active:bg-red-50 shrink-0"><Trash2 className="w-4 h-4" /></button>
+              <button aria-label="Delete selected" onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center px-2 py-1.5 rounded-lg text-[13px] font-semibold text-red-500 active:bg-red-50 shrink-0"><Trash2 className="w-4 h-4" /></button>
             )}
             {showBulkDeleteConfirm && (
               <ConfirmModal title={`Delete ${selectedIds.length} contact${selectedIds.length !== 1 ? 's' : ''}?`} message="This will permanently remove them from the CRM. This cannot be undone." confirmLabel="Yes, Delete" onConfirm={() => { bulkDelete(); setMobileSelectMode(false); }} onClose={() => setShowBulkDeleteConfirm(false)} />
             )}
             <div className="flex-1" />
-            <button onClick={() => { setSelectedIds([]); setMobileSelectMode(false); }} className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-white text-[12px] font-bold active:scale-95">Done</button>
+            <button onClick={() => { setSelectedIds([]); setMobileSelectMode(false); }} className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-white text-[13px] font-bold active:scale-95">Done</button>
           </div>
         ) : selectedIds.length > 0 ? (
           /* ── Bulk Action Bar ── */
@@ -5430,12 +5439,12 @@ export default function LeadsPage() {
           >
             <div className="flex items-center gap-2 pr-3 border-r border-primary/20">
               <div className="w-6 h-6 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center">{selectedIds.length}</div>
-              <span className="text-[12px] font-semibold text-[#1c1410]">selected</span>
+              <span className="text-[13px] font-semibold text-[#1c1410]">selected</span>
             </div>
 
             {/* Change Stage */}
             <div className="relative">
-              <button onClick={() => { setShowBulkStage((v) => !v); setShowBulkAssign(false); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[#1c1410] hover:bg-white transition-colors">
+              <button onClick={() => { setShowBulkStage((v) => !v); setShowBulkAssign(false); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-[#1c1410] hover:bg-white transition-colors">
                 <ArrowLeftRight className="w-3.5 h-3.5" /> Change Stage <ChevronDown className="w-3 h-3" />
               </button>
               {showBulkStage && (
@@ -5443,7 +5452,7 @@ export default function LeadsPage() {
                   <div className="fixed inset-0 z-30" onClick={() => setShowBulkStage(false)} />
                   <div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-44 py-1 overflow-hidden">
                     {activeStages.map((s) => (
-                      <button key={s} onClick={() => bulkMove(s)} className="w-full text-left px-3 py-2 text-[12px] hover:bg-[#faf0e8] hover:text-primary transition-colors">{s}</button>
+                      <button key={s} onClick={() => bulkMove(s)} className="w-full text-left px-3 py-2 text-[13px] hover:bg-[#faf0e8] hover:text-primary transition-colors">{s}</button>
                     ))}
                   </div>
                 </>
@@ -5452,17 +5461,17 @@ export default function LeadsPage() {
 
             {/* Assign */}
             <div className="relative">
-              <button onClick={() => { setShowBulkAssign((v) => !v); setShowBulkStage(false); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[#1c1410] hover:bg-white transition-colors">
+              <button onClick={() => { setShowBulkAssign((v) => !v); setShowBulkStage(false); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-[#1c1410] hover:bg-white transition-colors">
                 <User className="w-3.5 h-3.5" /> Assign <ChevronDown className="w-3 h-3" />
               </button>
               {showBulkAssign && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setShowBulkAssign(false)} />
                   <div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-48 py-1 overflow-hidden max-h-60 overflow-y-auto">
-                    <button onClick={() => bulkAssign('')} className="w-full text-left px-3 py-2 text-[12px] text-[#7a6b5c] hover:bg-gray-50 transition-colors italic">Unassign</button>
+                    <button onClick={() => bulkAssign('')} className="w-full text-left px-3 py-2 text-[13px] text-[#7a6b5c] hover:bg-gray-50 transition-colors italic">Unassign</button>
                     <div className="border-t border-black/5 my-1" />
                     {staff.map((s) => (
-                      <button key={s.id} onClick={() => bulkAssign(s.id)} className="w-full flex items-center gap-2 text-left px-3 py-2 text-[12px] hover:bg-[#faf0e8] hover:text-primary transition-colors">
+                      <button key={s.id} onClick={() => bulkAssign(s.id)} className="w-full flex items-center gap-2 text-left px-3 py-2 text-[13px] hover:bg-[#faf0e8] hover:text-primary transition-colors">
                         <div className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center">{s.avatar}</div>
                         {s.name}
                       </button>
@@ -5473,7 +5482,7 @@ export default function LeadsPage() {
             </div>
 
             {/* Workflow */}
-            <button onClick={() => setShowWorkflow(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[#1c1410] hover:bg-white transition-colors">
+            <button onClick={() => setShowWorkflow(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-[#1c1410] hover:bg-white transition-colors">
               <Zap className="w-3.5 h-3.5" /> Trigger Workflow
             </button>
 
@@ -5481,7 +5490,7 @@ export default function LeadsPage() {
 
             {/* Delete */}
             {canDeleteLead && (
-              <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-red-500 hover:bg-red-50 transition-colors">
+              <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-red-500 hover:bg-red-50 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" /> Delete
               </button>
             )}
@@ -5508,7 +5517,7 @@ export default function LeadsPage() {
             <div className="relative shrink-0">
               <button
                 onClick={() => { setPipelineOpen((o) => !o); setPipelineSearch(''); }}
-                className="flex items-center gap-2.5 pl-3 pr-2.5 h-10 rounded-xl bg-white border border-black/10 text-[13px] font-semibold text-[#1c1410] hover:border-primary/40 hover:bg-orange-50/30 transition-all"
+                className="flex items-center gap-2.5 pl-3 pr-2.5 h-10 rounded-xl bg-white border border-black/10 text-[14px] font-semibold text-[#1c1410] hover:border-primary/40 hover:bg-orange-50/30 transition-all"
               >
                 <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                   <Layers className="w-3.5 h-3.5 text-primary" />
@@ -5524,55 +5533,42 @@ export default function LeadsPage() {
                   <div className="absolute left-0 top-12 z-40 bg-white rounded-2xl border border-black/5 shadow-2xl w-64 overflow-hidden">
                     <div className="flex items-center gap-2 px-3 py-2.5 border-b border-black/5">
                       <Search className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
-                      <input autoFocus className="flex-1 text-[12px] outline-none text-[#1c1410] placeholder:text-gray-400" placeholder="Search pipeline..." value={pipelineSearch} onChange={(e) => setPipelineSearch(e.target.value)} />
+                      <input autoFocus className="flex-1 text-[13px] outline-none text-[#1c1410] placeholder:text-gray-400" placeholder="Search pipeline..." value={pipelineSearch} onChange={(e) => setPipelineSearch(e.target.value)} />
                     </div>
                     <div className="max-h-60 overflow-y-auto py-1.5">
                       {filteredPipelines.map((p) => {
                         const cnt = leads.filter((l) => l.pipelineId === p.id).length;
                         return (
                           <button key={p.id} onClick={() => { setPipeline(p.id); setPipelineOpen(false); }}
-                            className={cn('w-full text-left px-4 py-2.5 text-[13px] transition-colors flex items-center gap-2', p.id === selectedPipelineId ? 'bg-[#faf0e8] text-primary font-semibold' : 'text-[#1c1410] hover:bg-[var(--app-bg)]')}>
+                            className={cn('w-full text-left px-4 py-2.5 text-[14px] transition-colors flex items-center gap-2', p.id === selectedPipelineId ? 'bg-[#faf0e8] text-primary font-semibold' : 'text-[#1c1410] hover:bg-[var(--app-bg)]')}>
                             {p.id === selectedPipelineId && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
                             <span className="flex-1 truncate">{p.name}</span>
                             <span className="text-[10px] text-[#b09e8d] font-normal">{cnt}</span>
                           </button>
                         );
                       })}
-                      {filteredPipelines.length === 0 && <p className="px-4 py-3 text-[12px] text-[#7a6b5c]">No pipelines found</p>}
+                      {filteredPipelines.length === 0 && <p className="px-4 py-3 text-[13px] text-[#7a6b5c]">No pipelines found</p>}
                     </div>
                   </div>
                 </>
               )}
             </div>
 
-            {/* Search — full-width second row on phones, inline on desktop */}
-            <div className="relative order-last w-full md:order-none md:flex-1 md:max-w-xs">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d] pointer-events-none" />
-              <input
-                ref={searchInputRef}
-                className="w-full h-10 pl-9 pr-8 text-[13px] bg-white border border-black/10 rounded-xl outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 placeholder:text-[#b09e8d] transition-all"
-                placeholder="Search leads…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              {search && (
-                <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full hover:bg-gray-100 flex items-center justify-center text-[#b09e8d]"><X className="w-3 h-3" /></button>
-              )}
-            </div>
+            {/* Lead search moved to the navbar (context-aware header search). */}
 
             <div className="hidden md:block flex-1" />
 
             {/* Right action group */}
             <div className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
 
-              {/* View toggle — labeled pill (desktop only; phones are board-only) */}
+              {/* View toggle - labeled pill (desktop only; phones are board-only) */}
               <div className="hidden md:flex items-center h-10 bg-gray-100 rounded-xl p-1 gap-0.5">
                 <button onClick={() => setKanbanView(true)}
-                  className={cn('flex items-center gap-1.5 px-3 h-8 rounded-lg text-[12px] font-semibold transition-all', kanbanView ? 'bg-white shadow-sm text-primary' : 'text-[#7a6b5c] hover:text-[#1c1410]')}>
+                  className={cn('flex items-center gap-1.5 px-3 h-8 rounded-lg text-[13px] font-semibold transition-all', kanbanView ? 'bg-white shadow-sm text-primary' : 'text-[#7a6b5c] hover:text-[#1c1410]')}>
                   <LayoutGrid className="w-3.5 h-3.5" /> Board
                 </button>
                 <button onClick={() => setKanbanView(false)}
-                  className={cn('flex items-center gap-1.5 px-3 h-8 rounded-lg text-[12px] font-semibold transition-all', !kanbanView ? 'bg-white shadow-sm text-primary' : 'text-[#7a6b5c] hover:text-[#1c1410]')}>
+                  className={cn('flex items-center gap-1.5 px-3 h-8 rounded-lg text-[13px] font-semibold transition-all', !kanbanView ? 'bg-white shadow-sm text-primary' : 'text-[#7a6b5c] hover:text-[#1c1410]')}>
                   <List className="w-3.5 h-3.5" /> List
                 </button>
               </div>
@@ -5580,7 +5576,7 @@ export default function LeadsPage() {
               {/* Filter */}
               <div className="relative">
                 <button ref={filterBtnRef} onClick={() => setShowFilters((v) => !v)}
-                  className={cn('relative flex items-center gap-1.5 px-3 h-10 rounded-xl border text-[12px] font-semibold transition-all',
+                  className={cn('relative flex items-center gap-1.5 px-3 h-10 rounded-xl border text-[13px] font-semibold transition-all',
                     activeFiltersCount > 0 || showFilters ? 'bg-orange-50 border-primary/30 text-primary' : 'bg-white border-black/10 text-[#7a6b5c] hover:border-primary/30 hover:text-primary'
                   )}>
                   <Filter className="w-3.5 h-3.5" />
@@ -5598,30 +5594,30 @@ export default function LeadsPage() {
                 </button>
                 {showMoreMenu && (
                   <div className="absolute right-0 top-12 z-40 w-56 bg-white rounded-xl border border-black/5 shadow-xl overflow-hidden py-1">
-                    <button onClick={() => { setShowMoreMenu(false); setShowImport(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                    <button onClick={() => { setShowMoreMenu(false); setShowImport(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                       <Package className="w-3.5 h-3.5 text-[#7a6b5c]" /> Import leads
                     </button>
                     {canExport && (
-                      <button onClick={() => { setShowMoreMenu(false); exportLeads(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                      <button onClick={() => { setShowMoreMenu(false); exportLeads(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                         <Download className="w-3.5 h-3.5 text-[#7a6b5c]" /> Export leads
                       </button>
                     )}
                     <div className="border-t border-black/5 my-1" />
-                    <button onClick={() => { setShowMoreMenu(false); setShowWorkflow(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                    <button onClick={() => { setShowMoreMenu(false); setShowWorkflow(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                       <Zap className="w-3.5 h-3.5 text-[#7a6b5c]" /> Trigger Workflow
                     </button>
-                    <button onClick={() => { setShowMoreMenu(false); setShowPhone((v) => !v); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                    <button onClick={() => { setShowMoreMenu(false); setShowPhone((v) => !v); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                       {showPhone ? <EyeOff className="w-3.5 h-3.5 text-[#7a6b5c]" /> : <Eye className="w-3.5 h-3.5 text-[#7a6b5c]" />}
                       {showPhone ? 'Hide contact info' : 'Show contact info'}
                     </button>
                     <div className="border-t border-black/5 my-1" />
-                    <button onClick={() => { setShowMoreMenu(false); setSearch(''); setFilters({ ...emptyFilters }); setSelectedIds([]); toast.success('Reset'); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                    <button onClick={() => { setShowMoreMenu(false); setSearch(''); setFilters({ ...emptyFilters }); setSelectedIds([]); toast.success('Reset'); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                       <RotateCcw className="w-3.5 h-3.5 text-[#7a6b5c]" /> Reset filters
                     </button>
                     {canDeleteLead && (
                       <>
                         <div className="border-t border-black/5 my-1" />
-                        <button onClick={() => { setShowMoreMenu(false); setShowTrash(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
+                        <button onClick={() => { setShowMoreMenu(false); setShowTrash(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
                           <Trash2 className="w-3.5 h-3.5 text-[#7a6b5c]" /> Trash
                         </button>
                       </>
@@ -5633,7 +5629,7 @@ export default function LeadsPage() {
               {/* Add Lead (desktop button; phones use the floating + button) */}
               {canCreateLead && (
                 <button onClick={() => setShowAddLead(true)}
-                  className="hidden md:flex items-center gap-2 px-4 h-10 rounded-xl text-[13px] font-bold text-white bg-primary hover:bg-primary/90 transition-all active:scale-95 shrink-0">
+                  className="hidden md:flex items-center gap-2 px-4 h-10 rounded-xl text-[14px] font-bold text-white bg-primary hover:bg-primary/90 transition-all active:scale-95 shrink-0">
                   <Plus className="w-4 h-4" /> Add Lead
                 </button>
               )}
@@ -5641,7 +5637,7 @@ export default function LeadsPage() {
           </div>
         )}
 
-        {/* Active filter chips — one per value, instant remove */}
+        {/* Active filter chips - one per value, instant remove */}
         {selectedIds.length === 0 && activeFiltersCount > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[11px] text-[#7a6b5c] font-semibold uppercase tracking-wide mr-1">Filtered by:</span>
@@ -5681,7 +5677,7 @@ export default function LeadsPage() {
       {/* ── Board ── */}
       <div className={cn('flex-1 flex flex-col min-h-0 overflow-hidden -mb-6 transition-opacity duration-200', filterLoading && 'opacity-50 pointer-events-none')}>
       {(apiLeads === null && filterLoading) || (!hydrated && leads.length === 0) ? (
-        /* First-load skeleton — placeholder columns of cards while data loads */
+        /* First-load skeleton - placeholder columns of cards while data loads */
         <div className="flex gap-4 overflow-hidden flex-1 min-h-0 items-stretch">
           {Array.from({ length: 4 }).map((_, ci) => (
             <div key={ci} className="min-w-[280px] w-[280px] flex flex-col rounded-2xl border border-black/5 bg-white overflow-hidden">
@@ -5700,7 +5696,7 @@ export default function LeadsPage() {
           ))}
         </div>
       ) : isMobile ? (
-        /* ── Mobile Board — stage tabs + single-stage list ── */
+        /* ── Mobile Board - stage tabs + single-stage list ── */
         <div className="flex flex-col flex-1 min-h-0">
           {/* Stage tabs */}
           <div ref={mobileTabsRef} className="flex gap-2 overflow-x-auto pb-2.5 shrink-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
@@ -5710,7 +5706,7 @@ export default function LeadsPage() {
               const active = currentMobileStage === stage;
               return (
                 <button key={stage} data-active={active ? 'true' : 'false'} onClick={() => setMobileStage(stage)}
-                  className={cn('shrink-0 flex items-center gap-1.5 pl-3.5 pr-2 h-9 rounded-full border text-[13px] font-semibold transition-all active:scale-95',
+                  className={cn('shrink-0 flex items-center gap-1.5 pl-3.5 pr-2 h-9 rounded-full border text-[14px] font-semibold transition-all active:scale-95',
                     active ? 'text-white border-transparent shadow-sm' : 'bg-white text-[#7a6b5c] border-black/10')}
                   style={active ? { background: acc } : undefined}>
                   <span className="truncate max-w-[150px]">{stage}</span>
@@ -5732,8 +5728,8 @@ export default function LeadsPage() {
                     <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-black/10 flex items-center justify-center">
                       <User className="w-6 h-6 text-[#c4b09e]" />
                     </div>
-                    <p className="text-[14px] font-semibold text-[#7a6b5c]">No leads in {currentMobileStage || 'this stage'}</p>
-                    {canCreateLead && <p className="text-[12px] text-[#b09e8d]">Tap + to add one</p>}
+                    <p className="text-[15px] font-semibold text-[#7a6b5c]">No leads in {currentMobileStage || 'this stage'}</p>
+                    {canCreateLead && <p className="text-[13px] text-[#b09e8d]">Tap + to add one</p>}
                   </div>
                 );
               }
@@ -5787,7 +5783,7 @@ export default function LeadsPage() {
       ) : (
         /* ── List View ── */
         <div className="bg-white rounded-2xl border border-black/5 card-shadow overflow-y-auto flex-1 min-h-0">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[14px]">
             <thead>
               <tr className="bg-[var(--app-bg)] border-b border-black/5">
                 <th className="w-10 px-4 py-3">
@@ -5810,7 +5806,7 @@ export default function LeadsPage() {
               {filteredLeads.length === 0 && (
                 <tr><td colSpan={9} className="py-16 text-center">
                   <User className="w-8 h-8 text-[#c4b09e] mx-auto mb-2" />
-                  <p className="text-[13px] text-[#7a6b5c]">No leads found</p>
+                  <p className="text-[14px] text-[#7a6b5c]">No leads found</p>
                 </td></tr>
               )}
               {pagedListLeads.map((lead) => {
@@ -5830,7 +5826,7 @@ export default function LeadsPage() {
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand))' }}>{initials}</div>
-                        <button onClick={() => setSelectedLeadId(lead.id)} className="text-primary font-semibold hover:underline text-[13px] truncate max-w-[140px]">
+                        <button onClick={() => setSelectedLeadId(lead.id)} className="text-primary font-semibold hover:underline text-[14px] truncate max-w-[140px]">
                           {lead.firstName} {lead.lastName}
                         </button>
                       </div>
@@ -5873,22 +5869,22 @@ export default function LeadsPage() {
           </table>
           {listTotalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-black/[0.04]">
-              <p className="text-[12px] text-[#7a6b5c]">
+              <p className="text-[13px] text-[#7a6b5c]">
                 Showing {filteredLeads.length === 0 ? 0 : (listSafePage - 1) * LIST_PAGE_SIZE + 1}–{Math.min(listSafePage * LIST_PAGE_SIZE, filteredLeads.length)} of {filteredLeads.length}
               </p>
               <div className="flex items-center gap-2">
                 <button onClick={() => setListPage((p) => Math.max(1, p - 1))} disabled={listSafePage <= 1}
-                  className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Prev</button>
-                <span className="text-[12px] text-[#7a6b5c]">Page {listSafePage} / {listTotalPages}</span>
+                  className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Prev</button>
+                <span className="text-[13px] text-[#7a6b5c]">Page {listSafePage} / {listTotalPages}</span>
                 <button onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))} disabled={listSafePage >= listTotalPages}
-                  className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Next</button>
+                  className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Next</button>
               </div>
             </div>
           )}
           {selectedIds.length > 0 && (
             <div className="px-5 py-2.5 bg-blue-50 border-t border-blue-100 flex items-center gap-2">
               <Settings className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <p className="text-[12px] text-blue-600">
+              <p className="text-[13px] text-blue-600">
                 {selectedIds.length} contact(s) selected.{' '}
                 <button onClick={() => setShowWorkflow(true)} className="font-bold underline hover:text-blue-800">Trigger Workflow</button>
               </p>

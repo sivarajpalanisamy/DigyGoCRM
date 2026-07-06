@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  TrendingUp, CheckCircle2, Target, Clock, Users, RefreshCw,
+  TrendingUp, CheckCircle2, Check, Target, Clock, Users, RefreshCw,
   ChevronDown, CalendarClock,
 } from 'lucide-react';
 import {
@@ -77,7 +77,7 @@ function Spinner() {
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <div className="flex items-center justify-center h-[120px] text-[13px] text-[#9a8a7a]">{text}</div>;
+  return <div className="flex items-center justify-center h-[120px] text-[14px] text-[#9a8a7a]">{text}</div>;
 }
 
 // Period Filter
@@ -91,7 +91,7 @@ function PeriodFilter({ period, onChange, from, to, onFrom, onTo }: {
         {PERIODS.map((p) => (
           <button key={p.value} onClick={() => onChange(p.value)}
             className={cn(
-              'text-[12px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
+              'text-[13px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
               period === p.value
                 ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-sm'
                 : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/40 hover:text-[var(--brand)]',
@@ -103,10 +103,10 @@ function PeriodFilter({ period, onChange, from, to, onFrom, onTo }: {
       {period === 'custom' && (
         <div className="flex items-center gap-2 flex-wrap">
           <input type="date" value={from} onChange={(e) => onFrom(e.target.value)}
-            className="border border-black/10 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--brand)] transition-colors bg-white" />
-          <span className="text-[12px] text-[#9a8a7a] font-medium">to</span>
+            className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] transition-colors bg-white" />
+          <span className="text-[13px] text-[#9a8a7a] font-medium">to</span>
           <input type="date" value={to} onChange={(e) => onTo(e.target.value)}
-            className="border border-black/10 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--brand)] transition-colors bg-white" />
+            className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] transition-colors bg-white" />
         </div>
       )}
     </div>
@@ -153,7 +153,7 @@ function Card({ title, sub, children, className }: {
   return (
     <div className={cn('bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden', className)}>
       <div className="px-5 py-4 border-b border-black/5">
-        <p className="text-[14px] font-bold text-[#1c1410]">{title}</p>
+        <p className="text-[15px] font-bold text-[#1c1410]">{title}</p>
         {sub && <p className="text-[11px] text-[#9a8a7a] mt-0.5">{sub}</p>}
       </div>
       <div className="p-5">{children}</div>
@@ -161,7 +161,7 @@ function Card({ title, sub, children, className }: {
   );
 }
 
-// Trend chart — Bar (new leads, blue) + Area (won, orange)
+// Trend chart - Bar (new leads, blue) + Area (won, orange)
 function TrendChart({ data }: { data: WinLossRow[] }) {
   if (!data.length) return <EmptyState text="No trend data for this period" />;
   return (
@@ -204,7 +204,7 @@ function HBarList({ items, getLabel, getRight, getWidth, getColor, avatar }: {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-semibold text-[#1c1410] truncate">{getLabel(item)}</p>
+              <p className="text-[13px] font-semibold text-[#1c1410] truncate">{getLabel(item)}</p>
               <div className="mt-0.5">
                 <div className="h-1.5 rounded-full transition-all"
                   style={{ width: `${Math.max(getWidth(item), 2)}%`, background: color, minWidth: 4 }} />
@@ -247,20 +247,20 @@ function StageFunnel({ stages }: { stages: StageRow[] }) {
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f4efe9]">
           <span className="text-[10px] text-[#9a8a7a] font-semibold uppercase">Entry</span>
-          <span className="text-[13px] font-bold text-[#1c1410]">{firstCount}</span>
+          <span className="text-[14px] font-bold text-[#1c1410]">{firstCount}</span>
         </div>
         {wonStage && (
           <>
             <span className="text-[#d0c0b0] text-[11px]">→</span>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
               <span className="text-[10px] text-emerald-600 font-semibold uppercase">Won</span>
-              <span className="text-[13px] font-bold text-emerald-700">{wonStage.lead_count}</span>
+              <span className="text-[14px] font-bold text-emerald-700">{wonStage.lead_count}</span>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
               style={{ background: overallConv >= 15 ? '#f0fdf4' : overallConv >= 5 ? '#fefce8' : '#fef2f2' }}>
               <span className="text-[10px] font-semibold uppercase"
                 style={{ color: overallConv >= 15 ? '#16a34a' : overallConv >= 5 ? '#ca8a04' : '#ef4444' }}>Conv Rate</span>
-              <span className="text-[13px] font-bold"
+              <span className="text-[14px] font-bold"
                 style={{ color: overallConv >= 15 ? '#15803d' : overallConv >= 5 ? '#a16207' : '#dc2626' }}>{overallConv}%</span>
             </div>
           </>
@@ -268,13 +268,13 @@ function StageFunnel({ stages }: { stages: StageRow[] }) {
         {bottleneckIdx >= 0 && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50">
             <span className="text-[10px] text-red-500 font-semibold uppercase">Bottleneck</span>
-            <span className="text-[12px] font-bold text-red-600">{stages[bottleneckIdx].stage_name} ({worstDropPct}%)</span>
+            <span className="text-[13px] font-bold text-red-600">{stages[bottleneckIdx].stage_name} ({worstDropPct}%)</span>
           </div>
         )}
         {slowestStage && (slowestStage.avg_days ?? 0) > 3 && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50">
             <span className="text-[10px] text-amber-600 font-semibold uppercase">Slowest</span>
-            <span className="text-[12px] font-bold text-amber-700">{slowestStage.stage_name} ({slowestStage.avg_days}d avg)</span>
+            <span className="text-[13px] font-bold text-amber-700">{slowestStage.stage_name} ({slowestStage.avg_days}d avg)</span>
           </div>
         )}
       </div>
@@ -309,13 +309,13 @@ function StageFunnel({ stages }: { stages: StageRow[] }) {
                     {barW > 14 && <span className="text-[11px] font-bold text-white">{stage.lead_count}</span>}
                   </div>
                 </div>
-                {barW <= 14 && <span className="text-[12px] font-bold text-[#1c1410] w-5 text-right">{stage.lead_count}</span>}
+                {barW <= 14 && <span className="text-[13px] font-bold text-[#1c1410] w-5 text-right">{stage.lead_count}</span>}
                 {cumulConv !== null && (
                   <span className="text-[9px] font-semibold text-[#9a8a7a] w-8 text-right shrink-0">{cumulConv}%</span>
                 )}
                 <span className="text-[10px] font-bold px-2 py-1 rounded-lg shrink-0"
                   style={{ background: stage.is_won ? '#f0fdf4' : idleBg, color: stage.is_won ? '#16a34a' : idleColor }}>
-                  {stage.is_won ? 'Won ✓' : `${idle}d avg`}
+                  {stage.is_won ? <span className="inline-flex items-center gap-0.5">Won <Check className="w-2.5 h-2.5" strokeWidth={3} /></span> : `${idle}d avg`}
                 </span>
               </div>
             </div>
@@ -338,7 +338,7 @@ function LeadBreakdown({ total, won, active }: { total: number; won: number; act
   return (
     <div className="bg-white rounded-2xl border border-black/5 p-4 shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[13px] font-bold text-[#1c1410]">Lead Breakdown</p>
+        <p className="text-[14px] font-bold text-[#1c1410]">Lead Breakdown</p>
         <span className="text-[11px] text-[#9a8a7a]">{total} total leads</span>
       </div>
       <div className="flex h-3.5 rounded-full overflow-hidden gap-0.5">
@@ -366,7 +366,7 @@ function LeadBreakdown({ total, won, active }: { total: number; won: number; act
   );
 }
 
-// Source ROI Chart — volume bars + conversion line + contact rate + detail table
+// Source ROI Chart - volume bars + conversion line + contact rate + detail table
 function SourceROIChart({ sources }: { sources: SourceRow[] }) {
   if (!sources.length) return <EmptyState text="No source data" />;
 
@@ -390,19 +390,19 @@ function SourceROIChart({ sources }: { sources: SourceRow[] }) {
         {highestVol && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50">
             <span className="text-[10px] text-blue-500 font-semibold uppercase">Top Volume</span>
-            <span className="text-[12px] font-bold text-blue-700">{highestVol.source || 'Unknown'} ({highestVol.total})</span>
+            <span className="text-[13px] font-bold text-blue-700">{highestVol.source || 'Unknown'} ({highestVol.total})</span>
           </div>
         )}
         {bestConv && bestConv.conv_pct > 0 && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
             <span className="text-[10px] text-emerald-500 font-semibold uppercase">Best Conversion</span>
-            <span className="text-[12px] font-bold text-emerald-700">{bestConv.source || 'Unknown'} ({bestConv.conv_pct}%)</span>
+            <span className="text-[13px] font-bold text-emerald-700">{bestConv.source || 'Unknown'} ({bestConv.conv_pct}%)</span>
           </div>
         )}
         {bestContact && bestContact.contacted > 0 && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50">
             <span className="text-[10px] text-violet-500 font-semibold uppercase">Best Contact Rate</span>
-            <span className="text-[12px] font-bold text-violet-700">{bestContact.source || 'Unknown'} ({bestContact.total > 0 ? Math.round(bestContact.contacted / bestContact.total * 100) : 0}%)</span>
+            <span className="text-[13px] font-bold text-violet-700">{bestContact.source || 'Unknown'} ({bestContact.total > 0 ? Math.round(bestContact.contacted / bestContact.total * 100) : 0}%)</span>
           </div>
         )}
       </div>
@@ -430,7 +430,7 @@ function SourceROIChart({ sources }: { sources: SourceRow[] }) {
         </ComposedChart>
       </ResponsiveContainer>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-[12px]">
+        <table className="w-full text-[13px]">
           <thead>
             <tr className="text-[10px] text-[#9a8a7a] uppercase font-semibold border-b border-black/5">
               <th className="text-left py-2 px-2">Source</th>
@@ -473,7 +473,7 @@ function SourceROIChart({ sources }: { sources: SourceRow[] }) {
   );
 }
 
-// Staff Leaderboard — sortable table with rankings, performance badges, contact bars
+// Staff Leaderboard - sortable table with rankings, performance badges, contact bars
 function StaffLeaderboard({ staff }: { staff: StaffRow[] }) {
   const [sortBy, setSortBy] = useState<keyof StaffRow>('conv_pct');
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
@@ -516,30 +516,30 @@ function StaffLeaderboard({ staff }: { staff: StaffRow[] }) {
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f4efe9]">
           <span className="text-[10px] text-[#9a8a7a] font-semibold uppercase">Team</span>
-          <span className="text-[13px] font-bold text-[#1c1410]">{active.length} members</span>
+          <span className="text-[14px] font-bold text-[#1c1410]">{active.length} members</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f4efe9]">
           <span className="text-[10px] text-[#9a8a7a] font-semibold uppercase">Assigned</span>
-          <span className="text-[13px] font-bold text-[#1c1410]">{totalAssigned}</span>
+          <span className="text-[14px] font-bold text-[#1c1410]">{totalAssigned}</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
           <span className="text-[10px] text-emerald-600 font-semibold uppercase">Won</span>
-          <span className="text-[13px] font-bold text-emerald-700">{totalWon}</span>
+          <span className="text-[14px] font-bold text-emerald-700">{totalWon}</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50">
           <span className="text-[10px] text-violet-500 font-semibold uppercase">Avg Contact</span>
-          <span className="text-[13px] font-bold text-violet-700">{avgContact}%</span>
+          <span className="text-[14px] font-bold text-violet-700">{avgContact}%</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
           style={{ background: avgConv >= 15 ? '#f0fdf4' : avgConv >= 5 ? '#fefce8' : '#fef2f2' }}>
           <span className="text-[10px] font-semibold uppercase"
             style={{ color: avgConv >= 15 ? '#16a34a' : avgConv >= 5 ? '#ca8a04' : '#ef4444' }}>Avg Conv</span>
-          <span className="text-[13px] font-bold"
+          <span className="text-[14px] font-bold"
             style={{ color: avgConv >= 15 ? '#15803d' : avgConv >= 5 ? '#a16207' : '#dc2626' }}>{avgConv}%</span>
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-[12px]">
+        <table className="w-full text-[13px]">
           <thead>
             <tr className="text-[10px] text-[#9a8a7a] uppercase font-semibold border-b border-black/5">
               <th className="text-left py-2.5 px-2 w-8">#</th>
@@ -601,7 +601,7 @@ function StaffLeaderboard({ staff }: { staff: StaffRow[] }) {
   );
 }
 
-// Tag Intelligence — bars with color dots, lead count, won, conv%
+// Tag Intelligence - bars with color dots, lead count, won, conv%
 function TagIntelligence({ tags }: { tags: PipelineData['tags'] }) {
   if (!tags.length) return <EmptyState text="No tags used in this pipeline" />;
   const maxTotal = Math.max(...tags.map((t) => t.total), 1);
@@ -610,7 +610,7 @@ function TagIntelligence({ tags }: { tags: PipelineData['tags'] }) {
       {tags.map((tag, i) => (
         <div key={i} className="flex items-center gap-2.5">
           <span className="w-3 h-3 rounded-full shrink-0" style={{ background: tag.color || SOURCE_COLORS[i % SOURCE_COLORS.length] }} />
-          <span className="text-[12px] font-semibold text-[#1c1410] w-28 shrink-0 truncate">{tag.name}</span>
+          <span className="text-[13px] font-semibold text-[#1c1410] w-28 shrink-0 truncate">{tag.name}</span>
           <div className="flex-1 bg-[#f4efe9] rounded-full h-5 overflow-hidden">
             <div className="h-full rounded-full flex items-center justify-end pr-2 transition-all"
               style={{ width: `${Math.max(Math.round((tag.total / maxTotal) * 100), 3)}%`, background: tag.color || SOURCE_COLORS[i % SOURCE_COLORS.length] }}>
@@ -627,12 +627,12 @@ function TagIntelligence({ tags }: { tags: PipelineData['tags'] }) {
   );
 }
 
-// Automation Effectiveness — workflow execution table
+// Automation Effectiveness - workflow execution table
 function AutomationEffectiveness({ workflows }: { workflows: PipelineData['automation'] }) {
   if (!workflows.length) return <EmptyState text="No automation activity in this period" />;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[12px]">
+      <table className="w-full text-[13px]">
         <thead>
           <tr className="text-[10px] text-[#9a8a7a] uppercase font-semibold border-b border-black/5">
             <th className="text-left py-2 px-2">Workflow</th>
@@ -670,7 +670,7 @@ function AutomationEffectiveness({ workflows }: { workflows: PipelineData['autom
   );
 }
 
-// Lead Quality — stacked bar + legend
+// Lead Quality - stacked bar + legend
 function LeadQualityChart({ quality }: { quality: PipelineData['quality'] }) {
   if (!quality.length) return <EmptyState text="No quality data" />;
   const total = quality.reduce((s, q) => s + q.count, 0);
@@ -708,7 +708,7 @@ function LeadQualityChart({ quality }: { quality: PipelineData['quality'] }) {
   );
 }
 
-// Lead Aging — horizontal bars by days-in-pipeline buckets
+// Lead Aging - horizontal bars by days-in-pipeline buckets
 function LeadAgingChart({ aging }: { aging: PipelineData['aging'] }) {
   if (!aging?.length) return <EmptyState text="No active leads" />;
   const maxCount = Math.max(...aging.map((a) => a.count), 1);
@@ -745,7 +745,7 @@ function LeadAgingChart({ aging }: { aging: PipelineData['aging'] }) {
   );
 }
 
-// Call Analytics — KPI cards + direction breakdown
+// Call Analytics - KPI cards + direction breakdown
 function CallAnalytics({ calls }: { calls: PipelineData['calls'] }) {
   if (!calls?.length) return <EmptyState text="No call data in this period" />;
   const totalCalls = calls.reduce((s, c) => s + c.count, 0);
@@ -804,7 +804,7 @@ function CallAnalytics({ calls }: { calls: PipelineData['calls'] }) {
   );
 }
 
-// Lead Inflow — daily bar chart
+// Lead Inflow - daily bar chart
 function LeadInflowChart({ data }: { data: { day: string; count: number }[] }) {
   if (!data.length) return <EmptyState text="No lead inflow data" />;
   return (
@@ -827,7 +827,7 @@ function OverdueList({ items }: { items: OverdueRow[] }) {
   if (!items.length) return (
     <div className="flex flex-col items-center justify-center py-8 gap-2">
       <CheckCircle2 className="w-8 h-8 text-[#10b981]" />
-      <p className="text-[13px] font-semibold text-[#10b981]">No overdue follow-ups</p>
+      <p className="text-[14px] font-semibold text-[#10b981]">No overdue follow-ups</p>
     </div>
   );
   return (
@@ -835,7 +835,7 @@ function OverdueList({ items }: { items: OverdueRow[] }) {
       {items.map((item, i) => (
         <div key={i} className="flex items-center justify-between p-3 bg-[#fefce8] rounded-xl border border-[#fef08a]">
           <div className="min-w-0">
-            <p className="text-[12px] font-semibold text-[#1c1410] truncate">{item.lead_name}</p>
+            <p className="text-[13px] font-semibold text-[#1c1410] truncate">{item.lead_name}</p>
             <p className="text-[10px] text-[#9a8a7a] mt-0.5">{item.staff_name ?? item.title ?? ''}</p>
           </div>
           <span className="text-[11px] font-bold text-[#ca8a04] shrink-0 ml-3 bg-white px-2 py-1 rounded-lg border border-[#fde047]">
@@ -852,7 +852,7 @@ function StaleList({ stale }: { stale: StaleShape }) {
   if (!stale?.stale_count) return (
     <div className="flex flex-col items-center justify-center py-8 gap-2">
       <CheckCircle2 className="w-8 h-8 text-[#10b981]" />
-      <p className="text-[13px] font-semibold text-[#10b981]">All leads active</p>
+      <p className="text-[14px] font-semibold text-[#10b981]">All leads active</p>
       <p className="text-[11px] text-[#9a8a7a]">No leads stuck for 7+ days</p>
     </div>
   );
@@ -862,7 +862,7 @@ function StaleList({ stale }: { stale: StaleShape }) {
       {stale.list?.map((l, i) => (
         <div key={i} className="flex items-center justify-between p-3 bg-[#fef2f2] rounded-xl border border-[#fee2e2]">
           <div className="min-w-0">
-            <p className="text-[12px] font-semibold text-[#1c1410] truncate">{l.name}</p>
+            <p className="text-[13px] font-semibold text-[#1c1410] truncate">{l.name}</p>
             <p className="text-[10px] text-[#9a8a7a] mt-0.5">{l.stage_name ?? '-'} · {l.assigned_name ?? 'Unassigned'}</p>
           </div>
           <span className="text-[11px] font-bold text-[#ef4444] shrink-0 ml-3 bg-white px-2 py-1 rounded-lg border border-[#fecaca]">
@@ -913,7 +913,7 @@ function PipelineDropdown({ pipelines, selected, onChange }: {
   return (
     <div className="relative" ref={ref}>
       <button onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 bg-white border border-black/10 rounded-xl px-4 py-2 text-[13px] font-semibold text-[#1c1410] hover:border-primary/40 transition-colors min-w-[180px] shadow-sm">
+        className="flex items-center gap-2 bg-white border border-black/10 rounded-xl px-4 py-2 text-[14px] font-semibold text-[#1c1410] hover:border-primary/40 transition-colors min-w-[180px] shadow-sm">
         <span className="flex-1 text-left truncate">{name}</span>
         <ChevronDown className={cn('w-4 h-4 text-[#9e8e7e] shrink-0 transition-transform duration-200', open && 'rotate-180')} />
       </button>
@@ -921,7 +921,7 @@ function PipelineDropdown({ pipelines, selected, onChange }: {
         <div className="absolute top-full mt-1.5 left-0 min-w-[200px] bg-white border border-black/8 rounded-xl shadow-xl z-50 py-1.5 max-h-64 overflow-y-auto">
           {pipelines.map((pl) => (
             <button key={pl.id} onClick={() => { onChange(pl.id); setOpen(false); }}
-              className={cn('w-full text-left px-4 py-2.5 text-[13px] transition-colors',
+              className={cn('w-full text-left px-4 py-2.5 text-[14px] transition-colors',
                 pl.id === selected ? 'bg-primary/8 text-primary font-semibold' : 'text-[#1c1410] hover:bg-[var(--app-bg)] font-medium')}>
               {pl.name}
             </button>
@@ -966,7 +966,7 @@ function OwnerReport() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-[18px] font-bold text-[#1c1410]">Business Analytics</h1>
-          <p className="text-[12px] text-[#9a8a7a] mt-0.5">Full pipeline performance · owner view</p>
+          <p className="text-[13px] text-[#9a8a7a] mt-0.5">Full pipeline performance · owner view</p>
         </div>
         {!plLoading && pipelines.length > 0 && (
           <PipelineDropdown pipelines={pipelines} selected={pipelineId} onChange={setPipelineId} />
@@ -977,7 +977,7 @@ function OwnerReport() {
 
       {(plLoading || loading) && <Spinner />}
       {!plLoading && !loading && pipelines.length === 0 && (
-        <div className="text-center py-20 text-[13px] text-[#9a8a7a]">No pipelines found. Create a pipeline first.</div>
+        <div className="text-center py-20 text-[14px] text-[#9a8a7a]">No pipelines found. Create a pipeline first.</div>
       )}
 
       {data && !loading && (
@@ -1097,7 +1097,7 @@ function ManagerReport() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-[18px] font-bold text-[#1c1410]">Team Analytics</h1>
-          <p className="text-[12px] text-[#9a8a7a] mt-0.5">Your team's pipeline and performance metrics</p>
+          <p className="text-[13px] text-[#9a8a7a] mt-0.5">Your team's pipeline and performance metrics</p>
         </div>
         {!plLoading && pipelines.length > 0 && (
           <PipelineDropdown pipelines={pipelines} selected={pipelineId} onChange={setPipelineId} />
@@ -1209,7 +1209,7 @@ function StaffReport() {
       {/* Header */}
       <div>
         <h1 className="text-[18px] font-bold text-[#1c1410]">My Performance</h1>
-        <p className="text-[12px] text-[#9a8a7a] mt-0.5">Your personal lead analytics</p>
+        <p className="text-[13px] text-[#9a8a7a] mt-0.5">Your personal lead analytics</p>
       </div>
 
       <PeriodFilter period={period} onChange={setPeriod} from={from} to={to} onFrom={setFrom} onTo={setTo} />
@@ -1242,7 +1242,7 @@ function StaffReport() {
                 getColor={(_, i) => SOURCE_COLORS[i % SOURCE_COLORS.length]}
                 getRight={(s) => (
                   <>
-                    <p className="text-[12px] font-bold text-[#1c1410]">{s.total}</p>
+                    <p className="text-[13px] font-bold text-[#1c1410]">{s.total}</p>
                     <p className="text-[10px] text-[#9a8a7a]">{s.conv_pct}% conv</p>
                   </>
                 )}
@@ -1270,8 +1270,8 @@ function StaffReport() {
                             {barW > 14 && <span className="text-[11px] font-bold text-white">{stage.lead_count}</span>}
                           </div>
                         </div>
-                        {barW <= 14 && <span className="text-[12px] font-bold text-[#1c1410] w-5 text-right">{stage.lead_count}</span>}
-                        {stage.is_won && <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 shrink-0">Won ✓</span>}
+                        {barW <= 14 && <span className="text-[13px] font-bold text-[#1c1410] w-5 text-right">{stage.lead_count}</span>}
+                        {stage.is_won && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 shrink-0">Won <Check className="w-2.5 h-2.5" strokeWidth={3} /></span>}
                       </div>
                     );
                   })}
@@ -1291,7 +1291,7 @@ function StaffReport() {
       )}
 
       {data && !loading && data.kpi.total_leads === 0 && (
-        <div className="text-center py-10 text-[13px] text-[#9a8a7a]">No leads assigned to you in this period.</div>
+        <div className="text-center py-10 text-[14px] text-[#9a8a7a]">No leads assigned to you in this period.</div>
       )}
     </div>
   );

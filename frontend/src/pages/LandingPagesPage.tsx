@@ -94,7 +94,7 @@ function PageModal({ initial, onClose, onSave }: {
 
           <div className="flex items-center justify-between py-3 border-t border-black/5">
             <div>
-              <p className="text-[13px] font-semibold text-[#1c1410]">Publish Immediately</p>
+              <p className="text-[14px] font-semibold text-[#1c1410]">Publish Immediately</p>
               <p className="text-[11px] text-[#7a6b5c] mt-0.5">Make page live after saving</p>
             </div>
             <Switch checked={status === 'published'} onCheckedChange={(v) => setStatus(v ? 'published' : 'draft')} />
@@ -186,7 +186,7 @@ export default function LandingPagesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="font-headline font-bold text-[#1c1410] text-[16px]">Landing Pages</h2>
-          <p className="text-[12px] text-[#7a6b5c] mt-0.5">
+          <p className="text-[13px] text-[#7a6b5c] mt-0.5">
             {published} live · {pages.length} total · {totalViews.toLocaleString()} views · {totalLeads} leads
           </p>
         </div>
@@ -211,7 +211,7 @@ export default function LandingPagesPage() {
             <Layout className="w-7 h-7 text-primary" />
           </div>
           <h3 className="font-headline font-bold text-[#1c1410] text-[15px] mb-1">No pages yet</h3>
-          <p className="text-[13px] text-[#7a6b5c] mb-5 max-w-xs mx-auto">
+          <p className="text-[14px] text-[#7a6b5c] mb-5 max-w-xs mx-auto">
             Create your first landing page and start capturing leads from any campaign.
           </p>
           <Button onClick={() => setShowModal(true)}><Plus className="w-4 h-4" /> Create your first page</Button>
@@ -230,7 +230,7 @@ export default function LandingPagesPage() {
                 >
                   <Layout className="w-9 h-9 text-primary/25" />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-primary/5">
-                    <div className="flex items-center gap-1.5 text-primary text-[12px] font-semibold bg-white px-3 py-1.5 rounded-xl shadow-sm border border-primary/20">
+                    <div className="flex items-center gap-1.5 text-primary text-[13px] font-semibold bg-white px-3 py-1.5 rounded-xl shadow-sm border border-primary/20">
                       <Paintbrush className="w-3.5 h-3.5" /> Open Builder
                     </div>
                   </div>
@@ -240,7 +240,7 @@ export default function LandingPagesPage() {
                   {/* Title + badge */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <h3 className="font-headline font-bold text-[#1c1410] text-[14px] truncate">{page.title}</h3>
+                      <h3 className="font-headline font-bold text-[#1c1410] text-[15px] truncate">{page.title}</h3>
                       <p className="text-[10px] text-[#7a6b5c] font-mono truncate mt-0.5">/{page.slug}</p>
                     </div>
                     <Badge className={cn('border-0 text-[10px] font-semibold shrink-0',
@@ -299,7 +299,7 @@ export default function LandingPagesPage() {
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <Plus className="w-5 h-5 text-primary" />
             </div>
-            <span className="text-[13px] font-semibold text-[#7a6b5c] group-hover:text-primary transition-colors">New Page</span>
+            <span className="text-[14px] font-semibold text-[#7a6b5c] group-hover:text-primary transition-colors">New Page</span>
           </button>
         </div>
       )}

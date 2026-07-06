@@ -14,6 +14,7 @@ import {
   UserMinus, UserX, FolderX, PlayCircle, PauseCircle, LogOut, SquareMinus, Users, UserRoundCog,
   RotateCcw, ChevronRight, Copy, Power, Info, ExternalLink, Loader2, TrendingUp, MapPin, RefreshCw,
   Paperclip, Upload, Eye, Edit2, Radio, PhoneCall, PhoneMissed, AlertTriangle,
+  Sparkles, ChevronUp,
 } from 'lucide-react';
 import type { ElementType } from 'react';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { cn, copyToClipboard } from '@/lib/utils';
 import { toast } from 'sonner';
+import { confirmDialog } from '@/lib/confirm';
 import { api, getAccessToken, BASE, ApiError } from '@/lib/api';
 import type { WFNode, WFRecord } from './AutomationPage';
 import { useCrmStore } from '@/store/crmStore';
@@ -293,7 +295,7 @@ function NodeIconRenderer({ actionType }: { actionType: string }) {
   return <Icon className="w-4 h-4" />;
 }
 
-// Count all nodes including nested if/else branches — used to verify a save persisted.
+// Count all nodes including nested if/else branches - used to verify a save persisted.
 function countNodes(nodes: any[]): number {
   let n = 0;
   for (const node of nodes ?? []) {
@@ -429,7 +431,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
         </>);
       })()}
 
-      {/* Calendar form submitted — pick which booking link(s) */}
+      {/* Calendar form submitted - pick which booking link(s) */}
       {node.actionType === 'calendar_form_submitted' && (
         <FieldRow label="Booking Calendar" hint="Select at least one calendar - no selection means this trigger is inactive.">
           <div className="w-full border border-border rounded-lg px-3 py-2 min-h-10 flex flex-wrap gap-1.5 items-center cursor-text bg-card">
@@ -456,7 +458,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
         </FieldRow>
       )}
 
-      {/* CRM — lead created */}
+      {/* CRM - lead created */}
       {node.actionType === 'lead_created' && (<>
         <FieldRow label="Lead Source (optional)">
           <select className={selectCls} value={(cfg.source as string) ?? ''} onChange={sel('source')}>
@@ -490,7 +492,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
         )}
       </>)}
 
-      {/* CRM — stage changed */}
+      {/* CRM - stage changed */}
       {node.actionType === 'stage_changed' && (<>
         <FieldRow label="Select Pipeline">
           <select className={selectCls} value={(cfg.pipeline_id as string) ?? ''} onChange={(e) => onUpdate({ config: { ...cfg, pipeline_id: e.target.value, stage_id: '' } })}>
@@ -507,7 +509,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
       </>)}
 
 
-      {/* CRM — follow up */}
+      {/* CRM - follow up */}
       {node.actionType === 'follow_up' && (<>
         <FieldRow label="Follow-up Type">
           <select className={selectCls} value={(cfg.followupType as string) ?? ''} onChange={sel('followupType')}>
@@ -523,7 +525,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
         </FieldRow>
       </>)}
 
-      {/* CRM — notes added */}
+      {/* CRM - notes added */}
       {node.actionType === 'notes_added' && (
         <div className="py-4 text-center text-sm text-muted-foreground bg-muted/40 rounded-xl">
           <FilePlus className="w-8 h-8 mx-auto mb-2 opacity-30" />
@@ -589,7 +591,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
                   if (selectedTags.includes(e.target.value)) return;
                   onUpdate({ config: { ...cfg, tags: [...selectedTags, e.target.value] } });
                 }}
-                className="flex-1 min-w-[120px] text-[12px] bg-transparent outline-none text-[#7a6b5c] cursor-pointer"
+                className="flex-1 min-w-[120px] text-[13px] bg-transparent outline-none text-[#7a6b5c] cursor-pointer"
               >
                 <option value="">+ Add tag...</option>
                 {allLeadTags.filter((t) => !selectedTags.includes(t)).map((t) => (
@@ -718,7 +720,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
           {/* Required params */}
           <div className="space-y-2">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide block">API Parameters (Required)</label>
-            <div className="space-y-1.5 text-[12px]">
+            <div className="space-y-1.5 text-[13px]">
               {[
                 ['api_token', 'Your authentication token for secure API access'],
                 ['contact_email', 'Email address of the contact (or use contact_phone)'],
@@ -738,7 +740,7 @@ function TriggerConfigPanel({ node, onUpdate, onChangeTrigger, pipelines, staff,
           {/* Optional params */}
           <div className="space-y-2">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide block">API Parameters (Optional)</label>
-            <div className="space-y-1.5 text-[12px]">
+            <div className="space-y-1.5 text-[13px]">
               {[
                 ['contact_name', 'Full name of the contact'],
                 ['any_custom_key', 'Any extra key-value pairs are saved as custom fields on the lead'],
@@ -1149,7 +1151,7 @@ function ConditionConfigPanel({ node, onUpdate, pipelines, staff }: {
     updateConditions(next);
   };
 
-  // Resolve field type — check standard fields first, then custom fields
+  // Resolve field type - check standard fields first, then custom fields
   const getFieldType = (fieldVal: string): string => {
     const std = CONDITION_FIELDS.find((f) => f.value === fieldVal);
     if (std) return std.type;
@@ -1333,7 +1335,7 @@ function ConditionConfigPanel({ node, onUpdate, pipelines, staff }: {
                 )}
               </select>
 
-              {/* Operator selector — shown only after field picked */}
+              {/* Operator selector - shown only after field picked */}
               {cond.field && (
                 <select className={selectCls} value={cond.operator} onChange={(e) => editCondition(i, 'operator', e.target.value)}>
                   <option value="">- Select condition -</option>
@@ -1411,7 +1413,7 @@ function TagChipInput({ tags, onChange, placeholder }: {
         onKeyDown={handleKey}
         onBlur={() => { if (input.trim()) addTag(input); }}
         placeholder={tags.length === 0 ? (placeholder ?? 'Type and press Enter…') : 'Add more…'}
-        className="flex-1 min-w-[100px] text-[12px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#b09e8d]"
+        className="flex-1 min-w-[100px] text-[13px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#b09e8d]"
       />
     </div>
   );
@@ -1525,8 +1527,8 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
     <div className="space-y-4">
       {/* Mode toggle */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#1c1410] mb-1.5">Assignment Mode</label>
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-[12px] font-semibold">
+        <label className="block text-[14px] font-semibold text-[#1c1410] mb-1.5">Assignment Mode</label>
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-[13px] font-semibold">
           <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'specific' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'specific' } })}>Specific Staff</button>
           <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'by_pipeline' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'by_pipeline' } })}>By Pipeline</button>
           <button type="button" className={`flex-1 py-2 transition-colors ${assignMode === 'round_robin' ? 'bg-primary text-white' : 'bg-white text-[#7a6b5c] hover:bg-gray-50'}`} onClick={() => onUpdate({ config: { ...cfg, assign_mode: 'round_robin' } })}>Round Robin</button>
@@ -1535,10 +1537,10 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
 
       {assignMode === 'round_robin' ? (
         <div className="space-y-2">
-          <label className="block text-[13px] font-semibold text-[#1c1410]">Pipeline + Staff Rotation</label>
+          <label className="block text-[14px] font-semibold text-[#1c1410]">Pipeline + Staff Rotation</label>
           <p className="text-[11px] text-[#9a8a7a]">Leads alternate between these pairs in order. Each pair gets an equal share.</p>
           {rrPairs.length === 0 && (
-            <p className="text-[12px] text-[#b09e8d]">No pairs yet - add one per destination.</p>
+            <p className="text-[13px] text-[#b09e8d]">No pairs yet - add one per destination.</p>
           )}
           {rrPairs.map((pair, i) => {
             const pairStages = pipelines.find((p) => p.id === pair.pipeline_id)?.stages ?? [];
@@ -1548,32 +1550,32 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
                   <span className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide">Pair {i + 1}</span>
                   <button type="button" onClick={() => removeRRPair(i)} className="p-1 rounded text-[#b09e8d] hover:text-red-500 hover:bg-red-50 transition-colors"><X className="w-3.5 h-3.5" /></button>
                 </div>
-                <select value={pair.pipeline_id} onChange={(e) => updateRRPair(i, 'pipeline_id', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
+                <select value={pair.pipeline_id} onChange={(e) => updateRRPair(i, 'pipeline_id', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[14px] bg-white outline-none focus:border-primary">
                   <option value="">Pipeline…</option>
                   {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
                 {pairStages.length > 0 && (
-                  <select value={pair.stage_id} onChange={(e) => updateRRPair(i, 'stage_id', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
+                  <select value={pair.stage_id} onChange={(e) => updateRRPair(i, 'stage_id', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[14px] bg-white outline-none focus:border-primary">
                     <option value="">Stage (optional)…</option>
                     {pairStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 )}
-                <select value={pair.staff_id} onChange={(e) => updateRRPair(i, 'staff_id', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
+                <select value={pair.staff_id} onChange={(e) => updateRRPair(i, 'staff_id', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[14px] bg-white outline-none focus:border-primary">
                   <option value="">Assign staff…</option>
                   {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
             );
           })}
-          <button type="button" onClick={addRRPair} className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:opacity-80 transition-opacity">
+          <button type="button" onClick={addRRPair} className="flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:opacity-80 transition-opacity">
             <Plus className="w-3.5 h-3.5" /> Add Pair
           </button>
         </div>
       ) : assignMode === 'by_pipeline' ? (
         <div className="space-y-2">
-          <label className="block text-[13px] font-semibold text-[#1c1410]">Pipeline → Staff</label>
+          <label className="block text-[14px] font-semibold text-[#1c1410]">Pipeline → Staff</label>
           {mapping.length === 0 && (
-            <p className="text-[12px] text-[#b09e8d]">No rules yet - add a pipeline and the staff to assign.</p>
+            <p className="text-[13px] text-[#b09e8d]">No rules yet - add a pipeline and the staff to assign.</p>
           )}
           {mapping.map((row, i) => {
             const rowStaffIds: string[] = Array.isArray(row.staff_ids) ? row.staff_ids : (row.staff_id ? [row.staff_id] : []);
@@ -1582,7 +1584,7 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
             return (
               <div key={i} className="border border-gray-200 rounded-lg p-2.5 space-y-2">
                 <div className="flex items-center gap-2">
-                  <select value={row.pipeline_id} onChange={(e) => updateMappingPipeline(i, e.target.value)} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white outline-none focus:border-primary">
+                  <select value={row.pipeline_id} onChange={(e) => updateMappingPipeline(i, e.target.value)} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-[14px] bg-white outline-none focus:border-primary">
                     <option value="">Pipeline…</option>
                     {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
@@ -1596,7 +1598,7 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
                     </span>
                   ))}
                   {rowUnselected.length > 0 && (
-                    <select value="" onChange={(e) => { if (e.target.value) addStaffToRow(i, e.target.value); }} className="text-[12px] border border-dashed border-gray-300 rounded-md px-2 py-0.5 bg-white outline-none text-[#7a6b5c] cursor-pointer">
+                    <select value="" onChange={(e) => { if (e.target.value) addStaffToRow(i, e.target.value); }} className="text-[13px] border border-dashed border-gray-300 rounded-md px-2 py-0.5 bg-white outline-none text-[#7a6b5c] cursor-pointer">
                       <option value="">+ Add staff…</option>
                       {rowUnselected.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
@@ -1608,14 +1610,14 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
               </div>
             );
           })}
-          <button type="button" onClick={addMappingRow} className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:opacity-80 transition-opacity">
+          <button type="button" onClick={addMappingRow} className="flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:opacity-80 transition-opacity">
             <Plus className="w-3.5 h-3.5" /> Add Rule
           </button>
         </div>
       ) : (
       <>{/* Select Staff */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#1c1410] mb-1.5">
+        <label className="block text-[14px] font-semibold text-[#1c1410] mb-1.5">
           Select Staff <span className="text-red-500">*</span>
         </label>
         <div ref={ref} className="relative">
@@ -1624,12 +1626,12 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
             onClick={() => setOpen((v) => !v)}
           >
             {selectedStaff.length === 0 && (
-              <span className="text-[13px] text-gray-400 self-center">Select staff...</span>
+              <span className="text-[14px] text-gray-400 self-center">Select staff...</span>
             )}
             {selectedStaff.map((s) => (
               <span
                 key={s.id}
-                className="inline-flex items-center gap-1.5 bg-orange-500 text-white text-[12px] font-medium px-2.5 py-1 rounded-md"
+                className="inline-flex items-center gap-1.5 bg-orange-500 text-white text-[13px] font-medium px-2.5 py-1 rounded-md"
               >
                 <button
                   type="button"
@@ -1645,7 +1647,7 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
               {unselected.map((s) => (
                 <div
                   key={s.id}
-                  className="px-3 py-2 text-[13px] text-[#1c1410] hover:bg-gray-50 cursor-pointer"
+                  className="px-3 py-2 text-[14px] text-[#1c1410] hover:bg-gray-50 cursor-pointer"
                   onClick={(e) => { e.stopPropagation(); addStaff(s.id); }}
                 >
                   {s.name}
@@ -1654,19 +1656,19 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
             </div>
           )}
           {open && unselected.length === 0 && (
-            <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-2 text-center text-[12px] text-gray-400">
+            <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-2 text-center text-[13px] text-gray-400">
               All staff selected
             </div>
           )}
         </div>
       </div>
 
-      {/* Split Traffic — only when 2+ staff */}
+      {/* Split Traffic - only when 2+ staff */}
       {isMulti && (
         <div>
-          <label className="block text-[13px] font-semibold text-[#1c1410] mb-1.5">Split Traffic</label>
+          <label className="block text-[14px] font-semibold text-[#1c1410] mb-1.5">Split Traffic</label>
           <select
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-[13px] bg-white outline-none focus:border-primary"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-[14px] bg-white outline-none focus:border-primary"
             value={splitMode}
             onChange={(e) => handleSplitModeChange(e.target.value)}
           >
@@ -1676,10 +1678,10 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
         </div>
       )}
 
-      {/* Traffic distribution — only when 2+ staff */}
+      {/* Traffic distribution - only when 2+ staff */}
       {isMulti && (
         <div className="space-y-2">
-          <p className="text-[13px] font-semibold text-[#1c1410]">
+          <p className="text-[14px] font-semibold text-[#1c1410]">
             Traffic Weightage
             {splitMode === 'evenly' && <span className="ml-2 text-[11px] font-normal text-muted-foreground">(round-robin - each staff gets equal turns)</span>}
           </p>
@@ -1688,21 +1690,21 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
             const evenPct = Math.round(100 / selectedIds.length);
             return (
               <div key={s.id} className="flex items-center gap-3">
-                <span className="flex-1 text-[13px] text-[#1c1410] truncate">{s.name}</span>
+                <span className="flex-1 text-[14px] text-[#1c1410] truncate">{s.name}</span>
                 {splitMode === 'weighted' ? (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <input
                       type="number"
                       min={1}
                       max={99}
-                      className="w-16 border border-gray-300 rounded-lg px-2 py-1.5 text-[13px] text-center bg-white outline-none focus:border-primary"
+                      className="w-16 border border-gray-300 rounded-lg px-2 py-1.5 text-[14px] text-center bg-white outline-none focus:border-primary"
                       value={weights[s.id] ?? evenPct}
                       onChange={(e) => setWeight(s.id, Math.max(1, Math.min(99, parseInt(e.target.value) || 0)))}
                     />
-                    <span className="text-[13px] text-muted-foreground">%</span>
+                    <span className="text-[14px] text-muted-foreground">%</span>
                   </div>
                 ) : (
-                  <span className="text-[13px] font-semibold text-primary shrink-0">{evenPct}%</span>
+                  <span className="text-[14px] font-semibold text-primary shrink-0">{evenPct}%</span>
                 )}
               </div>
             );
@@ -1728,7 +1730,7 @@ function AssignStaffPanel({ cfg, staff, pipelines, onUpdate }: {
           checked={!!(cfg.unassignedOnly)}
           onCheckedChange={(v) => onUpdate({ config: { ...cfg, unassignedOnly: v } })}
         />
-        <span className="text-[13px] text-[#1c1410]">Only apply to unassigned contacts.</span>
+        <span className="text-[14px] text-[#1c1410]">Only apply to unassigned contacts.</span>
       </div>
     </div>
   );
@@ -1781,7 +1783,7 @@ function WaTemplatesModal({ onClose, onSelect }: { onClose: () => void; onSelect
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this template?')) return;
+    if (!(await confirmDialog({ message: 'Delete this template?' }))) return;
     await fetch(`${BASE}/api/wa-personal-templates/${id}`, { method: 'DELETE', headers: (() => { const t = getAccessToken(); return t ? { Authorization: `Bearer ${t}` } : {}; })(), credentials: 'include' });
     toast.success('Deleted');
     load();
@@ -2265,7 +2267,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 <button
                   type="button"
                   onClick={() => setVarPickerOpen(true)}
-                  className="px-3 py-2 rounded-lg border border-border text-[12px] font-semibold text-primary hover:bg-primary/5 whitespace-nowrap"
+                  className="px-3 py-2 rounded-lg border border-border text-[13px] font-semibold text-primary hover:bg-primary/5 whitespace-nowrap"
                 >
                   Variables
                 </button>
@@ -2294,7 +2296,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                         <button key={f.variable} type="button"
                           onClick={() => insertVar(f.variable)}
                           className="w-full text-left px-4 py-2.5 hover:bg-gray-50 rounded-lg flex items-center justify-between group">
-                          <span className="text-[13px] text-gray-800">{f.name}</span>
+                          <span className="text-[14px] text-gray-800">{f.name}</span>
                           <span className="text-[11px] font-mono text-gray-400 group-hover:text-primary">{f.variable}</span>
                         </button>
                       ))}
@@ -2941,9 +2943,9 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
         const [cvOpen, setCvOpen] = useState<{ section: 'body'|'header'; idx: number } | null>(null);
         const [cvTab, setCvTab]   = useState<string>(systemFields[0]?.group ?? 'Contact');
 
-        // Build tabs dynamically — all data fetched from API via store (no frontend constants)
+        // Build tabs dynamically - all data fetched from API via store (no frontend constants)
         const systemGroups = Array.from(new Set(systemFields.map((f) => f.group)));
-        // assigned_to_staff is excluded from Contact tab — CRM tab covers it via {assigned_staff}
+        // assigned_to_staff is excluded from Contact tab - CRM tab covers it via {assigned_staff}
         const EXCLUDED_SLUGS = new Set(['assigned_to_staff']);
         const slugifyToken = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
         const cvTabs = [
@@ -2996,23 +2998,23 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
         return (<>
           {/* HTTP Method */}
           <div>
-            <label className="text-[13px] font-semibold text-gray-700 block mb-1.5">HTTP Method</label>
-            <select className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none bg-white" value={method} onChange={sel('method')}>
+            <label className="text-[14px] font-semibold text-gray-700 block mb-1.5">HTTP Method</label>
+            <select className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none bg-white" value={method} onChange={sel('method')}>
               <option>POST</option><option>GET</option><option>PUT</option><option>PATCH</option>
             </select>
           </div>
 
           {/* Endpoint */}
           <div>
-            <label className="text-[13px] font-semibold text-gray-700 block mb-1.5">Endpoint</label>
-            <input type="url" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-gray-400"
+            <label className="text-[14px] font-semibold text-gray-700 block mb-1.5">Endpoint</label>
+            <input type="url" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-gray-400"
               value={(cfg.url as string) ?? ''} onChange={sel('url')}
               placeholder="https://n8n.srv932301.hstgr.cloud/webhook-test/..." />
           </div>
 
-          {/* Webhook Type — full-width stacked cards */}
+          {/* Webhook Type - full-width stacked cards */}
           <div>
-            <label className="text-[13px] font-semibold text-gray-700 block mb-2">Webhook Type</label>
+            <label className="text-[14px] font-semibold text-gray-700 block mb-2">Webhook Type</label>
             <div className="space-y-2">
               {/* Real-Time */}
               {(() => {
@@ -3027,8 +3029,8 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                           <Zap className="w-4 h-4 text-green-600" />
                         </div>
                         <div>
-                          <p className={`text-[14px] font-bold ${isSelected ? 'text-green-600' : 'text-gray-800'}`}>Real-Time Webhook</p>
-                          <p className="text-[12px] text-gray-500 mt-0.5">Triggers immediately when the workflow reaches this step.</p>
+                          <p className={`text-[15px] font-bold ${isSelected ? 'text-green-600' : 'text-gray-800'}`}>Real-Time Webhook</p>
+                          <p className="text-[13px] text-gray-500 mt-0.5">Triggers immediately when the workflow reaches this step.</p>
                           <div className="flex gap-3 mt-2">
                             <button type="button" onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
                               className="text-[11px] text-green-600 font-semibold flex items-center gap-0.5 hover:underline">
@@ -3064,8 +3066,8 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                           <Clock className="w-4 h-4 text-orange-500" />
                         </div>
                         <div>
-                          <p className={`text-[14px] font-bold ${isSelected ? 'text-orange-500' : 'text-gray-800'}`}>Time-Aware Webhook</p>
-                          <p className="text-[12px] text-gray-500 mt-0.5">Triggers only if the action is within the allowed time window.</p>
+                          <p className={`text-[15px] font-bold ${isSelected ? 'text-orange-500' : 'text-gray-800'}`}>Time-Aware Webhook</p>
+                          <p className="text-[13px] text-gray-500 mt-0.5">Triggers only if the action is within the allowed time window.</p>
                           <div className="flex gap-3 mt-2">
                             <button type="button" onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
                               className="text-[11px] text-orange-500 font-semibold flex items-center gap-0.5 hover:underline">
@@ -3093,13 +3095,13 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
           {/* Time window (only if time_aware) */}
           {webhookType === 'time_aware' && (
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 space-y-3">
-              <p className="text-[13px] font-semibold text-orange-800">Allowed Time Window</p>
+              <p className="text-[14px] font-semibold text-orange-800">Allowed Time Window</p>
               <div className="flex items-center gap-2">
-                <input type="time" className="border border-orange-200 bg-white rounded-lg px-2 py-1.5 text-[13px] outline-none"
+                <input type="time" className="border border-orange-200 bg-white rounded-lg px-2 py-1.5 text-[14px] outline-none"
                   value={(cfg.time_start as string) ?? '09:00'}
                   onChange={(e) => onUpdate({ config: { ...cfg, time_start: e.target.value } })} />
-                <span className="text-[12px] text-gray-500">to</span>
-                <input type="time" className="border border-orange-200 bg-white rounded-lg px-2 py-1.5 text-[13px] outline-none"
+                <span className="text-[13px] text-gray-500">to</span>
+                <input type="time" className="border border-orange-200 bg-white rounded-lg px-2 py-1.5 text-[14px] outline-none"
                   value={(cfg.time_end as string) ?? '18:00'}
                   onChange={(e) => onUpdate({ config: { ...cfg, time_end: e.target.value } })} />
               </div>
@@ -3110,7 +3112,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                   return (
                     <button key={day} type="button"
                       onClick={() => onUpdate({ config: { ...cfg, time_days: active ? days.filter((d) => d !== day) : [...days, day] } })}
-                      className={`px-3 py-1 rounded-lg text-[12px] font-semibold border transition-colors ${active ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-500 border-gray-200'}`}
+                      className={`px-3 py-1 rounded-lg text-[13px] font-semibold border transition-colors ${active ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-500 border-gray-200'}`}
                     >{day}</button>
                   );
                 })}
@@ -3121,8 +3123,8 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
           {/* Request Type */}
           {hasBody && (
             <div>
-              <label className="text-[13px] font-semibold text-gray-700 block mb-1.5">Request Type</label>
-              <select className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none bg-white"
+              <label className="text-[14px] font-semibold text-gray-700 block mb-1.5">Request Type</label>
+              <select className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none bg-white"
                 value={requestFormat}
                 onChange={(e) => onUpdate({ config: { ...cfg, request_format: e.target.value } })}>
                 <option value="json">JSON</option>
@@ -3138,7 +3140,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-gray-500" />
-                    <span className="text-[14px] font-bold text-gray-800">Body</span>
+                    <span className="text-[15px] font-bold text-gray-800">Body</span>
                   </div>
                   {/* Mode toggle */}
                   <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
@@ -3154,7 +3156,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                     </button>
                   </div>
                 </div>
-                <p className="text-[12px] text-gray-500 mt-0.5">
+                <p className="text-[13px] text-gray-500 mt-0.5">
                   {bodyMode === 'raw' ? 'Write nested JSON with variable tokens like {first_name}, {%city%}' : requestFormat === 'form' ? 'Form fields sent as the request body' : 'JSON fields sent as the request body'}
                 </p>
               </div>
@@ -3166,7 +3168,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                     value={rawPayload}
                     onChange={(e) => onUpdate({ config: { ...cfg, payload: e.target.value } })}
                     placeholder={`{\n  "first_name": "{first_name}",\n  "email": "{email}",\n  "phone": "{phone}",\n  "city": "{%city%}",\n  "extra": {\n    "First Name": "{first_name}",\n    "Grams": "{%grams%}",\n    "Pincode": "{%pincode%}",\n    "City": "{%city%}"\n  }\n}`}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[12px] font-mono outline-none focus:border-gray-400 resize-none bg-gray-50"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] font-mono outline-none focus:border-gray-400 resize-none bg-gray-50"
                   />
                   <p className="text-[11px] text-gray-400">
                     Supports: <code className="bg-gray-100 px-1 rounded">{'{first_name}'}</code> <code className="bg-gray-100 px-1 rounded">{'{email}'}</code> <code className="bg-gray-100 px-1 rounded">{'{phone}'}</code> <code className="bg-gray-100 px-1 rounded">{'{pipeline}'}</code> <code className="bg-gray-100 px-1 rounded">{'{assigned_staff}'}</code> <code className="bg-gray-100 px-1 rounded">{'{%city%}'}</code> <code className="bg-gray-100 px-1 rounded">{'{%grams%}'}</code> etc.
@@ -3178,10 +3180,10 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                     <div key={i} className="flex gap-2 items-center">
                       <input placeholder="Key" value={row.key}
                         onChange={(e) => updateRow(bodyFields, updateBodyFields, i, { key: e.target.value })}
-                        className="w-[45%] border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400" />
+                        className="w-[45%] border border-gray-200 rounded-lg px-3 py-2 text-[14px] outline-none focus:border-gray-400" />
                       <input placeholder="Value" value={row.value}
                         onChange={(e) => updateRow(bodyFields, updateBodyFields, i, { value: e.target.value })}
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400" />
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[14px] outline-none focus:border-gray-400" />
                       <button type="button" title="Insert variable"
                         onClick={() => { setCvOpen({ section: 'body', idx: i }); setCvTab(cvTabs[0]?.id ?? ''); }}
                         className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 shrink-0">
@@ -3194,10 +3196,10 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                     </div>
                   ))}
                   {bodyFields.length === 0 && (
-                    <p className="text-[12px] text-gray-400 text-center py-2">No fields - full lead object sent by default</p>
+                    <p className="text-[13px] text-gray-400 text-center py-2">No fields - full lead object sent by default</p>
                   )}
                   <button type="button" onClick={() => addRow(bodyFields, updateBodyFields)}
-                    className="mt-1 flex items-center gap-1 text-[13px] text-gray-500 border border-dashed border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 w-full justify-center">
+                    className="mt-1 flex items-center gap-1 text-[14px] text-gray-500 border border-dashed border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 w-full justify-center">
                     <Plus className="w-3.5 h-3.5" /> Add Item
                   </button>
                 </div>
@@ -3210,19 +3212,19 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
             <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
               <div className="flex items-center gap-2">
                 <Code2 className="w-4 h-4 text-gray-500" />
-                <span className="text-[14px] font-bold text-gray-800">Headers</span>
+                <span className="text-[15px] font-bold text-gray-800">Headers</span>
               </div>
-              <p className="text-[12px] text-gray-500 mt-0.5">Custom HTTP headers sent with the webhook request</p>
+              <p className="text-[13px] text-gray-500 mt-0.5">Custom HTTP headers sent with the webhook request</p>
             </div>
             <div className="p-4 space-y-2">
               {headerFields.map((row, i) => (
                 <div key={i} className="flex gap-2 items-center">
                   <input placeholder="Key" value={row.key}
                     onChange={(e) => updateRow(headerFields, updateHeaderFields, i, { key: e.target.value })}
-                    className="w-[38%] border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400" />
+                    className="w-[38%] border border-gray-200 rounded-lg px-3 py-2 text-[14px] outline-none focus:border-gray-400" />
                   <input placeholder="Value" value={row.value}
                     onChange={(e) => updateRow(headerFields, updateHeaderFields, i, { value: e.target.value })}
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-gray-400" />
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[14px] outline-none focus:border-gray-400" />
                   <button type="button" title="Insert variable"
                     onClick={() => { setCvOpen({ section: 'header', idx: i }); setCvTab(cvTabs[0]?.id ?? ''); }}
                     className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 shrink-0">
@@ -3235,10 +3237,10 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 </div>
               ))}
               {headerFields.length === 0 && (
-                <p className="text-[12px] text-gray-400 text-center py-2">No custom headers</p>
+                <p className="text-[13px] text-gray-400 text-center py-2">No custom headers</p>
               )}
               <button type="button" onClick={() => addRow(headerFields, updateHeaderFields)}
-                className="mt-1 flex items-center gap-1 text-[13px] text-gray-500 border border-dashed border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 w-full justify-center">
+                className="mt-1 flex items-center gap-1 text-[14px] text-gray-500 border border-dashed border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 w-full justify-center">
                 <Plus className="w-3.5 h-3.5" /> Add Item
               </button>
             </div>
@@ -3248,8 +3250,8 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[13px] font-semibold text-gray-800 block">Save response to field</span>
-                <span className="text-[12px] text-gray-500">Store the API response value in a custom field</span>
+                <span className="text-[14px] font-semibold text-gray-800 block">Save response to field</span>
+                <span className="text-[13px] text-gray-500">Store the API response value in a custom field</span>
               </div>
               <Switch checked={!!(cfg.save_response)} onCheckedChange={(v) => onUpdate({ config: { ...cfg, save_response: v } })} />
             </div>
@@ -3289,7 +3291,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                   {cvTabs.map((tab) => (
                     <button key={tab.id} type="button"
                       onClick={() => setCvTab(tab.id)}
-                      className={`px-4 py-3 text-[13px] font-semibold border-b-2 transition-colors -mb-px ${(cvTab === tab.id || (!cvTab && cvTabs[0]?.id === tab.id)) ? 'border-gray-800 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+                      className={`px-4 py-3 text-[14px] font-semibold border-b-2 transition-colors -mb-px ${(cvTab === tab.id || (!cvTab && cvTabs[0]?.id === tab.id)) ? 'border-gray-800 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
                       {tab.label}
                     </button>
                   ))}
@@ -3297,14 +3299,14 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 {/* Field list */}
                 <div className="overflow-y-auto flex-1 px-2 py-2">
                   {((cvTabs.find((t) => t.id === cvTab) ?? cvTabs[0])?.fields ?? []).length === 0 ? (
-                    <p className="text-[13px] text-gray-400 text-center py-8">No fields found</p>
+                    <p className="text-[14px] text-gray-400 text-center py-8">No fields found</p>
                   ) : (
                     ((cvTabs.find((t) => t.id === cvTab) ?? cvTabs[0])?.fields ?? []).map((field) => (
                       <div key={field.variable}
                         className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-gray-50 group">
                         <div>
-                          <p className="text-[14px] font-semibold text-gray-900">{field.name}</p>
-                          <p className="text-[12px] text-gray-400 font-mono mt-0.5">{field.variable}</p>
+                          <p className="text-[15px] font-semibold text-gray-900">{field.name}</p>
+                          <p className="text-[13px] text-gray-400 font-mono mt-0.5">{field.variable}</p>
                         </div>
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button type="button"
@@ -3399,7 +3401,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 ))}
               </select>
               {!selectedSetId && (
-                <p className="text-[11px] text-red-500 font-medium mt-1">⚠ You must select a routing set - the node will be skipped until one is chosen.</p>
+                <p className="text-[11px] text-red-500 font-medium mt-1 flex items-start gap-1"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />You must select a routing set - the node will be skipped until one is chosen.</p>
               )}
               {selectedSet && (
                 <p className="text-[11px] text-blue-600 mt-1">
@@ -3431,7 +3433,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 ))}
               </select>
               {!selectedSlug && (
-                <p className="text-[11px] text-red-500 font-medium mt-1">⚠ You must select a field - the node will be skipped until one is chosen.</p>
+                <p className="text-[11px] text-red-500 font-medium mt-1 flex items-start gap-1"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />You must select a field - the node will be skipped until one is chosen.</p>
               )}
               {selectedField && (
                 <p className="text-[11px] text-blue-600 mt-1">
@@ -3473,7 +3475,7 @@ function ActionConfigPanel({ node, onUpdate, pipelines, staff, templates, workfl
                 ))}
               </select>
               {!(cfg.fallback_pipeline_id) && (
-                <p className="text-[11px] text-amber-600 font-medium mt-1">⚠ Select a pipeline - unmatched leads will be skipped until one is chosen.</p>
+                <p className="text-[11px] text-amber-600 font-medium mt-1 flex items-start gap-1"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />Select a pipeline - unmatched leads will be skipped until one is chosen.</p>
               )}
             </FieldRow>
           )}
@@ -3537,7 +3539,7 @@ function TriggerPickerModal({ onClose, onSelect }: {
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
           <div>
             <h3 className="font-bold text-[18px] text-[#1c1410]">Choose a Trigger</h3>
-            <p className="text-[12px] text-[#7a6b5c] mt-0.5">The event that starts this automation</p>
+            <p className="text-[13px] text-[#7a6b5c] mt-0.5">The event that starts this automation</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -3545,7 +3547,7 @@ function TriggerPickerModal({ onClose, onSelect }: {
               <input
                 value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search triggers…"
-                className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-[13px] outline-none focus:border-primary/50 w-48 bg-[var(--app-bg)] focus:bg-white transition-colors"
+                className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-[14px] outline-none focus:border-primary/50 w-48 bg-[var(--app-bg)] focus:bg-white transition-colors"
               />
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center transition-colors">
@@ -3565,7 +3567,7 @@ function TriggerPickerModal({ onClose, onSelect }: {
                 const isActive = activeCategory === cat.id;
                 return (
                   <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-                    className={cn('w-full flex items-center justify-between px-4 py-2.5 text-[12px] font-medium transition-all text-left',
+                    className={cn('w-full flex items-center justify-between px-4 py-2.5 text-[13px] font-medium transition-all text-left',
                       isActive ? 'bg-white text-[#1c1410] font-bold border-r-2 border-primary' : 'text-[#7a6b5c] hover:bg-white/70'
                     )}>
                     <div className="flex items-center gap-2 min-w-0">
@@ -3593,7 +3595,7 @@ function TriggerPickerModal({ onClose, onSelect }: {
                   <Zap className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold text-[#1c1410]">{currentCat.label}</p>
+                  <p className="text-[14px] font-bold text-[#1c1410]">{currentCat.label}</p>
                   <p className="text-[10px] text-[#7a6b5c]">{currentCat.items.length} trigger{currentCat.items.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
@@ -3616,7 +3618,7 @@ function TriggerPickerModal({ onClose, onSelect }: {
                       <item.Icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <p className="text-[12px] font-bold text-[#1c1410] leading-snug">{item.label}</p>
+                      <p className="text-[13px] font-bold text-[#1c1410] leading-snug">{item.label}</p>
                       {'catLabel' in item && search && (
                         <p className="text-[10px] text-[#7a6b5c] mt-0.5">{(item as any).catLabel}</p>
                       )}
@@ -3662,7 +3664,7 @@ function ActionPickerModal({ onClose, onSelect }: { onClose: () => void; onSelec
         <div className="flex items-start justify-between px-7 pt-6 pb-4 shrink-0">
           <div>
             <h3 className="font-bold text-[20px] text-[#1c1410]">Add an Action</h3>
-            <p className="text-[13px] text-[#7a6b5c] mt-0.5">Choose what happens next in your automation</p>
+            <p className="text-[14px] text-[#7a6b5c] mt-0.5">Choose what happens next in your automation</p>
           </div>
           <div className="flex items-center gap-3 mt-0.5">
             <div className="relative">
@@ -3671,7 +3673,7 @@ function ActionPickerModal({ onClose, onSelect }: { onClose: () => void; onSelec
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); if (e.target.value) setActiveCategory('All'); }}
                 placeholder="Search actions..."
-                className="pl-10 pr-4 py-2 border border-gray-200 rounded-full text-[13px] outline-none focus:border-primary/40 w-52 bg-gray-50 focus:bg-white transition-colors"
+                className="pl-10 pr-4 py-2 border border-gray-200 rounded-full text-[14px] outline-none focus:border-primary/40 w-52 bg-gray-50 focus:bg-white transition-colors"
               />
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-700">
@@ -3693,7 +3695,7 @@ function ActionPickerModal({ onClose, onSelect }: { onClose: () => void; onSelec
                 <button
                   key={cat}
                   onClick={() => { setActiveCategory(cat); setSearchQuery(''); }}
-                  className={cn('w-full flex items-center gap-3 px-5 py-3 text-[13px] font-medium transition-all text-left relative',
+                  className={cn('w-full flex items-center gap-3 px-5 py-3 text-[14px] font-medium transition-all text-left relative',
                     isActive ? 'text-[#1c1410] font-bold' : 'text-[#7a6b5c] hover:text-[#1c1410]'
                   )}
                 >
@@ -3714,7 +3716,7 @@ function ActionPickerModal({ onClose, onSelect }: { onClose: () => void; onSelec
           {/* Right: 2-col card list */}
           <div className="flex-1 overflow-y-auto px-5 py-3">
             {searchQuery && (
-              <p className="text-[12px] text-[#7a6b5c] mb-3 px-1">
+              <p className="text-[13px] text-[#7a6b5c] mb-3 px-1">
                 <span className="font-bold text-[#1c1410]">{filtered.length}</span> results for "{searchQuery}"
               </p>
             )}
@@ -3735,7 +3737,7 @@ function ActionPickerModal({ onClose, onSelect }: { onClose: () => void; onSelec
                       <action.Icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-[#1c1410] leading-snug">{action.label}</p>
+                      <p className="text-[14px] font-bold text-[#1c1410] leading-snug">{action.label}</p>
                       <p className="text-[11px] text-[#7a6b5c] mt-0.5 leading-snug line-clamp-1">{action.desc}</p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-primary transition-colors shrink-0" />
@@ -4001,7 +4003,7 @@ function CanvasNode({ node, idx, selectedNodeId, onSelectNode, onInsertAfter, on
               </span>
               <span className="text-[9px] text-[#b09e8d] font-semibold">#{idx + 1}</span>
             </div>
-            <p className="text-[12px] font-bold text-[#1c1410] leading-snug truncate">
+            <p className="text-[13px] font-bold text-[#1c1410] leading-snug truncate">
               {node.label || <span className="text-[#b09e8d] italic font-normal">Not set</span>}
             </p>
           </div>
@@ -4215,7 +4217,7 @@ function NodeConfigModal({
                 )}>{branchCtx.branch.toUpperCase()} branch</span>
               )}
             </div>
-            <p className="text-[14px] font-bold text-[#1c1410] truncate mt-0.5">{node.label || 'Configure Node'}</p>
+            <p className="text-[15px] font-bold text-[#1c1410] truncate mt-0.5">{node.label || 'Configure Node'}</p>
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
@@ -4228,15 +4230,15 @@ function NodeConfigModal({
           </div>
         </div>
 
-        {/* Tabs — only show AI tab for communication nodes */}
+        {/* Tabs - only show AI tab for communication nodes */}
         {isCommNode && (
           <div className="flex border-b border-black/[0.06] px-5 shrink-0">
             {(['settings', 'ai'] as const).map((t) => (
               <button key={t} onClick={() => setTab(t)}
-                className={cn('pb-2.5 pt-2 mr-5 text-[12px] font-semibold border-b-2 transition-colors capitalize',
+                className={cn('pb-2.5 pt-2 mr-5 text-[13px] font-semibold border-b-2 transition-colors capitalize',
                   tab === t ? 'border-primary text-primary' : 'border-transparent text-[#7a6b5c] hover:text-[#1c1410]'
                 )}>
-                {t === 'ai' ? '✦ AI Generate' : 'Settings'}
+                {t === 'ai' ? <span className="inline-flex items-center gap-1"><Sparkles className="w-3 h-3" />AI Generate</span> : 'Settings'}
               </button>
             ))}
           </div>
@@ -4248,7 +4250,7 @@ function NodeConfigModal({
             /* AI Generate tab */
             <div className="space-y-3">
               <textarea
-                className="w-full border border-purple-100 rounded-xl px-3 py-2.5 text-[13px] bg-purple-50/50 focus:border-purple-300 outline-none resize-none placeholder:text-purple-300"
+                className="w-full border border-purple-100 rounded-xl px-3 py-2.5 text-[14px] bg-purple-50/50 focus:border-purple-300 outline-none resize-none placeholder:text-purple-300"
                 rows={3}
                 placeholder="Describe what to generate… e.g. Follow-up email for sales leads"
                 value={aiPrompt}
@@ -4279,10 +4281,10 @@ function NodeConfigModal({
               <button
                 onClick={() => { onAIGenerate(); setTab('settings'); }}
                 disabled={!aiPrompt.trim()}
-                className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white transition-all disabled:opacity-40"
+                className="w-full py-2.5 rounded-xl text-[13px] font-bold text-white transition-all disabled:opacity-40"
                 style={{ background: 'linear-gradient(135deg, #7c3aed, #9333ea)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}
               >
-                ✦ Generate Content
+                <Sparkles className="w-3.5 h-3.5 inline mr-1" />Generate Content
               </button>
             </div>
           ) : (
@@ -4302,7 +4304,7 @@ function NodeConfigModal({
         <div className="flex gap-2 px-5 py-4 border-t border-black/[0.06] bg-[var(--app-bg)] shrink-0">
           <button
             onClick={handleSaveClose}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all"
+            className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all"
             style={{ background: 'linear-gradient(135deg,var(--brand-dark),var(--brand))', boxShadow: '0 2px 8px rgba(234,88,12,0.25)' }}
           >
             <Check className="w-3.5 h-3.5 inline mr-1" /> Save & Close
@@ -4310,7 +4312,7 @@ function NodeConfigModal({
           {isTrigger && (
             <button
               onClick={() => { onChangeTrigger(); onClose(); }}
-              className="flex-1 py-2.5 rounded-xl text-[13px] font-bold border border-primary/30 text-primary hover:bg-primary/5 transition-all"
+              className="flex-1 py-2.5 rounded-xl text-[14px] font-bold border border-primary/30 text-primary hover:bg-primary/5 transition-all"
             >
               Change Trigger
             </button>
@@ -4318,7 +4320,7 @@ function NodeConfigModal({
           {!isTrigger && node.type !== 'condition' && (
             <button
               onClick={onChangeAction}
-              className="flex-1 py-2.5 rounded-xl text-[13px] font-bold border border-primary/30 text-primary hover:bg-primary/5 transition-all"
+              className="flex-1 py-2.5 rounded-xl text-[14px] font-bold border border-primary/30 text-primary hover:bg-primary/5 transition-all"
             >
               Change Action
             </button>
@@ -4395,11 +4397,11 @@ function TestWorkflowModal({ workflowId, onClose, onTestStart, onTestDone }: {
 
           {/* Contact search */}
           <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Select Contact</label>
+            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Select Contact</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <input
-                className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-[13px] outline-none focus:border-primary/40 placeholder:text-gray-400 bg-white"
+                className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-[14px] outline-none focus:border-primary/40 placeholder:text-gray-400 bg-white"
                 placeholder="Search by name, email, or phone..."
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setSelected(null); }}
@@ -4420,7 +4422,7 @@ function TestWorkflowModal({ workflowId, onClose, onTestStart, onTestDone }: {
                         {(parts[0]?.[0] ?? '').toUpperCase()}{(parts[1]?.[0] ?? '').toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-semibold text-[#1c1410] truncate">{r.name}</p>
+                        <p className="text-[14px] font-semibold text-[#1c1410] truncate">{r.name}</p>
                         <p className="text-[11px] text-[#7a6b5c] truncate">{[r.phone, r.email].filter(Boolean).join(' · ')}</p>
                       </div>
                     </button>
@@ -4434,7 +4436,7 @@ function TestWorkflowModal({ workflowId, onClose, onTestStart, onTestDone }: {
                   {selected.name.split(' ').map((p) => p[0]).slice(0,2).join('').toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-[#1c1410]">{selected.name}</p>
+                  <p className="text-[14px] font-semibold text-[#1c1410]">{selected.name}</p>
                   {selected.phone && <p className="text-[11px] text-[#7a6b5c]">{selected.phone}</p>}
                 </div>
                 <button onClick={() => { setSelected(null); setSearch(''); }} className="text-gray-400 hover:text-red-500 transition-colors">
@@ -4446,7 +4448,7 @@ function TestWorkflowModal({ workflowId, onClose, onTestStart, onTestDone }: {
 
           {/* Result */}
           {done && (
-            <div className={cn('flex items-start gap-2.5 px-4 py-3 rounded-xl text-[12px] font-medium', done.success ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200')}>
+            <div className={cn('flex items-start gap-2.5 px-4 py-3 rounded-xl text-[13px] font-medium', done.success ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200')}>
               <div className={cn('w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white text-[10px] font-bold', done.success ? 'bg-emerald-500' : 'bg-red-500')}>
                 {done.success ? '✓' : '✕'}
               </div>
@@ -4457,11 +4459,11 @@ function TestWorkflowModal({ workflowId, onClose, onTestStart, onTestDone }: {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/[0.06]">
-          <button onClick={onClose} className="px-5 py-2 rounded-xl border border-gray-200 text-[13px] font-semibold text-[#1c1410] hover:bg-gray-50 transition-colors">Close</button>
+          <button onClick={onClose} className="px-5 py-2 rounded-xl border border-gray-200 text-[14px] font-semibold text-[#1c1410] hover:bg-gray-50 transition-colors">Close</button>
           <button
             onClick={runTest}
             disabled={running || !selected}
-            className="px-6 py-2 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-6 py-2 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             style={{ background: 'linear-gradient(135deg,var(--brand-dark) 0%,var(--brand) 55%,var(--brand-light) 100%)' }}
           >
             {running ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Running…</> : <><Play className="w-3.5 h-3.5" /> Run Test</>}
@@ -4494,7 +4496,7 @@ export default function WorkflowEditorPage() {
     }
   );
 
-  // Load from API when navigated directly (no location.state) — covers hard refresh
+  // Load from API when navigated directly (no location.state) - covers hard refresh
   useEffect(() => {
     if (passedWorkflow || !id || id === 'new') return;
     setLoadingWF(true);
@@ -4676,7 +4678,7 @@ export default function WorkflowEditorPage() {
         options: cf.options ?? undefined, orderIndex: cf.order_index ?? 0,
       })));
     }).catch(() => {});
-    // Value tokens (Fields → Values) — the editor runs outside AppLayout, so load
+    // Value tokens (Fields → Values) - the editor runs outside AppLayout, so load
     // them here too; otherwise the Custom Values "Values" tab is empty on a direct load.
     api.get<any[]>('/api/fields/values').then((rows) => {
       useCrmStore.setState({
@@ -4715,7 +4717,7 @@ export default function WorkflowEditorPage() {
   const isFirstRender = useRef(true);
   const justLoadedFromApi = useRef(false);
   const workflowRef = useRef(workflow);
-  // The updated_at the editor last loaded/saved — sent on every save so the server
+  // The updated_at the editor last loaded/saved - sent on every save so the server
   // can reject a stale overwrite (multi-tab safety).
   const baseUpdatedAtRef = useRef<string | null>(passedWorkflow ? null : null);
   const savingRef = useRef(false);      // a PATCH is currently in flight
@@ -4787,7 +4789,7 @@ export default function WorkflowEditorPage() {
       ok = true;
     } catch {
       setSaveStatus('error');
-      // Transient failure / token refresh — retry shortly.
+      // Transient failure / token refresh - retry shortly.
       retryTimer.current = setTimeout(() => { persist({ silent: true }); }, 5000);
     } finally {
       savingRef.current = false;
@@ -4825,7 +4827,7 @@ export default function WorkflowEditorPage() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Refresh pipelines every time node config panel opens — catches pipelines created after editor loaded
+  // Refresh pipelines every time node config panel opens - catches pipelines created after editor loaded
   useEffect(() => {
     if (showNodeModal) refreshPipelines();
   }, [showNodeModal]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -4838,7 +4840,7 @@ export default function WorkflowEditorPage() {
   // Track unsaved changes
   useEffect(() => {
     if (isDirtyFirstRender.current) { isDirtyFirstRender.current = false; return; }
-    // A server-driven reload changed the workflow — that's not a user edit.
+    // A server-driven reload changed the workflow - that's not a user edit.
     if (suppressDirtyRef.current) { suppressDirtyRef.current = false; return; }
     setIsDirty(true);
   }, [workflow.nodes, workflow.name, workflow.description, workflow.status, workflow.allowReentry]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -4946,7 +4948,7 @@ export default function WorkflowEditorPage() {
         setSaving(false);
         return;
       }
-    } catch { /* verification fetch failed; PATCH already succeeded — treat as saved */ }
+    } catch { /* verification fetch failed; PATCH already succeeded - treat as saved */ }
     // Snapshot version on every verified save (Task #12)
     api.post(`/api/workflows/${workflow.id}/snapshot`, {
       name: workflow.name,
@@ -4992,7 +4994,7 @@ export default function WorkflowEditorPage() {
   };
 
   const handleSelectAction = (action: typeof ACTION_LIST[0]) => {
-    // "Change action" mode — update existing selected node in-place instead of inserting
+    // "Change action" mode - update existing selected node in-place instead of inserting
     if (changeActionMode && selectedNode) {
       const patch: Partial<WFNode> = {
         type: action.id === 'delay' ? 'delay' : action.id === 'if_else' ? 'condition' : 'action',
@@ -5112,7 +5114,7 @@ export default function WorkflowEditorPage() {
           <button onClick={() => navigate('/automation')} className="p-1.5 rounded-lg hover:bg-[var(--app-bg)] text-[#7a6b5c] transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-1.5 text-[13px]">
+          <div className="flex items-center gap-1.5 text-[14px]">
             <span className="text-[#b09e8d]">Workflows</span>
             <ChevronRight className="w-3.5 h-3.5 text-[#c4b09e]" />
             {isEditingName ? (
@@ -5162,13 +5164,13 @@ export default function WorkflowEditorPage() {
               <Clock className="w-3 h-3" />{isDirty ? 'Unsaved changes' : (savedAt ? `Saved ${relativeSince(savedAt)}` : 'Not saved yet')}
             </span>
           )}
-          <Button variant="outline" size="sm" onClick={() => navigate(`/automation/analytics/${workflow.id}`)} className="h-8 text-[12px] border-black/[0.1]">
+          <Button variant="outline" size="sm" onClick={() => navigate(`/automation/analytics/${workflow.id}`)} className="h-8 text-[13px] border-black/[0.1]">
             <TrendingUp className="w-3.5 h-3.5 mr-1" />Analytics
           </Button>
-          <Button variant="outline" size="sm" onClick={handleSave} disabled={saving} className="h-8 text-[12px] border-black/[0.1]">
+          <Button variant="outline" size="sm" onClick={handleSave} disabled={saving} className="h-8 text-[13px] border-black/[0.1]">
             {saving ? 'Saving…' : <><Save className="w-3.5 h-3.5 mr-1" />Save</>}
           </Button>
-          <Button size="sm" onClick={() => setShowTestModal(true)} className="h-8 text-[12px] bg-[#1c1410] hover:bg-black text-white">
+          <Button size="sm" onClick={() => setShowTestModal(true)} className="h-8 text-[13px] bg-[#1c1410] hover:bg-black text-white">
             <Play className="w-3 h-3 mr-1" />Test
           </Button>
           <button
@@ -5181,7 +5183,7 @@ export default function WorkflowEditorPage() {
               }
               setWorkflow((w) => ({ ...w, status: w.status === 'active' ? 'inactive' : 'active' }));
             }}
-            className="flex items-center gap-1.5 h-8 px-4 rounded-lg text-[12px] font-bold text-white transition-all"
+            className="flex items-center gap-1.5 h-8 px-4 rounded-lg text-[13px] font-bold text-white transition-all"
             style={publishStyle}
           >
             {workflow.status === 'active' ? <><PauseCircle className="w-3.5 h-3.5" /><span className="ml-1">Pause</span></> : <><Play className="w-3.5 h-3.5" /><span className="ml-1">Publish</span></>}
@@ -5192,17 +5194,17 @@ export default function WorkflowEditorPage() {
             </button>
             {showMenuDropdown && (
               <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-black/[0.06] rounded-xl shadow-xl z-50 py-1 overflow-hidden">
-                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] text-left transition-colors" onClick={() => { setShowMenuDropdown(false); setShowSettingsModal(true); }}>
+                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] text-left transition-colors" onClick={() => { setShowMenuDropdown(false); setShowSettingsModal(true); }}>
                   <Settings className="w-3.5 h-3.5 text-[#7a6b5c]" /> Workflow Settings
                 </button>
-                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] text-left transition-colors" onClick={() => { setShowMenuDropdown(false); toast.info('Workflow duplicated'); }}>
+                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] text-left transition-colors" onClick={() => { setShowMenuDropdown(false); toast.info('Workflow duplicated'); }}>
                   <Copy className="w-3.5 h-3.5 text-[#7a6b5c]" /> Duplicate Workflow
                 </button>
-                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] text-left transition-colors" onClick={() => { setShowMenuDropdown(false); navigate('/automation'); }}>
+                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] text-left transition-colors" onClick={() => { setShowMenuDropdown(false); navigate('/automation'); }}>
                   <ClipboardList className="w-3.5 h-3.5 text-[#7a6b5c]" /> Execution Logs
                 </button>
                 <div className="border-t border-black/[0.05] my-1" />
-                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-red-500 hover:bg-red-50 text-left transition-colors" onClick={() => { setShowMenuDropdown(false); setShowDeleteWorkflowConfirm(true); }}>
+                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-500 hover:bg-red-50 text-left transition-colors" onClick={() => { setShowMenuDropdown(false); setShowDeleteWorkflowConfirm(true); }}>
                   <Trash2 className="w-3.5 h-3.5" /> Delete Workflow
                 </button>
               </div>
@@ -5213,7 +5215,7 @@ export default function WorkflowEditorPage() {
 
       {/* ── Inactive warning banner ── */}
       {workflow.status === 'inactive' && (
-        <div className="flex items-center gap-3 px-5 py-2.5 bg-amber-50 border-b border-amber-200 text-amber-800 text-[12px] font-medium">
+        <div className="flex items-center gap-3 px-5 py-2.5 bg-amber-50 border-b border-amber-200 text-amber-800 text-[13px] font-medium">
           <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
           This workflow is not published. It will not run until you click <strong className="ml-1 mr-1">Publish</strong> in the top-right corner.
         </div>
@@ -5237,7 +5239,7 @@ export default function WorkflowEditorPage() {
             <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#f0ece7]/80 backdrop-blur-sm">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                <p className="text-[13px] font-semibold text-[#7a6b5c]">Loading workflow…</p>
+                <p className="text-[14px] font-semibold text-[#7a6b5c]">Loading workflow…</p>
               </div>
             </div>
           )}
@@ -5292,7 +5294,7 @@ export default function WorkflowEditorPage() {
           {previewContent && (
             <div className="absolute bottom-20 left-5 w-64 bg-white rounded-2xl shadow-2xl border border-black/[0.06] z-20 overflow-hidden" style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-[var(--app-bg)]">
-                <span className="text-[13px] font-bold text-[#1c1410]">Preview</span>
+                <span className="text-[14px] font-bold text-[#1c1410]">Preview</span>
                 <button onClick={() => setPreviewContent(null)} className="w-5 h-5 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors">
                   <X className="w-3 h-3 text-gray-400" />
                 </button>
@@ -5303,7 +5305,7 @@ export default function WorkflowEditorPage() {
 
           </div>{/* end scrollable inner canvas */}
 
-          {/* ── Bottom toolbar — anchored to canvas viewport, never scrolls ── */}
+          {/* ── Bottom toolbar - anchored to canvas viewport, never scrolls ── */}
           <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-[#1c1410] rounded-2xl px-3 py-2 shadow-xl z-20">
             <button title="Undo" onClick={() => {}} className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors">
               <RotateCcw className="w-3.5 h-3.5" />
@@ -5332,7 +5334,7 @@ export default function WorkflowEditorPage() {
           </div>
         </div>
 
-        {/* ── Right Config Panel — resizable ── */}
+        {/* ── Right Config Panel - resizable ── */}
         <div
           className="bg-white border-l border-black/[0.06] flex flex-col shrink-0 overflow-hidden relative transition-[width] duration-200"
           style={{ width: isPanelOpen ? panelWidth : 0, boxShadow: isPanelOpen ? '-2px 0 8px rgba(0,0,0,0.04)' : 'none' }}
@@ -5354,7 +5356,7 @@ export default function WorkflowEditorPage() {
                       <NodeIconRenderer actionType={selectedNode.actionType} />
                     </div>
                     <div>
-                      <p className="text-[14px] font-bold text-[#1c1410] leading-snug">{selectedNode.label || 'Configure Node'}</p>
+                      <p className="text-[15px] font-bold text-[#1c1410] leading-snug">{selectedNode.label || 'Configure Node'}</p>
                       <p className="text-[10px] text-[#7a6b5c]">
                         {selectedNode.type === 'trigger' ? 'Starts the workflow' : selectedNode.type === 'condition' ? 'Splits into branches' : 'Action step'}
                       </p>
@@ -5382,7 +5384,7 @@ export default function WorkflowEditorPage() {
                 <div className="flex gap-0">
                   {(isCommNode ? ['settings', 'history', 'preview'] : ['settings', 'history'] as const).map((tab) => (
                     <button key={tab} onClick={() => setPanelTab(tab as any)}
-                      className={cn('pb-2.5 px-0.5 text-[12px] font-semibold border-b-2 transition-colors capitalize mr-4',
+                      className={cn('pb-2.5 px-0.5 text-[13px] font-semibold border-b-2 transition-colors capitalize mr-4',
                         panelTab === tab ? 'border-primary text-primary' : 'border-transparent text-[#7a6b5c] hover:text-[#1c1410]'
                       )}>
                       {tab}
@@ -5401,7 +5403,7 @@ export default function WorkflowEditorPage() {
                           <Clock className="w-3.5 h-3.5 text-primary" />
                         </div>
                         <div>
-                          <p className="text-[12px] font-semibold text-[#1c1410]">Node saved</p>
+                          <p className="text-[13px] font-semibold text-[#1c1410]">Node saved</p>
                           <p className="text-[10px] text-[#7a6b5c]">{t}</p>
                         </div>
                       </div>
@@ -5415,18 +5417,18 @@ export default function WorkflowEditorPage() {
                         <>
                           <div className="text-[11px] text-[#7a6b5c]"><span className="font-bold text-[#1c1410]">From:</span> {(selectedNode.config.fromName as string) || 'Your Team'}</div>
                           <div className="text-[11px] text-[#7a6b5c]"><span className="font-bold text-[#1c1410]">Subject:</span> {(selectedNode.config.subject as string) || '(no subject)'}</div>
-                          <div className="border-t border-black/[0.06] pt-3 text-[12px] text-[#4a3c30] leading-relaxed whitespace-pre-line">
+                          <div className="border-t border-black/[0.06] pt-3 text-[13px] text-[#4a3c30] leading-relaxed whitespace-pre-line">
                             {((selectedNode.config.content as string) || 'No content yet.').replace('{%first_name%}', 'John').replace('{%email%}', 'john@example.com')}
                           </div>
                         </>
                       )}
                       {(selectedNode?.actionType === 'send_sms' || selectedNode?.actionType === 'send_whatsapp') && (
-                        <div className="text-[12px] text-[#4a3c30] leading-relaxed whitespace-pre-line">
+                        <div className="text-[13px] text-[#4a3c30] leading-relaxed whitespace-pre-line">
                           {((selectedNode.config.message as string) || 'No message yet.').replace('{%first_name%}', 'John')}
                         </div>
                       )}
                       {selectedNode?.actionType === 'internal_notify' && (
-                        <div className="text-[12px] text-[#4a3c30] leading-relaxed">
+                        <div className="text-[13px] text-[#4a3c30] leading-relaxed">
                           {(selectedNode.config.notifType as string) === 'email'
                             ? (<><strong>Subject:</strong> {(selectedNode.config.emailSubject as string) || '(no subject)'}<br/>{(selectedNode.config.emailBody as string) || 'No content yet.'}</>)
                             : ((selectedNode.config.notifType as string) === 'whatsapp_personal' || (selectedNode.config.notifType as string) === 'whatsapp_official')
@@ -5447,16 +5449,16 @@ export default function WorkflowEditorPage() {
                             <div className="w-6 h-6 rounded-lg bg-purple-100 flex items-center justify-center">
                               <Bot className="w-3.5 h-3.5 text-purple-600" />
                             </div>
-                            <span className="text-[12px] font-bold text-purple-800">AI Generate</span>
+                            <span className="text-[13px] font-bold text-purple-800">AI Generate</span>
                           </div>
                           <button onClick={() => setShowAIPanel(!showAIPanel)} className="text-[11px] text-purple-600 font-bold hover:text-purple-800 transition-colors">
-                            {showAIPanel ? 'Hide ↑' : 'Use AI ✦'}
+                            {showAIPanel ? <span className="inline-flex items-center gap-1">Hide <ChevronUp className="w-3 h-3" /></span> : <span className="inline-flex items-center gap-1">Use AI <Sparkles className="w-3 h-3" /></span>}
                           </button>
                         </div>
                         {showAIPanel && (
                           <div className="p-4 bg-white space-y-3">
                             <textarea
-                              className="w-full border border-purple-100 rounded-xl px-3 py-2.5 text-[12px] bg-purple-50/50 focus:border-purple-300 outline-none resize-none placeholder:text-purple-300"
+                              className="w-full border border-purple-100 rounded-xl px-3 py-2.5 text-[13px] bg-purple-50/50 focus:border-purple-300 outline-none resize-none placeholder:text-purple-300"
                               rows={3}
                               placeholder="Describe what to generate… e.g. Follow-up email for sales leads"
                               value={aiPrompt}
@@ -5487,10 +5489,10 @@ export default function WorkflowEditorPage() {
                             <button
                               onClick={handleAIGenerate}
                               disabled={!aiPrompt.trim()}
-                              className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white transition-all disabled:opacity-40"
+                              className="w-full py-2.5 rounded-xl text-[13px] font-bold text-white transition-all disabled:opacity-40"
                               style={{ background: 'linear-gradient(135deg, #7c3aed, #9333ea)', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}
                             >
-                              ✦ Generate Content
+                              <Sparkles className="w-3.5 h-3.5 inline mr-1" />Generate Content
                             </button>
                           </div>
                         )}
@@ -5510,11 +5512,11 @@ export default function WorkflowEditorPage() {
 
               {/* Footer */}
               <div className="flex gap-2 px-5 py-4 border-t border-black/[0.06] shrink-0 bg-[var(--app-bg)]">
-                <Button className="flex-1 text-[12px]" style={{ background: 'linear-gradient(135deg,var(--brand-dark),var(--brand))', color: 'white' }} onClick={() => toast.success('Step saved')}>
+                <Button className="flex-1 text-[13px]" style={{ background: 'linear-gradient(135deg,var(--brand-dark),var(--brand))', color: 'white' }} onClick={() => toast.success('Step saved')}>
                   <Check className="w-3.5 h-3.5 mr-1" /> Save Step
                 </Button>
                 {selectedNodeIsTrigger && (
-                  <Button variant="outline" className="flex-1 border-primary/30 text-primary hover:bg-primary/5 text-[12px]" onClick={() => setShowTriggerPicker(true)}>
+                  <Button variant="outline" className="flex-1 border-primary/30 text-primary hover:bg-primary/5 text-[13px]" onClick={() => setShowTriggerPicker(true)}>
                     Change Trigger
                   </Button>
                 )}
@@ -5604,10 +5606,10 @@ export default function WorkflowEditorPage() {
               <span className="text-amber-600 text-lg font-bold">!</span>
             </div>
             <h3 className="text-[15px] font-bold text-[#1c1410] mb-2">No Trigger Set</h3>
-            <p className="text-[13px] text-[#7a6b5c] mb-6">A workflow must have a trigger before it can be published. Choose a trigger from the trigger node first.</p>
+            <p className="text-[14px] text-[#7a6b5c] mb-6">A workflow must have a trigger before it can be published. Choose a trigger from the trigger node first.</p>
             <button
               onClick={() => setShowNoTriggerPopup(false)}
-              className="w-full py-2.5 rounded-xl bg-[var(--brand-dark)] hover:bg-[var(--brand)] text-white text-[13px] font-bold transition-colors"
+              className="w-full py-2.5 rounded-xl bg-[var(--brand-dark)] hover:bg-[var(--brand)] text-white text-[14px] font-bold transition-colors"
             >
               Got it
             </button>

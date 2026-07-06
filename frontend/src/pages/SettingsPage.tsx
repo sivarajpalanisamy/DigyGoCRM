@@ -3,12 +3,12 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
 const settingsCards = [
-  { title: 'Branding', description: 'Customize logo, favicon, colors, and login page', icon: Palette, iconBg: 'bg-pink-100 text-pink-600', path: '/settings/branding' },
-  { title: 'Company Details', description: 'Manage legal info and workspace identity', icon: Building2, iconBg: 'bg-purple-100 text-purple-600', path: '/settings/company' },
-  { title: 'Security', description: 'Two-factor authentication for your team', icon: ShieldCheck, iconBg: 'bg-emerald-100 text-emerald-600', path: '/settings/security' },
-  { title: 'Dialer Device Pair', description: 'Verify a mobile number (OTP) and manage Hawcus Dialer phones', icon: Smartphone, iconBg: 'bg-blue-100 text-blue-600', path: '/settings/devices' },
+  { title: 'Branding', description: 'Customize logo, favicon, colors, and login page', icon: Palette, iconBg: 'bg-primary/10 text-primary', path: '/settings/branding' },
+  { title: 'Company Details', description: 'Manage legal info and workspace identity', icon: Building2, iconBg: 'bg-primary/10 text-primary', path: '/settings/company' },
+  { title: 'Security', description: 'Two-factor authentication for your team', icon: ShieldCheck, iconBg: 'bg-primary/10 text-primary', path: '/settings/security' },
+  { title: 'Dialer Device Pair', description: 'Verify a mobile number (OTP) and manage Hawcus Dialer phones', icon: Smartphone, iconBg: 'bg-primary/10 text-primary', path: '/settings/devices' },
   { title: 'Integrations', description: 'Connect Meta, WhatsApp, email providers, and more', icon: Plug, iconBg: 'bg-primary/10 text-primary', path: '/settings/integrations' },
-  { title: 'Notifications', description: 'Configure in-app and email notification preferences', icon: Bell, iconBg: 'bg-yellow-100 text-yellow-600', path: '/settings/notifications' },
+  { title: 'Notifications', description: 'Configure in-app and email notification preferences', icon: Bell, iconBg: 'bg-primary/10 text-primary', path: '/settings/notifications' },
 ];
 
 export default function SettingsPage() {
@@ -28,7 +28,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex-1">
               <h3 className="font-headline font-bold text-[#1c1410]">{card.title}</h3>
-              <p className="text-[13px] text-[#7a6b5c] mt-0.5">{card.description}</p>
+              <p className="text-[14px] text-[#7a6b5c] mt-0.5">{card.description}</p>
             </div>
             <ChevronRight className="w-5 h-5 text-[#b09e8d] shrink-0 group-hover:text-primary transition-colors" />
           </button>

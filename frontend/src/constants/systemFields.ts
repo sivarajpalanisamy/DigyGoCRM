@@ -1,4 +1,4 @@
-// Shared system field definitions — single source of truth used by
+// Shared system field definitions - single source of truth used by
 // FieldsPage and the webhook Custom Values modal (and anywhere else).
 // These are system-defined fields; user-created custom fields come from /api/fields/custom.
 
@@ -45,7 +45,7 @@ export const SYSTEM_STANDARD_FIELDS: SystemField[] = [
   { id: 'cal2', name: 'Appointment Start Time', slug: 'calendar.appointment_start_time',  group: 'Calendar', isSystem: true },
   { id: 'cal3', name: 'Appointment End Time',   slug: 'calendar.appointment_end_time',    group: 'Calendar', isSystem: true },
   { id: 'cal4', name: 'Appointment Timezone',   slug: 'calendar.appointment_timezone',    group: 'Calendar', isSystem: true },
-  // CRM — short-form variables resolved at runtime by interpolate()
+  // CRM - short-form variables resolved at runtime by interpolate()
   { id: 'crm1', name: 'Pipeline',       slug: 'pipeline',           group: 'CRM', isSystem: true },
   { id: 'crm2', name: 'Stage',          slug: 'stage',              group: 'CRM', isSystem: true },
   { id: 'crm3', name: 'Assigned Staff', slug: 'assigned_staff',     group: 'CRM', isSystem: true },

@@ -586,7 +586,7 @@ export default function WABABroadcastPage() {
                         <Badge className="border-0 text-[10px] bg-emerald-50 text-emerald-700">{t.language}</Badge>
                       </div>
                       <p className="text-xs text-[#7a6b5c] font-mono mt-0.5">{t.meta_name}</p>
-                      <p className="text-[13px] text-[#4a3c30] mt-2 whitespace-pre-line line-clamp-3">{t.body}</p>
+                      <p className="text-[14px] text-[#4a3c30] mt-2 whitespace-pre-line line-clamp-3">{t.body}</p>
                     </div>
                   </button>
                 ))}
@@ -613,7 +613,7 @@ export default function WABABroadcastPage() {
                         headerFile ? 'border-emerald-400 bg-emerald-100' : 'border-emerald-300 hover:border-emerald-400 bg-white',
                       )}>
                         <Upload className="w-4 h-4 text-emerald-600" />
-                        <span className="text-[12px] text-emerald-800">
+                        <span className="text-[13px] text-emerald-800">
                           {headerFile ? headerFile.name : `Upload ${mediaHeaderFormat} file…`}
                         </span>
                         <input type="file" className="hidden"
@@ -628,7 +628,7 @@ export default function WABABroadcastPage() {
                     ) : headerFile ? (
                       <div className="flex items-center gap-3 border border-emerald-300 bg-emerald-50 rounded-xl px-4 py-3">
                         <Upload className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="text-[12px] text-emerald-800 truncate flex-1">{headerFile.name}</span>
+                        <span className="text-[13px] text-emerald-800 truncate flex-1">{headerFile.name}</span>
                         <button className="text-emerald-600 hover:text-red-500 shrink-0" onClick={() => setHeaderFile(null)}>
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -636,7 +636,7 @@ export default function WABABroadcastPage() {
                     ) : (
                       <div className="flex items-center gap-3 border border-emerald-200 bg-emerald-50/50 rounded-xl px-4 py-3">
                         <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="text-[12px] text-emerald-700 truncate flex-1">
+                        <span className="text-[13px] text-emerald-700 truncate flex-1">
                           {selectedTemplate?.file_name || 'Saved file'} - will be sent automatically
                         </span>
                         <label className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 cursor-pointer shrink-0">
@@ -838,7 +838,7 @@ export default function WABABroadcastPage() {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // LIST VIEW (default) — 2-panel layout
+  // LIST VIEW (default) - 2-panel layout
   // ════════════════════════════════════════════════════════════════════════════
   return (
     <div className="flex flex-col flex-1 min-h-0 -mx-6 -my-5">
@@ -1359,7 +1359,7 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
         </details>
       )}
 
-      {/* Template Preview — WhatsApp bubble style (at bottom) */}
+      {/* Template Preview - WhatsApp bubble style (at bottom) */}
       <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
         <div className="px-5 py-3 border-b border-black/5">
           <h3 className="text-xs font-semibold text-[#7a6b5c] uppercase tracking-wide">Template Sent</h3>
@@ -1367,9 +1367,9 @@ function BroadcastDetailPanel({ bc, onRefresh, onDuplicate }: { bc: BroadcastDet
         <div className="p-4">
           <div className="bg-[#e7fed6] rounded-xl rounded-tr-sm px-4 py-3 max-w-[280px] ml-auto shadow-sm">
             {bc.template_header && (
-              <p className="text-[13px] font-bold text-[#1c1410] mb-1">{bc.template_header}</p>
+              <p className="text-[14px] font-bold text-[#1c1410] mb-1">{bc.template_header}</p>
             )}
-            <p className="text-[13px] text-[#1c1410] whitespace-pre-line leading-relaxed">{bc.template_body}</p>
+            <p className="text-[14px] text-[#1c1410] whitespace-pre-line leading-relaxed">{bc.template_body}</p>
             {bc.template_footer && (
               <p className="text-[11px] text-[#7a6b5c] mt-1.5 italic">{bc.template_footer}</p>
             )}

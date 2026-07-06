@@ -43,7 +43,7 @@ type AdditionalField = StoreAdditionalField;
 
 interface ValueToken {
   id: string;
-  name: string;         // friendly label e.g. "Google Meet link" — token is slugify(name)
+  name: string;         // friendly label e.g. "Google Meet link" - token is slugify(name)
   replaceWith: string;  // actual text
 }
 
@@ -125,14 +125,14 @@ const slugify = (s: string): string => {
   return 'field_' + Math.abs(h).toString(36).slice(0, 8);
 };
 
-const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
+const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Modal: Standard Field (Create / Edit)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Reusable Component: FieldSelector — grouped type picker
+//  Reusable Component: FieldSelector - grouped type picker
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function FieldSelector({ value, onChange }: { value: DataType; onChange: (t: DataType) => void }) {
@@ -161,7 +161,7 @@ function FieldSelector({ value, onChange }: { value: DataType; onChange: (t: Dat
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Reusable Component: OptionBuilder — Name + Value rows, presets, paste-split
+//  Reusable Component: OptionBuilder - Name + Value rows, presets, paste-split
 // ═══════════════════════════════════════════════════════════════════════════════
 
 type OptionItem = { name: string; value: string };
@@ -196,7 +196,7 @@ function OptionBuilder({ options, onChange }: {
 
   return (
     <div>
-      <label className="text-[12px] font-semibold text-[#7a6b5c] mb-2 block">Options</label>
+      <label className="text-[13px] font-semibold text-[#7a6b5c] mb-2 block">Options</label>
       <div className="space-y-1.5">
         {options.map((o, idx) => (
           <div key={idx} className="flex items-center gap-2">
@@ -218,7 +218,7 @@ function OptionBuilder({ options, onChange }: {
         ))}
         <button
           onClick={addOption}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-primary hover:bg-primary/5 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" /> Add option
         </button>
@@ -228,7 +228,7 @@ function OptionBuilder({ options, onChange }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Reusable Component: PreviewRenderer — live preview of the configured field
+//  Reusable Component: PreviewRenderer - live preview of the configured field
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function PreviewRenderer({ name, type, placeholder, required, options }: {
@@ -243,11 +243,11 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
   // Fallback placeholders when no options yet
   const previewOptions = displayOptions.length > 0 ? displayOptions : [{ name: 'Option 1', value: '1' }, { name: 'Option 2', value: '2' }];
   const ph = placeholder || typeInfo.hint;
-  const pvInput = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white';
+  const pvInput = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] bg-white';
 
   return (
     <div className="bg-white rounded-xl border border-black/[0.06] p-4">
-      <label className="text-[12px] font-semibold text-[#1c1410] mb-1.5 block">
+      <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">
         {name || 'Field name'}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
@@ -285,7 +285,7 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
           {previewOptions.map((o, i) => (
             <label key={i} className="flex items-center gap-2">
               <input type="radio" name="preview-radio" disabled className="w-4 h-4 accent-primary" />
-              <span className={cn('text-[13px]', displayOptions.length === 0 ? 'text-[#c4b09e] italic' : 'text-[#1c1410]')}>{o.name}</span>
+              <span className={cn('text-[14px]', displayOptions.length === 0 ? 'text-[#c4b09e] italic' : 'text-[#1c1410]')}>{o.name}</span>
             </label>
           ))}
         </div>
@@ -296,7 +296,7 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
           {previewOptions.map((o, i) => (
             <label key={i} className="flex items-center gap-2">
               <input type="checkbox" disabled className="w-4 h-4 accent-primary" />
-              <span className={cn('text-[13px]', displayOptions.length === 0 ? 'text-[#c4b09e] italic' : 'text-[#1c1410]')}>{o.name}</span>
+              <span className={cn('text-[14px]', displayOptions.length === 0 ? 'text-[#c4b09e] italic' : 'text-[#1c1410]')}>{o.name}</span>
             </label>
           ))}
         </div>
@@ -305,7 +305,7 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
       {type === 'Checkbox' && (
         <label className="flex items-center gap-2">
           <input type="checkbox" className="w-4 h-4 accent-primary" disabled />
-          <span className="text-[13px] text-[#1c1410]">Yes</span>
+          <span className="text-[14px] text-[#1c1410]">Yes</span>
         </label>
       )}
     </div>
@@ -313,7 +313,7 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  StandardFieldModal — composes the 3 components
+//  StandardFieldModal - composes the 3 components
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function StandardFieldModal({ field, onClose, onSave }: {
@@ -383,12 +383,12 @@ function StandardFieldModal({ field, onClose, onSave }: {
         {step === 'detail' && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             <div>
-              <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Name <span className="text-red-400">*</span></label>
+              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Name <span className="text-red-400">*</span></label>
               <input autoFocus className={inputCls} placeholder="e.g. Company Size" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
             <div>
-              <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Placeholder <span className="text-[#b09e8d] font-normal">(optional)</span></label>
+              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Placeholder <span className="text-[#b09e8d] font-normal">(optional)</span></label>
               <input className={inputCls} placeholder="Hint shown inside the empty field" value={placeholder} onChange={(e) => setPlaceholder(e.target.value)} />
             </div>
 
@@ -398,7 +398,7 @@ function StandardFieldModal({ field, onClose, onSave }: {
 
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} className="w-4 h-4 accent-primary" />
-              <span className="text-[13px] text-[#1c1410]">Mark as required</span>
+              <span className="text-[14px] text-[#1c1410]">Mark as required</span>
             </label>
           </div>
         )}
@@ -406,8 +406,8 @@ function StandardFieldModal({ field, onClose, onSave }: {
         {/* Footer */}
         {step === 'detail' && (
           <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-            <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[13px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
+            <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
               {field ? 'Save Changes' : 'Create Field'}
             </button>
           </div>
@@ -494,7 +494,7 @@ function AdditionalFieldModal({ pipelineId, field, onClose, onSave }: {
         {step === 'detail' && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             <div>
-              <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Question <span className="text-red-400">*</span></label>
+              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Question <span className="text-red-400">*</span></label>
               <input autoFocus className={inputCls} placeholder="e.g. What is their budget range?" value={question} onChange={(e) => setQuestion(e.target.value)} />
             </div>
 
@@ -504,7 +504,7 @@ function AdditionalFieldModal({ pipelineId, field, onClose, onSave }: {
 
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} className="w-4 h-4 accent-primary" />
-              <span className="text-[13px] text-[#1c1410]">Required before moving to next stage</span>
+              <span className="text-[14px] text-[#1c1410]">Required before moving to next stage</span>
             </label>
           </div>
         )}
@@ -512,8 +512,8 @@ function AdditionalFieldModal({ pipelineId, field, onClose, onSave }: {
         {/* Footer */}
         {step === 'detail' && (
           <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-            <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[13px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
+            <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
               {field ? 'Save Changes' : 'Add Question'}
             </button>
           </div>
@@ -550,22 +550,22 @@ function ValueModal({ value, onClose, onSave }: {
         <div className="flex items-center justify-between px-6 py-5 border-b border-black/5">
           <div>
             <h3 className="font-bold text-[#1c1410] text-[17px]">{value ? 'Edit Value' : 'New Value'}</h3>
-            <p className="text-[12px] text-[#7a6b5c] mt-0.5">Use these as shortcuts in messages and templates</p>
+            <p className="text-[13px] text-[#7a6b5c] mt-0.5">Use these as shortcuts in messages and templates</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Name <span className="text-red-400">*</span></label>
+            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Name <span className="text-red-400">*</span></label>
             <input autoFocus className={inputCls} placeholder="e.g. Google Meet link" value={name} onChange={(e) => setName(e.target.value)} />
             {slug && <p className="text-[11px] text-[#b09e8d] mt-1.5">Unique key: <code className="bg-muted px-1.5 rounded text-primary font-semibold">{`{%${slug}%}`}</code></p>}
           </div>
 
           <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Replace with <span className="text-red-400">*</span></label>
+            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Replace with <span className="text-red-400">*</span></label>
             <textarea
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white resize-none"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white resize-none"
               rows={3}
               placeholder="https://meet.google.com/xyz-abc-def"
               value={replaceWith}
@@ -576,8 +576,8 @@ function ValueModal({ value, onClose, onSave }: {
         </div>
 
         <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-          <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[13px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
             {value ? 'Save' : 'Create Value'}
           </button>
         </div>
@@ -606,17 +606,17 @@ export default function FieldsPage() {
   const tab = (searchParams.get('tab') ?? 'standard') as Tab;
   const [search, setSearch] = useState('');
 
-  // Standard Fields — custom tab
+  // Standard Fields - custom tab
   const [customStandard, setCustomStandard] = useState<StandardField[]>([]);
   const [stdModal, setStdModal] = useState<{ open: boolean; editing?: StandardField }>({ open: false });
   const [activeGroup, setActiveGroup] = useState<string>('Contact');
 
-  // Additional Fields — pipeline questions
+  // Additional Fields - pipeline questions
   const [additional, setAdditional] = useState<AdditionalField[]>(INIT_ADDITIONAL);
   const [selectedPipeline, setSelectedPipeline] = useState<string>(pipelines[0]?.id ?? 'sales');
   const [addModal, setAddModal] = useState<{ open: boolean; editing?: AdditionalField }>({ open: false });
 
-  // Values — token macros
+  // Values - token macros
   const [values, setValues] = useState<ValueToken[]>([]);
   const [valueModal, setValueModal] = useState<{ open: boolean; editing?: ValueToken }>({ open: false });
 
@@ -737,7 +737,7 @@ export default function FieldsPage() {
             else if (tab === 'tags') setTagCreating(true);
             else setValueModal({ open: true });
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
           style={shadowStyle}
         >
           <Plus className="w-4 h-4" />
@@ -756,7 +756,7 @@ export default function FieldsPage() {
             <select
               value={selectedPipeline}
               onChange={(e) => setSelectedPipeline(e.target.value)}
-              className="text-[13px] font-semibold text-[#1c1410] outline-none bg-transparent cursor-pointer"
+              className="text-[14px] font-semibold text-[#1c1410] outline-none bg-transparent cursor-pointer"
             >
               <option value="all">All Pipelines</option>
               {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -769,7 +769,7 @@ export default function FieldsPage() {
       {tab === 'standard' && (
         <div className="space-y-4">
 
-          {/* Group pills at the top — Contact · Company · Calendar · Custom */}
+          {/* Group pills at the top - Contact · Company · Calendar · Custom */}
           <div className="flex items-center gap-2 flex-wrap">
             {[...SYSTEM_GROUPS, 'Custom'].map((g) => {
               const active = activeGroup === g;
@@ -778,7 +778,7 @@ export default function FieldsPage() {
                   key={g}
                   onClick={() => setActiveGroup(g)}
                   className={cn(
-                    'px-3.5 py-1.5 rounded-full text-[12px] font-semibold border transition-colors',
+                    'px-3.5 py-1.5 rounded-full text-[13px] font-semibold border transition-colors',
                     active
                       ? 'bg-primary text-white border-primary shadow-sm'
                       : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/30 hover:text-primary'
@@ -810,7 +810,7 @@ export default function FieldsPage() {
                       <div className="w-6 h-6 rounded-md bg-[var(--app-bg)] flex items-center justify-center text-[#7a6b5c] shrink-0">
                         <d.Icon className="w-3 h-3" />
                       </div>
-                      <p className="text-[13px] text-[#1c1410] font-medium truncate">{f.name}</p>
+                      <p className="text-[14px] text-[#1c1410] font-medium truncate">{f.name}</p>
                     </div>
                     <code className="text-[11px] font-mono text-[#7a6b5c] bg-[var(--app-bg)] px-2 py-1 rounded truncate inline-block">{`{%${f.slug}%}`}</code>
                     <div className="flex items-center justify-end">
@@ -824,7 +824,7 @@ export default function FieldsPage() {
 
               {filteredStandard.system.filter((f) => f.group === activeGroup).length === 0 && (
                 <div className="py-10 text-center">
-                  <p className="text-[13px] text-[#b09e8d]">No fields in {activeGroup}</p>
+                  <p className="text-[14px] text-[#b09e8d]">No fields in {activeGroup}</p>
                 </div>
               )}
             </div>
@@ -843,8 +843,8 @@ export default function FieldsPage() {
               {filteredStandard.custom.length === 0 ? (
                 <div className="py-12 text-center">
                   <Plus className="w-6 h-6 mx-auto text-[#c4b09e] mb-2" />
-                  <p className="text-[13px] text-[#7a6b5c] mb-3">No custom fields yet</p>
-                  <button onClick={() => setStdModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white" style={shadowStyle}>
+                  <p className="text-[14px] text-[#7a6b5c] mb-3">No custom fields yet</p>
+                  <button onClick={() => setStdModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[13px] font-bold text-white" style={shadowStyle}>
                     + Create first field
                   </button>
                 </div>
@@ -858,7 +858,7 @@ export default function FieldsPage() {
                           <d.Icon className="w-3 h-3" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[13px] font-medium text-[#1c1410] truncate">{f.name}</p>
+                          <p className="text-[14px] font-medium text-[#1c1410] truncate">{f.name}</p>
                           <p className="text-[10px] text-[#b09e8d]">{f.type}{f.options && f.options.length > 0 ? ` · ${f.options.length} options` : ''}</p>
                         </div>
                       </div>
@@ -907,9 +907,9 @@ export default function FieldsPage() {
           {filteredPipelineQuestions.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-black/10 py-12 text-center">
               <Plus className="w-7 h-7 mx-auto text-[#c4b09e] mb-2" />
-              <p className="text-[14px] font-semibold text-[#1c1410]">No questions for this pipeline yet</p>
-              <p className="text-[12px] text-[#7a6b5c] mt-1 mb-3">Add questions staff should ask leads in this stage.</p>
-              <button onClick={() => setAddModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white" style={shadowStyle}>
+              <p className="text-[15px] font-semibold text-[#1c1410]">No questions for this pipeline yet</p>
+              <p className="text-[13px] text-[#7a6b5c] mt-1 mb-3">Add questions staff should ask leads in this stage.</p>
+              <button onClick={() => setAddModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[13px] font-bold text-white" style={shadowStyle}>
                 + Add first question
               </button>
             </div>
@@ -922,7 +922,7 @@ export default function FieldsPage() {
                     <GripVertical className="w-4 h-4 text-[#c4b09e] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 cursor-grab" />
                     <span className="text-[11px] font-bold text-[#b09e8d] w-5 shrink-0">Q{idx + 1}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-[#1c1410] flex items-center gap-2">
+                      <p className="text-[14px] font-semibold text-[#1c1410] flex items-center gap-2">
                         {f.question}{f.required && <span className="text-red-500">*</span>}
                         {f.pipelineId === 'all' && selectedPipeline !== 'all' && (
                           <span className="text-[9px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-wider">All Pipelines</span>
@@ -972,7 +972,7 @@ export default function FieldsPage() {
                     toast.success(`Copied ${copied.length} questions from ${other.name}`);
                   }).catch(() => toast.error('Failed to copy questions'));
                 }}
-                className="text-[12px] text-primary font-semibold hover:underline flex items-center gap-1 mx-auto"
+                className="text-[13px] text-primary font-semibold hover:underline flex items-center gap-1 mx-auto"
               >
                 <Copy className="w-3 h-3" /> Copy questions from another pipeline
               </button>
@@ -987,9 +987,9 @@ export default function FieldsPage() {
           {filteredValues.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-black/10 py-12 text-center">
               <Plus className="w-7 h-7 mx-auto text-[#c4b09e] mb-2" />
-              <p className="text-[14px] font-semibold text-[#1c1410]">No values yet</p>
-              <p className="text-[12px] text-[#7a6b5c] mt-1 mb-3">Create shortcuts for things you type often.</p>
-              <button onClick={() => setValueModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white" style={shadowStyle}>
+              <p className="text-[15px] font-semibold text-[#1c1410]">No values yet</p>
+              <p className="text-[13px] text-[#7a6b5c] mt-1 mb-3">Create shortcuts for things you type often.</p>
+              <button onClick={() => setValueModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[13px] font-bold text-white" style={shadowStyle}>
                 + Create first value
               </button>
             </div>
@@ -1007,11 +1007,11 @@ export default function FieldsPage() {
                 const token = slugify(v.name);
                 return (
                 <div key={v.id} className="group grid grid-cols-1 sm:grid-cols-[1fr_200px_1fr_100px] gap-3 px-4 py-3 border-b border-black/[0.04] last:border-b-0 hover:bg-[var(--app-bg)] transition-colors items-center">
-                  <p className="text-[13px] text-[#1c1410] font-medium truncate">{v.name}</p>
+                  <p className="text-[14px] text-[#1c1410] font-medium truncate">{v.name}</p>
                   <button onClick={() => copyToken(token)} className="text-left">
                     <code className="text-[11px] font-mono text-primary bg-primary/10 hover:bg-primary/15 px-2 py-1 rounded inline-block transition-colors">{`{%${token}%}`}</code>
                   </button>
-                  <p className="text-[12px] text-[#7a6b5c] truncate">{v.replaceWith}</p>
+                  <p className="text-[13px] text-[#7a6b5c] truncate">{v.replaceWith}</p>
                   <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => setValueModal({ open: true, editing: v })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#7a6b5c] hover:text-primary transition-colors">
                       <Pencil className="w-3.5 h-3.5" />
@@ -1034,10 +1034,10 @@ export default function FieldsPage() {
           {storeTags.length === 0 && !tagCreating ? (
             <div className="bg-white rounded-2xl border border-dashed border-black/10 py-12 text-center">
               <Tag className="w-7 h-7 mx-auto text-[#c4b09e] mb-2" />
-              <p className="text-[14px] font-semibold text-[#1c1410]">No tags yet</p>
-              <p className="text-[12px] text-[#7a6b5c] mt-1 mb-3">Create tags to organize and categorize your leads.</p>
+              <p className="text-[15px] font-semibold text-[#1c1410]">No tags yet</p>
+              <p className="text-[13px] text-[#7a6b5c] mt-1 mb-3">Create tags to organize and categorize your leads.</p>
               {canManageTags && (
-                <button onClick={() => setTagCreating(true)} className="px-4 py-1.5 rounded-lg text-[12px] font-bold text-white" style={shadowStyle}>
+                <button onClick={() => setTagCreating(true)} className="px-4 py-1.5 rounded-lg text-[13px] font-bold text-white" style={shadowStyle}>
                   + Create first tag
                 </button>
               )}
@@ -1084,7 +1084,7 @@ export default function FieldsPage() {
                       }
                     }}
                     placeholder="Tag name..."
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
                   />
                   <span />
                   <span />
@@ -1143,9 +1143,9 @@ export default function FieldsPage() {
                               finally { setTagSaving(false); }
                             } else if (e.key === 'Escape') { setTagEdit(null); }
                           }}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
                         />
-                        <span className="text-[13px] text-[#7a6b5c] text-center">{t.count}</span>
+                        <span className="text-[14px] text-[#7a6b5c] text-center">{t.count}</span>
                         <span />
                         <div className="flex items-center gap-1 justify-end">
                           <button
@@ -1171,10 +1171,10 @@ export default function FieldsPage() {
                       <>
                         <div className="w-8 h-8 rounded-lg border border-black/10 shrink-0" style={{ backgroundColor: t.color ?? '#94a3b8' }} />
                         <div className="flex items-center gap-2">
-                          <span className="text-[13px] text-[#1c1410] font-medium">{t.name}</span>
+                          <span className="text-[14px] text-[#1c1410] font-medium">{t.name}</span>
                         </div>
-                        <span className="text-[13px] text-[#7a6b5c] text-center">{t.count}</span>
-                        <span className="text-[12px] text-[#b09e8d] text-center">-</span>
+                        <span className="text-[14px] text-[#7a6b5c] text-center">{t.count}</span>
+                        <span className="text-[13px] text-[#b09e8d] text-center">-</span>
                         {canManageTags && (
                           <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => setTagEdit({ id: t.id, name: t.name, color: t.color })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#7a6b5c] hover:text-primary transition-colors">
@@ -1331,7 +1331,7 @@ export default function FieldsPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
             <div className="px-6 pt-6 pb-4">
               <h3 className="text-[15px] font-bold text-[#1c1410] mb-2">Delete Field</h3>
-              <p className="text-[13px] text-[#7a6b5c]">
+              <p className="text-[14px] text-[#7a6b5c]">
                 Are you sure you want to delete <span className="font-semibold text-[#1c1410]">"{deleteConfirm.name}"</span>? This cannot be undone.
               </p>
             </div>
@@ -1339,14 +1339,14 @@ export default function FieldsPage() {
               <button
                 onClick={() => setDeleteConfirm(null)}
                 disabled={deleting}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold text-[#7a6b5c] bg-[#f0ebe5] hover:bg-[#e8ddd4] transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] bg-[#f0ebe5] hover:bg-[#e8ddd4] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirmed}
                 disabled={deleting}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors"
               >
                 {deleting ? 'Deleting…' : 'Yes, Delete'}
               </button>

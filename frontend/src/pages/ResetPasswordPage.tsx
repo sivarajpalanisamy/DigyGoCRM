@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Lock } from 'lucide-react';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -42,10 +42,10 @@ export default function ResetPasswordPage() {
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand))' }}>
-            <span className="text-white font-black text-xl">🔒</span>
+            <Lock className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-extrabold text-[#1c1410]">Reset your password</h1>
-          <p className="text-[13px] text-[#7a6b5c] mt-1">Choose a new password for your account</p>
+          <p className="text-[14px] text-[#7a6b5c] mt-1">Choose a new password for your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 6 characters"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-primary pr-10"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-primary pr-10"
                 required
                 autoFocus
               />
@@ -74,7 +74,7 @@ export default function ResetPasswordPage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Repeat your password"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-primary"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-primary"
               required
             />
           </div>
@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl text-white font-bold text-[14px] transition-all hover:-translate-y-0.5 disabled:opacity-60"
+            className="w-full py-3 rounded-xl text-white font-bold text-[15px] transition-all hover:-translate-y-0.5 disabled:opacity-60"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
           >
             {loading ? 'Resetting…' : 'Reset Password'}

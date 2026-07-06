@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Bell, X, LogOut, Settings, User, Unplug, UserPlus, UserCheck, ArrowRight, ArrowLeft, Clock, MessageCircle, CalendarCheck, Zap, Info, ChevronDown } from 'lucide-react';
+import { Bell, X, LogOut, Settings, User, Unplug, UserPlus, UserCheck, ArrowRight, ArrowLeft, Clock, MessageCircle, CalendarCheck, Zap, Info, ChevronDown, Search } from 'lucide-react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
@@ -9,6 +9,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { confirmDialog } from '@/lib/confirm';
+import { useHeaderSearchStore } from '@/store/headerSearchStore';
 
 type NavTab = { label: string; path: string };
 type NavDropdown = { label: string; children: NavTab[] };
@@ -88,7 +90,7 @@ const sectionNavs: Record<string, NavItem[]> = {
   ],
 };
 
-// Pages that have a disconnect action — path → { label, endpoint, confirm }
+// Pages that have a disconnect action - path → { label, endpoint, confirm }
 const PAGE_DISCONNECT: Record<string, { label: string; endpoint: string; confirm: string }> = {
   '/lead-generation/meta-forms': {
     label: 'Disconnect Meta',
@@ -125,6 +127,11 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const [disconnecting, setDisconnecting] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  // Context-aware search: the current page registers its config; we render one input.
+  const searchConfig = useHeaderSearchStore((s) => s.config);
+  const searchQuery = useHeaderSearchStore((s) => s.query);
+  const setSearchQuery = useHeaderSearchStore((s) => s.setQuery);
   const dropdownBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const openNav = useCallback((label: string) => {
     const btn = dropdownBtnRefs.current[label];
@@ -139,7 +146,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const { companyName } = useCompanyStore();
   const { branded, tenantName, logoUrl } = useBrandingStore();
 
-  // Badge counts only alerts (action-required) — activity is FYI
+  // Badge counts only alerts (action-required) - activity is FYI
   const alertNotifs = notifications.filter((n) => n.category === 'alert');
   const activityNotifs = notifications.filter((n) => n.category === 'activity');
   const unreadAlerts = alertNotifs.filter((n) => !n.read).length;
@@ -167,7 +174,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const pageDisconnect = PAGE_DISCONNECT[location.pathname] ?? null;
   const handleDisconnect = async () => {
     if (!pageDisconnect) return;
-    if (!window.confirm(pageDisconnect.confirm)) return;
+    if (!(await confirmDialog({ title: pageDisconnect.label, message: pageDisconnect.confirm, confirmText: 'Disconnect' }))) return;
     setDisconnecting(true);
     try {
       await api.delete(pageDisconnect.endpoint);
@@ -182,7 +189,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   };
 
   const activeSection = Object.keys(sectionNavs).find((prefix) => {
-    // exclude calendar edit page — let it show no sub-nav
+    // exclude calendar edit page - let it show no sub-nav
     if (prefix === '/calendar' && location.pathname.startsWith('/calendar/edit')) return false;
     if (location.pathname === prefix || location.pathname.startsWith(prefix + '/')) return true;
     // also activate lead-management nav when on /leads
@@ -199,8 +206,8 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   };
 
   return (
-    <header className="bg-white border-b border-black/5 sticky top-0 z-30 shrink-0" style={{ boxShadow: '0 1px 0 rgba(0,0,0,0.04)' }}>
-      <div className="h-14 md:h-16 flex items-center px-4 md:px-6 gap-3 md:gap-5">
+    <header className="bg-white border-b-2 border-black/10 sticky top-0 z-30 shrink-0" style={{ boxShadow: '0 2px 8px -4px rgba(20,15,10,0.06)' }}>
+      <div className="relative h-14 md:h-16 flex items-center px-4 md:px-6 gap-3 md:gap-5">
 
         {/* Mobile: logo mark */}
         <div className="md:hidden flex items-center gap-2 shrink-0">
@@ -218,9 +225,35 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           )}
         </div>
 
-        {/* Super admin logo removed — sidebar already shows the logo */}
+        {/* Super admin logo removed - sidebar already shows the logo */}
 
-        {/* Tab nav — desktop only in full, scrollable on mobile */}
+        {/* Context-aware search (mobile) - full-width overlay toggled by the icon */}
+        {searchConfig && mobileSearchOpen && (
+          <div className="md:hidden absolute inset-0 z-40 bg-white flex items-center gap-2 px-4">
+            <Search className="w-4 h-4 text-[#b09e8d] shrink-0" />
+            <input
+              autoFocus
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              name="header-search-mobile"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setMobileSearchOpen(false);
+                else if (e.key === 'Enter' && searchConfig.onSubmit) { searchConfig.onSubmit(searchQuery); setMobileSearchOpen(false); }
+              }}
+              placeholder={searchConfig.placeholder}
+              className="flex-1 h-9 text-[14px] bg-transparent outline-none placeholder:text-[#b09e8d]"
+            />
+            <button onClick={() => { setSearchQuery(''); setMobileSearchOpen(false); }} className="p-1.5 rounded-lg text-[#7a6b5c] hover:bg-[var(--accent-tint)] transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Tab nav - desktop only in full, scrollable on mobile */}
         <div className="flex-1 flex items-center overflow-x-auto scrollbar-hide">
           {subNav ? (
             <nav className="flex items-center h-14 md:h-16">
@@ -310,10 +343,10 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           )}
         </div>
 
-        {/* Right — bell + profile, always visible */}
+        {/* Right - bell + profile, always visible */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
 
-          {/* Back to Admin — only while impersonating a tenant */}
+          {/* Back to Admin - only while impersonating a tenant */}
           {isImpersonating && (
             <button
               onClick={async () => { await exitImpersonation(); navigate('/admin'); }}
@@ -323,6 +356,43 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Back to Admin</span>
+            </button>
+          )}
+
+          {/* Context-aware search (desktop) - to the left of the notification bell */}
+          {searchConfig && (
+            <div className="hidden md:flex items-center relative w-56 lg:w-72 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" />
+              <input
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                name="header-search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') { setSearchQuery(''); (e.target as HTMLInputElement).blur(); }
+                  else if (e.key === 'Enter' && searchConfig.onSubmit) { searchConfig.onSubmit(searchQuery); }
+                }}
+                placeholder={searchConfig.placeholder}
+                className="w-full h-10 pl-9 pr-8 text-[13px] font-medium text-black bg-white border border-black rounded-xl outline-none focus:ring-2 focus:ring-black/15 placeholder:text-black/60 transition-all"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full hover:bg-black/5 flex items-center justify-center text-[#b09e8d]">
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Search trigger (mobile) - opens the full-width search overlay */}
+          {searchConfig && (
+            <button
+              onClick={() => setMobileSearchOpen(true)}
+              className="md:hidden p-2 rounded-xl text-[#7a6b5c] hover:text-primary hover:bg-[var(--accent-tint)] transition-colors"
+            >
+              <Search className="w-5 h-5" />
             </button>
           )}
 
@@ -483,14 +553,14 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           <div className="relative">
             <button
               onClick={() => { setShowProfile((v) => !v); setShowNotifs(false); setOpenDropdown(null); }}
-              className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-[var(--accent-tint)] transition-colors"
+              className="flex items-center gap-2.5 h-10 rounded-xl border border-black/15 pl-3.5 pr-2 hover:bg-[var(--accent-tint)] transition-colors"
             >
               <div className="hidden sm:block text-right">
                 <p className="text-[13px] font-semibold text-[#1c1410] leading-tight">{currentUser?.name ?? 'User'}</p>
                 <p className="text-[11px] text-[#7a6b5c] leading-tight mt-0.5">{roleLabel}</p>
               </div>
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-primary/20 hover:ring-primary/40 transition-all shrink-0"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold ring-2 ring-primary/20 hover:ring-primary/40 transition-all shrink-0"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
               >
                 {initials}

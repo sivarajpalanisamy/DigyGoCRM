@@ -59,7 +59,7 @@ export default function ResponseTimeReportPage() {
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
+      // Keep current data visible on filter changes; spinner shows only on first mount.
       try {
         const params: Record<string, string> = { period };
         if (period === 'custom' && from) params.date_from = from;
@@ -84,7 +84,7 @@ export default function ResponseTimeReportPage() {
     <div className="flex flex-col flex-1 min-h-0 gap-5">
       <div>
         <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">Lead Response Time</h1>
-        <p className="text-[13px] text-[#7a6b5c] mt-0.5">How quickly your team contacts new leads</p>
+        <p className="text-[14px] text-[#7a6b5c] mt-0.5">How quickly your team contacts new leads</p>
       </div>
 
       {/* Filters */}
@@ -93,7 +93,7 @@ export default function ResponseTimeReportPage() {
           {PERIODS.map((p) => (
             <button key={p.value} onClick={() => setPeriod(p.value)}
               className={cn(
-                'text-[12px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
+                'text-[13px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
                 period === p.value
                   ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-sm'
                   : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/40',
@@ -105,14 +105,14 @@ export default function ResponseTimeReportPage() {
         {period === 'custom' && (
           <div className="flex items-center gap-2">
             <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
-              className="border border-black/10 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--brand)] bg-white" />
-            <span className="text-[12px] text-[#9a8a7a]">to</span>
+              className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] bg-white" />
+            <span className="text-[13px] text-[#9a8a7a]">to</span>
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
-              className="border border-black/10 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--brand)] bg-white" />
+              className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] bg-white" />
           </div>
         )}
         <select value={pipelineId} onChange={(e) => setPipelineId(e.target.value)}
-          className="text-[12px] border border-black/10 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-[var(--brand)]">
+          className="text-[13px] border border-black/10 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-[var(--brand)]">
           <option value="">All Pipelines</option>
           {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
@@ -123,7 +123,7 @@ export default function ResponseTimeReportPage() {
           <RefreshCw className="w-5 h-5 animate-spin text-[var(--brand-dark)]" />
         </div>
       ) : !kpi ? (
-        <div className="text-center py-20 text-[13px] text-[#9a8a7a]">No data available</div>
+        <div className="text-center py-20 text-[14px] text-[#9a8a7a]">No data available</div>
       ) : (
         <>
           {/* KPI Cards */}
@@ -139,12 +139,12 @@ export default function ResponseTimeReportPage() {
             {/* Daily trend */}
             <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-black/5">
-                <p className="text-[14px] font-bold text-[#1c1410]">Response Time Trend</p>
+                <p className="text-[15px] font-bold text-[#1c1410]">Response Time Trend</p>
                 <p className="text-[11px] text-[#9a8a7a] mt-0.5">Average response time per day (minutes)</p>
               </div>
               <div className="p-5">
                 {daily.length === 0 ? (
-                  <div className="h-[200px] flex items-center justify-center text-[13px] text-[#9a8a7a]">No data</div>
+                  <div className="h-[200px] flex items-center justify-center text-[14px] text-[#9a8a7a]">No data</div>
                 ) : (
                   <ResponsiveContainer width="100%" height={220}>
                     <LineChart data={daily}>
@@ -164,7 +164,7 @@ export default function ResponseTimeReportPage() {
             {/* Response distribution */}
             <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-black/5">
-                <p className="text-[14px] font-bold text-[#1c1410]">Response Distribution</p>
+                <p className="text-[15px] font-bold text-[#1c1410]">Response Distribution</p>
                 <p className="text-[11px] text-[#9a8a7a] mt-0.5">Leads by response time bucket</p>
               </div>
               <div className="p-5">
@@ -192,11 +192,11 @@ export default function ResponseTimeReportPage() {
           {/* Staff table */}
           <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-black/5">
-              <p className="text-[14px] font-bold text-[#1c1410]">Staff Response Times</p>
+              <p className="text-[15px] font-bold text-[#1c1410]">Staff Response Times</p>
               <p className="text-[11px] text-[#9a8a7a] mt-0.5">Per-agent breakdown with benchmark targets</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-[12px]">
+              <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-black/5 text-left text-[#7a6b5c]">
                     <th className="px-5 py-3 font-semibold">Staff</th>

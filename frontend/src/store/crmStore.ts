@@ -71,7 +71,7 @@ interface CrmState {
   deleteWfFolder: (id: string) => void;
   moveWfToFolder: (wfId: string, folderId: string) => void;
 
-  hydrated: boolean; // true once the first initFromApi() completes — gates skeletons
+  hydrated: boolean; // true once the first initFromApi() completes - gates skeletons
   pipelines: Pipeline[];
   leads: Lead[];
   conversations: Conversation[];
@@ -359,7 +359,7 @@ export const useCrmStore = create<CrmState>((set) => ({
   deleteWorkflow: (id) => set((s) => ({ workflows: s.workflows.filter((w) => w.id !== id) })),
 
   // Notification actions
-  // Fix 4: dedup by id — socket and poll can both deliver the same notification
+  // Fix 4: dedup by id - socket and poll can both deliver the same notification
   addNotification: (n) => set((s) => {
     if (s.notifications.some((x) => x.id === n.id)) return s;
     return { notifications: [n, ...s.notifications] };
@@ -440,7 +440,7 @@ export const useCrmStore = create<CrmState>((set) => ({
     // Optimistic update
     set((s) => ({ pipelines: s.pipelines.map((p) => p.id === id ? { ...p, ...updates } : p) }));
 
-    // Persist name change — let errors propagate so the caller can rollback + toast
+    // Persist name change - let errors propagate so the caller can rollback + toast
     if (updates.name) {
       try {
         await api.patch(`/api/pipelines/${id}`, { name: updates.name });
@@ -469,13 +469,13 @@ export const useCrmStore = create<CrmState>((set) => ({
       for (let i = 0; i < newStages.length; i++) {
         const s = newStages[i];
         if (isTempId(s.id)) {
-          // New stage — create
+          // New stage - create
           const created = await api.post<any>(`/api/pipelines/${id}/stages`, {
             name: s.name, stage_order: i, color: s.color ?? null,
           }).catch(() => null);
           finalStages.push(created ? { id: created.id, name: created.name, color: created.color ?? s.color } : s);
         } else {
-          // Existing stage — patch if name/color/won OR its position changed (drag-reorder).
+          // Existing stage - patch if name/color/won OR its position changed (drag-reorder).
           // (Previously skipped a pure reorder, so the new order never persisted.)
           const old = oldStages.find((o) => o.id === s.id);
           const oldIdx = oldStages.findIndex((o) => o.id === s.id);
@@ -554,7 +554,7 @@ export const useCrmStore = create<CrmState>((set) => ({
     try {
       // Skip the workflows fetch only when this staff member is EXPLICITLY denied
       // automation:view (the endpoint 403s for them). When permissions aren't loaded
-      // yet, or the value is undefined, we still fetch — legit users never lose data,
+      // yet, or the value is undefined, we still fetch - legit users never lose data,
       // restricted staff just stop spamming the console with 403s once perms resolve.
       const { permAll, permissions } = useAuthStore.getState();
       const canViewWorkflows = permAll || permissions['automation:view'] !== false;
@@ -582,7 +582,7 @@ export const useCrmStore = create<CrmState>((set) => ({
         api.get<any[]>('/api/fields/values').catch(keepOnError),
       ]);
 
-      // Guarantee arrays — HTTP 200 with non-JSON body parses to {} which would crash .map()
+      // Guarantee arrays - HTTP 200 with non-JSON body parses to {} which would crash .map()
       const safeLeads      = Array.isArray(leadsRes)        ? leadsRes        : [];
       const safeStaff      = Array.isArray(staffRes)        ? staffRes        : [];
       const safePipelines  = Array.isArray(pipelinesRes)    ? pipelinesRes    : [];
@@ -597,7 +597,7 @@ export const useCrmStore = create<CrmState>((set) => ({
       const safeWorkflows  = Array.isArray(workflowsRes)    ? workflowsRes    : [];
       const safeSystem     = Array.isArray(systemFieldsRes) ? systemFieldsRes : [];
 
-      // A null result means that endpoint FAILED (keepOnError) — keep the slice's
+      // A null result means that endpoint FAILED (keepOnError) - keep the slice's
       // current value rather than wiping it. ([] from a not-permitted endpoint is a
       // real empty and DOES update.) This is what stops leads/contacts flashing to 0.
       const cur = useCrmStore.getState();
@@ -813,7 +813,7 @@ export const useCrmStore = create<CrmState>((set) => ({
         hydrated: true,
       });
     } catch (e) {
-      // SessionExpiredError: logout already triggered asynchronously — don't stomp the store
+      // SessionExpiredError: logout already triggered asynchronously - don't stomp the store
       if (!(e instanceof SessionExpiredError)) {
         console.error('[initFromApi] unexpected error:', e);
       }

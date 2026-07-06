@@ -57,7 +57,7 @@ export default function LeadTrashModal({ open, onClose }: { open: boolean; onClo
           <div className="flex items-center gap-2">
             <Trash2 className="w-4 h-4 text-[#c2410c]" />
             <h2 className="text-[15px] font-bold text-[#1c1410]">Trash</h2>
-            {!loading && <span className="text-[12px] text-[#7a6b5c]">({items.length})</span>}
+            {!loading && <span className="text-[13px] text-[#7a6b5c]">({items.length})</span>}
           </div>
           <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-lg text-[#7a6b5c] hover:bg-black/5">
             <X className="w-4 h-4" />
@@ -70,23 +70,23 @@ export default function LeadTrashModal({ open, onClose }: { open: boolean; onClo
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center px-6">
               <Trash2 className="w-8 h-8 text-black/15 mb-2" />
-              <p className="text-[13px] text-[#7a6b5c]">Trash is empty</p>
-              <p className="text-[12px] text-[#9c8f84] mt-1">Deleted leads can be recovered here.</p>
+              <p className="text-[14px] text-[#7a6b5c]">Trash is empty</p>
+              <p className="text-[13px] text-[#9c8f84] mt-1">Deleted leads can be recovered here.</p>
             </div>
           ) : (
             <ul className="divide-y divide-black/5">
               {items.map((l) => (
                 <li key={l.id} className="flex items-center gap-3 px-5 py-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-[#1c1410] truncate">{l.name || 'Unnamed lead'}</p>
-                    <p className="text-[12px] text-[#7a6b5c] truncate">
-                      {[l.phone, l.pipeline_name, l.stage_name].filter(Boolean).join(' · ') || '—'}
+                    <p className="text-[14px] font-semibold text-[#1c1410] truncate">{l.name || 'Unnamed lead'}</p>
+                    <p className="text-[13px] text-[#7a6b5c] truncate">
+                      {[l.phone, l.pipeline_name, l.stage_name].filter(Boolean).join(' · ') || '-'}
                     </p>
                   </div>
                   <button
                     onClick={() => restore(l)}
                     disabled={restoringId === l.id}
-                    className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-[12px] font-bold text-[#c2410c] border border-[#c2410c]/30 hover:bg-orange-50 disabled:opacity-50 shrink-0"
+                    className="flex items-center gap-1.5 px-3 h-8 rounded-lg text-[13px] font-bold text-[#c2410c] border border-[#c2410c]/30 hover:bg-orange-50 disabled:opacity-50 shrink-0"
                   >
                     {restoringId === l.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
                     Restore

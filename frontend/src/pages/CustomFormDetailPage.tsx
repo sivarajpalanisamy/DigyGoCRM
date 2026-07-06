@@ -171,7 +171,7 @@ function AddFieldPickerModal({
             : <Icon className="w-4 h-4 text-primary" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className={cn('text-[13px] font-semibold truncate', added ? 'text-emerald-700' : 'text-[#1c1410]')}>{name}</p>
+          <p className={cn('text-[14px] font-semibold truncate', added ? 'text-emerald-700' : 'text-[#1c1410]')}>{name}</p>
           <p className="text-[10px] text-[#b09e8d] capitalize">{type}</p>
         </div>
         {added && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">Added</span>}
@@ -201,7 +201,7 @@ function AddFieldPickerModal({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search fields…"
-              className="flex-1 text-[13px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#b09e8d]"
+              className="flex-1 text-[14px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#b09e8d]"
             />
           </div>
         </div>
@@ -243,15 +243,15 @@ function AddFieldPickerModal({
           )}
 
           {filteredStd.length === 0 && filteredCustom.length === 0 && (
-            <p className="text-center text-[13px] text-[#b09e8d] py-6">No fields match "{search}"</p>
+            <p className="text-center text-[14px] text-[#b09e8d] py-6">No fields match "{search}"</p>
           )}
         </div>
 
-        {/* Footer — Create new */}
+        {/* Footer - Create new */}
         <div className="shrink-0 px-5 py-4 border-t border-black/5">
           <button
             onClick={() => { onClose(); onCreateNew(); }}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold text-white transition-all hover:opacity-90"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-bold text-white transition-all hover:opacity-90"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
           >
             <Plus className="w-4 h-4" /> Create New Field
@@ -369,7 +369,7 @@ function CreateFieldModal({
         {step === 'detail' && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             <div>
-              <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">
+              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
                 Field Name <span className="text-red-400">*</span>
               </label>
               <input
@@ -377,7 +377,7 @@ function CreateFieldModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Age Group, Course Name…"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
               />
               {slug && (
                 <p className="text-[11px] text-[#b09e8d] mt-1">
@@ -386,17 +386,17 @@ function CreateFieldModal({
               )}
             </div>
 
-            {/* Placeholder — only for non-option types */}
+            {/* Placeholder - only for non-option types */}
             {!needsOptions && (
               <div>
-                <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">
+                <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
                   Placeholder <span className="text-[#b09e8d] font-normal">(optional)</span>
                 </label>
                 <input
                   value={placeholder}
                   onChange={(e) => setPlaceholder(e.target.value)}
                   placeholder="Hint shown inside the empty field"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
                 />
               </div>
             )}
@@ -404,7 +404,7 @@ function CreateFieldModal({
             {/* Options builder for Dropdown / Radio / Multi-select */}
             {needsOptions && (
               <div>
-                <label className="text-[12px] font-semibold text-[#7a6b5c] mb-2 block">Options <span className="text-red-400">*</span></label>
+                <label className="text-[13px] font-semibold text-[#7a6b5c] mb-2 block">Options <span className="text-red-400">*</span></label>
                 <div className="space-y-2">
                   {options.map((opt, idx) => (
                     <div key={idx} className="flex items-center gap-2">
@@ -413,7 +413,7 @@ function CreateFieldModal({
                         value={opt}
                         onChange={(e) => updateOption(idx, e.target.value)}
                         placeholder={`Option ${idx + 1}`}
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
                       />
                       <button
                         onClick={() => removeOption(idx)}
@@ -427,7 +427,7 @@ function CreateFieldModal({
                 </div>
                 <button
                   onClick={addOption}
-                  className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                  className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-primary hover:bg-primary/5 rounded-lg transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add option
                 </button>
@@ -436,7 +436,7 @@ function CreateFieldModal({
 
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} className="w-4 h-4 accent-primary" />
-              <span className="text-[13px] text-[#1c1410]">Mark as required</span>
+              <span className="text-[14px] text-[#1c1410]">Mark as required</span>
             </label>
           </div>
         )}
@@ -444,13 +444,13 @@ function CreateFieldModal({
         {/* Footer */}
         {step === 'detail' && (
           <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">
               Cancel
             </button>
             <button
               onClick={handleCreate}
               disabled={saving}
-              className="flex-1 py-2.5 rounded-lg text-[13px] font-bold text-white disabled:opacity-60"
+              className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white disabled:opacity-60"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
             >
               {saving ? 'Creating…' : 'Create & Add to Form'}
@@ -699,7 +699,7 @@ export default function CustomFormDetailPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-[13px] text-[#7a6b5c]">Loading form…</p>
+        <p className="text-[14px] text-[#7a6b5c]">Loading form…</p>
       </div>
     );
   }
@@ -739,14 +739,14 @@ export default function CustomFormDetailPage() {
             <div className="bg-white rounded-2xl border border-black/5 card-shadow overflow-hidden">
               <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
                 <div>
-                  <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Form Fields</h3>
+                  <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Form Fields</h3>
                   <p className="text-[11px] text-[#7a6b5c] mt-0.5">
                     {fields.length} field{fields.length !== 1 ? 's' : ''} · each maps to a CRM field automatically
                   </p>
                 </div>
                 <button
                   onClick={() => setShowPicker(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold text-white transition-all hover:opacity-90"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-bold text-white transition-all hover:opacity-90"
                   style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Field
@@ -812,7 +812,7 @@ export default function CustomFormDetailPage() {
                                     updateField(field.id, { options: next });
                                   }}
                                   placeholder={`Option ${idx + 1}`}
-                                  className="flex-1 border border-black/8 rounded-lg px-2.5 py-1.5 text-[12px] bg-[var(--app-bg)] outline-none focus:border-primary/40"
+                                  className="flex-1 border border-black/8 rounded-lg px-2.5 py-1.5 text-[13px] bg-[var(--app-bg)] outline-none focus:border-primary/40"
                                 />
                                 <button
                                   onClick={() => {
@@ -867,7 +867,7 @@ export default function CustomFormDetailPage() {
                           </select>
                         </div>
 
-                        {/* Required toggle — locked ON for email/phone mapped fields */}
+                        {/* Required toggle - locked ON for email/phone mapped fields */}
                         <div className="flex items-center gap-1.5 shrink-0">
                           <Switch
                             checked={field.required}
@@ -887,7 +887,7 @@ export default function CustomFormDetailPage() {
 
               {/* Empty state */}
               {fields.length === 0 && (
-                <div className="px-5 py-10 text-center text-[13px] text-[#b09e8d]">
+                <div className="px-5 py-10 text-center text-[14px] text-[#b09e8d]">
                   No fields yet. Click <strong>Add Field</strong> to get started.
                 </div>
               )}
@@ -896,11 +896,11 @@ export default function CustomFormDetailPage() {
             {/* Add to CRM */}
             <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5 space-y-4">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                  <Database className="w-3.5 h-3.5 text-emerald-600" />
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Database className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Add to CRM</h3>
+                  <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Add to CRM</h3>
                   <p className="text-[11px] text-[#7a6b5c]">Auto-create a lead when this form is submitted</p>
                 </div>
                 <button
@@ -918,7 +918,7 @@ export default function CustomFormDetailPage() {
                 <select
                   value={pipelineId}
                   onChange={(e) => { setPipelineId(e.target.value); setStageId(''); }}
-                  className="w-full text-[13px] border border-black/8 rounded-xl px-3 py-2.5 bg-[var(--app-bg)] text-[#1c1410] outline-none focus:border-primary/30"
+                  className="w-full text-[14px] border border-black/8 rounded-xl px-3 py-2.5 bg-[var(--app-bg)] text-[#1c1410] outline-none focus:border-primary/30"
                 >
                   <option value="">- Select a pipeline -</option>
                   {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -931,7 +931,7 @@ export default function CustomFormDetailPage() {
                   value={stageId}
                   onChange={(e) => setStageId(e.target.value)}
                   disabled={!pipelineId}
-                  className="w-full text-[13px] border border-black/8 rounded-xl px-3 py-2.5 bg-[var(--app-bg)] text-[#1c1410] outline-none focus:border-primary/30 disabled:opacity-40"
+                  className="w-full text-[14px] border border-black/8 rounded-xl px-3 py-2.5 bg-[var(--app-bg)] text-[#1c1410] outline-none focus:border-primary/30 disabled:opacity-40"
                 >
                   <option value="">- Select a stage -</option>
                   {(selectedPipeline?.stages ?? []).map((s) => (
@@ -957,7 +957,7 @@ export default function CustomFormDetailPage() {
                   <input value={tagInput} onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={handleTagKey} onBlur={addTag}
                     placeholder={tags.length === 0 ? 'Type a tag and press Enter…' : 'Add more…'}
-                    className="flex-1 min-w-[120px] text-[13px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#b09e8d]"
+                    className="flex-1 min-w-[120px] text-[14px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#b09e8d]"
                   />
                 </div>
               </div>
@@ -967,17 +967,17 @@ export default function CustomFormDetailPage() {
             <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                    <FileCheck className="w-3.5 h-3.5 text-purple-600" />
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <FileCheck className="w-3.5 h-3.5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Declaration</h3>
+                    <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Declaration</h3>
                     <p className="text-[11px] text-[#7a6b5c]">Show a consent / policy checkbox to users</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={declarationEnabled} onCheckedChange={setDeclarationEnabled} />
-                  <span className="text-[12px] font-medium text-[#7a6b5c]">{declarationEnabled ? 'Enabled' : 'Off'}</span>
+                  <span className="text-[13px] font-medium text-[#7a6b5c]">{declarationEnabled ? 'Enabled' : 'Off'}</span>
                 </div>
               </div>
               {declarationEnabled && (
@@ -1002,7 +1002,7 @@ export default function CustomFormDetailPage() {
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Link2 className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Button</h3>
+                <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Button</h3>
               </div>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Button Title</label>
@@ -1030,12 +1030,12 @@ export default function CustomFormDetailPage() {
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Palette className="w-3.5 h-3.5 text-primary" />
                   </div>
-                  <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Form Colors</h3>
+                  <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Form Colors</h3>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" checked={transparentForm} onChange={(e) => setTransparentForm(e.target.checked)}
                     className="w-4 h-4 rounded accent-orange-500" />
-                  <span className="text-[12px] font-medium text-[#7a6b5c]">Transparent background</span>
+                  <span className="text-[13px] font-medium text-[#7a6b5c]">Transparent background</span>
                 </label>
               </div>
               <div className={`grid grid-cols-2 gap-4 transition-opacity ${transparentForm ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -1046,7 +1046,7 @@ export default function CustomFormDetailPage() {
 
             {/* Save button */}
             <div className="pb-2">
-              <Button onClick={handleSave} disabled={saving} className="w-full py-3 text-[14px]">
+              <Button onClick={handleSave} disabled={saving} className="w-full py-3 text-[15px]">
                 <Check className="w-4 h-4" /> {saving ? 'Saving…' : 'Save Form'}
               </Button>
             </div>
@@ -1067,7 +1067,7 @@ export default function CustomFormDetailPage() {
               <div className="space-y-4">
                 {fields.map((field) => (
                   <div key={field.id}>
-                    <label className="block text-[12px] font-semibold mb-1.5" style={{ color: formTextColor }}>
+                    <label className="block text-[13px] font-semibold mb-1.5" style={{ color: formTextColor }}>
                       {field.label || 'Field'}
                       {field.required && <span className="text-red-400 ml-0.5">*</span>}
                       {field.mapTo && (
@@ -1078,9 +1078,9 @@ export default function CustomFormDetailPage() {
                     </label>
                     {field.type === 'textarea' ? (
                       <textarea disabled placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                        className="w-full h-20 px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[13px] text-[#7a6b5c] placeholder:text-[#b09e8d] resize-none outline-none" />
+                        className="w-full h-20 px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[14px] text-[#7a6b5c] placeholder:text-[#b09e8d] resize-none outline-none" />
                     ) : field.type === 'dropdown' ? (
-                      <select disabled className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[13px] text-[#7a6b5c] outline-none">
+                      <select disabled className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[14px] text-[#7a6b5c] outline-none">
                         <option>- Select -</option>
                         {(field.options ?? []).map((o) => <option key={o}>{o}</option>)}
                       </select>
@@ -1089,7 +1089,7 @@ export default function CustomFormDetailPage() {
                         {(field.options ?? []).map((o) => (
                           <label key={o} className="flex items-center gap-2">
                             <input type="radio" disabled className="w-3.5 h-3.5" style={{ accentColor: btnColor }} />
-                            <span className="text-[12px]" style={{ color: formTextColor }}>{o}</span>
+                            <span className="text-[13px]" style={{ color: formTextColor }}>{o}</span>
                           </label>
                         ))}
                         {(!field.options || field.options.length === 0) && <p className="text-[11px] text-[#b09e8d] italic">No options added</p>}
@@ -1099,7 +1099,7 @@ export default function CustomFormDetailPage() {
                         {(field.options ?? []).map((o) => (
                           <label key={o} className="flex items-center gap-2">
                             <input type="checkbox" disabled className="w-3.5 h-3.5 rounded" style={{ accentColor: btnColor }} />
-                            <span className="text-[12px]" style={{ color: formTextColor }}>{o}</span>
+                            <span className="text-[13px]" style={{ color: formTextColor }}>{o}</span>
                           </label>
                         ))}
                         {(!field.options || field.options.length === 0) && <p className="text-[11px] text-[#b09e8d] italic">No options added</p>}
@@ -1107,12 +1107,12 @@ export default function CustomFormDetailPage() {
                     ) : field.type === 'checkbox' ? (
                       <div className="flex items-center gap-2">
                         <input type="checkbox" disabled className="w-4 h-4 rounded" style={{ accentColor: btnColor }} />
-                        <span className="text-[13px]" style={{ color: formTextColor }}>{field.placeholder || field.label}</span>
+                        <span className="text-[14px]" style={{ color: formTextColor }}>{field.placeholder || field.label}</span>
                       </div>
                     ) : (
                       <input disabled type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : field.type === 'date' ? 'date' : 'text'}
                         placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                        className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[13px] text-[#7a6b5c] placeholder:text-[#b09e8d] outline-none" />
+                        className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[14px] text-[#7a6b5c] placeholder:text-[#b09e8d] outline-none" />
                     )}
                   </div>
                 ))}
@@ -1121,14 +1121,14 @@ export default function CustomFormDetailPage() {
               {declarationEnabled && policyTitle && (
                 <div className="flex items-start gap-2 mt-4">
                   <input type="checkbox" disabled className="w-4 h-4 mt-0.5 rounded shrink-0" />
-                  <span className="text-[12px]" style={{ color: formTextColor }}>
+                  <span className="text-[13px]" style={{ color: formTextColor }}>
                     {policyTitle}
                     {policyLink && <span className="underline ml-1 opacity-60">View Policy</span>}
                   </span>
                 </div>
               )}
 
-              <button disabled className="mt-6 w-full py-3 rounded-xl text-[14px] font-semibold"
+              <button disabled className="mt-6 w-full py-3 rounded-xl text-[15px] font-semibold"
                 style={{ background: btnColor, color: btnTextColor }}>
                 {submitLabel || 'Submit'}
               </button>
@@ -1138,7 +1138,7 @@ export default function CustomFormDetailPage() {
               <div className="mt-5 max-w-sm mx-auto bg-emerald-50 border border-emerald-100 rounded-2xl p-4 space-y-1.5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-700">CRM Mapping</p>
                 {selectedPipeline && (
-                  <p className="text-[12px] text-emerald-800">
+                  <p className="text-[13px] text-emerald-800">
                     Pipeline: <span className="font-semibold">{selectedPipeline.name}</span>
                     {stageId && selectedPipeline.stages && (
                       <> → <span className="font-semibold">

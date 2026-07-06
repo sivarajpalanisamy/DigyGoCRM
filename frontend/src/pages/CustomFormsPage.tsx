@@ -67,11 +67,11 @@ function SubmissionRow({ sub }: { sub: Submission }) {
     <div className="border-b border-black/5 last:border-0">
       {/* Summary row */}
       <div className="flex items-center gap-3 px-5 py-3.5 hover:bg-[var(--app-bg)] transition-colors">
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-[12px] font-bold text-primary uppercase">
+        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-[13px] font-bold text-primary uppercase">
           {(name as string).charAt(0) || '?'}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-[#1c1410] truncate">{name as string}</p>
+          <p className="text-[14px] font-semibold text-[#1c1410] truncate">{name as string}</p>
           <p className="text-[11px] text-[#7a6b5c]">{phone}</p>
         </div>
         <button
@@ -90,7 +90,7 @@ function SubmissionRow({ sub }: { sub: Submission }) {
           {keys.map((k) => (
             <div key={k} className="flex items-start gap-2">
               <span className="text-[11px] font-semibold text-[#7a6b5c] w-28 shrink-0 pt-0.5">{k}</span>
-              <span className="text-[12px] text-[#1c1410] break-all flex-1">{data[k] || '-'}</span>
+              <span className="text-[13px] text-[#1c1410] break-all flex-1">{data[k] || '-'}</span>
             </div>
           ))}
         </div>
@@ -319,7 +319,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="font-headline font-bold text-[#1c1410] text-[16px]">Custom Forms</h2>
-          <p className="text-[12px] text-[#7a6b5c] mt-0.5">
+          <p className="text-[13px] text-[#7a6b5c] mt-0.5">
             {forms.length} forms · {totalSubmissions.toLocaleString()} submissions
           </p>
         </div>
@@ -331,7 +331,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
       </div>
 
       {loading && (
-        <div className="text-center py-16 text-[#7a6b5c] text-[13px]">Loading forms…</div>
+        <div className="text-center py-16 text-[#7a6b5c] text-[14px]">Loading forms…</div>
       )}
 
       {!loading && forms.length === 0 && (
@@ -340,7 +340,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
             <FileText className="w-7 h-7 text-primary" />
           </div>
           <h3 className="font-headline font-bold text-[#1c1410] text-[15px] mb-1">No forms yet</h3>
-          <p className="text-[13px] text-[#7a6b5c] mb-5 max-w-xs mx-auto">
+          <p className="text-[14px] text-[#7a6b5c] mb-5 max-w-xs mx-auto">
             Create your first form and start capturing leads from your website or landing pages.
           </p>
           {canManageForms && (
@@ -358,7 +358,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
               key={form.id}
               className="group bg-white rounded-2xl border border-black/5 card-shadow flex flex-col hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
             >
-              {/* Card body — opens submissions panel */}
+              {/* Card body - opens submissions panel */}
               <div
                 className="flex-1 p-5 cursor-pointer"
                 onClick={() => openPanel(form)}
@@ -369,7 +369,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                       <FileText className="w-4 h-4 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-semibold text-[#1c1410] text-[14px] truncate group-hover:text-primary transition-colors">
+                      <h4 className="font-semibold text-[#1c1410] text-[15px] truncate group-hover:text-primary transition-colors">
                         {form.name}
                       </h4>
                       <p className="text-[11px] text-[#7a6b5c] mt-0.5 truncate">
@@ -381,7 +381,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                   </div>
                   <div className="flex items-center gap-1 bg-[var(--app-bg)] border border-black/5 rounded-lg px-2 py-1 shrink-0">
                     <Users className="w-3 h-3 text-[#7a6b5c]" />
-                    <span className="text-[12px] font-bold text-[#1c1410]">
+                    <span className="text-[13px] font-bold text-[#1c1410]">
                       {(form.submission_count ?? 0).toLocaleString()}
                     </span>
                   </div>
@@ -440,7 +440,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
               <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                 <Plus className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-[13px] font-semibold text-[#7a6b5c] group-hover:text-primary transition-colors">New Form</span>
+              <span className="text-[14px] font-semibold text-[#7a6b5c] group-hover:text-primary transition-colors">New Form</span>
             </button>
           )}
         </div>
@@ -483,11 +483,11 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
             <div className="shrink-0 px-5 py-3 bg-[var(--app-bg)] border-b border-black/5 flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-[#7a6b5c]" />
-                <span className="text-[12px] font-semibold text-[#1c1410]">{panelForm.submission_count} total</span>
+                <span className="text-[13px] font-semibold text-[#1c1410]">{panelForm.submission_count} total</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-[#7a6b5c]" />
-                <span className="text-[12px] text-[#7a6b5c]">
+                <span className="text-[13px] text-[#7a6b5c]">
                   {panelForm.pipeline_name
                     ? `${panelForm.pipeline_name}${panelForm.stage_name ? ` → ${panelForm.stage_name}` : ''}`
                     : 'No pipeline'}
@@ -498,7 +498,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
             {/* Submissions list */}
             <div className="flex-1 overflow-y-auto">
               {subLoading && (
-                <div className="py-16 text-center text-[13px] text-[#7a6b5c]">Loading submissions…</div>
+                <div className="py-16 text-center text-[14px] text-[#7a6b5c]">Loading submissions…</div>
               )}
 
               {!subLoading && submissions.length === 0 && (
@@ -506,13 +506,13 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                   <div className="w-12 h-12 bg-[var(--accent-tint)] rounded-2xl flex items-center justify-center mx-auto mb-3">
                     <Users className="w-6 h-6 text-primary" />
                   </div>
-                  <p className="text-[14px] font-semibold text-[#1c1410] mb-1">No submissions yet</p>
-                  <p className="text-[12px] text-[#7a6b5c]">
+                  <p className="text-[15px] font-semibold text-[#1c1410] mb-1">No submissions yet</p>
+                  <p className="text-[13px] text-[#7a6b5c]">
                     Share the form link to start collecting responses.
                   </p>
                   <button
                     onClick={() => { copyToClipboard(getShareLink(panelForm)); toast.success('Link copied!'); }}
-                    className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold bg-primary text-white mx-auto hover:bg-primary/90 transition-colors"
+                    className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-primary text-white mx-auto hover:bg-primary/90 transition-colors"
                   >
                     <Copy className="w-3.5 h-3.5" /> Copy Form Link
                   </button>
@@ -533,7 +533,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
               <div className="shrink-0 px-5 py-3 border-t border-black/5 bg-[var(--app-bg)]">
                 <button
                   onClick={() => { copyToClipboard(getShareLink(panelForm)); toast.success('Link copied!'); }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold border border-black/8 text-[#7a6b5c] hover:bg-white hover:text-primary transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-semibold border border-black/8 text-[#7a6b5c] hover:bg-white hover:text-primary transition-colors"
                 >
                   <Link className="w-3.5 h-3.5" /> Copy Form Link
                 </button>
@@ -559,9 +559,9 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
             <div className="px-6 py-5 space-y-4">
               <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
                 <Link className="w-4 h-4 text-amber-500 shrink-0" />
-                <p className="text-[12px] text-amber-700 font-medium flex-1 break-all">{getShareLink(shareLinkForm)}</p>
+                <p className="text-[13px] text-amber-700 font-medium flex-1 break-all">{getShareLink(shareLinkForm)}</p>
               </div>
-              <p className="text-[12px] text-[#7a6b5c]">Share this link via email, WhatsApp, or social media.</p>
+              <p className="text-[13px] text-[#7a6b5c]">Share this link via email, WhatsApp, or social media.</p>
             </div>
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-black/5">
               <Button variant="outline" onClick={() => setShareLinkFormId(null)}>Close</Button>
@@ -582,26 +582,26 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
               <h3 className="font-headline font-bold text-[#1c1410] text-[16px]">Delete this form?</h3>
-              <p className="text-[13px] text-[#7a6b5c] mt-2">
+              <p className="text-[14px] text-[#7a6b5c] mt-2">
                 <span className="font-semibold text-[#1c1410]">"{deleteTarget.name}"</span> will be permanently deleted.
               </p>
               {(deleteTarget.submission_count ?? 0) > 0 && (
                 <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mt-3">
-                  This form has <span className="font-bold">{deleteTarget.submission_count} submission{deleteTarget.submission_count !== 1 ? 's' : ''}</span> — it will be deactivated instead of deleted.
+                  This form has <span className="font-bold">{deleteTarget.submission_count} submission{deleteTarget.submission_count !== 1 ? 's' : ''}</span> - it will be deactivated instead of deleted.
                 </p>
               )}
             </div>
             <div className="flex gap-2 px-6 py-5">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold text-[#7a6b5c] border border-black/8 hover:bg-[var(--app-bg)] transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/8 hover:bg-[var(--app-bg)] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors"
               >
                 {deleting ? 'Deleting…' : 'Yes, Delete'}
               </button>
@@ -619,7 +619,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                 <Copy className="w-5 h-5 text-primary" />
               </div>
               <h3 className="font-headline font-bold text-[#1c1410] text-[16px]">Clone this form?</h3>
-              <p className="text-[13px] text-[#7a6b5c] mt-2">
+              <p className="text-[14px] text-[#7a6b5c] mt-2">
                 A copy of <span className="font-semibold text-[#1c1410]">"{cloneTarget.name}"</span> will be created with all fields and settings intact.
               </p>
               <p className="text-[11px] text-[#b09e8d] mt-1.5">
@@ -629,14 +629,14 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
             <div className="flex gap-2 px-6 py-5">
               <button
                 onClick={() => setCloneTarget(null)}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold text-[#7a6b5c] border border-black/8 hover:bg-[var(--app-bg)] transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/8 hover:bg-[var(--app-bg)] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleClone}
                 disabled={cloning}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 transition-colors"
               >
                 {cloning ? 'Cloning…' : 'Yes, Clone it'}
               </button>
@@ -669,7 +669,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                 <button
                   key={tab}
                   onClick={() => setEmbedTab(tab)}
-                  className={`px-4 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${
+                  className={`px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-colors ${
                     embedTab === tab
                       ? 'bg-primary text-white'
                       : 'bg-[var(--app-bg)] text-[#7a6b5c] hover:bg-[var(--accent-tint)]'
@@ -684,7 +684,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
             <div className="px-6 py-4 space-y-3">
               {embedTab === 'iframe' ? (
                 <>
-                  <p className="text-[12px] text-[#7a6b5c]">
+                  <p className="text-[13px] text-[#7a6b5c]">
                     Paste this wherever you want the form to appear. Works in any CMS (WordPress, Webflow, Wix, etc.).
                   </p>
                   <div className="relative">
@@ -697,13 +697,13 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                     ><Copy className="w-3.5 h-3.5" /></button>
                   </div>
                   <p className="text-[11px] text-[#b09e8d]">
-                    Always shows the latest version of your form — no re-embedding needed after edits.
+                    Always shows the latest version of your form - no re-embedding needed after edits.
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-[12px] text-[#7a6b5c]">
-                    Paste anywhere on your page — no external JS required. Fields, colors and styles match your form exactly.
+                  <p className="text-[13px] text-[#7a6b5c]">
+                    Paste anywhere on your page - no external JS required. Fields, colors and styles match your form exactly.
                   </p>
                   <div className="relative">
                     <pre className="bg-[var(--app-bg)] rounded-xl p-4 text-xs font-mono text-[#1c1410] overflow-x-auto border border-black/5 max-h-64 whitespace-pre-wrap break-all">

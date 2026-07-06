@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, X, RefreshCw, Check, Mail, ExternalLink, Unplug, Eye, EyeOff, QrCode, Wifi, WifiOff, BarChart2, Plus, Trash2, ChevronLeft, Pencil } from 'lucide-react';
+import { ArrowLeft, X, RefreshCw, Check, Mail, ExternalLink, Unplug, Eye, EyeOff, QrCode, Wifi, WifiOff, BarChart2, Plus, Trash2, ChevronLeft, Pencil, AlertTriangle } from 'lucide-react';
 import { getSocket } from '@/lib/socket';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
@@ -206,11 +206,11 @@ function WabaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         </Button>
       </>
     }>
-      {/* Embedded Signup — the recommended self-serve path */}
+      {/* Embedded Signup - the recommended self-serve path */}
       {esConfig?.available && (
         <div className="rounded-xl border border-[#1877F2]/30 bg-[#1877F2]/5 p-3.5 mb-1">
-          <p className="text-[12px] text-[#5c5245] mb-2.5 leading-relaxed">
-            <strong className="text-[#1c1410]">Recommended.</strong> Connect your own WhatsApp number — Meta
+          <p className="text-[13px] text-[#5c5245] mb-2.5 leading-relaxed">
+            <strong className="text-[#1c1410]">Recommended.</strong> Connect your own WhatsApp number - Meta
             guides you through it in a popup. No tokens to copy.
           </p>
           <button
@@ -237,7 +237,7 @@ function WabaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         </div>
       )}
 
-      <p className="text-[12px] text-[#7a6b5c]">Get these values from your Meta Business Manager → WhatsApp → API Setup.</p>
+      <p className="text-[13px] text-[#7a6b5c]">Get these values from your Meta Business Manager → WhatsApp → API Setup.</p>
       <div>
         <label className={labelCls}>Phone Number ID *</label>
         <Input value={form.phone_number_id} onChange={(e) => set('phone_number_id', e.target.value)} placeholder="123456789012345" />
@@ -372,7 +372,7 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       </>
     }>
       <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mb-1">
-        <p className="text-[12px] text-blue-700">
+        <p className="text-[13px] text-blue-700">
           <strong>Note:</strong> Make sure your SMTP settings are correct. Test the configuration and send a test email before enabling.
         </p>
       </div>
@@ -447,13 +447,13 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2 pt-1">
         <button onClick={handleTest} disabled={testing}
-          className="px-4 py-2 rounded-lg text-[13px] font-semibold text-white bg-[#3b82f6] hover:bg-[#2563eb] transition-colors disabled:opacity-60">
+          className="px-4 py-2 rounded-lg text-[14px] font-semibold text-white bg-[#3b82f6] hover:bg-[#2563eb] transition-colors disabled:opacity-60">
           {testing ? 'Testing…' : 'Test Configuration'}
         </button>
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
           <Input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="recipient@email.com" className="text-sm flex-1" />
           <button onClick={handleSendTest} disabled={sendingTest}
-            className="px-4 py-2 rounded-lg text-[13px] font-semibold text-white bg-[#7c3aed] hover:bg-[#6d28d9] transition-colors disabled:opacity-60 whitespace-nowrap">
+            className="px-4 py-2 rounded-lg text-[14px] font-semibold text-white bg-[#7c3aed] hover:bg-[#6d28d9] transition-colors disabled:opacity-60 whitespace-nowrap">
             {sendingTest ? 'Sending…' : 'Send Test Email'}
           </button>
         </div>
@@ -462,7 +462,7 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       {/* Enable/Disable toggle */}
       <div className="flex items-center justify-between pt-3 mt-2 border-t border-gray-100">
         <div>
-          <p className="text-[13px] font-semibold text-[#1c1410]">Enable Email Configuration</p>
+          <p className="text-[14px] font-semibold text-[#1c1410]">Enable Email Configuration</p>
           <p className="text-[11px] text-[#7a6b5c]">Toggle to enable or disable your custom email config</p>
         </div>
         <div onClick={handleToggle}
@@ -521,7 +521,7 @@ function WaPersonalModal({ onClose, onConnected, sessionId: initialSessionId }: 
   const handleClose = async () => {
     clearTimers();
     if (!connectedRef.current && sessionIdRef.current) {
-      // User closed without scanning — remove the orphan session
+      // User closed without scanning - remove the orphan session
       try { await api.delete(`/api/whatsapp-personal/sessions/${sessionIdRef.current}`); } catch {}
     }
     onClose();
@@ -606,14 +606,14 @@ function WaPersonalModal({ onClose, onConnected, sessionId: initialSessionId }: 
               <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
                 <Check className="w-8 h-8 text-emerald-600" />
               </div>
-              <p className="text-[14px] font-bold text-emerald-600">Connected!</p>
-              <p className="text-[12px] text-[#7a6b5c] text-center">WhatsApp Personal is now linked to your CRM.</p>
+              <p className="text-[15px] font-bold text-emerald-600">Connected!</p>
+              <p className="text-[13px] text-[#7a6b5c] text-center">WhatsApp Personal is now linked to your CRM.</p>
             </>
           ) : qr ? (
             <>
               <img src={qr} alt="WhatsApp QR Code" className="w-52 h-52 rounded-xl border border-black/10" />
               <div className="flex flex-col items-center gap-1">
-                <p className="text-[13px] font-semibold text-[#1c1410]">Scan with WhatsApp on your phone</p>
+                <p className="text-[14px] font-semibold text-[#1c1410]">Scan with WhatsApp on your phone</p>
                 <p className="text-[11px] text-[#9e8e7e]">WhatsApp → Linked Devices → Link a Device</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
@@ -626,11 +626,11 @@ function WaPersonalModal({ onClose, onConnected, sessionId: initialSessionId }: 
               <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
                 <X className="w-7 h-7 text-red-400" />
               </div>
-              <p className="text-[13px] font-semibold text-[#1c1410]">QR generation timed out</p>
-              <p className="text-[11px] text-[#9e8e7e] text-center">WhatsApp didn't respond in 60s. This is usually temporary throttling — wait a few minutes then try again.</p>
+              <p className="text-[14px] font-semibold text-[#1c1410]">QR generation timed out</p>
+              <p className="text-[11px] text-[#9e8e7e] text-center">WhatsApp didn't respond in 60s. This is usually temporary throttling - wait a few minutes then try again.</p>
               <button
                 onClick={startSession}
-                className="mt-1 flex items-center gap-1.5 text-[12px] font-semibold text-white bg-[#128C7E] rounded-lg px-4 py-1.5 hover:bg-[#0f7a6d] transition-colors"
+                className="mt-1 flex items-center gap-1.5 text-[13px] font-semibold text-white bg-[#128C7E] rounded-lg px-4 py-1.5 hover:bg-[#0f7a6d] transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />Try Again
               </button>
@@ -643,7 +643,7 @@ function WaPersonalModal({ onClose, onConnected, sessionId: initialSessionId }: 
                   : <RefreshCw className="w-7 h-7 text-[#9e8e7e] animate-spin" />
                 }
               </div>
-              <p className="text-[13px] text-[#7a6b5c] text-center">
+              <p className="text-[14px] text-[#7a6b5c] text-center">
                 {starting ? 'Starting session…' : 'Generating QR code…'}
               </p>
             </>
@@ -923,7 +923,7 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
           {view === 'list' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[12px] text-[#7a6b5c]">{configs.length} sheet{configs.length !== 1 ? 's' : ''} connected</p>
+                <p className="text-[13px] text-[#7a6b5c]">{configs.length} sheet{configs.length !== 1 ? 's' : ''} connected</p>
                 <Button size="sm" variant="outline" onClick={() => { resetAddState(); setView('add'); }}>
                   <Plus className="w-3.5 h-3.5 mr-1" />Add Sheet
                 </Button>
@@ -932,7 +932,7 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                 {configs.map((c) => (
                   <div key={c.id} className="flex items-center gap-3 bg-[var(--app-bg)] rounded-xl border border-black/5 px-4 py-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-[#1c1410] truncate">
+                      <p className="text-[14px] font-semibold text-[#1c1410] truncate">
                         {c.spreadsheet_name ?? c.spreadsheet_id}
                         {c.sheet_name ? <span className="text-[#9e8e7e] font-normal"> › {c.sheet_name}</span> : null}
                       </p>
@@ -986,7 +986,7 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
               )}
 
               {editingId && loading && (
-                <div className="flex items-center gap-2 text-[12px] text-[#7a6b5c] py-2">
+                <div className="flex items-center gap-2 text-[13px] text-[#7a6b5c] py-2">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Loading current columns & mapping…
                 </div>
               )}
@@ -1000,18 +1000,18 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Website Leads"
                     />
-                    <p className="text-[11px] text-[#9e8e7e] mt-1">Shown in your connected-sheets list. Auto-filled from the spreadsheet title — edit if you like.</p>
+                    <p className="text-[11px] text-[#9e8e7e] mt-1">Shown in your connected-sheets list. Auto-filled from the spreadsheet title - edit if you like.</p>
                   </div>
                   {/* Pipeline & Stage selection */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={labelCls}>Pipeline</label>
                       <select
-                        className="w-full text-[12px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
+                        className="w-full text-[13px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
                         value={sheetPipelineId}
                         onChange={(e) => { setSheetPipelineId(e.target.value); setSheetStageId(''); }}
                       >
-                        <option value="">— Default —</option>
+                        <option value="">- Default -</option>
                         {pipelines.map((p: any) => (
                           <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
@@ -1020,12 +1020,12 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                     <div>
                       <label className={labelCls}>Stage</label>
                       <select
-                        className="w-full text-[12px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
+                        className="w-full text-[13px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
                         value={sheetStageId}
                         onChange={(e) => setSheetStageId(e.target.value)}
                         disabled={!sheetPipelineId}
                       >
-                        <option value="">— First stage —</option>
+                        <option value="">- First stage -</option>
                         {sheetPipelineId && (pipelines.find((p: any) => p.id === sheetPipelineId) as any)?.stages?.map((s: any) => (
                           <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
@@ -1035,7 +1035,7 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                   <p className="text-[11px] text-[#9e8e7e] -mt-1">Imported leads land in this pipeline. Duplicates are checked within the same pipeline only.</p>
 
                   <div className="flex items-center justify-between">
-                    <p className="text-[12px] font-semibold text-[#1c1410]">Where should each column go?</p>
+                    <p className="text-[13px] font-semibold text-[#1c1410]">Where should each column go?</p>
                     <button
                       type="button"
                       onClick={captureRest}
@@ -1049,16 +1049,16 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                       const d = colDest[h] ?? '';
                       return (
                         <div key={h} className="grid grid-cols-2 gap-3 items-center">
-                          <p className="text-[12px] font-semibold text-[#5c5245] truncate" title={h}>{h}</p>
+                          <p className="text-[13px] font-semibold text-[#5c5245] truncate" title={h}>{h}</p>
                           <select
-                            className="text-[12px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
+                            className="text-[13px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
                             value={d}
                             onChange={(e) => {
                               if (e.target.value === 'new') { setCreatingHeader(h); return; }
                               setDest(h, e.target.value);
                             }}
                           >
-                            <option value="">— Don't import —</option>
+                            <option value="">- Don't import -</option>
                             <optgroup label="Core fields">
                               <option value="core:name">Lead Name</option>
                               <option value="core:phone">Phone</option>
@@ -1072,7 +1072,7 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                                 ))}
                               </optgroup>
                             )}
-                            <option value="new">➕ New custom field…</option>
+                            <option value="new">New custom field…</option>
                           </select>
                         </div>
                       );
@@ -1159,7 +1159,7 @@ function SuperfoneModal({ onClose, onSaved, tenantId }: { onClose: () => void; o
         </Button>
       </>
     }>
-      <p className="text-[12px] text-[#7a6b5c]">Connect your Superfone account to log calls, play recordings, and trigger automations.</p>
+      <p className="text-[13px] text-[#7a6b5c]">Connect your Superfone account to log calls, play recordings, and trigger automations.</p>
 
       {/* Webhook URL to copy */}
       <div className="bg-[#f5f0eb] rounded-xl p-3 space-y-1">
@@ -1179,11 +1179,11 @@ function SuperfoneModal({ onClose, onSaved, tenantId }: { onClose: () => void; o
       <div>
         <label className={labelCls}>Superfone Business Number *</label>
         <Input value={form.superfone_number} onChange={(e) => set('superfone_number', e.target.value)} placeholder="+919429694726" />
-        <p className="text-[10px] text-[#b09e8d] mt-1">Your Superfone virtual number — used to match incoming call webhooks</p>
+        <p className="text-[10px] text-[#b09e8d] mt-1">Your Superfone virtual number - used to match incoming call webhooks</p>
       </div>
 
       <div>
-        <label className={labelCls}>API Key (optional — needed to push leads to Superfone)</label>
+        <label className={labelCls}>API Key (optional - needed to push leads to Superfone)</label>
         <div className="relative">
           <Input
             value={form.api_key}
@@ -1204,7 +1204,7 @@ function SuperfoneModal({ onClose, onSaved, tenantId }: { onClose: () => void; o
         <label className={labelCls}>Superfone Endpoint URL (optional)</label>
         <Input value={form.superfone_endpoint_url} onChange={(e) => set('superfone_endpoint_url', e.target.value)}
           placeholder="https://prod-api.superfone.co.in/superfone/webhook/integration/..." type="url" />
-        <p className="text-[10px] text-[#b09e8d] mt-1">Superfone's webhook URL — required to push new leads from CRM to Superfone</p>
+        <p className="text-[10px] text-[#b09e8d] mt-1">Superfone's webhook URL - required to push new leads from CRM to Superfone</p>
       </div>
     </Modal>
   );
@@ -1243,8 +1243,8 @@ function IntegCard({ icon, name, tagline, connected, onConnect, onConfigure, onD
           </span>
         </div>
         <div className="flex-1">
-          <p className="text-[14px] font-bold text-[#1c1410]">{name}</p>
-          <p className="text-[12px] text-[#9e8e7e] mt-0.5 leading-relaxed">{lockedNote ?? tagline}</p>
+          <p className="text-[15px] font-bold text-[#1c1410]">{name}</p>
+          <p className="text-[13px] text-[#9e8e7e] mt-0.5 leading-relaxed">{lockedNote ?? tagline}</p>
         </div>
         <Button variant="outline" size="sm" className="flex-1" disabled>
           Contact Hawcus to enable
@@ -1260,8 +1260,8 @@ function IntegCard({ icon, name, tagline, connected, onConnect, onConfigure, onD
         <StatusBadge connected={connected} />
       </div>
       <div className="flex-1">
-        <p className="text-[14px] font-bold text-[#1c1410]">{name}</p>
-        <p className="text-[12px] text-[#9e8e7e] mt-0.5 leading-relaxed">{tagline}</p>
+        <p className="text-[15px] font-bold text-[#1c1410]">{name}</p>
+        <p className="text-[13px] text-[#9e8e7e] mt-0.5 leading-relaxed">{tagline}</p>
       </div>
       <div className="flex gap-2">
         {connected ? (
@@ -1331,10 +1331,10 @@ function RazorpayModal({ onClose, onSaved, webhookUrl }: { onClose: () => void; 
       <div className="space-y-4">
         {/* Step 1: Webhook URL */}
         <div>
-          <p className="text-[13px] font-semibold text-[#1c1410] mb-2">Step 1: Copy your Webhook URL</p>
+          <p className="text-[14px] font-semibold text-[#1c1410] mb-2">Step 1: Copy your Webhook URL</p>
           <div className="flex items-center gap-2">
-            <input readOnly value={webhookUrl} className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-[12px] text-[#7a6b5c] bg-gray-50 outline-none" />
-            <button onClick={copyUrl} className="px-3 py-2 rounded-lg border border-gray-200 text-[12px] font-semibold text-[#1c1410] hover:bg-gray-50 transition-colors">
+            <input readOnly value={webhookUrl} className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-[#7a6b5c] bg-gray-50 outline-none" />
+            <button onClick={copyUrl} className="px-3 py-2 rounded-lg border border-gray-200 text-[13px] font-semibold text-[#1c1410] hover:bg-gray-50 transition-colors">
               {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
@@ -1342,8 +1342,8 @@ function RazorpayModal({ onClose, onSaved, webhookUrl }: { onClose: () => void; 
 
         {/* Step 2: Instructions */}
         <div>
-          <p className="text-[13px] font-semibold text-[#1c1410] mb-2">Step 2: Add webhook in Razorpay</p>
-          <ol className="text-[12px] text-[#7a6b5c] space-y-1.5 list-decimal pl-4">
+          <p className="text-[14px] font-semibold text-[#1c1410] mb-2">Step 2: Add webhook in Razorpay</p>
+          <ol className="text-[13px] text-[#7a6b5c] space-y-1.5 list-decimal pl-4">
             <li>Login to your <span className="font-semibold text-[#1c1410]">Razorpay Dashboard</span></li>
             <li>Go to <span className="font-semibold text-[#1c1410]">Settings &gt; Webhooks &gt; Add New Webhook</span></li>
             <li>Paste the webhook URL above</li>
@@ -1354,13 +1354,13 @@ function RazorpayModal({ onClose, onSaved, webhookUrl }: { onClose: () => void; 
 
         {/* Step 3: Paste secret */}
         <div>
-          <p className="text-[13px] font-semibold text-[#1c1410] mb-2">Step 3: Paste your Webhook Secret</p>
+          <p className="text-[14px] font-semibold text-[#1c1410] mb-2">Step 3: Paste your Webhook Secret</p>
           <input
             type="password"
             value={secret}
             onChange={(e) => setSecret(e.target.value)}
             placeholder="Enter Razorpay webhook secret"
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[14px] text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
           />
         </div>
       </div>
@@ -1397,7 +1397,7 @@ export default function IntegrationsPage() {
     } catch {}
   };
   const addWaSession = () => {
-    setWaQrSessionId(null); // no session yet — modal will create one
+    setWaQrSessionId(null); // no session yet - modal will create one
     setModal('wa_personal');
   };
 
@@ -1472,18 +1472,18 @@ export default function IntegrationsPage() {
         </button>
         <div>
           <h2 className="font-headline font-bold text-[17px] text-[#1c1410]">Integrations</h2>
-          <p className="text-[12px] text-[#9e8e7e]">Connect your tools to Hawcus CRM</p>
+          <p className="text-[13px] text-[#9e8e7e]">Connect your tools to Hawcus CRM</p>
         </div>
       </div>
 
-      {/* Meta disconnected banner — lead capture is broken until reconnected */}
+      {/* Meta disconnected banner - lead capture is broken until reconnected */}
       {metaHealth.needsReconnect && (
         <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
-          <span className="text-red-500 text-lg leading-none mt-0.5">⚠️</span>
+          <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <p className="text-[13px] font-bold text-red-700">Facebook lead capture is disconnected</p>
-            <p className="text-[12px] text-red-600 mt-0.5">
-              We can no longer pull leads from your Facebook page — new leads are <b>not</b> being captured.
+            <p className="text-[14px] font-bold text-red-700">Facebook lead capture is disconnected</p>
+            <p className="text-[13px] text-red-600 mt-0.5">
+              We can no longer pull leads from your Facebook page - new leads are <b>not</b> being captured.
               Reconnect Meta below to resume.{metaHealth.lastError ? ` (Meta: ${metaHealth.lastError})` : ''}
             </p>
           </div>
@@ -1525,7 +1525,7 @@ export default function IntegrationsPage() {
           onDisconnect={() => disconnect('waba', '/api/integrations/waba/disconnect')}
         />
 
-        {/* WhatsApp Personal (QR) — Multi-session */}
+        {/* WhatsApp Personal (QR) - Multi-session */}
         <div className="bg-white rounded-2xl border border-black/5 p-5 flex flex-col gap-4 hover:shadow-sm transition-all duration-200">
           <div className="flex items-start justify-between gap-2">
             <WhatsAppPersonalIcon />
@@ -1542,8 +1542,8 @@ export default function IntegrationsPage() {
             </span>
           </div>
           <div className="flex-1">
-            <p className="text-[14px] font-bold text-[#1c1410]">WhatsApp Personal (QR)</p>
-            <p className="text-[12px] text-[#9e8e7e] mt-0.5 leading-relaxed">
+            <p className="text-[15px] font-bold text-[#1c1410]">WhatsApp Personal (QR)</p>
+            <p className="text-[13px] text-[#9e8e7e] mt-0.5 leading-relaxed">
               Link multiple WhatsApp numbers via QR scan. Send messages to any contact without WABA approval.
             </p>
           </div>
@@ -1569,7 +1569,7 @@ export default function IntegrationsPage() {
                       }}>
                         <input
                           autoFocus
-                          className="text-[12px] font-semibold text-[#1c1410] bg-white border border-black/10 rounded px-1.5 py-0.5 w-full outline-none focus:border-[#128C7E]"
+                          className="text-[13px] font-semibold text-[#1c1410] bg-white border border-black/10 rounded px-1.5 py-0.5 w-full outline-none focus:border-[#128C7E]"
                           value={editingWaName}
                           onChange={(e) => setEditingWaName(e.target.value)}
                           onBlur={(e) => { (e.target.closest('form') as HTMLFormElement)?.requestSubmit(); }}
@@ -1577,7 +1577,7 @@ export default function IntegrationsPage() {
                         />
                       </form>
                     ) : (
-                      <p className="text-[12px] font-semibold text-[#1c1410] truncate flex items-center gap-1">
+                      <p className="text-[13px] font-semibold text-[#1c1410] truncate flex items-center gap-1">
                         {s.session_name}
                         <button
                           className="text-[#9e8e7e] hover:text-[#128C7E] transition-colors p-0.5 shrink-0"
@@ -1629,13 +1629,13 @@ export default function IntegrationsPage() {
 
           <div className="flex gap-2">
             <button
-              className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold text-white bg-[#128C7E] rounded-lg px-3 py-1.5 hover:bg-[#0f7a6d] transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 text-[13px] font-semibold text-white bg-[#128C7E] rounded-lg px-3 py-1.5 hover:bg-[#0f7a6d] transition-colors"
               onClick={addWaSession}
             >
               <Plus className="w-3.5 h-3.5" />Add New WhatsApp Device
             </button>
             <button
-              className="flex items-center justify-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] border border-black/10 rounded-lg px-3 py-1.5 hover:bg-[var(--accent-tint)] hover:text-[var(--brand-dark)] transition-colors"
+              className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#7a6b5c] border border-black/10 rounded-lg px-3 py-1.5 hover:bg-[var(--accent-tint)] hover:text-[var(--brand-dark)] transition-colors"
               onClick={() => navigate('/automation/devices')}
             >
               <BarChart2 className="w-3.5 h-3.5" />Manage Devices

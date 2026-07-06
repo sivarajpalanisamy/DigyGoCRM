@@ -59,6 +59,11 @@ flutter:
   assets:
     - assets/branding/
 
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf
+
 # ── Launcher icon (orange telephone handset) ────────────────────────────────────
 flutter_launcher_icons:
   android: true

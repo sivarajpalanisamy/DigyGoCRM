@@ -122,11 +122,11 @@ export default function WhatsAppDevicesPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="font-headline font-bold text-[17px] text-[#1c1410]">My Devices</h2>
-          <p className="text-[12px] text-[#9e8e7e]">Manage your WhatsApp Personal devices connected via QR scan</p>
+          <p className="text-[13px] text-[#9e8e7e]">Manage your WhatsApp Personal devices connected via QR scan</p>
         </div>
         <button
           onClick={addDevice}
-          className="flex items-center gap-1.5 text-[12px] font-semibold text-white bg-[#128C7E] rounded-lg px-4 py-2 hover:bg-[#0f7a6d] transition-colors shrink-0"
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-white bg-[#128C7E] rounded-lg px-4 py-2 hover:bg-[#0f7a6d] transition-colors shrink-0"
         >
           <Plus className="w-3.5 h-3.5" />Add New Device
         </button>
@@ -143,7 +143,7 @@ export default function WhatsAppDevicesPage() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9e8e7e]" />
         <input
-          className="w-full pl-9 pr-3 py-2 text-[13px] rounded-xl border border-black/10 bg-white outline-none focus:border-[#128C7E] transition-colors"
+          className="w-full pl-9 pr-3 py-2 text-[14px] rounded-xl border border-black/10 bg-white outline-none focus:border-[#128C7E] transition-colors"
           placeholder="Search devices..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -151,7 +151,7 @@ export default function WhatsAppDevicesPage() {
       </div>
 
       {/* Count */}
-      <p className="text-[12px] text-[#9e8e7e]">Showing {filtered.length} of {devices.length} devices</p>
+      <p className="text-[13px] text-[#9e8e7e]">Showing {filtered.length} of {devices.length} devices</p>
 
       {/* Device grid */}
       {loading ? (
@@ -161,8 +161,8 @@ export default function WhatsAppDevicesPage() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-[#9e8e7e]">
           <QrCode className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="text-[14px] font-semibold">No devices found</p>
-          <p className="text-[12px] mt-1">{devices.length === 0 ? 'Add your first WhatsApp device to get started' : 'Try adjusting your search or filter'}</p>
+          <p className="text-[15px] font-semibold">No devices found</p>
+          <p className="text-[13px] mt-1">{devices.length === 0 ? 'Add your first WhatsApp device to get started' : 'Try adjusting your search or filter'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -189,15 +189,15 @@ export default function WhatsAppDevicesPage() {
           <div className="p-5 space-y-4">
             <input
               autoFocus
-              className="w-full px-3 py-2 text-[13px] rounded-lg border border-black/10 outline-none focus:border-[#128C7E]"
+              className="w-full px-3 py-2 text-[14px] rounded-lg border border-black/10 outline-none focus:border-[#128C7E]"
               value={renameName}
               onChange={(e) => setRenameName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') saveRename(); }}
               placeholder="Device name"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setRenameDevice(null)} className="text-[12px] text-[#7a6b5c] px-4 py-1.5 rounded-lg border border-black/10 hover:bg-[var(--accent-tint)]">Cancel</button>
-              <button onClick={saveRename} className="text-[12px] font-semibold text-white bg-[#128C7E] px-4 py-1.5 rounded-lg hover:bg-[#0f7a6d]">Save</button>
+              <button onClick={() => setRenameDevice(null)} className="text-[13px] text-[#7a6b5c] px-4 py-1.5 rounded-lg border border-black/10 hover:bg-[var(--accent-tint)]">Cancel</button>
+              <button onClick={saveRename} className="text-[13px] font-semibold text-white bg-[#128C7E] px-4 py-1.5 rounded-lg hover:bg-[#0f7a6d]">Save</button>
             </div>
           </div>
         </ModalShell>
@@ -207,9 +207,9 @@ export default function WhatsAppDevicesPage() {
       {assignDevice && (
         <ModalShell title={`Assign Staff - ${assignDevice.session_name}`} onClose={() => setAssignDevice(null)}>
           <div className="p-5 space-y-4">
-            <p className="text-[12px] text-[#9e8e7e]">Select staff members who can send messages from this device.</p>
+            <p className="text-[13px] text-[#9e8e7e]">Select staff members who can send messages from this device.</p>
             <div className="max-h-[250px] overflow-y-auto space-y-1.5">
-              {staff.length === 0 && <p className="text-[12px] text-[#9e8e7e] py-4 text-center">No staff members found</p>}
+              {staff.length === 0 && <p className="text-[13px] text-[#9e8e7e] py-4 text-center">No staff members found</p>}
               {staff.map((s) => (
                 <label key={s.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--accent-tint)] cursor-pointer">
                   <input
@@ -218,7 +218,7 @@ export default function WhatsAppDevicesPage() {
                     onChange={() => setAssignIds((prev) => prev.includes(s.id) ? prev.filter((x) => x !== s.id) : [...prev, s.id])}
                     className="accent-[#128C7E] w-3.5 h-3.5"
                   />
-                  <span className="text-[13px] text-[#1c1410]">{s.name}</span>
+                  <span className="text-[14px] text-[#1c1410]">{s.name}</span>
                 </label>
               ))}
             </div>
@@ -239,8 +239,8 @@ export default function WhatsAppDevicesPage() {
               </div>
             )}
             <div className="flex justify-end gap-2">
-              <button onClick={() => setAssignDevice(null)} className="text-[12px] text-[#7a6b5c] px-4 py-1.5 rounded-lg border border-black/10 hover:bg-[var(--accent-tint)]">Cancel</button>
-              <button onClick={saveAssign} className="text-[12px] font-semibold text-white bg-[#128C7E] px-4 py-1.5 rounded-lg hover:bg-[#0f7a6d]">Save</button>
+              <button onClick={() => setAssignDevice(null)} className="text-[13px] text-[#7a6b5c] px-4 py-1.5 rounded-lg border border-black/10 hover:bg-[var(--accent-tint)]">Cancel</button>
+              <button onClick={saveAssign} className="text-[13px] font-semibold text-white bg-[#128C7E] px-4 py-1.5 rounded-lg hover:bg-[#0f7a6d]">Save</button>
             </div>
           </div>
         </ModalShell>
@@ -330,19 +330,19 @@ function DeviceCard({ device: d, menuOpen, onMenuToggle, onScan, onRename, onAss
       </div>
 
       {/* Phone */}
-      <div className="text-[13px] text-[#1c1410]">
+      <div className="text-[14px] text-[#1c1410]">
         <span className="text-[#9e8e7e]">Phone : </span>
         <span className="font-semibold">{d.phone_number || '-'}</span>
       </div>
 
       {/* Total Messages */}
-      <div className="text-[13px] text-[#1c1410]">
+      <div className="text-[14px] text-[#1c1410]">
         <span className="text-[#9e8e7e]">Total Messages: </span>
         <span className="font-semibold">{d.total_messages.toLocaleString()}</span>
       </div>
 
       {/* Status */}
-      <div className="flex items-center gap-2 text-[13px]">
+      <div className="flex items-center gap-2 text-[14px]">
         <span className="text-[#9e8e7e]">Status:</span>
         {d.status === 'connected' ? (
           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
@@ -360,7 +360,7 @@ function DeviceCard({ device: d, menuOpen, onMenuToggle, onScan, onRename, onAss
       </div>
 
       {/* Assigned Staff */}
-      <div className="text-[13px]">
+      <div className="text-[14px]">
         <span className="text-[#9e8e7e]">Assigned Staff:</span>
         <div className="flex flex-wrap gap-1.5 mt-1.5">
           {d.assigned_staff.length === 0 ? (
@@ -385,7 +385,7 @@ function MenuItem({ icon, label, onClick, danger }: { icon: React.ReactNode; lab
     <button
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-2.5 px-4 py-2 text-[12px] hover:bg-[var(--accent-tint)] transition-colors text-left',
+        'w-full flex items-center gap-2.5 px-4 py-2 text-[13px] hover:bg-[var(--accent-tint)] transition-colors text-left',
         danger ? 'text-red-500' : 'text-[#1c1410]',
       )}
     >
@@ -487,7 +487,7 @@ function QrScanModal({ device, onClose, onConnected }: { device: Device; onClose
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
       <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
         <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
-          <p className="text-[15px] font-bold text-[#1c1410]">Scan QR — {device.session_name}</p>
+          <p className="text-[15px] font-bold text-[#1c1410]">Scan QR - {device.session_name}</p>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]"><X size={15} /></button>
         </div>
         <div className="p-6 flex flex-col items-center gap-4">
@@ -496,14 +496,14 @@ function QrScanModal({ device, onClose, onConnected }: { device: Device; onClose
               <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
                 <Check className="w-8 h-8 text-emerald-600" />
               </div>
-              <p className="text-[14px] font-bold text-emerald-600">Connected!</p>
-              <p className="text-[12px] text-[#7a6b5c] text-center">WhatsApp is now linked to your CRM.</p>
+              <p className="text-[15px] font-bold text-emerald-600">Connected!</p>
+              <p className="text-[13px] text-[#7a6b5c] text-center">WhatsApp is now linked to your CRM.</p>
             </>
           ) : qr ? (
             <>
               <img src={qr} alt="WhatsApp QR Code" className="w-52 h-52 rounded-xl border border-black/10" />
               <div className="flex flex-col items-center gap-1">
-                <p className="text-[13px] font-semibold text-[#1c1410]">Scan with WhatsApp on your phone</p>
+                <p className="text-[14px] font-semibold text-[#1c1410]">Scan with WhatsApp on your phone</p>
                 <p className="text-[11px] text-[#9e8e7e]">WhatsApp → Linked Devices → Link a Device</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
@@ -516,9 +516,9 @@ function QrScanModal({ device, onClose, onConnected }: { device: Device; onClose
               <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
                 <X className="w-7 h-7 text-red-400" />
               </div>
-              <p className="text-[13px] font-semibold text-[#1c1410]">QR generation timed out</p>
+              <p className="text-[14px] font-semibold text-[#1c1410]">QR generation timed out</p>
               <p className="text-[11px] text-[#9e8e7e] text-center">Wait a few minutes then try again.</p>
-              <button onClick={startSession} className="mt-1 flex items-center gap-1.5 text-[12px] font-semibold text-white bg-[#128C7E] rounded-lg px-4 py-1.5 hover:bg-[#0f7a6d]">
+              <button onClick={startSession} className="mt-1 flex items-center gap-1.5 text-[13px] font-semibold text-white bg-[#128C7E] rounded-lg px-4 py-1.5 hover:bg-[#0f7a6d]">
                 <RefreshCw className="w-3.5 h-3.5" />Try Again
               </button>
             </>
@@ -527,7 +527,7 @@ function QrScanModal({ device, onClose, onConnected }: { device: Device; onClose
               <div className="w-16 h-16 rounded-2xl bg-[#f5f0eb] flex items-center justify-center">
                 <RefreshCw className="w-7 h-7 text-[#9e8e7e] animate-spin" />
               </div>
-              <p className="text-[13px] text-[#7a6b5c] text-center">
+              <p className="text-[14px] text-[#7a6b5c] text-center">
                 {starting ? 'Starting session…' : 'Generating QR code…'}
               </p>
             </>

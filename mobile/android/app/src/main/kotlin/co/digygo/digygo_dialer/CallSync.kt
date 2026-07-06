@@ -43,7 +43,7 @@ object CallSync {
     const val PREFS = "digygo_sync"
     private const val WATERMARK_KEY = "last_synced_call_date"
     private const val REC_WATERMARK_KEY = "last_uploaded_rec_ms"
-    // Max active-SIM count ever seen — persisted so a later permission revocation can't
+    // Max active-SIM count ever seen - persisted so a later permission revocation can't
     // silently downgrade a dual-SIM phone to "single SIM" and let the skipped SIM leak.
     private const val SIM_TOTAL_KEY = "sim_total_seen"
     private const val RECENT_WINDOW_MS = 5 * 60 * 1000L     // only sync calls that just ended
@@ -112,7 +112,7 @@ object CallSync {
             if (calls.isEmpty()) return
             val maxDate = calls.maxOf { it.date }
 
-            // SIM gate — only sync calls made/received on a verified SIM. On a dual-SIM
+            // SIM gate - only sync calls made/received on a verified SIM. On a dual-SIM
             // phone, calls on the SIM the user skipped must NOT reach the CRM. Each kept
             // call is tagged with its SIM slot + number so the backend can double-check.
             val toSync = filterAndTag(ctx, prefs, calls, readVerifiedSims(prefs))
@@ -226,7 +226,7 @@ object CallSync {
     // Keep only calls on a verified SIM, and tag each kept call with its slot + number.
     // FAIL CLOSED on a dual-SIM phone: a call is uploaded only when we positively resolve
     // its SIM slot AND that slot is one the user verified in the CRM. A call whose slot we
-    // cannot resolve, or that resolves to an unverified (skipped) SIM, is DROPPED — the
+    // cannot resolve, or that resolves to an unverified (skipped) SIM, is DROPPED - the
     // unverified SIM must never reach the CRM. On a single-SIM phone there is no ambiguity
     // (the only SIM is the verified one), so calls are kept and tagged with it.
     private fun filterAndTag(ctx: Context, prefs: SharedPreferences, calls: List<CallRow>, verified: List<SimRef>): List<CallRow> {

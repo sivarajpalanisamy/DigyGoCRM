@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Download, Play, Pause, Filter, X, Search, Phone, PhoneOff, Clock, ChevronDown, ChevronUp, UserPlus, Link2, XCircle, AlertTriangle } from 'lucide-react';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
 import { useCrmStore } from '@/store/crmStore';
+import { useHeaderSearch } from '@/store/headerSearchStore';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { LeadDetailPanel } from './LeadsPage';
@@ -99,7 +100,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
   const [staffName, setStaffName] = useState('');
   const [dateFrom, setDateFrom]   = useState('');
   const [dateTo, setDateTo]       = useState('');
-  const [search, setSearch]       = useState('');
+  const [search, setSearch]       = useHeaderSearch('Search calls by lead or phone');
   const [pipelineId, setPipelineId] = useState('');
   const [stageId, setStageId]       = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -316,7 +317,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">{source === 'superfone' ? 'Superfone Call Logs' : 'Dialer Call Logs'}</h1>
-          <p className="text-[13px] text-[#7a6b5c] mt-0.5">{total} total calls</p>
+          <p className="text-[14px] text-[#7a6b5c] mt-0.5">{total} total calls</p>
         </div>
         <div className="flex items-center gap-2">
           {([
@@ -330,7 +331,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               key={key}
               onClick={() => applyQuickDate(key)}
               className={cn(
-                'px-3 py-1.5 rounded-full text-[12px] font-semibold transition-colors',
+                'px-3 py-1.5 rounded-full text-[13px] font-semibold transition-colors',
                 quickDate === key
                   ? 'bg-primary text-white'
                   : 'bg-white border border-black/10 text-[#7a6b5c] hover:bg-[#faf0e8] hover:border-primary/30'
@@ -341,7 +342,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           ))}
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-black/10 bg-white text-[13px] font-semibold text-[#1c1410] hover:bg-[#faf0e8] hover:border-primary/30 transition-colors ml-2"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-black/10 bg-white text-[14px] font-semibold text-[#1c1410] hover:bg-[#faf0e8] hover:border-primary/30 transition-colors ml-2"
           >
             <Download className="w-4 h-4" /> Export
           </button>
@@ -349,19 +350,11 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
       </div>
 
       <div className="flex items-center gap-3 mb-4">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            className="w-full pl-9 pr-3 py-2 rounded-xl border border-black/10 bg-white text-[13px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-400"
-            placeholder="Search lead or phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        {/* Search moved to the navbar (context-aware header search). */}
         <button
           onClick={() => setShowUnmatched((v) => !v)}
           className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-xl border text-[13px] font-semibold transition-colors',
+            'flex items-center gap-2 px-4 py-2 rounded-xl border text-[14px] font-semibold transition-colors',
             showUnmatched
               ? 'bg-amber-500 text-white border-amber-500'
               : 'bg-white border-black/10 text-[#1c1410] hover:bg-[#faf0e8]'
@@ -373,7 +366,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
         <button
           onClick={() => setShowFilters((v) => !v)}
           className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-xl border text-[13px] font-semibold transition-colors',
+            'flex items-center gap-2 px-4 py-2 rounded-xl border text-[14px] font-semibold transition-colors',
             showFilters || activeFilterCount > 0
               ? 'bg-primary text-white border-primary'
               : 'bg-white border-black/10 text-[#1c1410] hover:bg-[#faf0e8]'
@@ -383,7 +376,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
         </button>
         {activeFilterCount > 0 && (
-          <button onClick={clearFilters} className="flex items-center gap-1 text-[12px] text-[#7a6b5c] hover:text-red-500 transition-colors">
+          <button onClick={clearFilters} className="flex items-center gap-1 text-[13px] text-[#7a6b5c] hover:text-red-500 transition-colors">
             <X className="w-3.5 h-3.5" /> Clear
           </button>
         )}
@@ -394,7 +387,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
         <div className="bg-white border border-black/[0.07] rounded-2xl p-4 mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Direction</label>
-            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={direction} onChange={(e) => setDirection(e.target.value)}>
               <option value="">All</option>
               {DIRECTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -402,7 +395,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Outcome</label>
-            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={outcome} onChange={(e) => setOutcome(e.target.value)}>
               <option value="">All</option>
               {OUTCOMES.map((o) => <option key={o} value={o}>{outcomeLabel(o)}</option>)}
@@ -410,7 +403,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Agent</label>
-            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={staffName} onChange={(e) => setStaffName(e.target.value)}>
               <option value="">All Agents</option>
               {staff.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
@@ -418,7 +411,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Pipeline</label>
-            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setStageId(''); }}>
               <option value="">All Pipelines</option>
               {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -426,7 +419,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Stage</label>
-            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <select className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={stageId} onChange={(e) => setStageId(e.target.value)}
               disabled={!pipelineId}>
               <option value="">All Stages</option>
@@ -435,18 +428,18 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">From Date</label>
-            <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setQuickDate(''); }} />
           </div>
           <div>
             <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">To Date</label>
-            <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[12px] text-[#1c1410] bg-white outline-none"
+            <input type="date" className="w-full border border-black/10 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] bg-white outline-none"
               value={dateTo} onChange={(e) => { setDateTo(e.target.value); setQuickDate(''); }} />
           </div>
         </div>
       )}
 
-      {/* KPI Cards — always visible */}
+      {/* KPI Cards - always visible */}
       {stats && (
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-4">
           <div className="bg-white rounded-xl border border-black/5 p-3">
@@ -499,20 +492,20 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
       {/* Analytics toggle */}
       <button
         onClick={() => setShowCharts((v) => !v)}
-        className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:text-[var(--brand-dark)] mb-3 transition-colors"
+        className="flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:text-[var(--brand-dark)] mb-3 transition-colors"
       >
         {showCharts ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         {showCharts ? 'Hide Charts' : 'Show Charts'}
       </button>
 
-      {/* Charts — collapsible, default hidden */}
+      {/* Charts - collapsible, default hidden */}
       {showCharts && stats && (
         <div className="space-y-4 mb-4">
           {/* Row 2: Call Volume + Outcome Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Call Volume Trend */}
             <div className="bg-white rounded-xl border border-black/5 p-4">
-              <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Call Volume Trend</h3>
+              <h3 className="text-[14px] font-semibold text-[#1c1410] mb-3">Call Volume Trend</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={stats.daily}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" />
@@ -528,7 +521,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
 
             {/* Outcome Breakdown */}
             <div className="bg-white rounded-xl border border-black/5 p-4">
-              <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Outcome Breakdown</h3>
+              <h3 className="text-[14px] font-semibold text-[#1c1410] mb-3">Outcome Breakdown</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={stats.outcomes} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" horizontal={false} />
@@ -552,7 +545,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               {/* Disposition Breakdown */}
               {stats.dispositions && stats.dispositions.length > 0 && (
                 <div className="bg-white rounded-xl border border-black/5 p-4">
-                  <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Disposition Breakdown</h3>
+                  <h3 className="text-[14px] font-semibold text-[#1c1410] mb-3">Disposition Breakdown</h3>
                   <ResponsiveContainer width="100%" height={Math.max(160, stats.dispositions.length * 36)}>
                     <BarChart data={stats.dispositions} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" horizontal={false} />
@@ -572,7 +565,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               {/* Calls by Pipeline */}
               {stats.pipelines && stats.pipelines.length > 0 && (
                 <div className="bg-white rounded-xl border border-black/5 p-4">
-                  <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Calls by Pipeline</h3>
+                  <h3 className="text-[14px] font-semibold text-[#1c1410] mb-3">Calls by Pipeline</h3>
                   <ResponsiveContainer width="100%" height={Math.max(160, stats.pipelines.length * 36)}>
                     <BarChart data={stats.pipelines} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" horizontal={false} />
@@ -590,7 +583,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
           {/* Row 4: Agent Performance */}
           {stats.agents.length > 0 && (
             <div className="bg-white rounded-xl border border-black/5 p-4">
-              <h3 className="text-[13px] font-semibold text-[#1c1410] mb-3">Agent Performance</h3>
+              <h3 className="text-[14px] font-semibold text-[#1c1410] mb-3">Agent Performance</h3>
               <ResponsiveContainer width="100%" height={Math.max(160, stats.agents.length * 36)}>
                 <BarChart data={stats.agents} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0ece8" horizontal={false} />
@@ -609,7 +602,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
       {/* Table */}
       <div className="flex-1 bg-white border border-black/[0.07] rounded-2xl overflow-hidden flex flex-col min-h-0">
         <div className="overflow-y-auto flex-1">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[14px]">
             <thead className="sticky top-0 bg-[var(--app-bg)] border-b border-black/[0.07] z-10">
               <tr>
                 <th className="text-left px-2 py-2.5 font-semibold text-[#7a6b5c] w-8">#</th>
@@ -624,14 +617,14 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
-              {loading ? (
+              {loading && visible.length === 0 ? (
                 <tr><td colSpan={9} className="text-center py-12 text-[#b09e8d]">Loading...</td></tr>
               ) : visible.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center py-16">
                     <PhoneIncoming className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                    <p className="text-[14px] font-semibold text-[#7a6b5c]">No calls found</p>
-                    <p className="text-[12px] text-[#b09e8d] mt-1">{source === 'superfone' ? 'Calls will appear here after Superfone syncs' : 'Calls will appear here once the Hawcus Dialer app syncs'}</p>
+                    <p className="text-[15px] font-semibold text-[#7a6b5c]">No calls found</p>
+                    <p className="text-[13px] text-[#b09e8d] mt-1">{source === 'superfone' ? 'Calls will appear here after Superfone syncs' : 'Calls will appear here once the Hawcus Dialer app syncs'}</p>
                   </td>
                 </tr>
               ) : visible.map((c, idx) => {
@@ -646,7 +639,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                 return (
                   <>
                     <tr key={c.id} className="hover:bg-[var(--app-bg)] transition-colors">
-                      <td className="px-2 py-2 text-[#b09e8d] text-[12px]">{(page - 1) * LIMIT + idx + 1}</td>
+                      <td className="px-2 py-2 text-[#b09e8d] text-[13px]">{(page - 1) * LIMIT + idx + 1}</td>
                       <td className="px-2 py-2">
                         {c.lead_id ? (
                           <button onClick={() => openLeadDetail(c.lead_id!)} className="text-left group">
@@ -702,11 +695,11 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                         )}
                       </td>
                       <td className="px-2 py-2">
-                        <p className="text-[12px] text-[#1c1410] truncate">{c.pipeline_name ?? '-'}</p>
+                        <p className="text-[13px] text-[#1c1410] truncate">{c.pipeline_name ?? '-'}</p>
                         {c.stage_name && <p className="text-[11px] text-[#b09e8d] truncate">{c.stage_name}</p>}
                       </td>
                       <td className="px-2 py-2">
-                        <span className={cn('flex items-center gap-1 text-[12px] font-medium', dirColor)}>
+                        <span className={cn('flex items-center gap-1 text-[13px] font-medium', dirColor)}>
                           <DirIcon className="w-3.5 h-3.5 shrink-0" />
                           {isOutbound ? 'Out' : 'In'}
                         </span>
@@ -718,9 +711,9 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                                          'bg-amber-50 text-amber-700'
                         )}>{outcomeLabel(c.outcome)}</span>
                       </td>
-                      <td className="px-2 py-2 text-[#7a6b5c] font-medium text-[12px]">{durLabel(c.duration_seconds)}</td>
-                      <td className="px-2 py-2 text-[#7a6b5c] text-[12px] truncate">{c.staff_name ?? '-'}</td>
-                      <td className="px-2 py-2 text-[#7a6b5c] text-[12px]">{dateLabel(c.started_at ?? c.created_at)}</td>
+                      <td className="px-2 py-2 text-[#7a6b5c] font-medium text-[13px]">{durLabel(c.duration_seconds)}</td>
+                      <td className="px-2 py-2 text-[#7a6b5c] text-[13px] truncate">{c.staff_name ?? '-'}</td>
+                      <td className="px-2 py-2 text-[#7a6b5c] text-[13px]">{dateLabel(c.started_at ?? c.created_at)}</td>
                       <td className="px-2 py-2">
                         {hasRec ? (
                           <div className="flex items-center gap-1">
@@ -767,20 +760,20 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-black/[0.05] bg-[var(--app-bg)]">
-            <span className="text-[12px] text-[#7a6b5c]">
+            <span className="text-[13px] text-[#7a6b5c]">
               Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total}
             </span>
             <div className="flex items-center gap-2">
               <button
                 disabled={page <= 1}
                 onClick={() => load(page - 1)}
-                className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-semibold text-[#1c1410] disabled:opacity-40 hover:bg-[#faf0e8] transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-semibold text-[#1c1410] disabled:opacity-40 hover:bg-[#faf0e8] transition-colors"
               >Prev</button>
-              <span className="text-[12px] text-[#7a6b5c]">{page} / {totalPages}</span>
+              <span className="text-[13px] text-[#7a6b5c]">{page} / {totalPages}</span>
               <button
                 disabled={page >= totalPages}
                 onClick={() => load(page + 1)}
-                className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-semibold text-[#1c1410] disabled:opacity-40 hover:bg-[#faf0e8] transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-semibold text-[#1c1410] disabled:opacity-40 hover:bg-[#faf0e8] transition-colors"
               >Next</button>
             </div>
           </div>
@@ -795,13 +788,13 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               <h3 className="text-[16px] font-bold text-[#1c1410]">Link to Existing Lead</h3>
               <button onClick={() => setLinkModalCall(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-[12px] text-[#7a6b5c] mb-3">
+            <p className="text-[13px] text-[#7a6b5c] mb-3">
               Call from <span className="font-semibold text-[#1c1410]">{linkModalCall.caller_phone}</span>
             </p>
             <div className="relative mb-3">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-black/10 bg-[#faf8f6] text-[13px] outline-none focus:border-primary/40 placeholder:text-gray-400"
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-black/10 bg-[#faf8f6] text-[14px] outline-none focus:border-primary/40 placeholder:text-gray-400"
                 placeholder="Search leads by name or phone..."
                 value={linkSearch}
                 onChange={(e) => handleLinkSearch(e.target.value)}
@@ -809,9 +802,9 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               />
             </div>
             <div className="max-h-[240px] overflow-y-auto space-y-1">
-              {linkSearching && <p className="text-[12px] text-[#b09e8d] text-center py-4">Searching...</p>}
+              {linkSearching && <p className="text-[13px] text-[#b09e8d] text-center py-4">Searching...</p>}
               {!linkSearching && linkSearch.trim().length >= 2 && linkResults.length === 0 && (
-                <p className="text-[12px] text-[#b09e8d] text-center py-4">No leads found</p>
+                <p className="text-[13px] text-[#b09e8d] text-center py-4">No leads found</p>
               )}
               {linkResults.map((l) => (
                 <button
@@ -821,7 +814,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                   className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-[#faf0e8] transition-colors flex items-center justify-between group"
                 >
                   <div>
-                    <p className="text-[13px] font-semibold text-[#1c1410] group-hover:text-primary">{l.name}</p>
+                    <p className="text-[14px] font-semibold text-[#1c1410] group-hover:text-primary">{l.name}</p>
                     <p className="text-[11px] text-[#b09e8d]">{l.phone}</p>
                   </div>
                   <Link2 className="w-4 h-4 text-[#b09e8d] group-hover:text-primary" />
@@ -840,14 +833,14 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               <h3 className="text-[16px] font-bold text-[#1c1410]">Create Lead from Call</h3>
               <button onClick={() => setCreateLeadCall(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-[12px] text-[#7a6b5c] mb-4">
+            <p className="text-[13px] text-[#7a6b5c] mb-4">
               Phone: <span className="font-semibold text-[#1c1410]">{createLeadCall.caller_phone}</span>
             </p>
             <div className="space-y-3">
               <div>
                 <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Lead Name</label>
                 <input
-                  className="w-full px-3 py-2.5 rounded-xl border border-black/10 bg-[#faf8f6] text-[13px] outline-none focus:border-primary/40"
+                  className="w-full px-3 py-2.5 rounded-xl border border-black/10 bg-[#faf8f6] text-[14px] outline-none focus:border-primary/40"
                   placeholder="Enter lead name..."
                   value={createLeadName}
                   onChange={(e) => setCreateLeadName(e.target.value)}
@@ -857,7 +850,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               <div>
                 <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Pipeline</label>
                 <select
-                  className="w-full border border-black/10 rounded-xl px-3 py-2.5 text-[13px] text-[#1c1410] bg-[#faf8f6] outline-none"
+                  className="w-full border border-black/10 rounded-xl px-3 py-2.5 text-[14px] text-[#1c1410] bg-[#faf8f6] outline-none"
                   value={createLeadPipeline}
                   onChange={(e) => { setCreateLeadPipeline(e.target.value); setCreateLeadStage(''); }}
                 >
@@ -869,7 +862,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                 <div>
                   <label className="text-[11px] font-medium text-[#7a6b5c] mb-1 block">Stage</label>
                   <select
-                    className="w-full border border-black/10 rounded-xl px-3 py-2.5 text-[13px] text-[#1c1410] bg-[#faf8f6] outline-none"
+                    className="w-full border border-black/10 rounded-xl px-3 py-2.5 text-[14px] text-[#1c1410] bg-[#faf8f6] outline-none"
                     value={createLeadStage}
                     onChange={(e) => setCreateLeadStage(e.target.value)}
                   >
@@ -880,13 +873,13 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
               )}
             </div>
             <div className="flex justify-end gap-2 mt-5">
-              <button onClick={() => setCreateLeadCall(null)} className="px-4 py-2 rounded-xl border border-black/10 text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-50">
+              <button onClick={() => setCreateLeadCall(null)} className="px-4 py-2 rounded-xl border border-black/10 text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-50">
                 Cancel
               </button>
               <button
                 onClick={handleCreateLead}
                 disabled={!!actionLoading}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#c2410c] to-[#ea580c] text-white text-[13px] font-semibold hover:opacity-90 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#c2410c] to-[#ea580c] text-white text-[14px] font-semibold hover:opacity-90 disabled:opacity-50"
               >
                 {actionLoading ? 'Creating...' : 'Create Lead'}
               </button>

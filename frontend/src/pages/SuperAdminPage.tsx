@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Plus, RefreshCw, Search, LogIn, Pencil, Mail, MoreVertical,
   CheckCircle2, XCircle, Building2, Users, TrendingUp, X, ChevronDown,
-  Globe, AlertTriangle, Copy, Trash2,
+  Globe, AlertTriangle, Copy, Trash2, Loader2,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
+import { confirmDialog } from '@/lib/confirm';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -150,7 +151,7 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
   };
 
   const handleRemove = async () => {
-    if (!confirm(`Remove domain ${info?.custom_domain}? The domain will stop working immediately.`)) return;
+    if (!(await confirmDialog({ message: `Remove domain ${info?.custom_domain}? The domain will stop working immediately.`, confirmText: 'Remove' }))) return;
     setRemoving(true);
     try {
       await api.delete(`/api/auth/tenants/${tenant.id}/domain`);
@@ -195,9 +196,9 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
               <span className="text-xs font-semibold text-[#7a6b5c]">Status:</span>
               {status === 'none' && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">No domain set</span>}
               {status === 'dns_pending' && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⏳ DNS Pending</span>}
-              {status === 'verifying' && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 animate-pulse">🔵 Verifying SSL...</span>}
-              {status === 'ssl_active' && <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">✅ Active</span>}
-              {status === 'failed' && <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">❌ Failed</span>}
+              {status === 'verifying' && <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 animate-pulse"><Loader2 className="w-3 h-3 animate-spin" /> Verifying SSL...</span>}
+              {status === 'ssl_active' && <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 className="w-3 h-3" /> Active</span>}
+              {status === 'failed' && <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700"><XCircle className="w-3 h-3" /> Failed</span>}
               {info?.domain_verified_at && status === 'ssl_active' && (
                 <span className="text-[10px] text-[#b09e8d]">since {new Date(info.domain_verified_at).toLocaleDateString()}</span>
               )}
@@ -388,7 +389,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4" /></button>
         </div>
 
-        {/* Body — horizontal 2-column grid, scrolls if it overflows */}
+        {/* Body - horizontal 2-column grid, scrolls if it overflows */}
         <div className="px-4 sm:px-6 py-5 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
           {/* ── Business ── */}
           <div className="sm:col-span-2 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Business</div>
@@ -417,7 +418,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
           <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Subscription</span>
             <button type="button" onClick={handleRenew} disabled={renewing}
-              className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-60">
+              className="px-3 py-1.5 rounded-lg text-[13px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-60">
               {renewing ? 'Renewing…' : `Renew +1 ${form.billing_cycle === 'yearly' ? 'year' : 'month'}`}
             </button>
           </div>
@@ -654,7 +655,7 @@ export default function SuperAdminPage() {
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 pt-4 pb-0">
           <div className="flex gap-2">
             <button onClick={() => setShowDeleted(false)}
-              className={cn('px-3 sm:px-4 py-1.5 rounded-full text-[12px] sm:text-[13px] font-semibold transition-all',
+              className={cn('px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[14px] font-semibold transition-all',
                 !showDeleted ? 'bg-primary text-white' : 'bg-transparent text-[#7a6b5c] hover:bg-gray-100')}>
               All Accounts
             </button>
@@ -665,7 +666,7 @@ export default function SuperAdminPage() {
               <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
             </button>
             <button onClick={() => navigate('/admin/create')}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-white text-[13px] font-bold transition-all hover:opacity-90"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-white text-[14px] font-bold transition-all hover:opacity-90"
               style={{ background: 'linear-gradient(135deg,#c2410c 0%,#ea580c 55%,#f97316 100%)', boxShadow: '0 4px 14px rgba(234,88,12,.28)' }}>
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">CREATE WHITE LABEL</span>
@@ -680,7 +681,7 @@ export default function SuperAdminPage() {
             <div className="w-1 h-4 rounded-full bg-primary" />
             <h2 className="font-headline font-bold text-[#1c1410] text-[15px]">Business Accounts</h2>
           </div>
-          <p className="text-[12px] text-[#7a6b5c]">You have total <span className="font-semibold text-[#1c1410]">{filtered.length}</span></p>
+          <p className="text-[13px] text-[#7a6b5c]">You have total <span className="font-semibold text-[#1c1410]">{filtered.length}</span></p>
         </div>
 
         {/* Filters */}
@@ -688,7 +689,7 @@ export default function SuperAdminPage() {
           {/* Plan filter */}
           <div className="relative">
             <select value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)}
-              className="pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 text-[12px] text-[#1c1410] outline-none bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors">
+              className="pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 text-[13px] text-[#1c1410] outline-none bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors">
               <option value="">Plan</option>
               <option value="monthly">Monthly</option>
               <option value="yearly">Yearly</option>
@@ -698,7 +699,7 @@ export default function SuperAdminPage() {
           {/* Subscription filter */}
           <div className="relative">
             <select value={filterSub} onChange={(e) => setFilterSub(e.target.value)}
-              className="pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 text-[12px] text-[#1c1410] outline-none bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors">
+              className="pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 text-[13px] text-[#1c1410] outline-none bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors">
               <option value="">Status</option>
               <option value="_active">Active Accounts</option>
               <option value="_suspended">Suspended Accounts</option>
@@ -719,7 +720,7 @@ export default function SuperAdminPage() {
           <div className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 bg-white ml-auto w-full sm:w-auto">
             <input value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search accounts…"
-              className="text-[12px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300 flex-1 sm:w-44" />
+              className="text-[13px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300 flex-1 sm:w-44" />
             <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
           </div>
         </div>
@@ -737,7 +738,7 @@ export default function SuperAdminPage() {
             </p>
             {!search && !filterPlan && !filterSub && (
               <button onClick={() => navigate('/admin/create')}
-                className="mt-1 flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold text-white"
+                className="mt-1 flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-bold text-white"
                 style={{ background: 'linear-gradient(135deg,#c2410c 0%,#ea580c 100%)' }}>
                 <Plus className="w-4 h-4" /> Create Account
               </button>
@@ -758,7 +759,7 @@ export default function SuperAdminPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="font-semibold text-[#1c1410] text-[14px] truncate">{t.name}</p>
+                        <p className="font-semibold text-[#1c1410] text-[15px] truncate">{t.name}</p>
                         {!t.is_active && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase tracking-wide shrink-0">Suspended</span>}
                       </div>
                       <p className="text-[11px] text-[#7a6b5c] truncate">{t.admin_name ?? '-'} · {t.admin_email ?? t.email}</p>
@@ -773,7 +774,7 @@ export default function SuperAdminPage() {
                       {st.tone === 'green'
                         ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
                         : <XCircle className={cn('w-3.5 h-3.5 shrink-0', st.tone === 'amber' ? 'text-amber-500' : 'text-red-400')} />}
-                      <span className={cn('text-[12px] font-semibold', tone)}>{st.label}</span>
+                      <span className={cn('text-[13px] font-semibold', tone)}>{st.label}</span>
                       <span className="text-[11px] text-[#7a6b5c]">
                         · {t.subscription_expires_at ? format(new Date(t.subscription_expires_at), 'MMM dd, yyyy') : 'No expiry'}
                       </span>
@@ -817,7 +818,7 @@ export default function SuperAdminPage() {
 
           {/* ── Desktop table layout ── */}
           <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full min-w-[900px] text-[13px]">
+            <table className="w-full min-w-[900px] text-[14px]">
               <thead>
                 <tr className="border-b border-gray-100">
                   {['#', 'Business Name', 'Active Subscription', 'Owner Details', 'Info', ''].map((h) => (
@@ -829,7 +830,7 @@ export default function SuperAdminPage() {
                 {filtered.map((t, idx) => (
                   <tr key={t.id} className="hover:bg-[#fafaf9] transition-colors group">
                     {/* # */}
-                    <td className="px-4 py-4 text-[#7a6b5c] text-[12px] w-10">{idx + 1}</td>
+                    <td className="px-4 py-4 text-[#7a6b5c] text-[13px] w-10">{idx + 1}</td>
 
                     {/* Business Name */}
                     <td className="px-4 py-4 min-w-[160px]">
@@ -862,7 +863,7 @@ export default function SuperAdminPage() {
                               {st.tone === 'green'
                                 ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
                                 : <XCircle className={cn('w-4 h-4 shrink-0', st.tone === 'amber' ? 'text-amber-500' : 'text-red-400')} />}
-                              <span className={cn('text-[12px] font-semibold', tone)}>{st.label}</span>
+                              <span className={cn('text-[13px] font-semibold', tone)}>{st.label}</span>
                             </div>
                             <p className="text-[11px] text-[#7a6b5c] pl-5">
                               {t.billing_cycle ? (t.billing_cycle === 'yearly' ? 'Yearly · ' : 'Monthly · ') : ''}
@@ -880,7 +881,7 @@ export default function SuperAdminPage() {
                           {(t.admin_name ?? t.name).slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-[#1c1410] text-[13px] truncate">{t.admin_name ?? '-'}</p>
+                          <p className="font-semibold text-[#1c1410] text-[14px] truncate">{t.admin_name ?? '-'}</p>
                           <p className="text-[11px] text-[#7a6b5c] truncate">{t.admin_email ?? t.email}</p>
                           {t.phone && <p className="text-[11px] text-[#7a6b5c]">{t.phone}</p>}
                         </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
+import { alertDialog } from '@/lib/confirm';
 
 interface FormField {
   id: string;
@@ -93,7 +94,7 @@ export default function PublicFormPage() {
     if (!form) return;
     if (!validate()) return;
     if (form.declaration_enabled && !agreed) {
-      alert('Please accept the declaration to continue.');
+      await alertDialog({ message: 'Please accept the declaration to continue.' });
       return;
     }
 
@@ -113,14 +114,14 @@ export default function PublicFormPage() {
         body: JSON.stringify({ data: submitData }),
       });
       const json = await res.json();
-      if (!res.ok) { alert(json.error ?? 'Submission failed'); return; }
+      if (!res.ok) { await alertDialog({ title: 'Submission failed', message: json.error ?? 'Submission failed' }); return; }
       setThankYou(json.message ?? form.thank_you_message ?? 'Thank you!');
       setSubmitted(true);
       if (json.redirectUrl && /^https?:\/\//i.test(json.redirectUrl)) {
         setTimeout(() => { window.location.href = json.redirectUrl; }, 2000);
       }
     } catch {
-      alert('Submission failed. Please try again.');
+      await alertDialog({ title: 'Submission failed', message: 'Submission failed. Please try again.' });
     } finally {
       setSubmitting(false);
     }
@@ -134,7 +135,7 @@ export default function PublicFormPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)]">
-        <p className="text-[14px] text-[#7a6b5c]">Loading form…</p>
+        <p className="text-[15px] text-[#7a6b5c]">Loading form…</p>
       </div>
     );
   }
@@ -144,7 +145,7 @@ export default function PublicFormPage() {
       <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)]">
         <div className="text-center">
           <p className="text-[18px] font-bold text-[#1c1410] mb-2">Form not found</p>
-          <p className="text-[14px] text-[#7a6b5c]">This form is no longer active or the link is incorrect.</p>
+          <p className="text-[15px] text-[#7a6b5c]">This form is no longer active or the link is incorrect.</p>
         </div>
       </div>
     );
@@ -180,7 +181,7 @@ export default function PublicFormPage() {
 
             return (
               <div key={field.id ?? field.label}>
-                <label className="block text-[12px] font-semibold mb-1.5" style={{ color: textColor }}>
+                <label className="block text-[13px] font-semibold mb-1.5" style={{ color: textColor }}>
                   {field.label}
                   {field.required && <span className="text-red-500 ml-0.5">*</span>}
                 </label>
@@ -191,7 +192,7 @@ export default function PublicFormPage() {
                     placeholder={field.placeholder}
                     required={field.required}
                     rows={3}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-white/70 text-[13px] outline-none focus:border-orange-400 resize-none ${err ? 'border-red-400' : 'border-black/10'}`}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-white/70 text-[14px] outline-none focus:border-orange-400 resize-none ${err ? 'border-red-400' : 'border-black/10'}`}
                     style={{ color: textColor }}
                   />
                 ) : field.type === 'dropdown' ? (
@@ -199,10 +200,10 @@ export default function PublicFormPage() {
                     value={val}
                     onChange={(e) => set(e.target.value)}
                     required={field.required}
-                    className="w-full px-3 py-2.5 rounded-xl border border-black/10 bg-white/70 text-[13px] outline-none focus:border-orange-400"
+                    className="w-full px-3 py-2.5 rounded-xl border border-black/10 bg-white/70 text-[14px] outline-none focus:border-orange-400"
                     style={{ color: textColor }}
                   >
-                    <option value="">— Select —</option>
+                    <option value="">- Select -</option>
                     {(field as any).options?.map((opt: string) => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
@@ -221,7 +222,7 @@ export default function PublicFormPage() {
                           className="w-4 h-4"
                           style={{ accentColor: btnColor }}
                         />
-                        <span className="text-[13px]" style={{ color: textColor }}>{opt}</span>
+                        <span className="text-[14px]" style={{ color: textColor }}>{opt}</span>
                       </label>
                     ))}
                   </div>
@@ -244,7 +245,7 @@ export default function PublicFormPage() {
                             className="w-4 h-4 rounded"
                             style={{ accentColor: btnColor }}
                           />
-                          <span className="text-[13px]" style={{ color: textColor }}>{opt}</span>
+                          <span className="text-[14px]" style={{ color: textColor }}>{opt}</span>
                         </label>
                       );
                     })}
@@ -258,7 +259,7 @@ export default function PublicFormPage() {
                       className="w-4 h-4 rounded"
                       style={{ accentColor: btnColor }}
                     />
-                    <span className="text-[13px]" style={{ color: textColor }}>{field.placeholder || field.label}</span>
+                    <span className="text-[14px]" style={{ color: textColor }}>{field.placeholder || field.label}</span>
                   </div>
                 ) : (
                   <input
@@ -267,7 +268,7 @@ export default function PublicFormPage() {
                     onChange={(e) => set(e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-white/70 text-[13px] outline-none focus:border-orange-400 ${err ? 'border-red-400' : 'border-black/10'}`}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-white/70 text-[14px] outline-none focus:border-orange-400 ${err ? 'border-red-400' : 'border-black/10'}`}
                     style={{ color: textColor }}
                   />
                 )}
@@ -286,7 +287,7 @@ export default function PublicFormPage() {
                 className="w-4 h-4 mt-0.5 rounded shrink-0"
                 style={{ accentColor: btnColor }}
               />
-              <label htmlFor="declaration" className="text-[12px] cursor-pointer" style={{ color: textColor }}>
+              <label htmlFor="declaration" className="text-[13px] cursor-pointer" style={{ color: textColor }}>
                 {form.declaration_title}
                 {form.declaration_link && (
                   <a href={form.declaration_link} target="_blank" rel="noreferrer"
@@ -299,7 +300,7 @@ export default function PublicFormPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3 rounded-xl text-[14px] font-semibold mt-2 disabled:opacity-60 transition-opacity"
+            className="w-full py-3 rounded-xl text-[15px] font-semibold mt-2 disabled:opacity-60 transition-opacity"
             style={{ background: btnColor, color: btnText }}
           >
             {submitting ? 'Submitting…' : (form.submit_label || 'Submit')}

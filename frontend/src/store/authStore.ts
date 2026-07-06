@@ -10,11 +10,11 @@ const TOKEN_KEY  = 'dg_tok';
 const USER_KEY   = 'dg_usr';
 const TENANT_KEY = 'dg_ten';
 // Marks that the current session is an impersonation, so the "Back to Admin"
-// button survives a page refresh. Only a boolean flag — no tokens stored.
+// button survives a page refresh. Only a boolean flag - no tokens stored.
 const IMP_KEY    = 'dg_imp';
 
 // CEO credentials are kept IN MEMORY ONLY during impersonation (#42).
-// Never stored in localStorage — a page refresh ends the impersonation session,
+// Never stored in localStorage - a page refresh ends the impersonation session,
 // which is the correct and secure behavior.
 let _ceoToken: string | null = null;
 let _ceoUser: User | null    = null;
@@ -118,7 +118,7 @@ function applySession(data: any, set: any, _get: any) {
 export const useAuthStore = create<AuthState>((set, get) => ({
   currentUser: null,
   isAuthenticated: false,
-  isImpersonating: false, // page refresh always ends impersonation (by design — CEO token is in-memory only)
+  isImpersonating: false, // page refresh always ends impersonation (by design - CEO token is in-memory only)
   permissions: {},
   permAll: false,
 
@@ -161,7 +161,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   // Email-only: ask the server to send a one-time PIN the user can type into the login
-  // field (in place of a password). Always resolves ok — server response is neutral.
+  // field (in place of a password). Always resolves ok - server response is neutral.
   requestOtp: async (email) => {
     try {
       await fetch(`${BASE}/api/auth/request-otp`, {
@@ -195,7 +195,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const stored = getStoredSession();
       if (!stored) return false;
 
-      // Store CEO credentials in MEMORY ONLY — never localStorage (#42)
+      // Store CEO credentials in MEMORY ONLY - never localStorage (#42)
       _ceoToken = stored.token;
       _ceoUser  = stored.user;
 
@@ -260,7 +260,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return;
     }
 
-    // After a refresh the in-memory CEO token is gone — recover the super-admin
+    // After a refresh the in-memory CEO token is gone - recover the super-admin
     // session from the still-valid super-admin refresh cookie (impersonation never
     // replaced it on the server).
     try {
@@ -287,7 +287,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const stored = getStoredSession();
     if (stored) {
       setAccessToken(stored.token);
-      // Set permAll from role synchronously — both super_admin and owner are known from JWT.
+      // Set permAll from role synchronously - both super_admin and owner are known from JWT.
       const role = stored.user.role;
       // Restore impersonation flag so "Back to Admin" survives a page refresh.
       let impersonating = false;
@@ -304,7 +304,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         useCompanyStore.getState().setLogo(stored.tenant.logoUrl ?? null);
         if (role !== 'super_admin') useBrandingStore.getState().applyTenantBranding(stored.tenant);
       }
-      // Always refresh branding from server in the background — cached localStorage tenant
+      // Always refresh branding from server in the background - cached localStorage tenant
       // may be stale (missing brandColor/appBgColor) and show wrong/old theme.
       if (role !== 'super_admin') {
         api.get<{ tenant?: any }>('/api/auth/me')
@@ -316,7 +316,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           .catch(() => {});
       }
 
-      // Fetch permissions and wait — sidebar must not render with empty permissions
+      // Fetch permissions and wait - sidebar must not render with empty permissions
       await get().refreshPermissions();
       get().listenForPermissionUpdates();
 

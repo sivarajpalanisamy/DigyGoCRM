@@ -70,8 +70,8 @@ class DialerData {
   //
   // SIM gate (mirrors the native background sync): on a dual-SIM phone, a call is
   // uploaded ONLY when we can positively resolve its SIM slot AND that slot is one the
-  // user verified in the CRM. Calls on the skipped/unverified SIM — or whose slot we
-  // can't resolve — are DROPPED so they never reach the CRM. Single-SIM phones have no
+  // user verified in the CRM. Calls on the skipped/unverified SIM - or whose slot we
+  // can't resolve - are DROPPED so they never reach the CRM. Single-SIM phones have no
   // ambiguity, so every call is kept and tagged with the sole verified SIM.
   Future<void> syncToCrm(List<CallLogEntry> logs) async {
     if (logs.isEmpty) return;

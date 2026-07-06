@@ -53,7 +53,7 @@ const slugify = (s: string): string => {
 };
 
 const inputCls =
-  'w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
+  'w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
 
 // ── FieldSelector ─────────────────────────────────────────────────────────────
 
@@ -101,7 +101,7 @@ function OptionBuilder({ options, onChange }: {
 
   return (
     <div>
-      <label className="text-[12px] font-semibold text-[#7a6b5c] mb-2 block">Options</label>
+      <label className="text-[13px] font-semibold text-[#7a6b5c] mb-2 block">Options</label>
       <div className="space-y-1.5">
         {options.map((o, idx) => (
           <div key={idx} className="flex items-center gap-2">
@@ -124,7 +124,7 @@ function OptionBuilder({ options, onChange }: {
         <button
           type="button"
           onClick={addOption}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-primary hover:bg-primary/5 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" /> Add option
         </button>
@@ -218,7 +218,7 @@ export function AddCustomFieldModal({
         {step === 'detail' && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             <div>
-              <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">
+              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
                 Name <span className="text-red-400">*</span>
               </label>
               <input
@@ -237,7 +237,7 @@ export function AddCustomFieldModal({
             </div>
 
             <div>
-              <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">
+              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
                 Placeholder <span className="text-[#b09e8d] font-normal">(optional)</span>
               </label>
               <input
@@ -259,7 +259,7 @@ export function AddCustomFieldModal({
                 onChange={(e) => setRequired(e.target.checked)}
                 className="w-4 h-4 accent-primary"
               />
-              <span className="text-[13px] text-[#1c1410]">Mark as required</span>
+              <span className="text-[14px] text-[#1c1410]">Mark as required</span>
             </label>
           </div>
         )}
@@ -270,7 +270,7 @@ export function AddCustomFieldModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors"
+              className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors"
             >
               Cancel
             </button>
@@ -278,7 +278,7 @@ export function AddCustomFieldModal({
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 py-2.5 rounded-lg text-[13px] font-bold text-white disabled:opacity-60 flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white disabled:opacity-60 flex items-center justify-center gap-1.5"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
             >
               {saving

@@ -3,12 +3,14 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   Plus, Pencil, Trash2, Copy, X, Check, Eye, ArrowLeft, Send,
   Paperclip, Upload, Loader2, FileText, Image as ImageIcon, Film, RefreshCw,
+  Link as LinkIcon, Phone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn, copyToClipboard } from '@/lib/utils';
 import { toast } from 'sonner';
+import { confirmDialog } from '@/lib/confirm';
 import { api, getAccessToken, BASE } from '@/lib/api';
 import { usePermission } from '@/hooks/usePermission';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
@@ -731,7 +733,7 @@ export default function AutomationTemplatesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this template? This cannot be undone.')) return;
+    if (!(await confirmDialog({ message: 'Delete this template? This cannot be undone.' }))) return;
     const tok = getAccessToken();
     try {
       const resp = await fetch(`${BASE}/api/templates/${id}`, {
@@ -746,7 +748,7 @@ export default function AutomationTemplatesPage() {
   };
 
   const handleSubmitToMeta = async (t: Template) => {
-    if (!confirm(`Submit "${t.name}" to Meta for approval? This will create the template on your WABA account.`)) return;
+    if (!(await confirmDialog({ title: 'Submit for approval?', message: `Submit "${t.name}" to Meta for approval? This will create the template on your WABA account.`, confirmText: 'Submit', danger: false }))) return;
     try {
       const btns = parseButtons(t.buttons);
       const metaButtons = btns.map((b) => ({
@@ -770,7 +772,7 @@ export default function AutomationTemplatesPage() {
   };
 
   const handleDeleteFromMeta = async (t: Template) => {
-    if (!confirm(`Delete "${t.name}" from Meta? This removes the template from both Meta and your local database.`)) return;
+    if (!(await confirmDialog({ message: `Delete "${t.name}" from Meta? This removes the template from both Meta and your local database.` }))) return;
     try {
       await api.delete(`/api/templates/${t.id}/meta`);
       setTemplates((prev) => prev.filter((x) => x.id !== t.id));
@@ -788,7 +790,7 @@ export default function AutomationTemplatesPage() {
   };
 
   const handleWaPersonalDelete = async (id: string) => {
-    if (!confirm('Delete this template? This cannot be undone.')) return;
+    if (!(await confirmDialog({ message: 'Delete this template? This cannot be undone.' }))) return;
     const tok = getAccessToken();
     try {
       const resp = await fetch(`${BASE}/api/wa-personal-templates/${id}`, {
@@ -906,7 +908,7 @@ export default function AutomationTemplatesPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[13px] text-[#7a6b5c] mt-1 line-clamp-2 whitespace-pre-line">{t.message}</p>
+                    <p className="text-[14px] text-[#7a6b5c] mt-1 line-clamp-2 whitespace-pre-line">{t.message}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <button onClick={() => { copyToClipboard(t.name); toast.success('Template name copied'); }} className="p-1.5 rounded-md hover:bg-[var(--accent-tint)] text-muted-foreground hover:text-foreground transition-colors" title="Copy name"><Copy className="w-4 h-4" /></button>
@@ -986,12 +988,12 @@ export default function AutomationTemplatesPage() {
                       )}
                       {tab === 'waba' && t.meta_name && <p className="text-[11px] text-[#7a6b5c] mt-0.5 font-mono">Meta: {t.meta_name}</p>}
                       {tab === 'waba' && t.header && <p className="text-sm font-semibold text-[#1c1410] mt-2">{t.header}</p>}
-                      <p className="text-[13px] text-[#7a6b5c] mt-1 line-clamp-2 whitespace-pre-line">{t.body}</p>
+                      <p className="text-[14px] text-[#7a6b5c] mt-1 line-clamp-2 whitespace-pre-line">{t.body}</p>
                       {tab === 'waba' && btns.length > 0 && (
                         <div className="flex gap-2 mt-2 flex-wrap">
                           {btns.map((btn) => (
-                            <span key={btn.id} className={cn('text-xs px-2.5 py-1 rounded-lg border font-medium', btn.type === 'QUICK_REPLY' ? 'border-primary/30 text-primary bg-primary/5' : 'border-blue-200 text-blue-600 bg-blue-50')}>
-                              {btn.type === 'URL' ? '🔗 ' : btn.type === 'PHONE_NUMBER' ? '📞 ' : ''}{btn.label}
+                            <span key={btn.id} className={cn('inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border font-medium', btn.type === 'QUICK_REPLY' ? 'border-primary/30 text-primary bg-primary/5' : 'border-blue-200 text-blue-600 bg-blue-50')}>
+                              {btn.type === 'URL' ? <LinkIcon className="w-3 h-3" /> : btn.type === 'PHONE_NUMBER' ? <Phone className="w-3 h-3" /> : null}{btn.label}
                             </span>
                           ))}
                         </div>

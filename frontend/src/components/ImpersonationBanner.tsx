@@ -22,11 +22,11 @@ export default function ImpersonationBanner() {
       className="fixed top-0 left-0 right-0 z-[9999] h-10 flex items-center justify-between px-4 md:px-6 shrink-0"
       style={{ background: 'linear-gradient(90deg, #7c2d12 0%, var(--brand-dark) 50%, var(--brand) 100%)', boxShadow: '0 2px 12px rgba(194,65,12,0.4)' }}
     >
-      {/* Left — what you're viewing */}
+      {/* Left - what you're viewing */}
       <div className="flex items-center gap-2 text-white min-w-0">
         <Eye className="w-3.5 h-3.5 text-orange-200 shrink-0" />
-        <span className="text-[12px] font-semibold text-orange-100 shrink-0 hidden sm:inline">Viewing as</span>
-        <span className="text-[13px] font-bold text-white truncate">
+        <span className="text-[13px] font-semibold text-orange-100 shrink-0 hidden sm:inline">Viewing as</span>
+        <span className="text-[14px] font-bold text-white truncate">
           {companyName}
         </span>
         {currentUser?.email && (
@@ -39,10 +39,10 @@ export default function ImpersonationBanner() {
         </span>
       </div>
 
-      {/* Right — exit button */}
+      {/* Right - exit button */}
       <button
         onClick={handleExit}
-        className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[12px] font-bold text-white border border-orange-400/50 hover:bg-orange-900/50 transition-colors shrink-0 ml-3"
+        className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[13px] font-bold text-white border border-orange-400/50 hover:bg-orange-900/50 transition-colors shrink-0 ml-3"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">Back to Super Admin</span>

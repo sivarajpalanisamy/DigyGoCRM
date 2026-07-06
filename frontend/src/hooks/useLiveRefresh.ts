@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { getSocket } from '@/lib/socket';
 
 /**
- * Live-refresh a page's own data on tenant data changes — so a create/edit/delete
+ * Live-refresh a page's own data on tenant data changes - so a create/edit/delete
  * made anywhere (this tab, another tab, another user) shows up without a manual
  * page reload.
  *

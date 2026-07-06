@@ -31,11 +31,11 @@ export default function ForgotPasswordPage() {
           <div className="text-center space-y-4">
             <CheckCircle2 className="w-14 h-14 text-emerald-500 mx-auto" />
             <h1 className="text-2xl font-extrabold text-[#1c1410]">Check your email</h1>
-            <p className="text-[13px] text-[#7a6b5c]">
+            <p className="text-[14px] text-[#7a6b5c]">
               If an account exists for <strong>{email}</strong>, we've sent a password reset link.
               It expires in 1 hour.
             </p>
-            <Link to="/login" className="inline-flex items-center gap-1.5 text-[13px] text-primary font-semibold hover:underline">
+            <Link to="/login" className="inline-flex items-center gap-1.5 text-[14px] text-primary font-semibold hover:underline">
               <ArrowLeft className="w-4 h-4" /> Back to login
             </Link>
           </div>
@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
                 <Mail className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-2xl font-extrabold text-[#1c1410]">Forgot password?</h1>
-              <p className="text-[13px] text-[#7a6b5c] mt-1">Enter your email and we'll send you a reset link</p>
+              <p className="text-[14px] text-[#7a6b5c] mt-1">Enter your email and we'll send you a reset link</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-primary"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-primary"
                   required
                   autoFocus
                 />
@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl text-white font-bold text-[14px] transition-all hover:-translate-y-0.5 disabled:opacity-60"
+                className="w-full py-3 rounded-xl text-white font-bold text-[15px] transition-all hover:-translate-y-0.5 disabled:opacity-60"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
               >
                 {loading ? 'Sending…' : 'Send reset link'}
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
             </form>
 
             <div className="text-center">
-              <Link to="/login" className="inline-flex items-center gap-1.5 text-[13px] text-[#7a6b5c] hover:text-primary">
+              <Link to="/login" className="inline-flex items-center gap-1.5 text-[14px] text-[#7a6b5c] hover:text-primary">
                 <ArrowLeft className="w-4 h-4" /> Back to login
               </Link>
             </div>

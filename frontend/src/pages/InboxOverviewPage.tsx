@@ -3,6 +3,7 @@ import {
   Send, Inbox, Users, MessageSquare,
   TrendingUp, TrendingDown, Search, ChevronLeft, ChevronRight,
   RefreshCw, ArrowUpRight, ArrowDownLeft,
+  Image as ImageIcon, Video, Mic, Paperclip,
 } from 'lucide-react';
 import {
   ComposedChart, Bar, Area, XAxis, YAxis, CartesianGrid,
@@ -95,7 +96,7 @@ function KpiCard({ label, value, prev, sub, icon: Icon, accent }: {
 function VolumeTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-black/8 rounded-xl px-3 py-2.5 shadow-lg text-[12px]">
+    <div className="bg-white border border-black/8 rounded-xl px-3 py-2.5 shadow-lg text-[13px]">
       <p className="font-semibold text-[#1c1410] mb-1">{label}</p>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center gap-2">
@@ -216,12 +217,12 @@ export default function InboxOverviewPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-[18px] font-bold text-[#1c1410]">WhatsApp Personal — Overview</h1>
-          <p className="text-[12px] text-[#9a8a7a]">Message volume, contact activity and full send/receive log</p>
+          <h1 className="text-[18px] font-bold text-[#1c1410]">WhatsApp Personal - Overview</h1>
+          <p className="text-[13px] text-[#9a8a7a]">Message volume, contact activity and full send/receive log</p>
         </div>
         <button
           onClick={() => { fetchMain(period); fetchLogs(period, direction, search, logPage); }}
-          className="flex items-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] border border-black/10 rounded-lg px-3 py-1.5 hover:bg-[var(--accent-tint)] transition-colors"
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-[#7a6b5c] border border-black/10 rounded-lg px-3 py-1.5 hover:bg-[var(--accent-tint)] transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />Refresh
         </button>
@@ -232,7 +233,7 @@ export default function InboxOverviewPage() {
         {PERIODS.map((pr) => (
           <button key={pr.value} onClick={() => setPeriod(pr.value)}
             className={cn(
-              'text-[12px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
+              'text-[13px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
               period === pr.value
                 ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-sm'
                 : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/40 hover:text-[var(--brand)]',
@@ -279,7 +280,7 @@ export default function InboxOverviewPage() {
         {/* Volume chart */}
         <div className="lg:col-span-3 bg-white rounded-2xl border border-black/5 p-5 shadow-sm">
           <div className="mb-4">
-            <p className="text-[14px] font-bold text-[#1c1410]">Message Volume</p>
+            <p className="text-[15px] font-bold text-[#1c1410]">Message Volume</p>
             <p className="text-[11px] text-[#9a8a7a] mt-0.5">Sent vs received over time</p>
           </div>
           {loading ? (
@@ -287,7 +288,7 @@ export default function InboxOverviewPage() {
               <RefreshCw className="w-5 h-5 animate-spin text-[var(--brand-dark)]" />
             </div>
           ) : volume.length === 0 ? (
-            <div className="h-[210px] flex items-center justify-center text-[13px] text-[#9a8a7a]">
+            <div className="h-[210px] flex items-center justify-center text-[14px] text-[#9a8a7a]">
               No data for this period
             </div>
           ) : (
@@ -311,7 +312,7 @@ export default function InboxOverviewPage() {
         {/* Top contacts */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-black/5 p-5 shadow-sm">
           <div className="mb-4">
-            <p className="text-[14px] font-bold text-[#1c1410]">Top Contacts</p>
+            <p className="text-[15px] font-bold text-[#1c1410]">Top Contacts</p>
             <p className="text-[11px] text-[#9a8a7a] mt-0.5">Most active numbers this period</p>
           </div>
           {loading ? (
@@ -328,7 +329,7 @@ export default function InboxOverviewPage() {
               ))}
             </div>
           ) : topContacts.length === 0 ? (
-            <div className="flex items-center justify-center h-[160px] text-[13px] text-[#9a8a7a]">
+            <div className="flex items-center justify-center h-[160px] text-[14px] text-[#9a8a7a]">
               No contacts yet
             </div>
           ) : (
@@ -341,7 +342,7 @@ export default function InboxOverviewPage() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-[#1c1410] truncate">
+                    <p className="text-[13px] font-semibold text-[#1c1410] truncate">
                       {c.contact_name || c.phone || 'Unknown'}
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5">
@@ -352,7 +353,7 @@ export default function InboxOverviewPage() {
                       <span className="text-[9px] text-[#9a8a7a] shrink-0">{c.sent}↑ {c.received}↓</span>
                     </div>
                   </div>
-                  <span className="text-[12px] font-bold text-[#1c1410] shrink-0">{c.total}</span>
+                  <span className="text-[13px] font-bold text-[#1c1410] shrink-0">{c.total}</span>
                 </div>
               ))}
             </div>
@@ -365,7 +366,7 @@ export default function InboxOverviewPage() {
         {/* Log header + filters */}
         <div className="px-5 py-4 border-b border-black/5 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-1">
-            <p className="text-[14px] font-bold text-[#1c1410]">Message Log</p>
+            <p className="text-[15px] font-bold text-[#1c1410]">Message Log</p>
             <p className="text-[11px] text-[#9a8a7a]">{logTotal.toLocaleString()} messages</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -388,7 +389,7 @@ export default function InboxOverviewPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search contact or phone…"
-                className="pl-8 pr-3 py-1.5 text-[12px] border border-black/10 rounded-lg w-48 focus:outline-none focus:border-[var(--brand)] transition-colors"
+                className="pl-8 pr-3 py-1.5 text-[13px] border border-black/10 rounded-lg w-48 focus:outline-none focus:border-[var(--brand)] transition-colors"
               />
             </div>
           </div>
@@ -402,12 +403,12 @@ export default function InboxOverviewPage() {
         ) : logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14 gap-2">
             <MessageSquare className="w-8 h-8 text-[#d4c5b5]" />
-            <p className="text-[13px] font-semibold text-[#7a6b5c]">No messages found</p>
+            <p className="text-[14px] font-semibold text-[#7a6b5c]">No messages found</p>
             <p className="text-[11px] text-[#9a8a7a]">Try a different period or filter</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b border-black/5 text-[10px] font-bold uppercase tracking-wider text-[#9a8a7a]">
                   <th className="px-5 py-2.5 text-left">Contact</th>
@@ -447,7 +448,7 @@ export default function InboxOverviewPage() {
                         <p className="text-[#4a3f35] line-clamp-2 leading-relaxed">{row.body}</p>
                       ) : (
                         <span className="text-[#b09e8d] italic">
-                          {row.type === 'image' ? '📷 Image' : row.type === 'video' ? '🎬 Video' : row.type === 'audio' ? '🎤 Audio' : row.type === 'document' ? '📎 File' : 'Media'}
+                          {row.type === 'image' ? <span className="inline-flex items-center gap-1"><ImageIcon className="w-3 h-3" />Image</span> : row.type === 'video' ? <span className="inline-flex items-center gap-1"><Video className="w-3 h-3" />Video</span> : row.type === 'audio' ? <span className="inline-flex items-center gap-1"><Mic className="w-3 h-3" />Audio</span> : row.type === 'document' ? <span className="inline-flex items-center gap-1"><Paperclip className="w-3 h-3" />File</span> : 'Media'}
                         </span>
                       )}
                     </td>

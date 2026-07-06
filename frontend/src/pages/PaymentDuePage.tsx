@@ -30,11 +30,11 @@ export function PaymentDuePage() {
             <AlertTriangle className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-white font-bold text-[18px]">Subscription Payment Due</h1>
-          {info?.business_name && <p className="text-white/85 text-[13px] mt-0.5">{info.business_name}</p>}
+          {info?.business_name && <p className="text-white/85 text-[14px] mt-0.5">{info.business_name}</p>}
         </div>
 
         <div className="px-6 py-5 space-y-4">
-          <dl className="rounded-xl border border-black/5 divide-y divide-black/[0.06] text-[13px]">
+          <dl className="rounded-xl border border-black/5 divide-y divide-black/[0.06] text-[14px]">
             <div className="flex items-center justify-between px-4 py-2.5">
               <dt className="text-[#7a6b5c]">Plan</dt><dd className="font-semibold text-[#1c1410]">{cycleLabel}</dd>
             </div>
@@ -53,12 +53,12 @@ export function PaymentDuePage() {
 
           <div className="flex items-start gap-2.5 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3">
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            <p className="text-[12px] text-emerald-800 leading-relaxed">
-              Your data is safe. New leads are still being captured and your automations are still running in the background — nothing is lost.
+            <p className="text-[13px] text-emerald-800 leading-relaxed">
+              Your data is safe. New leads are still being captured and your automations are still running in the background - nothing is lost.
             </p>
           </div>
 
-          <p className="text-[13px] text-[#3d3128] text-center">
+          <p className="text-[14px] text-[#3d3128] text-center">
             {isOwner
               ? 'Please renew your subscription to restore access to the CRM.'
               : 'Access is paused. Please contact your account owner to renew the subscription.'}
@@ -67,13 +67,13 @@ export function PaymentDuePage() {
           <div className="flex flex-col gap-2 pt-1">
             {isOwner && (
               <a href="mailto:admin@digygo.in?subject=Subscription%20Renewal"
-                className="w-full text-center px-4 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5"
+                className="w-full text-center px-4 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark, #9a3412), var(--brand, #ea580c))' }}>
                 Contact us to renew
               </a>
             )}
             <button onClick={logout}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-[#7a6b5c] bg-gray-100 hover:bg-gray-200 transition-colors">
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] bg-gray-100 hover:bg-gray-200 transition-colors">
               <LogOut className="w-4 h-4" /> Log out
             </button>
           </div>

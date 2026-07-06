@@ -99,19 +99,19 @@ const cycleBadge = (c: string | null) => {
 
 // ── Components ───────────────────────────────────────────────────────────────
 
-function KpiCard({ icon: Icon, label, value, sub, color }: {
-  icon: typeof Building2; label: string; value: string | number; sub?: string; color: string;
+function KpiCard({ icon: Icon, label, value, sub }: {
+  icon: typeof Building2; label: string; value: string | number; sub?: string; color?: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-black/5 p-5 flex items-start gap-4"
-      style={{ boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: color + '18' }}>
-        <Icon className="w-5 h-5" style={{ color }} />
+    <div className="rounded-2xl p-5 flex items-start gap-4 text-white"
+      style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 20px rgba(234,88,12,0.25)' }}>
+      <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+        <Icon className="w-5 h-5 text-white" />
       </div>
       <div className="min-w-0">
-        <p className="text-[12px] text-[#9a8a7a] font-medium">{label}</p>
-        <p className="text-[22px] font-bold text-[#1c1410] leading-tight mt-0.5">{typeof value === 'number' ? value.toLocaleString() : value}</p>
-        {sub && <p className="text-[11px] text-[#9a8a7a] mt-0.5">{sub}</p>}
+        <p className="text-[13px] opacity-80 font-medium">{label}</p>
+        <p className="font-headline text-[22px] font-bold leading-tight mt-0.5">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+        {sub && <p className="text-[12px] opacity-70 mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -124,7 +124,7 @@ function Card({ title, sub, children, className }: {
     <div className={cn('bg-white rounded-2xl border border-black/5 p-5', className)}
       style={{ boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
       <div className="mb-4">
-        <h3 className="text-[14px] font-bold text-[#1c1410]">{title}</h3>
+        <h3 className="text-[15px] font-bold text-[#1c1410]">{title}</h3>
         {sub && <p className="text-[11px] text-[#9a8a7a] mt-0.5">{sub}</p>}
       </div>
       {children}
@@ -199,7 +199,7 @@ export default function SuperAdminDashboardPage() {
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center py-32 text-[13px] text-[#9a8a7a]">
+      <div className="flex items-center justify-center py-32 text-[14px] text-[#9a8a7a]">
         Failed to load dashboard data.
       </div>
     );
@@ -223,10 +223,10 @@ export default function SuperAdminDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[18px] font-bold text-[#1c1410]">Super Admin Dashboard</h1>
-          <p className="text-[12px] text-[#9a8a7a] mt-0.5">Cross-account analytics and health overview</p>
+          <p className="text-[13px] text-[#9a8a7a] mt-0.5">Cross-account analytics and health overview</p>
         </div>
         <button onClick={fetchData} disabled={loading}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 text-[12px] font-semibold text-[#7a6b5c] hover:border-primary/40 hover:text-primary transition-all">
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 text-[13px] font-semibold text-[#7a6b5c] hover:border-primary/40 hover:text-primary transition-all">
           <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> Refresh
         </button>
       </div>
@@ -244,7 +244,7 @@ export default function SuperAdminDashboardPage() {
         {/* Plan Distribution */}
         <Card title="Plan Distribution" sub="Accounts by billing cycle">
           {data.plan_distribution.length === 0 ? (
-            <p className="text-[12px] text-[#9a8a7a] text-center py-8">No data</p>
+            <p className="text-[13px] text-[#9a8a7a] text-center py-8">No data</p>
           ) : (
             <div className="flex items-center gap-6">
               <ResponsiveContainer width="50%" height={180}>
@@ -262,8 +262,8 @@ export default function SuperAdminDashboardPage() {
                 {data.plan_distribution.map((p, i) => (
                   <div key={p.plan_name} className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                    <span className="text-[12px] font-medium text-[#1c1410] capitalize">{p.plan_name}</span>
-                    <span className="text-[12px] text-[#9a8a7a] ml-auto pl-3">{p.count}</span>
+                    <span className="text-[13px] font-medium text-[#1c1410] capitalize">{p.plan_name}</span>
+                    <span className="text-[13px] text-[#9a8a7a] ml-auto pl-3">{p.count}</span>
                   </div>
                 ))}
               </div>
@@ -274,7 +274,7 @@ export default function SuperAdminDashboardPage() {
         {/* Most Active Accounts (bar chart) */}
         <Card title="Most Active Accounts" sub="Top 10 by lead count">
           {sorted.length === 0 ? (
-            <p className="text-[12px] text-[#9a8a7a] text-center py-8">No data</p>
+            <p className="text-[13px] text-[#9a8a7a] text-center py-8">No data</p>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={sorted.slice(0, 10)} layout="vertical"
@@ -293,10 +293,10 @@ export default function SuperAdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Lead Growth Trend — Top 5 accounts */}
+      {/* Lead Growth Trend - Top 5 accounts */}
       <Card title="Lead Growth Trend (30 days)" sub="Top 5 accounts by new leads">
         {growthChartData.length === 0 ? (
-          <p className="text-[12px] text-[#9a8a7a] text-center py-8">No data in last 30 days</p>
+          <p className="text-[13px] text-[#9a8a7a] text-center py-8">No data in last 30 days</p>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={growthChartData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
@@ -318,7 +318,7 @@ export default function SuperAdminDashboardPage() {
       {/* Account-wise Table */}
       <Card title="Account-wise Breakdown" sub="Click column headers to sort">
         <div className="overflow-x-auto -mx-5 px-5">
-          <table className="w-full min-w-[1000px] text-[12px]">
+          <table className="w-full min-w-[1000px] text-[13px]">
             <thead>
               <tr className="border-b border-gray-100 text-[#9a8a7a]">
                 {([
@@ -387,7 +387,7 @@ export default function SuperAdminDashboardPage() {
         {/* Inactive Accounts */}
         <Card title="Inactive Accounts" sub="No leads in 30+ days - churn risk">
           {data.inactive.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-[12px] text-[#9a8a7a]">
+            <div className="flex items-center justify-center py-8 text-[13px] text-[#9a8a7a]">
               All accounts are active
             </div>
           ) : (
@@ -397,14 +397,14 @@ export default function SuperAdminDashboardPage() {
                   <div className="flex items-center gap-2.5 min-w-0">
                     <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[12px] font-semibold text-[#1c1410] truncate">{a.name}</p>
+                      <p className="text-[13px] font-semibold text-[#1c1410] truncate">{a.name}</p>
                       <p className="text-[10px] text-[#9a8a7a]">
                         {a.last_lead_at ? `Last lead: ${timeAgo(a.last_lead_at)}` : 'No leads ever'}
                       </p>
                     </div>
                   </div>
                   <div className="text-right shrink-0 ml-3">
-                    <span className="text-[13px] font-bold text-red-600">{a.inactive_days}d</span>
+                    <span className="text-[14px] font-bold text-red-600">{a.inactive_days}d</span>
                     <p className="text-[10px] text-red-500">inactive</p>
                   </div>
                 </div>
@@ -416,7 +416,7 @@ export default function SuperAdminDashboardPage() {
         {/* Nearing Plan Limits */}
         <Card title="Nearing Plan Limits" sub="Accounts at 80%+ of plan capacity">
           {nearingLimits.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-[12px] text-[#9a8a7a]">
+            <div className="flex items-center justify-center py-8 text-[13px] text-[#9a8a7a]">
               No accounts near limits
             </div>
           ) : (
@@ -428,7 +428,7 @@ export default function SuperAdminDashboardPage() {
                 return (
                   <div key={a.id} className="px-3 py-2.5 rounded-xl bg-amber-50/60 border border-amber-100">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[12px] font-semibold text-[#1c1410]">{a.name}</p>
+                      <p className="text-[13px] font-semibold text-[#1c1410]">{a.name}</p>
                       <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full capitalize">{a.plan}</span>
                     </div>
                     <div className="flex gap-4">

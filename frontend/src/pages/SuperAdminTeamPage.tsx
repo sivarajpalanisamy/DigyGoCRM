@@ -52,18 +52,18 @@ export default function SuperAdminTeamPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="font-headline font-bold text-[22px] text-[#1c1410]">Admin Team</h2>
-          <p className="text-[13px] text-[#7a6b5c] mt-1">Manage users who can access the super admin panel.</p>
+          <p className="text-[14px] text-[#7a6b5c] mt-1">Manage users who can access the super admin panel.</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowChangePw(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold text-[#7a6b5c] border border-gray-200 hover:bg-gray-50 transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[14px] font-semibold text-[#7a6b5c] border border-gray-200 hover:bg-gray-50 transition-all"
           >
             <Lock className="w-4 h-4" /> Change Password
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-[13px] font-bold transition-all hover:opacity-90"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-[14px] font-bold transition-all hover:opacity-90"
             style={{ background: 'linear-gradient(135deg,#c2410c 0%,#ea580c 55%,#f97316 100%)', boxShadow: '0 4px 14px rgba(234,88,12,.28)' }}
           >
             <UserPlus className="w-4 h-4" /> Add Admin User
@@ -76,41 +76,41 @@ export default function SuperAdminTeamPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-black/5 bg-[#faf8f6]">
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wider">#</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Name</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Email</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Status</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Last Login</th>
-              <th className="text-left px-5 py-3 text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Created</th>
-              <th className="text-right px-5 py-3 text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Actions</th>
+              <th className="text-left px-5 py-3 text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wider">#</th>
+              <th className="text-left px-5 py-3 text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Name</th>
+              <th className="text-left px-5 py-3 text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Email</th>
+              <th className="text-left px-5 py-3 text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Status</th>
+              <th className="text-left px-5 py-3 text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Last Login</th>
+              <th className="text-left px-5 py-3 text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Created</th>
+              <th className="text-right px-5 py-3 text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={7} className="px-5 py-10 text-center text-[13px] text-[#b09e8d]">Loading...</td></tr>
+              <tr><td colSpan={7} className="px-5 py-10 text-center text-[14px] text-[#b09e8d]">Loading...</td></tr>
             )}
             {!loading && users.length === 0 && (
-              <tr><td colSpan={7} className="px-5 py-10 text-center text-[13px] text-[#b09e8d]">No admin users found.</td></tr>
+              <tr><td colSpan={7} className="px-5 py-10 text-center text-[14px] text-[#b09e8d]">No admin users found.</td></tr>
             )}
             {!loading && users.map((u, i) => {
               const isMe = u.id === currentUser?.id;
               return (
                 <tr key={u.id} className="border-b border-black/[0.03] hover:bg-[#faf8f6]/50 transition-colors">
-                  <td className="px-5 py-3.5 text-[13px] text-[#7a6b5c]">{i + 1}</td>
+                  <td className="px-5 py-3.5 text-[14px] text-[#7a6b5c]">{i + 1}</td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                         <Shield className="w-4 h-4 text-primary" />
                       </div>
                       <div>
-                        <p className="text-[13px] font-semibold text-[#1c1410]">
+                        <p className="text-[14px] font-semibold text-[#1c1410]">
                           {u.name}
                           {isMe && <span className="ml-1.5 text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">YOU</span>}
                         </p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5 text-[13px] text-[#1c1410]">{u.email}</td>
+                  <td className="px-5 py-3.5 text-[14px] text-[#1c1410]">{u.email}</td>
                   <td className="px-5 py-3.5">
                     <span className={cn(
                       'text-[11px] font-semibold px-2.5 py-1 rounded-full',
@@ -119,10 +119,10 @@ export default function SuperAdminTeamPage() {
                       {u.is_active ? 'Active' : 'Disabled'}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5 text-[13px] text-[#7a6b5c]">
+                  <td className="px-5 py-3.5 text-[14px] text-[#7a6b5c]">
                     {u.last_login_at ? format(new Date(u.last_login_at), 'dd MMM yyyy, hh:mm a') : 'Never'}
                   </td>
-                  <td className="px-5 py-3.5 text-[13px] text-[#7a6b5c]">
+                  <td className="px-5 py-3.5 text-[14px] text-[#7a6b5c]">
                     {format(new Date(u.created_at), 'dd MMM yyyy')}
                   </td>
                   <td className="px-5 py-3.5 text-right">
@@ -224,8 +224,8 @@ function AdminUserModal({ user, onClose, onSaved }: {
     } finally { setSaving(false); }
   };
 
-  const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[14px] text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white placeholder:text-gray-300 transition-all';
-  const lbl = 'block text-[13px] font-semibold text-[#1c1410] mb-1.5';
+  const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[15px] text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white placeholder:text-gray-300 transition-all';
+  const lbl = 'block text-[14px] font-semibold text-[#1c1410] mb-1.5';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -261,7 +261,7 @@ function AdminUserModal({ user, onClose, onSaved }: {
           </div>
           {user && (
             <div className="flex items-center gap-3">
-              <label className="text-[13px] font-semibold text-[#1c1410]">Active</label>
+              <label className="text-[14px] font-semibold text-[#1c1410]">Active</label>
               <button
                 type="button"
                 onClick={() => setForm({ ...form, is_active: !form.is_active })}
@@ -280,11 +280,11 @@ function AdminUserModal({ user, onClose, onSaved }: {
         </div>
 
         <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-50 border border-gray-200 transition-all">Cancel</button>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-50 border border-gray-200 transition-all">Cancel</button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-lg text-[13px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-60"
+            className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-60"
             style={{ background: 'linear-gradient(135deg,#c2410c 0%,#ea580c 55%,#f97316 100%)' }}
           >
             {saving ? 'Saving...' : user ? 'Save Changes' : 'Create User'}
@@ -319,8 +319,8 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
     } finally { setSaving(false); }
   };
 
-  const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[14px] text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white placeholder:text-gray-300 transition-all';
-  const lbl = 'block text-[13px] font-semibold text-[#1c1410] mb-1.5';
+  const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-gray-200 text-[15px] text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white placeholder:text-gray-300 transition-all';
+  const lbl = 'block text-[14px] font-semibold text-[#1c1410] mb-1.5';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -354,11 +354,11 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-50 border border-gray-200 transition-all">Cancel</button>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-50 border border-gray-200 transition-all">Cancel</button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-lg text-[13px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-60"
+            className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-60"
             style={{ background: 'linear-gradient(135deg,#c2410c 0%,#ea580c 55%,#f97316 100%)' }}
           >
             {saving ? 'Changing...' : 'Change Password'}

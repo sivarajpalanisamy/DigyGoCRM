@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
-  Users, UserCheck, UserPlus, Phone, Search, Mail, MoreVertical, User,
+  Users, UserCheck, UserPlus, Phone, Mail, MoreVertical, User,
   MessageCircle, Pencil, Trash2, ArrowRightLeft, Filter, X, Download,
   ChevronDown, Tag, FileText, Loader2, Zap, Settings, History, ExternalLink,
 } from 'lucide-react';
 import { useCrmStore } from '@/store/crmStore';
 import { usePermission } from '@/hooks/usePermission';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useHeaderSearch } from '@/store/headerSearchStore';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { api } from '@/lib/api';
 import { ExportModal } from '@/components/ui/ExportModal';
@@ -85,7 +86,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
             await api.post(`/api/integrations/meta/forms/${fullLead.meta_form_id}/backfill`);
             data = await api.get<any[]>(`/api/leads/${lead.id}/fields`).catch(() => [] as any[]);
           }
-        } catch { /* ignore — backfill is best-effort */ }
+        } catch { /* ignore - backfill is best-effort */ }
       }
       setFields(data);
     };
@@ -134,8 +135,8 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
     }
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[13px] text-[#1c1410] placeholder-gray-300 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all bg-white';
-  const labelCls = 'block text-[12px] font-medium text-[#555] mb-1.5';
+  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1c1410] placeholder-gray-300 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all bg-white';
+  const labelCls = 'block text-[13px] font-medium text-[#555] mb-1.5';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
@@ -156,7 +157,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
             <button
               type="button"
               onClick={() => setActiveTab('opportunity')}
-              className="px-5 py-2 rounded-lg text-[13px] font-bold text-white transition-all"
+              className="px-5 py-2 rounded-lg text-[14px] font-bold text-white transition-all"
               style={{
                 background: activeTab === 'opportunity'
                   ? 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)'
@@ -169,7 +170,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
             <button
               type="button"
               onClick={() => setActiveTab('additional')}
-              className="px-5 py-2 rounded-lg text-[13px] font-bold transition-all"
+              className="px-5 py-2 rounded-lg text-[14px] font-bold transition-all"
               style={{
                 background: activeTab === 'additional'
                   ? 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)'
@@ -182,7 +183,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
             <button
               type="button"
               onClick={() => setActiveTab('journey')}
-              className="px-5 py-2 rounded-lg text-[13px] font-bold transition-all flex items-center gap-1.5"
+              className="px-5 py-2 rounded-lg text-[14px] font-bold transition-all flex items-center gap-1.5"
               style={{
                 background: activeTab === 'journey'
                   ? 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)'
@@ -235,14 +236,14 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                 <div>
                   <label className={labelCls}>Phone</label>
                   <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-                    <span className="px-3 py-2.5 text-[12px] font-semibold text-[#555] bg-gray-50 border-r border-gray-200 shrink-0 whitespace-nowrap">
+                    <span className="px-3 py-2.5 text-[13px] font-semibold text-[#555] bg-gray-50 border-r border-gray-200 shrink-0 whitespace-nowrap">
                       IN +91
                     </span>
                     <input
                       value={form.phone.replace(/^\+?91/, '')}
                       onChange={(e) => setForm((f) => ({ ...f, phone: '+91' + e.target.value.replace(/\D/g, '') }))}
                       placeholder="81234 56789"
-                      className="flex-1 px-3 py-2.5 text-[13px] text-[#1c1410] placeholder-gray-300 outline-none bg-white"
+                      className="flex-1 px-3 py-2.5 text-[14px] text-[#1c1410] placeholder-gray-300 outline-none bg-white"
                     />
                   </div>
                 </div>
@@ -312,8 +313,8 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                   <div className="w-12 h-12 bg-[var(--app-bg)] rounded-2xl flex items-center justify-center">
                     <FileText className="w-5 h-5 text-gray-300" />
                   </div>
-                  <p className="text-[13px] font-semibold text-[#1c1410]">No additional fields</p>
-                  <p className="text-[12px] text-[#b09e8d]">No custom field data recorded for this contact.</p>
+                  <p className="text-[14px] font-semibold text-[#1c1410]">No additional fields</p>
+                  <p className="text-[13px] text-[#b09e8d]">No custom field data recorded for this contact.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-x-5 gap-y-4">
@@ -344,8 +345,8 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                   <div className="w-12 h-12 bg-[var(--app-bg)] rounded-2xl flex items-center justify-center">
                     <History className="w-5 h-5 text-gray-300" />
                   </div>
-                  <p className="text-[13px] font-semibold text-[#1c1410]">No journey data</p>
-                  <p className="text-[12px] text-[#b09e8d]">No enquiry history recorded for this contact yet.</p>
+                  <p className="text-[14px] font-semibold text-[#1c1410]">No journey data</p>
+                  <p className="text-[13px] text-[#b09e8d]">No enquiry history recorded for this contact yet.</p>
                 </div>
               ) : (
                 <div className="space-y-5">
@@ -374,12 +375,12 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                   {/* Active leads across pipelines */}
                   {journey.leads.length > 0 && (
                     <div>
-                      <h4 className="text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2">Active Leads</h4>
+                      <h4 className="text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2">Active Leads</h4>
                       <div className="space-y-2">
                         {journey.leads.map((l: any) => (
                           <div key={l.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl">
                             <div>
-                              <p className="text-[13px] font-semibold text-[#1c1410]">{l.pipeline_name || 'No pipeline'}</p>
+                              <p className="text-[14px] font-semibold text-[#1c1410]">{l.pipeline_name || 'No pipeline'}</p>
                               <p className="text-[11px] text-[#7a6b5c]">
                                 Stage: {l.stage_name || '-'}
                                 {l.assigned_name ? ` · Assigned: ${l.assigned_name}` : ''}
@@ -396,7 +397,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                   {/* Enquiry timeline */}
                   {journey.enquiries.length > 0 && (
                     <div>
-                      <h4 className="text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2">Enquiry Timeline</h4>
+                      <h4 className="text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2">Enquiry Timeline</h4>
                       <div className="relative pl-4 border-l-2 border-gray-200 space-y-4">
                         {journey.enquiries.map((e: any) => (
                           <div key={e.id} className="relative">
@@ -404,7 +405,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                               style={{ backgroundColor: e.is_duplicate ? '#f59e0b' : 'var(--brand, #c2410c)' }} />
                             <div className="p-3 bg-white border border-gray-100 rounded-xl">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[13px] font-semibold text-[#1c1410]">
+                                <span className="text-[14px] font-semibold text-[#1c1410]">
                                   {e.form_name || e.form_type}
                                 </span>
                                 <span className="text-[11px] text-[#b09e8d]">
@@ -455,14 +456,14 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-6 py-2 rounded-lg text-[13px] font-bold text-white bg-red-400 hover:bg-red-500 transition-colors"
+              className="px-6 py-2 rounded-lg text-[14px] font-bold text-white bg-red-400 hover:bg-red-500 transition-colors"
             >
               CANCEL
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-6 py-2 rounded-lg text-[13px] font-bold text-white transition-colors disabled:opacity-60"
+              className="px-6 py-2 rounded-lg text-[14px] font-bold text-white transition-colors disabled:opacity-60"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)' }}
             >
               {saving ? 'SAVING…' : 'SAVE'}
@@ -508,27 +509,27 @@ function WorkflowTriggerModal({ leadIds, workflows, onClose, onSuccess }: {
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-4 h-4 text-[#7a6b5c]" /></button>
         </div>
         <div className="px-6 py-5 space-y-3">
-          <label className="text-[13px] font-semibold text-[#1c1410] block">Select Active Workflow</label>
+          <label className="text-[14px] font-semibold text-[#1c1410] block">Select Active Workflow</label>
           <div className="relative">
-            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white appearance-none pr-10">
+            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white appearance-none pr-10">
               <option value="">- Choose a workflow -</option>
               {activeWorkflows.map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
           {activeWorkflows.length === 0 && (
-            <p className="text-[12px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+            <p className="text-[13px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
               No active workflows found. Set a workflow to Active in Automation first.
             </p>
           )}
-          <p className="text-[12px] text-blue-500 flex items-start gap-1.5 pt-1">
+          <p className="text-[13px] text-blue-500 flex items-start gap-1.5 pt-1">
             <Settings className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             {leadIds.length} contact{leadIds.length !== 1 ? 's' : ''} selected - all will be pushed through the chosen workflow.
           </p>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-200 text-[13px] font-bold text-gray-600 hover:bg-gray-300 transition-colors uppercase tracking-wide">Close</button>
-          <button onClick={send} disabled={sending || !selected} className="px-6 py-2 rounded-lg bg-green-500 text-[13px] font-bold text-white hover:bg-green-600 disabled:opacity-50 transition-colors uppercase tracking-wide">
+          <button onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-200 text-[14px] font-bold text-gray-600 hover:bg-gray-300 transition-colors uppercase tracking-wide">Close</button>
+          <button onClick={send} disabled={sending || !selected} className="px-6 py-2 rounded-lg bg-green-500 text-[14px] font-bold text-white hover:bg-green-600 disabled:opacity-50 transition-colors uppercase tracking-wide">
             {sending ? 'Sending…' : 'Send'}
           </button>
         </div>
@@ -579,7 +580,8 @@ export default function ContactsPage() {
   const canEditContact   = usePermission('leads:edit');
   const canDeleteContact = usePermission('leads:delete');
   const canExport        = usePermission('contacts:export');
-  const [search, setSearch] = useState('');
+  // Search lives in the navbar (context-aware header search).
+  const [search, setSearch] = useHeaderSearch('Search name, email or phone');
   const debouncedSearch = useDebounce(search, 300);
   const [showExportModal, setShowExportModal] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
@@ -694,7 +696,7 @@ export default function ContactsPage() {
 
   const activeFiltersCount = [sourceFilter !== 'All', typeFilter !== 'All', tagFilter !== 'All', pipelineFilter !== 'All', stageFilter !== 'All', dateFilter !== 'All time'].filter(Boolean).length;
 
-  // Client-side pagination — render one page of rows instead of all (thousands of)
+  // Client-side pagination - render one page of rows instead of all (thousands of)
   // DOM nodes at once. This is the main fix for the Contacts page being heavy.
   const PAGE_SIZE = 50;
   const [page, setPage] = useState(1);
@@ -730,7 +732,7 @@ export default function ContactsPage() {
     setDeleteTargetId(null);
   };
 
-  const selectCls = 'appearance-none pl-3 pr-8 py-2 bg-white border border-black/10 rounded-xl text-[13px] font-medium text-[#1c1410] outline-none hover:border-primary/40 focus:border-primary/40 cursor-pointer';
+  const selectCls = 'appearance-none pl-3 pr-8 py-2 bg-white border border-black/10 rounded-xl text-[14px] font-medium text-[#1c1410] outline-none hover:border-primary/40 focus:border-primary/40 cursor-pointer';
 
   return (
     <>
@@ -748,7 +750,7 @@ export default function ContactsPage() {
                 <s.icon className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-[12px] opacity-80">{s.label}</p>
+                <p className="text-[13px] opacity-80">{s.label}</p>
                 <h3 className="font-headline text-[22px] font-bold tracking-tight leading-tight">{s.value}</h3>
               </div>
             </div>
@@ -759,7 +761,7 @@ export default function ContactsPage() {
                 <s.icon className={cn('w-5 h-5', s.color)} />
               </div>
               <div>
-                <p className="text-[12px] text-[#7a6b5c]">{s.label}</p>
+                <p className="text-[13px] text-[#7a6b5c]">{s.label}</p>
                 <h3 className="font-headline text-[22px] font-bold text-[#1c1410] tracking-tight leading-tight">{s.value}</h3>
               </div>
             </div>
@@ -769,29 +771,13 @@ export default function ContactsPage() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-2.5 flex-wrap">
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, email, phone..."
-            className="w-full pl-9 pr-10 py-2.5 text-[13px] bg-white border border-black/10 rounded-full outline-none focus:border-primary/40 placeholder:text-gray-400 transition-all"
-            style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
-          />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full hover:bg-black/5 flex items-center justify-center text-[#b09e8d]">
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
+        {/* Search moved to the navbar (context-aware header search). */}
 
         {/* Type pills */}
         <div className="flex items-center bg-white rounded-xl border border-black/10 p-1 gap-0.5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
           {TYPE_OPTIONS.map((t) => (
             <button key={t} onClick={() => setTypeFilter(t)}
-              className={cn('px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors',
+              className={cn('px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-colors',
                 typeFilter === t ? 'bg-primary text-white shadow-sm' : 'text-[#7a6b5c] hover:text-[#1c1410]'
               )}>
               {t}
@@ -802,7 +788,7 @@ export default function ContactsPage() {
         {/* Filter toggle */}
         <button
           onClick={() => setShowFilters((v) => !v)}
-          className={cn('flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-[13px] font-medium transition-all',
+          className={cn('flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-[14px] font-medium transition-all',
             showFilters || activeFiltersCount > 0 ? 'border-primary/40 bg-orange-50 text-primary' : 'border-black/10 bg-white text-[#7a6b5c] hover:border-primary/30 hover:text-primary'
           )}
           style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
@@ -818,7 +804,7 @@ export default function ContactsPage() {
         {canExport && (
           <button
             onClick={() => setShowExportModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-black/10 bg-white text-[13px] font-medium text-[#7a6b5c] hover:border-primary/30 hover:text-primary transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-black/10 bg-white text-[14px] font-medium text-[#7a6b5c] hover:border-primary/30 hover:text-primary transition-all"
             style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <Download className="w-3.5 h-3.5" /> Export
@@ -871,17 +857,17 @@ export default function ContactsPage() {
             <div className="flex items-center gap-1.5">
               <input type="date" value={customFrom} max={customTo || undefined}
                 onChange={(e) => setCustomFrom(e.target.value)}
-                className="h-8 px-2 text-[12px] rounded-lg border border-black/10 bg-white text-[#1c1410] outline-none focus:border-primary/40"
+                className="h-8 px-2 text-[13px] rounded-lg border border-black/10 bg-white text-[#1c1410] outline-none focus:border-primary/40"
                 style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} title="From date" />
-              <span className="text-[12px] text-[#9a8a7a]">→</span>
+              <span className="text-[13px] text-[#9a8a7a]">→</span>
               <input type="date" value={customTo} min={customFrom || undefined}
                 onChange={(e) => setCustomTo(e.target.value)}
-                className="h-8 px-2 text-[12px] rounded-lg border border-black/10 bg-white text-[#1c1410] outline-none focus:border-primary/40"
+                className="h-8 px-2 text-[13px] rounded-lg border border-black/10 bg-white text-[#1c1410] outline-none focus:border-primary/40"
                 style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} title="To date" />
             </div>
           )}
           {activeFiltersCount > 0 && (
-            <button onClick={clearFilters} className="text-[12px] text-red-500 font-semibold hover:underline">Clear all</button>
+            <button onClick={clearFilters} className="text-[13px] text-red-500 font-semibold hover:underline">Clear all</button>
           )}
         </div>
       )}
@@ -894,13 +880,13 @@ export default function ContactsPage() {
         >
           <div className="flex items-center gap-2 pr-3 border-r border-primary/20">
             <div className="w-6 h-6 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center">{selected.length}</div>
-            <span className="text-[12px] font-semibold text-[#1c1410]">selected</span>
+            <span className="text-[13px] font-semibold text-[#1c1410]">selected</span>
           </div>
-          <button onClick={() => setShowWorkflow(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-primary hover:bg-primary/10 transition-colors">
+          <button onClick={() => setShowWorkflow(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-primary hover:bg-primary/10 transition-colors">
             <Zap className="w-3.5 h-3.5" /> Trigger Workflow
           </button>
           {canDeleteContact && (
-            <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-red-500 hover:bg-red-50 transition-colors">
+            <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-red-500 hover:bg-red-50 transition-colors">
               <Trash2 className="w-3.5 h-3.5" /> Delete
             </button>
           )}
@@ -915,22 +901,22 @@ export default function ContactsPage() {
       <div className="bg-white rounded-2xl border border-black/5 overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         {/* Result count */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-black/[0.04]">
-          <p className="text-[12px] text-[#7a6b5c]">
+          <p className="text-[13px] text-[#7a6b5c]">
             Showing <span className="font-semibold text-[#1c1410]">{filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}</span> of {filtered.length}{filtered.length !== totalContacts ? ` (filtered from ${totalContacts})` : ''} contacts
           </p>
           {totalPages > 1 && (
             <div className="flex items-center gap-2">
               <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1}
-                className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Prev</button>
-              <span className="text-[12px] text-[#7a6b5c]">Page {safePage} / {totalPages}</span>
+                className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Prev</button>
+              <span className="text-[13px] text-[#7a6b5c]">Page {safePage} / {totalPages}</span>
               <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}
-                className="px-3 py-1.5 rounded-lg border border-black/10 text-[12px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Next</button>
+                className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Next</button>
             </div>
           )}
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-[13px]">
+          <table className="w-full min-w-[900px] text-[14px]">
             <thead>
               <tr className="border-b border-black/5 bg-[var(--app-bg)]">
                 <th className="w-10 px-4 py-3">
@@ -955,8 +941,8 @@ export default function ContactsPage() {
                       <div className="w-12 h-12 rounded-2xl bg-[var(--accent-tint)] flex items-center justify-center">
                         <Users className="w-6 h-6 text-[#c4b09e]" />
                       </div>
-                      <p className="text-[13px] font-semibold text-[#1c1410]">No contacts found</p>
-                      <p className="text-[12px] text-[#7a6b5c]">Try adjusting your search or filters.</p>
+                      <p className="text-[14px] font-semibold text-[#1c1410]">No contacts found</p>
+                      <p className="text-[13px] text-[#7a6b5c]">Try adjusting your search or filters.</p>
                     </div>
                   </td>
                 </tr>
@@ -971,14 +957,14 @@ export default function ContactsPage() {
                       <input type="checkbox" checked={isSelected} onChange={() => toggleOne(lead.id)} className="w-4 h-4 accent-primary" />
                     </td>
 
-                    {/* Contact — name + email + phone stacked */}
+                    {/* Contact - name + email + phone stacked */}
                     <td className="px-4 py-3.5 min-w-[240px]">
                       <div className="flex items-center gap-3 cursor-pointer" onClick={() => setSelectedContactId(lead.id)}>
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
                           {lead.firstName[0]}{lead.lastName[0]}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-[13px] text-[#1c1410] truncate hover:text-primary transition-colors">{lead.firstName} {lead.lastName}</p>
+                          <p className="font-semibold text-[14px] text-[#1c1410] truncate hover:text-primary transition-colors">{lead.firstName} {lead.lastName}</p>
                           <div className="flex items-center gap-3 mt-0.5">
                             {lead.email && <span className="text-[11px] text-[#7a6b5c] truncate max-w-[160px]">{lead.email}</span>}
                             <a href={`tel:${lead.phone}`} className="text-[11px] text-[#7a6b5c] hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{lead.phone}</a>
@@ -996,7 +982,7 @@ export default function ContactsPage() {
 
                     {/* Pipeline */}
                     <td className="px-4 py-3.5">
-                      <span className="text-[12px] font-medium text-[#1c1410]">
+                      <span className="text-[13px] font-medium text-[#1c1410]">
                         {pipelines.find((p) => p.id === lead.pipelineId)?.name ?? '-'}
                       </span>
                     </td>
@@ -1026,13 +1012,13 @@ export default function ContactsPage() {
 
                     {/* Created */}
                     <td className="px-4 py-3.5 whitespace-nowrap">
-                      <p className="text-[12px] text-[#1c1410]">{format(new Date(lead.createdAt), 'dd MMM yyyy')}</p>
+                      <p className="text-[13px] text-[#1c1410]">{format(new Date(lead.createdAt), 'dd MMM yyyy')}</p>
                       <p className="text-[11px] text-[#b09e8d]">{format(new Date(lead.createdAt), 'h:mm a')}</p>
                     </td>
 
                     {/* Last Activity */}
                     <td className="px-4 py-3.5 whitespace-nowrap">
-                      <p className="text-[12px] text-[#7a6b5c]">{format(new Date(lead.lastActivity), 'dd MMM yyyy')}</p>
+                      <p className="text-[13px] text-[#7a6b5c]">{format(new Date(lead.lastActivity), 'dd MMM yyyy')}</p>
                       <p className="text-[11px] text-[#b09e8d]">{format(new Date(lead.lastActivity), 'h:mm a')}</p>
                     </td>
 
@@ -1052,14 +1038,14 @@ export default function ContactsPage() {
                             <div className="absolute right-0 top-9 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-44 py-1 overflow-hidden">
                               <button
                                 onClick={() => { toast.info('Opening conversation…'); setOpenMenu(null); }}
-                                className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors"
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors"
                               >
                                 <MessageCircle className="w-3.5 h-3.5 text-[#7a6b5c]" /> Message
                               </button>
                               {canEditContact && (
                                 <button
                                   onClick={() => { toast.info('Edit coming soon'); setOpenMenu(null); }}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors"
+                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors"
                                 >
                                   <Pencil className="w-3.5 h-3.5 text-[#7a6b5c]" /> Edit
                                 </button>
@@ -1078,7 +1064,7 @@ export default function ContactsPage() {
                                     } catch { toast.error('Failed to update contact'); }
                                     setOpenMenu(null);
                                   }}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors"
+                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors"
                                 >
                                   <ArrowRightLeft className="w-3.5 h-3.5 text-[#7a6b5c]" />
                                   {isCustomer ? 'Convert to Lead' : 'Convert to Customer'}
@@ -1089,7 +1075,7 @@ export default function ContactsPage() {
                                   <div className="border-t border-black/5 my-1" />
                                   <button
                                     onClick={() => { setDeleteTargetId(lead.id); setOpenMenu(null); }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-red-500 hover:bg-red-50 transition-colors"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-500 hover:bg-red-50 transition-colors"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" /> Delete
                                   </button>

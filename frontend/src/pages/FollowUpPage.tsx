@@ -47,7 +47,7 @@ function AddFollowUpModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
@@ -58,26 +58,26 @@ function AddFollowUpModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Contact <span className="text-red-400">*</span></label>
+            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Contact <span className="text-red-400">*</span></label>
             <select className={inputCls} value={leadId} onChange={(e) => setLeadId(e.target.value)}>
               <option value="">Select contact</option>
               {leads.map((l) => <option key={l.id} value={l.id}>{l.firstName} {l.lastName}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Title <span className="text-red-400">*</span></label>
+            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Title <span className="text-red-400">*</span></label>
             <input className={inputCls} placeholder="e.g. Call back" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Description</label>
+            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Description</label>
             <input className={inputCls} placeholder="e.g. Pre sales pitch" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Due Date & Time <span className="text-red-400">*</span></label>
+            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Due Date & Time <span className="text-red-400">*</span></label>
             <input type="datetime-local" className={inputCls} value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
           </div>
           <div>
-            <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">Assign To</label>
+            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Assign To</label>
             <select className={inputCls} value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
               <option value="">Unassigned</option>
               {staff.filter((s) => s.status === 'active').map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -85,8 +85,8 @@ function AddFollowUpModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="px-5 py-2 rounded-xl text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-          <button onClick={submit} className="px-6 py-2 rounded-xl text-[13px] font-bold text-white hover:-translate-y-0.5 transition-all" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
+          <button onClick={onClose} className="px-5 py-2 rounded-xl text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={submit} className="px-6 py-2 rounded-xl text-[14px] font-bold text-white hover:-translate-y-0.5 transition-all" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
             Schedule
           </button>
         </div>
@@ -170,7 +170,7 @@ export default function FollowUpPage() {
         <div>
           <p className="section-label mb-0.5">Lead Management</p>
           <h2 className="font-headline text-[29px] font-extrabold tracking-tight text-[#1c1410]">Follow-up</h2>
-          <p className="text-[13px] text-[#7a6b5c] mt-0.5">You have total {enriched.length} Task{enriched.length !== 1 ? 's' : ''}</p>
+          <p className="text-[14px] text-[#7a6b5c] mt-0.5">You have total {enriched.length} Task{enriched.length !== 1 ? 's' : ''}</p>
         </div>
 
         {/* Filters: staff + sort */}
@@ -178,7 +178,7 @@ export default function FollowUpPage() {
           <select
             value={assignFilter}
             onChange={(e) => setAssignFilter(e.target.value)}
-            className="border border-gray-200 rounded-xl px-4 py-2 text-[12px] text-[#1c1410] outline-none focus:border-primary/40 bg-white min-w-[180px]"
+            className="border border-gray-200 rounded-xl px-4 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white min-w-[180px]"
           >
             <option value="">Select assigned staff</option>
             {staff.filter((s) => s.status === 'active').map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -188,7 +188,7 @@ export default function FollowUpPage() {
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-              className="border border-gray-200 rounded-xl pl-4 pr-8 py-2 text-[12px] text-[#1c1410] outline-none focus:border-primary/40 bg-white appearance-none min-w-[170px]"
+              className="border border-gray-200 rounded-xl pl-4 pr-8 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white appearance-none min-w-[170px]"
             >
               <option value="asc">Date Added (ASC)</option>
               <option value="desc">Date Added (DESC)</option>
@@ -212,7 +212,7 @@ export default function FollowUpPage() {
               )}
             >
               <tab.icon className={cn('w-5 h-5', isActive ? tab.color : 'text-[#b09e8d]')} />
-              <span className={cn('text-[13px] font-semibold', isActive ? tab.color : 'text-[#7a6b5c]')}>{tab.label}</span>
+              <span className={cn('text-[14px] font-semibold', isActive ? tab.color : 'text-[#7a6b5c]')}>{tab.label}</span>
               <span className={cn('font-headline text-[22px] font-extrabold tracking-tight', isActive ? tab.color : 'text-[#1c1410]')}>
                 {counts[tab.key]}
               </span>
@@ -235,7 +235,7 @@ export default function FollowUpPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowAdd(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-[12px] font-bold transition-all hover:-translate-y-0.5"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-[13px] font-bold transition-all hover:-translate-y-0.5"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 12px rgba(234,88,12,0.25)' }}
             >
               <Plus className="w-3.5 h-3.5" /> Follow-up
@@ -255,7 +255,7 @@ export default function FollowUpPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search"
-                className="pl-9 pr-4 py-1.5 text-[12px] bg-[var(--app-bg)] border border-black/5 rounded-xl outline-none focus:ring-1 focus:ring-primary/30 w-44"
+                className="pl-9 pr-4 py-1.5 text-[13px] bg-[var(--app-bg)] border border-black/5 rounded-xl outline-none focus:ring-1 focus:ring-primary/30 w-44"
               />
             </div>
           </div>
@@ -263,7 +263,7 @@ export default function FollowUpPage() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px] min-w-[860px]">
+          <table className="w-full text-[14px] min-w-[860px]">
             <thead>
               <tr className="border-b border-black/5 bg-[var(--app-bg)]">
                 <th className="w-10 px-4 py-3">
@@ -285,7 +285,7 @@ export default function FollowUpPage() {
                 <tr>
                   <td colSpan={8} className="py-16 text-center">
                     <CheckCircle2 className="w-8 h-8 text-[#c4b09e] mx-auto mb-2" />
-                    <p className="text-[13px] text-[#7a6b5c]">No follow-ups found</p>
+                    <p className="text-[14px] text-[#7a6b5c]">No follow-ups found</p>
                   </td>
                 </tr>
               )}
@@ -318,7 +318,7 @@ export default function FollowUpPage() {
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5">
                             <User className="w-3 h-3 text-[#b09e8d] shrink-0" />
-                            <span className="font-semibold text-primary text-[13px]">{fu.lead.firstName} {fu.lead.lastName}</span>
+                            <span className="font-semibold text-primary text-[14px]">{fu.lead.firstName} {fu.lead.lastName}</span>
                           </div>
                           {fu.lead.email && (
                             <div className="flex items-center gap-1.5">
@@ -332,7 +332,7 @@ export default function FollowUpPage() {
                           </div>
                         </div>
                       ) : (
-                        <span className="text-[#b09e8d] text-[12px]">Unknown contact</span>
+                        <span className="text-[#b09e8d] text-[13px]">Unknown contact</span>
                       )}
                     </td>
 
@@ -340,15 +340,15 @@ export default function FollowUpPage() {
                     <td className="px-3 py-4 whitespace-nowrap text-[#7a6b5c]">
                       {createdAt ? (
                         <>
-                          <p className="text-[12px] font-medium text-[#1c1410]">{format(createdAt, 'dd/MM/yyyy')}</p>
+                          <p className="text-[13px] font-medium text-[#1c1410]">{format(createdAt, 'dd/MM/yyyy')}</p>
                           <p className="text-[11px] text-[#7a6b5c]">at {format(createdAt, 'hh:mm aa')}</p>
                         </>
-                      ) : <span className="text-[#b09e8d]">—</span>}
+                      ) : <span className="text-[#b09e8d]">-</span>}
                     </td>
 
                     {/* Due Date */}
                     <td className="px-3 py-4 whitespace-nowrap">
-                      <p className={cn('text-[12px] font-medium', dueColor)}>{format(fu.due, 'dd/MM/yyyy')}</p>
+                      <p className={cn('text-[13px] font-medium', dueColor)}>{format(fu.due, 'dd/MM/yyyy')}</p>
                       <p className={cn('text-[11px]', dueColor)}>at {format(fu.due, 'hh:mm aa')}</p>
                     </td>
 
@@ -402,14 +402,14 @@ export default function FollowUpPage() {
                               {!fu.completed && (
                                 <button
                                   onClick={() => { completeFollowUp(fu.id, fu.leadId); toast.success('Marked complete'); setOpenMenu(null); }}
-                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px] text-[#1c1410] hover:bg-[var(--app-bg)]"
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[var(--app-bg)]"
                                 >
                                   <Check className="w-3.5 h-3.5 text-green-500" /> Complete
                                 </button>
                               )}
                               <button
                                 onClick={() => setOpenMenu(null)}
-                                className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px] text-red-500 hover:bg-red-50"
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-red-500 hover:bg-red-50"
                               >
                                 <Trash2 className="w-3.5 h-3.5" /> Delete
                               </button>

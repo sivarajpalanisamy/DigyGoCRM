@@ -114,7 +114,7 @@ function CalendarFieldPickerModal({
           {added ? <Check className="w-4 h-4 text-emerald-600" /> : <Icon className="w-4 h-4 text-primary" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className={cn('text-[13px] font-semibold truncate', added ? 'text-emerald-700' : 'text-[#1c1410]')}>{label}</p>
+          <p className={cn('text-[14px] font-semibold truncate', added ? 'text-emerald-700' : 'text-[#1c1410]')}>{label}</p>
           <p className="text-[10px] text-[#b09e8d] capitalize">{type}</p>
         </div>
         {added && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">Added</span>}
@@ -137,7 +137,7 @@ function CalendarFieldPickerModal({
             <Search className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
             <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search fields…"
-              className="flex-1 text-[13px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#b09e8d]" />
+              className="flex-1 text-[14px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#b09e8d]" />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
@@ -160,7 +160,7 @@ function CalendarFieldPickerModal({
             </div>
           )}
           {filteredStd.length === 0 && filteredCustom.length === 0 && (
-            <p className="text-center text-[13px] text-[#b09e8d] py-6">No fields match "{search}"</p>
+            <p className="text-center text-[14px] text-[#b09e8d] py-6">No fields match "{search}"</p>
           )}
         </div>
       </div>
@@ -285,7 +285,7 @@ export default function CalendarEditPage() {
     }
   };
 
-  const inp = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary/40 bg-white transition-colors';
+  const inp = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white transition-colors';
 
   return (
     <div className="space-y-6">
@@ -302,11 +302,11 @@ export default function CalendarEditPage() {
         </div>
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/calendar')}
-            className="px-4 py-2.5 rounded-xl text-[13px] font-semibold text-[#7a6b5c] border border-black/10 bg-white hover:bg-[var(--accent-tint)] transition-colors">
+            className="px-4 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 bg-white hover:bg-[var(--accent-tint)] transition-colors">
             Cancel
           </button>
           <button onClick={handleSave} disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60"
             style={shadowStyle}>
             <Check className="w-4 h-4" /> {saving ? 'Saving…' : isEdit ? 'Update' : 'Create'}
           </button>
@@ -317,7 +317,7 @@ export default function CalendarEditPage() {
       <div className="flex border-b border-black/5">
         {(['details', 'availability', 'fields'] as const).map((s) => (
           <button key={s} onClick={() => setSection(s)}
-            className={cn('px-5 py-3 text-[13px] font-semibold border-b-2 transition-colors',
+            className={cn('px-5 py-3 text-[14px] font-semibold border-b-2 transition-colors',
               section === s ? 'border-primary text-primary' : 'border-transparent text-[#7a6b5c] hover:text-[#1c1410]')}>
             {s === 'details' ? 'Details' : s === 'availability' ? 'Availability' : 'Form Fields'}
           </button>
@@ -330,14 +330,14 @@ export default function CalendarEditPage() {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
             <div className="space-y-5">
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Calendar name <span className="text-red-500">*</span></label>
+                <label className="text-[14px] font-semibold text-[#1c1410] mb-1.5 block">Calendar name <span className="text-red-500">*</span></label>
                 <input className={inp} placeholder="HawcusSlotBooking" value={form.name} onChange={(e) => upd('name', e.target.value)} autoFocus />
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-2 block">Assign Staff</label>
+                <label className="text-[14px] font-semibold text-[#1c1410] mb-2 block">Assign Staff</label>
                 <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
                   {activeStaff.length === 0 ? (
-                    <p className="px-4 py-3 text-[13px] text-[#b09e8d]">No active staff found. Add staff in the Staff section.</p>
+                    <p className="px-4 py-3 text-[14px] text-[#b09e8d]">No active staff found. Add staff in the Staff section.</p>
                   ) : activeStaff.map((member) => (
                     <label key={member.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--app-bg)] cursor-pointer">
                       <input
@@ -349,21 +349,21 @@ export default function CalendarEditPage() {
                         )}
                         className="w-4 h-4 accent-primary rounded"
                       />
-                      <span className="text-[13px] text-[#1c1410]">{member.name}</span>
+                      <span className="text-[14px] text-[#1c1410]">{member.name}</span>
                       <span className="text-[11px] text-[#b09e8d] ml-1">{member.email}</span>
                     </label>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Description</label>
+                <label className="text-[14px] font-semibold text-[#1c1410] mb-1.5 block">Description</label>
                 <textarea className={cn(inp, 'resize-none min-h-[120px]')} placeholder="Describe this calendar..." value={form.description} onChange={(e) => upd('description', e.target.value)} />
               </div>
             </div>
             <div className="space-y-5">
               {/* Staff type cards */}
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-2 block">Staff Type</label>
+                <label className="text-[14px] font-semibold text-[#1c1410] mb-2 block">Staff Type</label>
                 <div className="grid grid-cols-2 gap-2">
                   {([
                     { key: 'single', title: 'Single Staff', desc: 'One person owns all bookings' },
@@ -374,14 +374,14 @@ export default function CalendarEditPage() {
                         form.staffType === key
                           ? 'border-primary bg-orange-50'
                           : 'border-gray-200 bg-white hover:border-gray-300')}>
-                      <p className={cn('text-[13px] font-bold', form.staffType === key ? 'text-primary' : 'text-[#1c1410]')}>{title}</p>
+                      <p className={cn('text-[14px] font-bold', form.staffType === key ? 'text-primary' : 'text-[#1c1410]')}>{title}</p>
                       <p className="text-[11px] text-[#7a6b5c] mt-0.5">{desc}</p>
                     </button>
                   ))}
                 </div>
                 {form.staffType === 'multi' && (
                   <div className="mt-3">
-                    <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block uppercase tracking-wide">Assignment Mode</label>
+                    <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block uppercase tracking-wide">Assignment Mode</label>
                     <div className="grid grid-cols-2 gap-2">
                       {([
                         { key: 'round-robin', title: 'Round Robin',  desc: 'Distribute evenly' },
@@ -392,7 +392,7 @@ export default function CalendarEditPage() {
                             form.assignmentMode === key
                               ? 'border-blue-400 bg-blue-50'
                               : 'border-gray-200 bg-white hover:border-gray-300')}>
-                          <p className={cn('text-[12px] font-bold', form.assignmentMode === key ? 'text-blue-600' : 'text-[#1c1410]')}>{title}</p>
+                          <p className={cn('text-[13px] font-bold', form.assignmentMode === key ? 'text-blue-600' : 'text-[#1c1410]')}>{title}</p>
                           <p className="text-[10px] text-[#7a6b5c] mt-0.5">{desc}</p>
                         </button>
                       ))}
@@ -401,7 +401,7 @@ export default function CalendarEditPage() {
                 )}
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-2 block">Location <span className="text-red-500">*</span></label>
+                <label className="text-[14px] font-semibold text-[#1c1410] mb-2 block">Location <span className="text-red-500">*</span></label>
 
                 {/* Selected location pill */}
                 {form.meetingType && (
@@ -410,7 +410,7 @@ export default function CalendarEditPage() {
                       <span className="text-white text-[8px] font-extrabold">G</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-[#1c1410] font-medium">{form.meetingType}</p>
+                      <p className="text-[14px] text-[#1c1410] font-medium">{form.meetingType}</p>
                       {form.meetingLink
                         ? <p className="text-[11px] text-blue-500 truncate">{form.meetingLink}</p>
                         : <p className="text-[11px] text-[#b09e8d]">No link added</p>
@@ -439,28 +439,28 @@ export default function CalendarEditPage() {
                 </div>
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Duration (min)</label>
+                <label className="text-[14px] font-semibold text-[#1c1410] mb-1.5 block">Duration (min)</label>
                 <select className={inp} value={form.duration} onChange={(e) => upd('duration', Number(e.target.value))}>
                   {[15, 20, 30, 45, 60, 90, 120].map((d) => <option key={d}>{d}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Max Bookings Per Day <span className="text-[#b09e8d] font-normal">(0 = unlimited)</span></label>
+                <label className="text-[14px] font-semibold text-[#1c1410] mb-1.5 block">Max Bookings Per Day <span className="text-[#b09e8d] font-normal">(0 = unlimited)</span></label>
                 <input type="number" min={0} className={inp} value={form.maxPerDay} onChange={(e) => upd('maxPerDay', Number(e.target.value))} />
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Capacity Per Slot <span className="text-[#b09e8d] font-normal">(1 = private · N = group · 0 = unlimited)</span></label>
+                <label className="text-[14px] font-semibold text-[#1c1410] mb-1.5 block">Capacity Per Slot <span className="text-[#b09e8d] font-normal">(1 = private · N = group · 0 = unlimited)</span></label>
                 <input type="number" min={0} className={inp} value={form.capacityPerSlot} onChange={(e) => upd('capacityPerSlot', Number(e.target.value))} />
               </div>
             </div>
           </div>
           <div className="border-t border-black/[0.04] pt-6 grid grid-cols-2 gap-8">
             <div>
-              <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Minimum Scheduling Notice</label>
+              <label className="text-[14px] font-semibold text-[#1c1410] mb-1.5 block">Minimum Scheduling Notice</label>
               <div className="flex items-center gap-2">
-                <input type="number" className="w-24 border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary/40" value={form.minNoticeValue} onChange={(e) => upd('minNoticeValue', Number(e.target.value))} />
+                <input type="number" className="w-24 border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40" value={form.minNoticeValue} onChange={(e) => upd('minNoticeValue', Number(e.target.value))} />
                 <div className="relative">
-                  <select className="border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none appearance-none pr-8 bg-white" value={form.minNoticeUnit} onChange={(e) => upd('minNoticeUnit', e.target.value)}>
+                  <select className="border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none appearance-none pr-8 bg-white" value={form.minNoticeUnit} onChange={(e) => upd('minNoticeUnit', e.target.value)}>
                     {['minutes', 'hours', 'days'].map((u) => <option key={u}>{u}</option>)}
                   </select>
                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d] pointer-events-none" />
@@ -468,7 +468,7 @@ export default function CalendarEditPage() {
               </div>
             </div>
             <div>
-              <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Time Zone</label>
+              <label className="text-[14px] font-semibold text-[#1c1410] mb-1.5 block">Time Zone</label>
               <select className={inp} value={form.timeZone} onChange={(e) => upd('timeZone', e.target.value)}>
                 {['Asia/Kolkata','UTC','America/New_York','Europe/London','Asia/Singapore'].map((t) => <option key={t}>{t}</option>)}
               </select>
@@ -478,7 +478,7 @@ export default function CalendarEditPage() {
           {/* Scheduling window */}
           <div className="border-t border-black/[0.04] pt-6 space-y-3">
             <div>
-              <label className="text-[13px] font-semibold text-[#1c1410] mb-1 block">Invitees can schedule…</label>
+              <label className="text-[14px] font-semibold text-[#1c1410] mb-1 block">Invitees can schedule…</label>
               <p className="text-[11px] text-[#7a6b5c] mb-3">How far into the future can someone book an appointment?</p>
               <div className="flex gap-2 flex-wrap">
                 {([
@@ -491,7 +491,7 @@ export default function CalendarEditPage() {
                       form.schedulingType === key
                         ? 'border-primary bg-orange-50'
                         : 'border-gray-200 bg-white hover:border-gray-300')}>
-                    <p className={cn('text-[12px] font-bold', form.schedulingType === key ? 'text-primary' : 'text-[#1c1410]')}>{label}</p>
+                    <p className={cn('text-[13px] font-bold', form.schedulingType === key ? 'text-primary' : 'text-[#1c1410]')}>{label}</p>
                     <p className="text-[11px] text-[#9c8f84] mt-0.5">{desc}</p>
                   </button>
                 ))}
@@ -501,10 +501,10 @@ export default function CalendarEditPage() {
             {form.schedulingType === 'days' && (
               <div className="flex items-center gap-3 pl-1">
                 <input type="number" min={1} max={365}
-                  className="w-24 border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary/40"
+                  className="w-24 border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40"
                   value={form.daysInFuture}
                   onChange={(e) => upd('daysInFuture', Number(e.target.value))} />
-                <span className="text-[13px] text-[#7a6b5c]">calendar days into the future</span>
+                <span className="text-[14px] text-[#7a6b5c]">calendar days into the future</span>
               </div>
             )}
 
@@ -513,7 +513,7 @@ export default function CalendarEditPage() {
                 <div>
                   <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide block mb-1">From</label>
                   <input type="date"
-                    className="border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary/40"
+                    className="border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40"
                     value={form.dateRangeStart ?? ''}
                     onChange={(e) => upd('dateRangeStart', e.target.value)} />
                 </div>
@@ -521,7 +521,7 @@ export default function CalendarEditPage() {
                 <div>
                   <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide block mb-1">To</label>
                   <input type="date"
-                    className="border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary/40"
+                    className="border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40"
                     value={form.dateRangeEnd ?? ''}
                     onChange={(e) => upd('dateRangeEnd', e.target.value)} />
                 </div>
@@ -531,7 +531,7 @@ export default function CalendarEditPage() {
 
           {/* Redirect URL */}
           <div className="border-t border-black/[0.04] pt-6 space-y-1.5">
-            <label className="text-[13px] font-semibold text-[#1c1410] block">Redirect URL <span className="text-[#b09e8d] font-normal text-[12px] normal-case">(optional)</span></label>
+            <label className="text-[14px] font-semibold text-[#1c1410] block">Redirect URL <span className="text-[#b09e8d] font-normal text-[13px] normal-case">(optional)</span></label>
             <p className="text-[11px] text-[#7a6b5c]">After a successful booking, send the invitee to this URL (e.g. a thank-you page or payment link).</p>
             <input type="url"
               className={inp}
@@ -542,7 +542,7 @@ export default function CalendarEditPage() {
 
           <div className="flex items-center justify-between py-3 border-t border-black/[0.04]">
             <div>
-              <p className="text-[13px] font-semibold text-[#1c1410]">Active</p>
+              <p className="text-[14px] font-semibold text-[#1c1410]">Active</p>
               <p className="text-[11px] text-[#7a6b5c]">Allow invitees to book this calendar</p>
             </div>
             <BlueToggle on={form.isActive} onChange={() => upd('isActive', !form.isActive)} />
@@ -555,7 +555,7 @@ export default function CalendarEditPage() {
         <div className="bg-white rounded-2xl border border-black/5 p-8" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8">
             <div>
-              <p className="text-[14px] font-bold text-[#1c1410] mb-5">Set your weekly hours</p>
+              <p className="text-[15px] font-bold text-[#1c1410] mb-5">Set your weekly hours</p>
               <div className="space-y-0 divide-y divide-black/[0.04]">
                 {DAYS_SHORT.map((day) => {
                   const ds = form.schedule[day];
@@ -564,20 +564,20 @@ export default function CalendarEditPage() {
                       <div className="flex items-start gap-3">
                         <div className="flex items-center gap-2 w-20 shrink-0 pt-0.5">
                           <input type="checkbox" checked={ds.enabled} onChange={() => toggleDay(day)} className="w-4 h-4 accent-primary cursor-pointer" />
-                          <span className={cn('text-[13px] font-bold', ds.enabled ? 'text-[#1c1410]' : 'text-[#b09e8d]')}>{day}</span>
+                          <span className={cn('text-[14px] font-bold', ds.enabled ? 'text-[#1c1410]' : 'text-[#b09e8d]')}>{day}</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           {!ds.enabled ? (
-                            <span className="text-[13px] text-[#b09e8d]">Unavailable</span>
+                            <span className="text-[14px] text-[#b09e8d]">Unavailable</span>
                           ) : (
                             <div className="space-y-1.5">
                               {ds.slots.map((slot, si) => (
                                 <div key={si} className="flex items-center gap-2">
                                   <input type="time" value={slot.start} onChange={(e) => updateSlot(day, si, 'start', e.target.value)}
-                                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-primary/40 w-28" />
-                                  <span className="text-[12px] text-[#b09e8d]">-</span>
+                                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[13px] outline-none focus:border-primary/40 w-28" />
+                                  <span className="text-[13px] text-[#b09e8d]">-</span>
                                   <input type="time" value={slot.end} onChange={(e) => updateSlot(day, si, 'end', e.target.value)}
-                                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-primary/40 w-28" />
+                                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[13px] outline-none focus:border-primary/40 w-28" />
                                   <button onClick={() => removeSlot(day, si)} className="p-1 rounded hover:bg-red-50 text-[#c4b09e] hover:text-red-400 transition-colors ml-1">
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -609,14 +609,14 @@ export default function CalendarEditPage() {
               </div>
             </div>
             <div className="border-l border-black/[0.04] pl-8 pt-8">
-              <p className="text-[13px] font-bold text-[#1c1410] mb-1">Date overrides</p>
-              <p className="text-[12px] text-[#7a6b5c] mb-4 leading-relaxed">Set specific dates where your availability differs from the weekly schedule.</p>
+              <p className="text-[14px] font-bold text-[#1c1410] mb-1">Date overrides</p>
+              <p className="text-[13px] text-[#7a6b5c] mb-4 leading-relaxed">Set specific dates where your availability differs from the weekly schedule.</p>
 
               {Object.keys(form.dateOverrides ?? {}).length > 0 && (
                 <div className="space-y-1.5 mb-3">
                   {Object.entries(form.dateOverrides ?? {}).sort().map(([date, ds]) => (
                     <div key={date} className="flex items-center justify-between px-3 py-2 bg-[var(--app-bg)] rounded-xl border border-black/[0.04]">
-                      <span className="text-[12px] font-semibold text-[#1c1410]">{format(parseISO(date), 'MMM d, yyyy')}</span>
+                      <span className="text-[13px] font-semibold text-[#1c1410]">{format(parseISO(date), 'MMM d, yyyy')}</span>
                       <span className="text-[11px] text-[#7a6b5c]">{ds.enabled ? `${ds.slots.length} slot(s)` : 'Off'}</span>
                       <button onClick={() => {
                         const updated = { ...(form.dateOverrides ?? {}) };
@@ -636,7 +636,7 @@ export default function CalendarEditPage() {
                   setOverrideDay({ enabled: true, slots: [{ start: '09:00', end: '17:00' }] });
                   setShowOverrideModal(true);
                 }}
-                className="w-full border border-gray-200 rounded-xl py-2.5 text-[13px] text-[#7a6b5c] hover:bg-[var(--app-bg)] transition-colors flex items-center justify-center gap-1.5"
+                className="w-full border border-gray-200 rounded-xl py-2.5 text-[14px] text-[#7a6b5c] hover:bg-[var(--app-bg)] transition-colors flex items-center justify-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" /> Add a date override
               </button>
@@ -651,14 +651,14 @@ export default function CalendarEditPage() {
           {/* Header */}
           <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
             <div>
-              <p className="text-[14px] font-bold text-[#1c1410]">Booking Form Fields</p>
-              <p className="text-[12px] text-[#7a6b5c] mt-0.5">
+              <p className="text-[15px] font-bold text-[#1c1410]">Booking Form Fields</p>
+              <p className="text-[13px] text-[#7a6b5c] mt-0.5">
                 {form.formFields.filter(f => f.enabled).length} active · each maps to a lead field automatically
               </p>
             </div>
             <button
               onClick={() => setShowFieldPicker(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold text-white transition-all hover:opacity-90"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-bold text-white transition-all hover:opacity-90"
               style={gradStyle}
             >
               <Plus className="w-3.5 h-3.5" /> Add Field
@@ -688,7 +688,7 @@ export default function CalendarEditPage() {
                     <input
                       value={f.label}
                       onChange={(e) => setForm((p) => ({ ...p, formFields: p.formFields.map((ff) => ff.id === f.id ? { ...ff, label: e.target.value } : ff) }))}
-                      className="text-[13px] font-semibold text-[#1c1410] bg-transparent border-0 outline-none w-full focus:bg-white focus:border focus:border-primary/30 focus:rounded-lg focus:px-2 focus:py-0.5 transition-all"
+                      className="text-[14px] font-semibold text-[#1c1410] bg-transparent border-0 outline-none w-full focus:bg-white focus:border focus:border-primary/30 focus:rounded-lg focus:px-2 focus:py-0.5 transition-all"
                     />
                     {f.mapTo && (
                       <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-md">
@@ -697,7 +697,7 @@ export default function CalendarEditPage() {
                     )}
                   </div>
 
-                  {/* Required toggle — only when enabled */}
+                  {/* Required toggle - only when enabled */}
                   {f.enabled && (
                     <div className="flex items-center gap-2 shrink-0">
                       <button
@@ -710,7 +710,7 @@ export default function CalendarEditPage() {
                     </div>
                   )}
 
-                  {/* Delete — hidden for ff1/ff2/ff3 defaults */}
+                  {/* Delete - hidden for ff1/ff2/ff3 defaults */}
                   {!isDefault ? (
                     <button
                       onClick={() => setForm((p) => ({ ...p, formFields: p.formFields.filter((ff) => ff.id !== f.id) }))}
@@ -727,7 +727,7 @@ export default function CalendarEditPage() {
           </div>
 
           {form.formFields.length === 0 && (
-            <div className="px-6 py-10 text-center text-[13px] text-[#b09e8d]">
+            <div className="px-6 py-10 text-center text-[14px] text-[#b09e8d]">
               No fields. Click <strong>Add Field</strong> to get started.
             </div>
           )}
@@ -752,7 +752,7 @@ export default function CalendarEditPage() {
             <div className="px-6 py-4 border-b border-black/[0.05] flex items-center justify-between">
               <div>
                 <h3 className="font-headline font-semibold text-[16px] text-[#1c1410]">{pendingLocationType}</h3>
-                <p className="text-[12px] text-[#7a6b5c] mt-0.5">Paste your meeting link (optional)</p>
+                <p className="text-[13px] text-[#7a6b5c] mt-0.5">Paste your meeting link (optional)</p>
               </div>
               <button onClick={() => setShowLocationModal(false)} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]">
                 <X className="w-4 h-4" />
@@ -765,22 +765,22 @@ export default function CalendarEditPage() {
                 onChange={(e) => setLocationLinkDraft(e.target.value)}
                 placeholder="https://meet.google.com/xxx-yyy-zzz"
                 autoFocus
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary/40 placeholder:text-[#c4b09e]"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40 placeholder:text-[#c4b09e]"
               />
               {locationLinkDraft.trim() && (
                 <a href={locationLinkDraft.trim()} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[12px] text-blue-500 hover:underline">
+                  className="inline-flex items-center gap-1.5 text-[13px] text-blue-500 hover:underline">
                   <ExternalLink className="w-3.5 h-3.5" /> Test link
                 </a>
               )}
             </div>
             <div className="px-6 pb-5 flex gap-2">
               <button onClick={() => setShowLocationModal(false)}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-[#7a6b5c] border border-black/10 bg-white hover:bg-[var(--app-bg)]">
+                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-[#7a6b5c] border border-black/10 bg-white hover:bg-[var(--app-bg)]">
                 Cancel
               </button>
               <button onClick={confirmLocation}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white"
+                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white"
                 style={shadowStyle}>
                 <Check className="w-4 h-4 inline mr-1" /> Confirm
               </button>
@@ -797,17 +797,17 @@ export default function CalendarEditPage() {
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
             <div className="px-6 py-4 border-b border-black/[0.05]">
               <h3 className="font-headline font-semibold text-[16px] text-[#1c1410]">Date Override</h3>
-              <p className="text-[12px] text-[#7a6b5c] mt-0.5">Set availability for a specific date</p>
+              <p className="text-[13px] text-[#7a6b5c] mt-0.5">Set availability for a specific date</p>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>
                 <label className="text-[11px] font-bold uppercase tracking-wider text-[#5c5245] mb-1.5 block">Date</label>
                 <input type="date" value={overrideDate} onChange={(e) => setOverrideDate(e.target.value)}
                   min={format(new Date(), 'yyyy-MM-dd')}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-primary/40" />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40" />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-semibold text-[#1c1410]">Available on this date</span>
+                <span className="text-[14px] font-semibold text-[#1c1410]">Available on this date</span>
                 <BlueToggle on={overrideDay.enabled} onChange={() => setOverrideDay((p) => ({ ...p, enabled: !p.enabled }))} />
               </div>
               {overrideDay.enabled && (
@@ -816,11 +816,11 @@ export default function CalendarEditPage() {
                     <div key={i} className="flex items-center gap-2">
                       <input type="time" value={slot.start}
                         onChange={(e) => setOverrideDay((p) => ({ ...p, slots: p.slots.map((s, si) => si === i ? { ...s, start: e.target.value } : s) }))}
-                        className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-primary/40 w-28" />
-                      <span className="text-[12px] text-[#b09e8d]">-</span>
+                        className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[13px] outline-none focus:border-primary/40 w-28" />
+                      <span className="text-[13px] text-[#b09e8d]">-</span>
                       <input type="time" value={slot.end}
                         onChange={(e) => setOverrideDay((p) => ({ ...p, slots: p.slots.map((s, si) => si === i ? { ...s, end: e.target.value } : s) }))}
-                        className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] outline-none focus:border-primary/40 w-28" />
+                        className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[13px] outline-none focus:border-primary/40 w-28" />
                       {overrideDay.slots.length > 1 && (
                         <button onClick={() => setOverrideDay((p) => ({ ...p, slots: p.slots.filter((_, si) => si !== i) }))}
                           className="p-1 rounded hover:bg-red-50 text-[#c4b09e] hover:text-red-400 transition-colors">
@@ -830,7 +830,7 @@ export default function CalendarEditPage() {
                     </div>
                   ))}
                   <button onClick={() => setOverrideDay((p) => ({ ...p, slots: [...p.slots, { start: '09:00', end: '09:30' }] }))}
-                    className="text-[12px] text-[#7a6b5c] flex items-center gap-1 hover:text-primary transition-colors mt-1">
+                    className="text-[13px] text-[#7a6b5c] flex items-center gap-1 hover:text-primary transition-colors mt-1">
                     <Plus className="w-3.5 h-3.5" /> Add time slot
                   </button>
                 </div>
@@ -838,7 +838,7 @@ export default function CalendarEditPage() {
             </div>
             <div className="px-6 pb-5 flex gap-2">
               <button onClick={() => setShowOverrideModal(false)}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-[#7a6b5c] border border-black/10 bg-white hover:bg-[var(--app-bg)]">
+                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-[#7a6b5c] border border-black/10 bg-white hover:bg-[var(--app-bg)]">
                 Cancel
               </button>
               <button
@@ -849,7 +849,7 @@ export default function CalendarEditPage() {
                   setShowOverrideModal(false);
                   toast.success('Date override added');
                 }}
-                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white transition-opacity"
+                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white transition-opacity"
                 style={shadowStyle}>
                 Save Override
               </button>

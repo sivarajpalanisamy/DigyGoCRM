@@ -59,7 +59,7 @@ export default function ReportsOverviewPage() {
     <div className="flex flex-col flex-1 min-h-0">
       <div className="mb-6">
         <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">Reports</h1>
-        <p className="text-[13px] text-[#7a6b5c] mt-0.5">Analytics and insights to drive your sales performance</p>
+        <p className="text-[14px] text-[#7a6b5c] mt-0.5">Analytics and insights to drive your sales performance</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -70,12 +70,12 @@ export default function ReportsOverviewPage() {
             className="text-left bg-white rounded-2xl border border-black/[0.07] p-5 hover:border-primary/30 hover:shadow-sm transition-all group"
           >
             <div className="flex items-start gap-3">
-              <div className={`p-2.5 rounded-xl ${r.bg} shrink-0`}>
-                <r.icon className={`w-5 h-5 ${r.color}`} />
+              <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
+                <r.icon className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h3 className="text-[15px] font-semibold text-[#1c1410] group-hover:text-primary transition-colors">{r.title}</h3>
-                <p className="text-[12px] text-[#7a6b5c] mt-1 leading-relaxed">{r.description}</p>
+                <p className="text-[13px] text-[#7a6b5c] mt-1 leading-relaxed">{r.description}</p>
               </div>
             </div>
           </button>

@@ -15,7 +15,7 @@ export function AuthGuard() {
   const location = useLocation();
 
   useEffect(() => {
-    // Fetch white-label branding in parallel — non-blocking
+    // Fetch white-label branding in parallel - non-blocking
     fetchBranding().catch(() => null);
     if (isAuthenticated) { setChecking(false); return; }
     bootstrapFromRefresh().finally(() => setChecking(false));
@@ -31,7 +31,7 @@ export function AuthGuard() {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  // Super-admin-only routes — redirect everyone else to dashboard
+  // Super-admin-only routes - redirect everyone else to dashboard
   const isSuperAdminRoute = location.pathname.startsWith('/admin');
   if (isSuperAdminRoute && currentUser?.role !== 'super_admin') {
     return <Navigate to="/dashboard" replace />;

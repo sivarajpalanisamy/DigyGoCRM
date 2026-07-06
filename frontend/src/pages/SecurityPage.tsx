@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -46,7 +46,7 @@ export default function SecurityPage() {
         </button>
         <div>
           <h1 className="font-headline font-bold text-[#1c1410] text-lg leading-tight">Security</h1>
-          <p className="text-[12px] text-[#7a6b5c]">Protect your team's accounts</p>
+          <p className="text-[13px] text-[#7a6b5c]">Protect your team's accounts</p>
         </div>
       </div>
 
@@ -62,10 +62,10 @@ export default function SecurityPage() {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="font-semibold text-[#1c1410] text-[14px]">Login PIN / OTP</h2>
-                <p className="text-[12px] text-[#7a6b5c] mt-1 max-w-md">
-                  When enabled, team members can sign in with just their email and a 4-digit PIN — either the
-                  PIN you set for them in Staff, or a one-time PIN they request by email — instead of a password
+                <h2 className="font-semibold text-[#1c1410] text-[15px]">Login PIN / OTP</h2>
+                <p className="text-[13px] text-[#7a6b5c] mt-1 max-w-md">
+                  When enabled, team members can sign in with just their email and a 4-digit PIN - either the
+                  PIN you set for them in Staff, or a one-time PIN they request by email - instead of a password
                   (their password still works too). Requires email delivery for the emailed-PIN option.
                 </p>
               </div>
@@ -75,8 +75,9 @@ export default function SecurityPage() {
             </div>
           </div>
           {enabled && (
-            <div className="mt-4 pt-4 border-t border-black/5 text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-              ⚠️ Login PIN is ON. Set a PIN for each staff member in Staff, or make sure email delivery works so they can request a one-time PIN. Without either, users can't log in.
+            <div className="mt-4 pt-4 border-t border-black/5 text-[13px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 inline-flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>Login PIN is ON. Set a PIN for each staff member in Staff, or make sure email delivery works so they can request a one-time PIN. Without either, users can't log in.</span>
             </div>
           )}
         </section>

@@ -53,7 +53,7 @@ export function ExportModal({ title, fields, buildUrl, filename, onClose }: Prop
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <p className="text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2.5">Select fields to export</p>
+            <p className="text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2.5">Select fields to export</p>
             <div className="grid grid-cols-2 gap-y-2 gap-x-4">
               {fields.map((f) => (
                 <label key={f.key} className="flex items-center gap-2 cursor-pointer group">
@@ -63,7 +63,7 @@ export function ExportModal({ title, fields, buildUrl, filename, onClose }: Prop
                     onChange={() => toggle(f.key)}
                     className="w-4 h-4 rounded border-black/20 accent-primary"
                   />
-                  <span className="text-[13px] text-[#1c1410] group-hover:text-primary transition-colors">{f.label}</span>
+                  <span className="text-[14px] text-[#1c1410] group-hover:text-primary transition-colors">{f.label}</span>
                 </label>
               ))}
             </div>
@@ -81,7 +81,7 @@ export function ExportModal({ title, fields, buildUrl, filename, onClose }: Prop
             </div>
           </div>
           <div>
-            <p className="text-[12px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2.5">Format</p>
+            <p className="text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2.5">Format</p>
             <div className="flex gap-4">
               {(['xlsx', 'csv'] as const).map((f) => (
                 <label key={f} className="flex items-center gap-2 cursor-pointer">
@@ -93,7 +93,7 @@ export function ExportModal({ title, fields, buildUrl, filename, onClose }: Prop
                     onChange={() => setFmt(f)}
                     className="accent-primary"
                   />
-                  <span className="text-[13px] text-[#1c1410]">{f === 'xlsx' ? 'Excel (.xlsx)' : 'CSV (.csv)'}</span>
+                  <span className="text-[14px] text-[#1c1410]">{f === 'xlsx' ? 'Excel (.xlsx)' : 'CSV (.csv)'}</span>
                 </label>
               ))}
             </div>
@@ -102,14 +102,14 @@ export function ExportModal({ title, fields, buildUrl, filename, onClose }: Prop
         <div className="px-5 pb-5 flex gap-2.5">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-black/10 text-[13px] font-semibold text-[#7a6b5c] hover:bg-[#faf0e8] transition-colors"
+            className="flex-1 py-2.5 rounded-xl border border-black/10 text-[14px] font-semibold text-[#7a6b5c] hover:bg-[#faf0e8] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleExport}
             disabled={exporting || selected.size === 0}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             {exporting ? 'Exporting…' : `Export ${selected.size} field${selected.size !== 1 ? 's' : ''}`}
           </button>

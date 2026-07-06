@@ -196,7 +196,7 @@ export default function WABASingleSendPage() {
         </div>
         <div>
           <h2 className="font-headline font-bold text-[17px] text-[#1c1410]">WABA Single Send</h2>
-          <p className="text-[12px] text-[#9e8e7e]">Send an approved template message to a single contact via WhatsApp Business API</p>
+          <p className="text-[13px] text-[#9e8e7e]">Send an approved template message to a single contact via WhatsApp Business API</p>
         </div>
       </div>
 
@@ -204,8 +204,8 @@ export default function WABASingleSendPage() {
         <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-[13px] font-semibold text-amber-800">WABA not connected</p>
-            <p className="text-[12px] text-amber-700">Connect your WhatsApp Business account from the WABA Dashboard first.</p>
+            <p className="text-[14px] font-semibold text-amber-800">WABA not connected</p>
+            <p className="text-[13px] text-amber-700">Connect your WhatsApp Business account from the WABA Dashboard first.</p>
           </div>
         </div>
       )}
@@ -214,8 +214,8 @@ export default function WABASingleSendPage() {
         <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200">
           <AlertTriangle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-[13px] font-semibold text-blue-800">No approved templates</p>
-            <p className="text-[12px] text-blue-700">Create and get a template approved by Meta before sending. Go to WABA → Templates.</p>
+            <p className="text-[14px] font-semibold text-blue-800">No approved templates</p>
+            <p className="text-[13px] text-blue-700">Create and get a template approved by Meta before sending. Go to WABA → Templates.</p>
           </div>
         </div>
       )}
@@ -232,7 +232,7 @@ export default function WABASingleSendPage() {
             {receiverPhone ? (
               <div className="flex items-center gap-2 border border-black/10 rounded-lg px-3 py-2.5 bg-white">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-[#1c1410] truncate">{receiverName || receiverPhone}</p>
+                  <p className="text-[14px] font-semibold text-[#1c1410] truncate">{receiverName || receiverPhone}</p>
                   {receiverName && <p className="text-[11px] text-[#9e8e7e]">{receiverPhone}</p>}
                 </div>
                 <button onClick={clearReceiver} className="text-[#9e8e7e] hover:text-red-500 p-0.5"><X className="w-3.5 h-3.5" /></button>
@@ -242,7 +242,7 @@ export default function WABASingleSendPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9e8e7e]" />
                   <input
-                    className="w-full pl-9 pr-3 py-2.5 text-[13px] border border-black/10 rounded-lg outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-black/10 rounded-lg outline-none focus:border-emerald-500 transition-colors"
                     placeholder="Search lead by name or enter phone..."
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
@@ -265,7 +265,7 @@ export default function WABASingleSendPage() {
                         className="w-full text-left px-4 py-2.5 hover:bg-[var(--accent-tint)] transition-colors border-b border-black/5 last:border-0"
                         onClick={() => selectContact(c)}
                       >
-                        <p className="text-[13px] font-semibold text-[#1c1410]">{c.name}</p>
+                        <p className="text-[14px] font-semibold text-[#1c1410]">{c.name}</p>
                         <p className="text-[11px] text-[#9e8e7e]">{c.phone}</p>
                       </button>
                     ))}
@@ -285,7 +285,7 @@ export default function WABASingleSendPage() {
             </label>
             <div className="relative">
               <select
-                className="w-full border border-black/10 rounded-lg px-3 py-2.5 text-[13px] bg-white outline-none focus:border-emerald-500 transition-colors appearance-none pr-8"
+                className="w-full border border-black/10 rounded-lg px-3 py-2.5 text-[14px] bg-white outline-none focus:border-emerald-500 transition-colors appearance-none pr-8"
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
               >
@@ -311,11 +311,11 @@ export default function WABASingleSendPage() {
               <div className="bg-white rounded-lg shadow-sm overflow-hidden">
                 {selectedTemplate.header && (
                   <div className="px-3 pt-3 pb-1">
-                    <p className="text-[13px] font-bold text-[#1c1410]">{selectedTemplate.header}</p>
+                    <p className="text-[14px] font-bold text-[#1c1410]">{selectedTemplate.header}</p>
                   </div>
                 )}
                 <div className="px-3 py-2">
-                  <p className="text-[13px] text-[#1c1410] whitespace-pre-wrap">{selectedTemplate.body}</p>
+                  <p className="text-[14px] text-[#1c1410] whitespace-pre-wrap">{selectedTemplate.body}</p>
                 </div>
                 {selectedTemplate.footer && (
                   <div className="px-3 pb-2">
@@ -326,7 +326,7 @@ export default function WABASingleSendPage() {
                   <div className="border-t border-black/5">
                     {parseButtons(selectedTemplate.buttons).map((btn, i) => (
                       <div key={i} className="text-center py-2 border-b border-black/5 last:border-0">
-                        <span className="text-[13px] text-[#128C7E] font-medium">{btn.text}</span>
+                        <span className="text-[14px] text-[#128C7E] font-medium">{btn.text}</span>
                       </div>
                     ))}
                   </div>
@@ -349,7 +349,7 @@ export default function WABASingleSendPage() {
                     headerFile ? 'border-emerald-300 bg-emerald-50' : 'border-black/10 hover:border-emerald-400 bg-white',
                   )}>
                     <Upload className="w-4 h-4 text-[#9e8e7e]" />
-                    <span className="text-[12px] text-[#7a6b5c]">
+                    <span className="text-[13px] text-[#7a6b5c]">
                       {headerFile ? headerFile.name : `Upload ${mediaHeaderFormat} file…`}
                     </span>
                     <input type="file" className="hidden"
@@ -364,7 +364,7 @@ export default function WABASingleSendPage() {
                 ) : headerFile ? (
                   <div className="flex items-center gap-3 border border-emerald-300 bg-emerald-50 rounded-xl px-4 py-3">
                     <Upload className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span className="text-[12px] text-emerald-800 truncate flex-1">{headerFile.name}</span>
+                    <span className="text-[13px] text-emerald-800 truncate flex-1">{headerFile.name}</span>
                     <button className="text-[#9e8e7e] hover:text-red-500 shrink-0" onClick={() => setHeaderFile(null)}>
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -372,7 +372,7 @@ export default function WABASingleSendPage() {
                 ) : (
                   <div className="flex items-center gap-3 border border-emerald-200 bg-emerald-50/50 rounded-xl px-4 py-3">
                     <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span className="text-[12px] text-emerald-700 truncate flex-1">
+                    <span className="text-[13px] text-emerald-700 truncate flex-1">
                       {selectedTemplate?.file_name || 'Saved file'} - will be sent automatically
                     </span>
                     <label className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 cursor-pointer shrink-0">
@@ -395,9 +395,9 @@ export default function WABASingleSendPage() {
                 </p>
                 {templateVars.map((v) => (
                   <div key={v.key} className="flex items-center gap-3">
-                    <span className="text-[12px] font-mono text-[#7a6b5c] w-28 shrink-0">{v.label}</span>
+                    <span className="text-[13px] font-mono text-[#7a6b5c] w-28 shrink-0">{v.label}</span>
                     <input
-                      className="flex-1 border border-black/10 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-emerald-500 transition-colors"
+                      className="flex-1 border border-black/10 rounded-lg px-3 py-2 text-[14px] outline-none focus:border-emerald-500 transition-colors"
                       placeholder={`Value for ${v.label}…`}
                       value={varValues[v.key] ?? ''}
                       onChange={(e) => setVarValues((prev) => ({ ...prev, [v.key]: e.target.value }))}
@@ -422,7 +422,7 @@ export default function WABASingleSendPage() {
             onClick={sendMessage}
             disabled={sending || !templateId || !receiverPhone || !wabaConnected}
             className={cn(
-              'flex items-center gap-2 text-[13px] font-bold text-white px-6 py-2.5 rounded-lg transition-all',
+              'flex items-center gap-2 text-[14px] font-bold text-white px-6 py-2.5 rounded-lg transition-all',
               sent
                 ? 'bg-emerald-500'
                 : sending || !templateId || !receiverPhone || !wabaConnected

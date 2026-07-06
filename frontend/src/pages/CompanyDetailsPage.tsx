@@ -30,7 +30,7 @@ const CURRENCIES = ['INR - Indian Rupee (₹)', 'USD - US Dollar ($)', 'EUR - Eu
 const DATE_FORMATS = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'];
 
 const labelCls = 'block text-[11px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-1.5';
-const inputCls = 'w-full bg-[#f5f0eb] border border-black/8 rounded-xl px-4 py-2.5 text-[13px] text-[#1c1410] outline-none focus:ring-2 focus:ring-primary/20 transition-shadow resize-none';
+const inputCls = 'w-full bg-[#f5f0eb] border border-black/8 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:ring-2 focus:ring-primary/20 transition-shadow resize-none';
 
 function Field({ label, icon: Icon, children }: { label: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
@@ -239,7 +239,7 @@ export default function CompanyDetailsPage() {
         <SaveButton saving={saving} onClick={handleSave} />
       </div>
 
-      {/* Profile card — clean, no orange banner */}
+      {/* Profile card - clean, no orange banner */}
       <div className="bg-white rounded-2xl border border-black/5 p-5 flex items-center gap-5">
 
         {/* Logo upload */}
@@ -278,7 +278,7 @@ export default function CompanyDetailsPage() {
             {form.name || 'Your Company'}
           </h3>
           {ownerName && (
-            <p className="text-[13px] text-[#7a6b5c] mt-0.5 truncate">{ownerName}</p>
+            <p className="text-[14px] text-[#7a6b5c] mt-0.5 truncate">{ownerName}</p>
           )}
           <div className="flex flex-wrap items-center gap-2 mt-2.5">
             {plan && (
@@ -296,7 +296,7 @@ export default function CompanyDetailsPage() {
       {/* Business Information */}
       <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
         <div className="px-5 py-4 border-b border-black/5">
-          <h3 className="font-headline font-semibold text-[14px] text-[#1c1410]">Business Information</h3>
+          <h3 className="font-headline font-semibold text-[15px] text-[#1c1410]">Business Information</h3>
           <p className="text-[11px] text-[#9e8e7e] mt-0.5">Your company profile and contact details</p>
         </div>
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -305,7 +305,7 @@ export default function CompanyDetailsPage() {
               value={form.name}
               onChange={(e) => update('name', e.target.value)}
               placeholder="Your Company Name"
-              className="text-[13px]"
+              className="text-[14px]"
             />
           </Field>
           <Field label="Legal Name" icon={Briefcase}>
@@ -313,7 +313,7 @@ export default function CompanyDetailsPage() {
               value={form.legalName}
               onChange={(e) => update('legalName', e.target.value)}
               placeholder="Legal entity name"
-              className="text-[13px]"
+              className="text-[14px]"
             />
           </Field>
           <Field label="Website" icon={Globe}>
@@ -322,7 +322,7 @@ export default function CompanyDetailsPage() {
               onChange={(e) => update('website', e.target.value)}
               placeholder="https://yourcompany.com"
               type="url"
-              className="text-[13px]"
+              className="text-[14px]"
             />
           </Field>
           <Field label="Industry" icon={Briefcase}>
@@ -330,7 +330,7 @@ export default function CompanyDetailsPage() {
               value={form.industry}
               onChange={(e) => update('industry', e.target.value)}
               placeholder="e.g. Technology, Retail"
-              className="text-[13px]"
+              className="text-[14px]"
             />
           </Field>
           <Field label="Phone" icon={Phone}>
@@ -339,7 +339,7 @@ export default function CompanyDetailsPage() {
               onChange={(e) => update('phone', e.target.value)}
               placeholder="+91 98765 43210"
               type="tel"
-              className="text-[13px]"
+              className="text-[14px]"
             />
           </Field>
           <Field label="Business Address" icon={MapPin}>
@@ -357,7 +357,7 @@ export default function CompanyDetailsPage() {
       {/* Localization */}
       <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
         <div className="px-5 py-4 border-b border-black/5">
-          <h3 className="font-headline font-semibold text-[14px] text-[#1c1410]">Localization</h3>
+          <h3 className="font-headline font-semibold text-[15px] text-[#1c1410]">Localization</h3>
           <p className="text-[11px] text-[#9e8e7e] mt-0.5">Regional settings for dates, currency and time</p>
         </div>
         <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -371,13 +371,13 @@ export default function CompanyDetailsPage() {
       <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
         <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
           <div>
-            <h3 className="font-headline font-semibold text-[14px] text-[#1c1410] flex items-center gap-2">
+            <h3 className="font-headline font-semibold text-[15px] text-[#1c1410] flex items-center gap-2">
               <PhoneCall className="w-4 h-4 text-[#9e8e7e]" /> Call Outcomes
             </h3>
             <p className="text-[11px] text-[#9e8e7e] mt-0.5">Configure the outcome options shown after a call</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={addDisposition} className="text-[12px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1">
+            <button onClick={addDisposition} className="text-[13px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1">
               <Plus className="w-3.5 h-3.5" /> Add
             </button>
             <Button onClick={saveDispositions} disabled={savingDisp} size="sm" variant="outline">
@@ -422,7 +422,7 @@ export default function CompanyDetailsPage() {
                 value={d.label}
                 onChange={(e) => updateDisp(i, { label: e.target.value })}
                 placeholder="Outcome label"
-                className="flex-1 min-w-0 bg-transparent text-[13px] text-[#1c1410] outline-none placeholder:text-gray-300"
+                className="flex-1 min-w-0 bg-transparent text-[14px] text-[#1c1410] outline-none placeholder:text-gray-300"
               />
 
               {/* Color picker */}
@@ -456,12 +456,12 @@ export default function CompanyDetailsPage() {
             </div>
           ))}
           {dispositions.length === 0 && (
-            <p className="text-[12px] text-[#9e8e7e] text-center py-4">No outcomes configured. Click "Add" to create one.</p>
+            <p className="text-[13px] text-[#9e8e7e] text-center py-4">No outcomes configured. Click "Add" to create one.</p>
           )}
         </div>
       </div>
 
-      {/* Bottom save — so users don't need to scroll back up */}
+      {/* Bottom save - so users don't need to scroll back up */}
       <div className="flex justify-end pt-1">
         <SaveButton saving={saving} onClick={handleSave} />
       </div>
@@ -476,7 +476,7 @@ export default function CompanyDetailsPage() {
             <ShieldCheck className="w-4 h-4 text-primary" />
           </div>
           <div className="flex-1">
-            <p className="text-[13px] font-semibold text-[#1c1410]">Business Accounts</p>
+            <p className="text-[14px] font-semibold text-[#1c1410]">Business Accounts</p>
             <p className="text-[11px] text-[#9e8e7e]">Manage all CRM accounts under Hawcus</p>
           </div>
           <ChevronRight className="w-4 h-4 text-[#c4b09e] group-hover:text-primary transition-colors shrink-0" />

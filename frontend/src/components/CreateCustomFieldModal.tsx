@@ -147,7 +147,7 @@ export default function CreateCustomFieldModal({
         {step === 'detail' && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             <div>
-              <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">
+              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
                 Field Name <span className="text-red-400">*</span>
               </label>
               <input
@@ -155,7 +155,7 @@ export default function CreateCustomFieldModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Age Group, Course Name…"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
               />
               {slug && (
                 <p className="text-[11px] text-[#b09e8d] mt-1">
@@ -166,21 +166,21 @@ export default function CreateCustomFieldModal({
 
             {!needsOptions && (
               <div>
-                <label className="text-[12px] font-semibold text-[#7a6b5c] mb-1.5 block">
+                <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
                   Placeholder <span className="text-[#b09e8d] font-normal">(optional)</span>
                 </label>
                 <input
                   value={placeholder}
                   onChange={(e) => setPlaceholder(e.target.value)}
                   placeholder="Hint shown inside the empty field"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
                 />
               </div>
             )}
 
             {needsOptions && (
               <div>
-                <label className="text-[12px] font-semibold text-[#7a6b5c] mb-2 block">Options <span className="text-red-400">*</span></label>
+                <label className="text-[13px] font-semibold text-[#7a6b5c] mb-2 block">Options <span className="text-red-400">*</span></label>
                 <div className="space-y-2">
                   {options.map((opt, idx) => (
                     <div key={idx} className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export default function CreateCustomFieldModal({
                         value={opt}
                         onChange={(e) => updateOption(idx, e.target.value)}
                         placeholder={`Option ${idx + 1}`}
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
                       />
                       <button
                         onClick={() => removeOption(idx)}
@@ -203,7 +203,7 @@ export default function CreateCustomFieldModal({
                 </div>
                 <button
                   onClick={addOption}
-                  className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                  className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-primary hover:bg-primary/5 rounded-lg transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add option
                 </button>
@@ -212,7 +212,7 @@ export default function CreateCustomFieldModal({
 
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} className="w-4 h-4 accent-primary" />
-              <span className="text-[13px] text-[#1c1410]">Mark as required</span>
+              <span className="text-[14px] text-[#1c1410]">Mark as required</span>
             </label>
           </div>
         )}
@@ -220,13 +220,13 @@ export default function CreateCustomFieldModal({
         {/* Footer */}
         {step === 'detail' && (
           <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">
               Cancel
             </button>
             <button
               onClick={handleCreate}
               disabled={saving}
-              className="flex-1 py-2.5 rounded-lg text-[13px] font-bold text-white disabled:opacity-60"
+              className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white disabled:opacity-60"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
             >
               {saving ? 'Creating…' : 'Create & Use Field'}

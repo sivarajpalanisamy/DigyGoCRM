@@ -46,7 +46,7 @@ export default function AcceptInvitePage() {
             <span className="text-white font-black text-xl">D</span>
           </div>
           <h1 className="text-2xl font-extrabold text-[#1c1410]">Set your password</h1>
-          <p className="text-[13px] text-[#7a6b5c] mt-1">Choose a password to activate your account</p>
+          <p className="text-[14px] text-[#7a6b5c] mt-1">Choose a password to activate your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -58,7 +58,7 @@ export default function AcceptInvitePage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 6 characters"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-orange-400 pr-10"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-orange-400 pr-10"
                 required
               />
               <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -74,7 +74,7 @@ export default function AcceptInvitePage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Repeat your password"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-orange-400"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-orange-400"
               required
             />
           </div>
@@ -82,7 +82,7 @@ export default function AcceptInvitePage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl text-white font-bold text-[14px] transition-all hover:-translate-y-0.5 disabled:opacity-60"
+            className="w-full py-3 rounded-xl text-white font-bold text-[15px] transition-all hover:-translate-y-0.5 disabled:opacity-60"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
           >
             {loading ? 'Setting password…' : 'Activate Account'}

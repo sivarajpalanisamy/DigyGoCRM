@@ -181,7 +181,7 @@ function ExpandedRow({ form }: { form: FormRow }) {
           {loading ? (
             <div className="h-[100px] bg-[#f5f0eb] rounded-lg animate-pulse" />
           ) : !hasData ? (
-            <p className="text-[12px] text-[#b09e8d] py-6 text-center">No leads in this period.</p>
+            <p className="text-[13px] text-[#b09e8d] py-6 text-center">No leads in this period.</p>
           ) : (
             <ResponsiveContainer width="100%" height={100}>
               <BarChart data={data!.sparkline} barSize={period === 'all' ? 18 : period === 'month' ? 8 : 20}>
@@ -222,7 +222,7 @@ function ExpandedRow({ form }: { form: FormRow }) {
               {[1, 2, 3].map(i => <div key={i} className="h-8 bg-[#f5f0eb] rounded-lg animate-pulse" />)}
             </div>
           ) : data.recent_leads.length === 0 ? (
-            <p className="text-[12px] text-[#b09e8d] py-4 text-center">No leads yet from this form.</p>
+            <p className="text-[13px] text-[#b09e8d] py-4 text-center">No leads yet from this form.</p>
           ) : (
             <div className="space-y-1.5">
               {data.recent_leads.map(lead => (
@@ -236,7 +236,7 @@ function ExpandedRow({ form }: { form: FormRow }) {
                     {(lead.name ?? '?')[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-[#1c1410] truncate">{lead.name}</p>
+                    <p className="text-[13px] font-semibold text-[#1c1410] truncate">{lead.name}</p>
                     <p className="text-[10px] text-[#9a8a7a] truncate">{lead.phone || lead.email || '-'}</p>
                   </div>
                   <span className="text-[10px] text-[#b09e8d] shrink-0 whitespace-nowrap">
@@ -251,22 +251,22 @@ function ExpandedRow({ form }: { form: FormRow }) {
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-3 mt-3">
-        <button onClick={() => navigate('/leads')} className="flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:opacity-70 transition-opacity">
+        <button onClick={() => navigate('/leads')} className="flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:opacity-70 transition-opacity">
           <ExternalLink className="w-3.5 h-3.5" /> View Leads
         </button>
         {form.channel === 'custom' && form.slug && (
-          <button onClick={copyLink} className="flex items-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] hover:text-primary transition-colors">
+          <button onClick={copyLink} className="flex items-center gap-1.5 text-[13px] font-semibold text-[#7a6b5c] hover:text-primary transition-colors">
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? 'Copied!' : 'Copy Link'}
           </button>
         )}
         {form.channel === 'meta' && (
-          <button onClick={() => navigate('/lead-generation/meta-forms')} className="flex items-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] hover:text-primary transition-colors">
+          <button onClick={() => navigate('/lead-generation/meta-forms')} className="flex items-center gap-1.5 text-[13px] font-semibold text-[#7a6b5c] hover:text-primary transition-colors">
             <RefreshCw className="w-3.5 h-3.5" /> Meta Forms
           </button>
         )}
         {form.channel === 'custom' && (
-          <button onClick={() => navigate('/lead-generation/custom-forms')} className="flex items-center gap-1.5 text-[12px] font-semibold text-[#7a6b5c] hover:text-primary transition-colors">
+          <button onClick={() => navigate('/lead-generation/custom-forms')} className="flex items-center gap-1.5 text-[13px] font-semibold text-[#7a6b5c] hover:text-primary transition-colors">
             <ArrowRight className="w-3.5 h-3.5" /> Edit Form
           </button>
         )}
@@ -356,7 +356,7 @@ export default function LeadGenerationPage() {
   }), [overview]);
 
   return (
-    <div className="space-y-4 max-w-6xl">
+    <div className="space-y-4">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-4">
@@ -364,13 +364,13 @@ export default function LeadGenerationPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/lead-generation/meta-forms')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/10 bg-white text-[12px] font-semibold text-[#1c1410] hover:border-primary/40 transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/10 bg-white text-[13px] font-semibold text-[#1c1410] hover:border-primary/40 transition-colors shadow-sm"
           >
             <Facebook className="w-3.5 h-3.5 text-blue-500" /> Meta Forms
           </button>
           <button
             onClick={() => navigate('/lead-generation/custom-forms')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold text-white transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-semibold text-white transition-colors shadow-sm"
             style={{ background: 'linear-gradient(135deg,var(--brand-dark),var(--brand-light))' }}
           >
             <FileText className="w-3.5 h-3.5" /> New Form
@@ -388,13 +388,14 @@ export default function LeadGenerationPage() {
       ) : summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard label="Total Leads"   value={summary.total_leads}        sub="All sources, all time" icon={Users}      accent />
-          <KpiCard label="Active Forms"  value={summary.active_forms_count} sub="Meta + Custom"         icon={FileText} />
-          <KpiCard label="Leads Today"   value={summary.leads_today}        sub="Across all forms"      icon={TrendingUp} />
+          <KpiCard label="Active Forms"  value={summary.active_forms_count} sub="Meta + Custom"         icon={FileText}   accent />
+          <KpiCard label="Leads Today"   value={summary.leads_today}        sub="Across all forms"      icon={TrendingUp} accent />
           <KpiCard
             label="Best This Month"
             value={summary.best_form ? summary.best_form.name : '-'}
             sub={summary.best_form ? `${summary.best_form.count} leads` : 'No data yet'}
             icon={Star}
+            accent
           />
         </div>
       )}
@@ -410,7 +411,7 @@ export default function LeadGenerationPage() {
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-3 py-1.5 rounded-md text-[12px] font-semibold transition-colors capitalize ${
+                className={`px-3 py-1.5 rounded-md text-[13px] font-semibold transition-colors capitalize ${
                   tab === t ? 'bg-white text-[#1c1410] shadow-sm' : 'text-[#7a6b5c] hover:text-[#1c1410]'
                 }`}
               >
@@ -429,7 +430,7 @@ export default function LeadGenerationPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search forms…"
-              className="w-full pl-8 pr-3 py-1.5 text-[12px] border border-black/10 rounded-lg outline-none focus:border-primary/40 bg-white"
+              className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-black/10 rounded-lg outline-none focus:border-primary/40 bg-white"
             />
           </div>
 
@@ -463,7 +464,7 @@ export default function LeadGenerationPage() {
         ) : filteredForms.length === 0 ? (
           <div className="py-16 text-center">
             <Zap className="w-8 h-8 text-[#e8d5c4] mx-auto mb-2" />
-            <p className="text-[13px] text-[#b09e8d]">
+            <p className="text-[14px] text-[#b09e8d]">
               {search ? 'No forms match your search.' : 'No forms yet - connect Meta or create a custom form.'}
             </p>
           </div>
@@ -488,7 +489,7 @@ export default function LeadGenerationPage() {
                         }
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-[#1c1410] truncate">
+                        <p className="text-[14px] font-semibold text-[#1c1410] truncate">
                           {form.name}
                         </p>
                         {form.page_name && (
@@ -503,9 +504,9 @@ export default function LeadGenerationPage() {
                     </span>
 
                     {/* Counts */}
-                    <span className="text-[13px] font-semibold text-[#1c1410] text-right">{form.leads_today}</span>
-                    <span className="text-[13px] font-semibold text-[#1c1410] text-right">{form.leads_week}</span>
-                    <span className="text-[13px] font-bold text-primary text-right">{form.leads_month}</span>
+                    <span className="text-[14px] font-semibold text-[#1c1410] text-right">{form.leads_today}</span>
+                    <span className="text-[14px] font-semibold text-[#1c1410] text-right">{form.leads_week}</span>
+                    <span className="text-[14px] font-bold text-primary text-right">{form.leads_month}</span>
 
                     {/* Last lead */}
                     <span className="text-[11px] truncate flex items-center gap-1 text-[#9a8a7a]">
@@ -564,10 +565,10 @@ export default function LeadGenerationPage() {
                 <item.icon className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-[#1c1410] text-[14px]">{item.label}</h4>
-                <p className="text-[12px] text-[#7a6b5c] mt-1 leading-relaxed">{item.desc}</p>
+                <h4 className="font-semibold text-[#1c1410] text-[15px]">{item.label}</h4>
+                <p className="text-[13px] text-[#7a6b5c] mt-1 leading-relaxed">{item.desc}</p>
               </div>
-              <div className="flex items-center gap-1 text-[12px] font-semibold text-primary mt-auto">
+              <div className="flex items-center gap-1 text-[13px] font-semibold text-primary mt-auto">
                 {item.cta} <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </div>
             </div>

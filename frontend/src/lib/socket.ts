@@ -19,7 +19,7 @@ export function getSocket(): Socket {
     transports: ['polling', 'websocket'],
     reconnectionDelay: 2000,
     reconnectionDelayMax: 10_000,
-    // Default reconnectionAttempts is Infinity — keep trying until token refreshes
+    // Default reconnectionAttempts is Infinity - keep trying until token refreshes
   });
   return socket;
 }

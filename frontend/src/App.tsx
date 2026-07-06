@@ -2,12 +2,13 @@ import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { ConfirmHost } from "@/components/ConfirmHost";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useCompanyStore } from "@/store/companyStore";
 
-// Pages are code-split (React.lazy) so the initial bundle stays small — each route
+// Pages are code-split (React.lazy) so the initial bundle stays small - each route
 // loads its own chunk on demand instead of shipping all ~60 pages up front.
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const LeadGenerationPage = lazy(() => import("./pages/LeadGenerationPage"));
@@ -91,6 +92,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Sonner />
+      <ConfirmHost />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Suspense fallback={<PageFallback />}>
         <Routes>
@@ -172,14 +174,14 @@ const App = () => (
             <Route path="/admin/create" element={<CreateBusinessPage />} />
             <Route path="/admin/team" element={<SuperAdminTeamPage />} />
 
-            {/* Template editors — inside AppLayout (sidebar visible) */}
+            {/* Template editors - inside AppLayout (sidebar visible) */}
             <Route path="/automation/templates/wa-personal/new" element={<WaPersonalTemplateEditorPage />} />
             <Route path="/automation/templates/wa-personal/:id" element={<WaPersonalTemplateEditorPage />} />
             <Route path="/automation/templates/waba/new" element={<WABATemplateEditorPage />} />
             <Route path="/automation/templates/waba/:id" element={<WABATemplateEditorPage />} />
           </Route>
 
-          {/* Full-screen editors — outside AppLayout but still protected */}
+          {/* Full-screen editors - outside AppLayout but still protected */}
           <Route path="/automation/editor/:id" element={<WorkflowEditorPage />} />
           <Route path="/automation/analytics/:id" element={<WorkflowAnalyticsPage />} />
           <Route path="/lead-generation/landing-pages/builder" element={<LandingPageBuilderPage />} />

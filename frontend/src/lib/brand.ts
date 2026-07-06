@@ -1,5 +1,5 @@
 // Resolve themeable CSS variables to concrete hex values for contexts where
-// CSS var() does NOT work — chiefly SVG presentation attributes used by recharts
+// CSS var() does NOT work - chiefly SVG presentation attributes used by recharts
 // (stroke="...", fill="..."). In CSS/className/inline-style, use var(--brand) directly.
 
 export function brandHex(): string {

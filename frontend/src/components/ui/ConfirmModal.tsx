@@ -23,19 +23,19 @@ export function ConfirmModal({ title, message, confirmLabel = 'Delete', onConfir
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
         <h3 className="text-[15px] font-bold text-[#1c1410] mb-2">{title}</h3>
-        <p className="text-[13px] text-[#7a6b5c] mb-6">{message}</p>
+        <p className="text-[14px] text-[#7a6b5c] mb-6">{message}</p>
         <div className="flex gap-2.5">
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 py-2.5 rounded-xl border border-black/10 text-[13px] font-semibold text-[#7a6b5c] hover:bg-[var(--app-bg)] transition-colors disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-xl border border-black/10 text-[14px] font-semibold text-[#7a6b5c] hover:bg-[var(--app-bg)] transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={loading}
-            className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[13px] font-bold transition-colors disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[14px] font-bold transition-colors disabled:opacity-50"
           >
             {loading ? 'Please wait…' : confirmLabel}
           </button>

@@ -78,20 +78,20 @@ export default function ConversionFunnelReportPage() {
     <div className="flex flex-col flex-1 min-h-0 gap-5">
       <div>
         <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">Conversion Funnel</h1>
-        <p className="text-[13px] text-[#7a6b5c] mt-0.5">Drop-off rate at each pipeline stage</p>
+        <p className="text-[14px] text-[#7a6b5c] mt-0.5">Drop-off rate at each pipeline stage</p>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <select value={pipelineId} onChange={(e) => setPipelineId(e.target.value)}
-          className="text-[12px] border border-black/10 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-[var(--brand)] font-semibold">
+          className="text-[13px] border border-black/10 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-[var(--brand)] font-semibold">
           {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <div className="flex items-center gap-1.5 flex-wrap">
           {PERIODS.map((p) => (
             <button key={p.value} onClick={() => setPeriod(p.value)}
               className={cn(
-                'text-[12px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
+                'text-[13px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
                 period === p.value
                   ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-sm'
                   : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/40',
@@ -103,20 +103,20 @@ export default function ConversionFunnelReportPage() {
         {period === 'custom' && (
           <div className="flex items-center gap-2">
             <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
-              className="border border-black/10 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--brand)] bg-white" />
-            <span className="text-[12px] text-[#9a8a7a]">to</span>
+              className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] bg-white" />
+            <span className="text-[13px] text-[#9a8a7a]">to</span>
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
-              className="border border-black/10 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--brand)] bg-white" />
+              className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] bg-white" />
           </div>
         )}
       </div>
 
-      {loading ? (
+      {loading && stages.length === 0 ? (
         <div className="flex items-center justify-center py-20">
           <RefreshCw className="w-5 h-5 animate-spin text-[var(--brand-dark)]" />
         </div>
       ) : stages.length === 0 ? (
-        <div className="text-center py-20 text-[13px] text-[#9a8a7a]">Select a pipeline to view funnel</div>
+        <div className="text-center py-20 text-[14px] text-[#9a8a7a]">Select a pipeline to view funnel</div>
       ) : (
         <>
           {/* KPI row */}
@@ -131,7 +131,7 @@ export default function ConversionFunnelReportPage() {
             {/* Funnel visualization */}
             <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-black/5">
-                <p className="text-[14px] font-bold text-[#1c1410]">Stage Funnel</p>
+                <p className="text-[15px] font-bold text-[#1c1410]">Stage Funnel</p>
                 <p className="text-[11px] text-[#9a8a7a] mt-0.5">Lead count at each stage</p>
               </div>
               <div className="p-5">
@@ -157,7 +157,7 @@ export default function ConversionFunnelReportPage() {
             {/* Stage-to-stage drop-off */}
             <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-black/5">
-                <p className="text-[14px] font-bold text-[#1c1410]">Stage Drop-off</p>
+                <p className="text-[15px] font-bold text-[#1c1410]">Stage Drop-off</p>
                 <p className="text-[11px] text-[#9a8a7a] mt-0.5">Conversion between consecutive stages</p>
               </div>
               <div className="p-5 space-y-3">
@@ -170,7 +170,7 @@ export default function ConversionFunnelReportPage() {
                   return (
                     <div key={s.stage_id ?? i}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[12px] font-medium text-[#1c1410]">{s.stage_name}</span>
+                        <span className="text-[13px] font-medium text-[#1c1410]">{s.stage_name}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] text-[#7a6b5c]">{curr} leads</span>
                           {i > 0 && (
@@ -203,10 +203,10 @@ export default function ConversionFunnelReportPage() {
           {/* Detailed table */}
           <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-black/5">
-              <p className="text-[14px] font-bold text-[#1c1410]">Stage Details</p>
+              <p className="text-[15px] font-bold text-[#1c1410]">Stage Details</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-[12px]">
+              <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-black/5 text-left text-[#7a6b5c]">
                     <th className="px-5 py-3 font-semibold">Stage</th>

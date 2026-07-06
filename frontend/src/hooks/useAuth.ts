@@ -2,7 +2,7 @@ import { useAuthStore } from '@/store/authStore';
 
 /**
  * Single typed hook for auth data.
- * Always use this instead of calling useAuthStore((s) => s.currentUser) directly —
+ * Always use this instead of calling useAuthStore((s) => s.currentUser) directly -
  * it prevents typos like s.user (which silently returns undefined in non-strict TS).
  */
 export function useAuth() {

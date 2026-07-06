@@ -74,6 +74,12 @@ services:
       - backend
     environment:
       VITE_API_URL: http://localhost:4000
+      # inotify doesn't cross a Windows->Linux bind mount, so poll for Vite HMR.
+      CHOKIDAR_USEPOLLING: "true"
+    # Live-edit: mount the source, but keep the image's (linux) node_modules.
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
       - "5173:5173"
 

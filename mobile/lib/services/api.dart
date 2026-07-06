@@ -159,7 +159,7 @@ class Api {
 
   // ── Local (verified-in-app) numbers - used to auto-link once added in the CRM ──
   static const _numsKey = 'digygo_local_numbers';
-  static const _simsKey = 'digygo_local_sims'; // [{n, slot}] — drives the native SIM gate
+  static const _simsKey = 'digygo_local_sims'; // [{n, slot}] - drives the native SIM gate
   Future<List<String>> localNumbers() async {
     final v = await _store.read(key: _numsKey);
     if (v == null || v.isEmpty) return [];

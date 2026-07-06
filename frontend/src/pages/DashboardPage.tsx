@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { useCompanyStore } from '@/store/companyStore';
 import { useUserLevel } from '@/hooks/useUserLevel';
+import { useHeaderSearch } from '@/store/headerSearchStore';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import {
@@ -83,9 +84,9 @@ function StatCard({ label, value, sub, icon: Icon, accent = false, warn = false,
         <Icon className="w-4 h-4 text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] opacity-75 truncate">{label}</p>
-        <h3 className={`font-headline font-bold leading-tight tracking-tight ${smallValue ? 'text-[14px] truncate' : 'text-[22px]'}`}>{value}</h3>
-        {sub && <p className="text-[10px] opacity-65 truncate mt-0.5">{sub}</p>}
+        <p className="text-[13px] opacity-80 truncate">{label}</p>
+        <h3 className={`font-headline font-bold leading-tight tracking-tight ${smallValue ? 'text-[15px] truncate' : 'text-[22px]'}`}>{value}</h3>
+        {sub && <p className="text-[12px] opacity-70 truncate mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -99,9 +100,9 @@ function StatCard({ label, value, sub, icon: Icon, accent = false, warn = false,
         <Icon className="w-4 h-4 text-red-500" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] text-red-400 truncate">{label}</p>
-        <h3 className={`font-headline font-bold text-red-600 leading-tight tracking-tight ${smallValue ? 'text-[14px] truncate' : 'text-[22px]'}`}>{value}</h3>
-        {sub && <p className="text-[10px] text-red-400 truncate mt-0.5">{sub}</p>}
+        <p className="text-[13px] text-red-400 truncate">{label}</p>
+        <h3 className={`font-headline font-bold text-red-600 leading-tight tracking-tight ${smallValue ? 'text-[15px] truncate' : 'text-[22px]'}`}>{value}</h3>
+        {sub && <p className="text-[12px] text-red-400 truncate mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -115,9 +116,9 @@ function StatCard({ label, value, sub, icon: Icon, accent = false, warn = false,
         <Icon className={`w-4 h-4 ${warn ? 'text-amber-500' : 'text-primary'}`} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] text-[#7a6b5c] truncate">{label}</p>
-        <h3 className={`font-headline font-bold text-[#1c1410] leading-tight tracking-tight ${smallValue ? 'text-[14px] truncate' : 'text-[22px]'}`}>{value}</h3>
-        {sub && <p className="text-[10px] text-[#9a8a7a] truncate mt-0.5">{sub}</p>}
+        <p className="text-[13px] text-[#7a6b5c] truncate">{label}</p>
+        <h3 className={`font-headline font-bold text-[#1c1410] leading-tight tracking-tight ${smallValue ? 'text-[15px] truncate' : 'text-[22px]'}`}>{value}</h3>
+        {sub && <p className="text-[12px] text-[#9a8a7a] truncate mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -137,7 +138,7 @@ function DateFilterBar({ range, setRange, customFrom, setCustomFrom, customTo, s
         <button
           key={opt.value}
           onClick={() => setRange(opt.value)}
-          className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors border ${
+          className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-colors border ${
             range === opt.value
               ? 'bg-primary text-white border-primary shadow-sm'
               : 'bg-white text-[#1c1410] border-black/10 hover:border-primary/40'
@@ -153,7 +154,7 @@ function DateFilterBar({ range, setRange, customFrom, setCustomFrom, customTo, s
             value={customFrom}
             max={customTo || undefined}
             onChange={(e) => setCustomFrom(e.target.value)}
-            className="text-[12px] border border-black/10 rounded-lg px-2 py-1.5 outline-none focus:border-primary/40 bg-white cursor-pointer"
+            className="text-[13px] border border-black/10 rounded-lg px-2 py-1.5 outline-none focus:border-primary/40 bg-white cursor-pointer"
           />
           <span className="text-[11px] text-[#7a6b5c] font-medium">to</span>
           <input
@@ -161,7 +162,7 @@ function DateFilterBar({ range, setRange, customFrom, setCustomFrom, customTo, s
             value={customTo}
             min={customFrom || undefined}
             onChange={(e) => setCustomTo(e.target.value)}
-            className="text-[12px] border border-black/10 rounded-lg px-2 py-1.5 outline-none focus:border-primary/40 bg-white cursor-pointer"
+            className="text-[13px] border border-black/10 rounded-lg px-2 py-1.5 outline-none focus:border-primary/40 bg-white cursor-pointer"
           />
         </div>
       )}
@@ -174,7 +175,7 @@ function PipelineFunnelVisual({ funnels }: { funnels: Analytics['pipeline_funnel
   const [selectedId, setSelectedId] = useState('');
   const list = funnels ?? [];
   const pipeline = list.find((f) => f.id === selectedId) ?? list[0] ?? null;
-  if (!pipeline) return <p className="text-[12px] text-[#b09e8d]">No pipeline data.</p>;
+  if (!pipeline) return <p className="text-[13px] text-[#b09e8d]">No pipeline data.</p>;
 
   const first = pipeline.stages[0]?.count ?? 1;
 
@@ -231,7 +232,7 @@ function PipelineFunnelVisual({ funnels }: { funnels: Analytics['pipeline_funnel
   );
 }
 
-// ── Management Dashboard — Owner / Super Admin — aggregate only, NO individual lead names ──
+// ── Management Dashboard - Owner / Super Admin - aggregate only, NO individual lead names ──
 function ManagementDashboard({ analytics, lineData }: {
   analytics: Analytics; lineData: any[];
 }) {
@@ -251,15 +252,15 @@ function ManagementDashboard({ analytics, lineData }: {
 
   const growth    = analytics.growth_pct;
   const growthBadge = growth > 0
-    ? <span className="text-[12px] font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700">↑ +{growth}% vs last month</span>
+    ? <span className="text-[13px] font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700">↑ +{growth}% vs last month</span>
     : growth < 0
-    ? <span className="text-[12px] font-bold px-2.5 py-1 rounded-lg bg-red-50 text-red-600">↓ {Math.abs(growth)}% vs last month</span>
-    : <span className="text-[12px] font-bold px-2.5 py-1 rounded-lg bg-[var(--app-bg)] text-[#7a6b5c]">→ Same as last month</span>;
+    ? <span className="text-[13px] font-bold px-2.5 py-1 rounded-lg bg-red-50 text-red-600">↓ {Math.abs(growth)}% vs last month</span>
+    : <span className="text-[13px] font-bold px-2.5 py-1 rounded-lg bg-[var(--app-bg)] text-[#7a6b5c]">→ Same as last month</span>;
 
   return (
     <div className="space-y-5">
 
-      {/* ── 1. Business Health KPIs — all aggregate, zero individual lead names ── */}
+      {/* ── 1. Business Health KPIs - all aggregate, zero individual lead names ── */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard
           label="New Leads" value={analytics.range_leads ?? 0}
@@ -269,20 +270,18 @@ function ManagementDashboard({ analytics, lineData }: {
         <StatCard
           label="Team Contact Rate" value={`${teamContactRate}%`}
           sub={totalAssigned > 0 ? `${totalContacted} of ${totalAssigned} leads contacted` : 'No leads assigned yet'}
-          icon={PhoneOff}
-          danger={teamContactRate < 50 && totalAssigned > 0}
-          warn={teamContactRate >= 50 && teamContactRate < 75 && totalAssigned > 0}
+          icon={PhoneOff} accent
         />
         <StatCard
           label="Conversion Rate" value={`${analytics.conversion_rate}%`}
           sub={`${analytics.converted_leads} deals closed`}
-          icon={Target}
+          icon={Target} accent
         />
         <StatCard
           label="Best ROI Source"
           value={bestConvSrc ? sourceLabel(bestConvSrc.source) : analytics.best_source ? sourceLabel(analytics.best_source.source) : 'N/A'}
           sub={bestConvSrc ? `${bestConvSrc.conv_pct}% conv · ${bestConvSrc.total} leads` : analytics.best_source ? `${analytics.best_source.count} leads` : 'No data yet'}
-          icon={Star}
+          icon={Star} accent
           smallValue
         />
         {superfoneEnabled && (
@@ -290,7 +289,7 @@ function ManagementDashboard({ analytics, lineData }: {
             label="Calls"
             value={analytics.calls_total ?? 0}
             sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
-            icon={Phone}
+            icon={Phone} accent
           />
         )}
       </div>
@@ -299,7 +298,7 @@ function ManagementDashboard({ analytics, lineData }: {
       <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Business Growth</h3>
+            <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Business Growth</h3>
             <p className="text-[11px] text-[#7a6b5c]">
               {analytics.range_label} ·{' '}
               <span className="font-bold text-[#1c1410]">{analytics.range_leads ?? 0}</span> new leads ·{' '}
@@ -323,19 +322,19 @@ function ManagementDashboard({ analytics, lineData }: {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
           <div className="mb-3">
-            <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Pipeline Funnel</h3>
-            <p className="text-[11px] text-[#7a6b5c]">Where leads are — and where they drop off</p>
+            <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Pipeline Funnel</h3>
+            <p className="text-[11px] text-[#7a6b5c]">Where leads are - and where they drop off</p>
           </div>
           <PipelineFunnelVisual funnels={analytics.pipeline_funnels} />
         </div>
 
         <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
           <div className="mb-3">
-            <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Source Intelligence</h3>
+            <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Source Intelligence</h3>
             <p className="text-[11px] text-[#7a6b5c]">{grandTotal} leads total · volume & conversion by channel</p>
           </div>
           {srcConv.length === 0
-            ? <p className="text-[12px] text-[#b09e8d]">No leads in this period.</p>
+            ? <p className="text-[13px] text-[#b09e8d]">No leads in this period.</p>
             : (
               <div className="space-y-2.5">
                 {srcConv.slice(0, 6).map((s, i) => (
@@ -357,14 +356,14 @@ function ManagementDashboard({ analytics, lineData }: {
         </div>
       </div>
 
-      {/* ── 4. Source ROI — Volume vs Conversion Rate ─────────────────────────── */}
+      {/* ── 4. Source ROI - Volume vs Conversion Rate ─────────────────────────── */}
       <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
         <div className="mb-3">
-          <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Source ROI — Volume vs Conversion Rate</h3>
-          <p className="text-[11px] text-[#7a6b5c]">Bars = lead count · Line = conversion % — identify your highest-return channels</p>
+          <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Source ROI - Volume vs Conversion Rate</h3>
+          <p className="text-[11px] text-[#7a6b5c]">Bars = lead count · Line = conversion % - identify your highest-return channels</p>
         </div>
         {srcData.length === 0
-          ? <p className="text-[12px] text-[#b09e8d]">No leads in this period.</p>
+          ? <p className="text-[13px] text-[#b09e8d]">No leads in this period.</p>
           : (
             <ResponsiveContainer width="100%" height={200}>
               <ComposedChart data={srcData} margin={{ top: 18, right: 36, bottom: 4, left: 0 }}>
@@ -389,23 +388,23 @@ function ManagementDashboard({ analytics, lineData }: {
           )}
       </div>
 
-      {/* ── 5. Team Health — aggregate bars, no individual lead lists ────────────── */}
+      {/* ── 5. Team Health - aggregate bars, no individual lead lists ────────────── */}
       <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Team Health</h3>
+            <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Team Health</h3>
             <p className="text-[11px] text-[#7a6b5c]">
               Team contact rate:{' '}
               <span className={`font-bold ${teamContactRate >= 70 ? 'text-emerald-600' : teamContactRate >= 50 ? 'text-amber-500' : 'text-red-500'}`}>{teamContactRate}%</span>
               {' '}· {totalContacted} of {totalAssigned} leads contacted across all staff
             </p>
           </div>
-          <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${teamContactRate >= 70 ? 'bg-emerald-50 text-emerald-700' : teamContactRate >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600'}`}>
+          <span className={`text-[13px] font-bold px-3 py-1 rounded-full ${teamContactRate >= 70 ? 'bg-emerald-50 text-emerald-700' : teamContactRate >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600'}`}>
             {teamContactRate >= 70 ? 'Healthy' : teamContactRate >= 50 ? 'At Risk' : 'Action Needed'}
           </span>
         </div>
         {accountability.length === 0
-          ? <p className="text-[12px] text-[#b09e8d]">No staff yet.</p>
+          ? <p className="text-[13px] text-[#b09e8d]">No staff yet.</p>
           : (
             <div className="space-y-3">
               {accountability.map((s) => {
@@ -416,11 +415,11 @@ function ManagementDashboard({ analytics, lineData }: {
                     <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center text-[9px] font-bold text-primary shrink-0">
                       {s.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                     </div>
-                    <span className="text-[12px] font-semibold text-[#1c1410] w-32 shrink-0 truncate">{s.name}</span>
+                    <span className="text-[13px] font-semibold text-[#1c1410] w-32 shrink-0 truncate">{s.name}</span>
                     <div className="flex-1 h-2 bg-[#f0ece8] rounded-full overflow-hidden">
                       <div className="h-full rounded-full transition-all" style={{ width: `${s.contacted_pct}%`, background: barColor }} />
                     </div>
-                    <span className={`text-[12px] font-bold w-10 text-right shrink-0 ${textColor}`}>{s.contacted_pct}%</span>
+                    <span className={`text-[13px] font-bold w-10 text-right shrink-0 ${textColor}`}>{s.contacted_pct}%</span>
                     <span className="text-[10px] text-[#9a8a7a] w-24 text-right shrink-0 whitespace-nowrap">{s.contacted}/{s.assigned} · {s.won} won</span>
                   </div>
                 );
@@ -433,7 +432,7 @@ function ManagementDashboard({ analytics, lineData }: {
   );
 }
 
-// ── Sales Manager Dashboard — operational team oversight, staff+lead names OK ─
+// ── Sales Manager Dashboard - operational team oversight, staff+lead names OK ─
 function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineData: any[] }) {
   const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
   const navigate   = useNavigate();
@@ -487,14 +486,14 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
           <div className="mb-4">
-            <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Staff Performance</h3>
-            <p className="text-[11px] text-[#7a6b5c]">Assigned · Contacted · Won — all time</p>
+            <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Staff Performance</h3>
+            <p className="text-[11px] text-[#7a6b5c]">Assigned · Contacted · Won - all time</p>
           </div>
           {accountability.length === 0
-            ? <p className="text-[12px] text-[#b09e8d]">No staff yet.</p>
+            ? <p className="text-[13px] text-[#b09e8d]">No staff yet.</p>
             : (
               <div className="overflow-x-auto">
-                <table className="w-full text-[12px]">
+                <table className="w-full text-[13px]">
                   <thead>
                     <tr className="text-[10px] text-[#b09e8d] font-semibold uppercase border-b border-black/5">
                       <th className="text-left py-2 px-1">Staff</th>
@@ -540,16 +539,16 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
 
         <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
           <div className="mb-4">
-            <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Untouched Leads — by Staff</h3>
-            <p className="text-[11px] text-[#7a6b5c]">Assigned but never contacted — who needs to act?</p>
+            <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Untouched Leads - by Staff</h3>
+            <p className="text-[11px] text-[#7a6b5c]">Assigned but never contacted - who needs to act?</p>
           </div>
           {untouchedByStaff.length === 0
-            ? <p className="text-[12px] text-emerald-600 font-medium">All leads contacted by their assigned staff ✓</p>
+            ? <p className="text-[13px] text-emerald-600 font-medium">All leads contacted by their assigned staff ✓</p>
             : (
               <div className="space-y-2.5">
                 {untouchedByStaff.map((s, i) => (
                   <div key={i} className="flex items-center gap-2.5">
-                    <span className="text-[12px] font-semibold text-[#1c1410] w-24 shrink-0 truncate">{s.name}</span>
+                    <span className="text-[13px] font-semibold text-[#1c1410] w-24 shrink-0 truncate">{s.name}</span>
                     <div className="flex-1 h-7 bg-[#f0ece8] rounded-lg overflow-hidden">
                       <div
                         className="h-full bg-red-400 rounded-lg flex items-center justify-end pr-2"
@@ -570,7 +569,7 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
           <div className="mb-3">
-            <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Pipeline Health</h3>
+            <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Pipeline Health</h3>
             <p className="text-[11px] text-[#7a6b5c]">Stage distribution with drop-off</p>
           </div>
           <PipelineFunnelVisual funnels={analytics.pipeline_funnels} />
@@ -579,7 +578,7 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
         <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Team's Follow-ups Today</h3>
+              <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Team's Follow-ups Today</h3>
               <p className="text-[11px] text-[#7a6b5c]">
                 <span className="font-bold text-[#1c1410]">{analytics.today_followups.length}</span> due ·{' '}
                 <span className="font-bold text-red-500">{analytics.overdue_followups}</span> overdue
@@ -588,7 +587,7 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
             <button onClick={() => navigate('/lead-management/followups')} className="text-[11px] text-primary font-semibold hover:opacity-70">View all →</button>
           </div>
           {analytics.today_followups.length === 0
-            ? <p className="text-[12px] text-[#b09e8d]">No follow-ups due today.</p>
+            ? <p className="text-[13px] text-[#b09e8d]">No follow-ups due today.</p>
             : (
               <div className="space-y-1 overflow-y-auto" style={{ maxHeight: 220 }}>
                 {analytics.today_followups.map((f) => {
@@ -601,7 +600,7 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
                     >
                       <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${overdue ? 'bg-red-400' : 'bg-emerald-400'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12px] font-semibold text-[#1c1410] truncate">{f.lead_name}</p>
+                        <p className="text-[13px] font-semibold text-[#1c1410] truncate">{f.lead_name}</p>
                         <p className="text-[10px] text-[#8a7c6e] truncate">{f.title}</p>
                       </div>
                       <span className={`text-[10px] shrink-0 font-medium whitespace-nowrap ${overdue ? 'text-red-500' : 'text-[#8a7c6e]'}`}>
@@ -619,10 +618,10 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
       <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">Lead Inflow</h3>
+            <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Lead Inflow</h3>
             <p className="text-[11px] text-[#7a6b5c]">{rangeLabel}</p>
           </div>
-          <span className="text-[13px] font-bold text-[#1c1410]">{analytics.range_leads ?? 0} leads</span>
+          <span className="text-[14px] font-bold text-[#1c1410]">{analytics.range_leads ?? 0} leads</span>
         </div>
         <ResponsiveContainer width="100%" height={130}>
           <LineChart data={lineData}>
@@ -638,7 +637,7 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
   );
 }
 
-// ── Staff Dashboard — personal task view, individual lead names appropriate ────
+// ── Staff Dashboard - personal task view, individual lead names appropriate ────
 function StaffDashboard({ analytics }: { analytics: Analytics }) {
   const navigate = useNavigate();
   const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
@@ -688,15 +687,15 @@ function StaffDashboard({ analytics }: { analytics: Analytics }) {
         <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h3 className="font-headline font-bold text-[#1c1410] text-[14px]">My Follow-ups</h3>
-              <p className="text-[11px] text-[#7a6b5c]">Today's action list — your personal tasks</p>
+              <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">My Follow-ups</h3>
+              <p className="text-[11px] text-[#7a6b5c]">Today's action list - your personal tasks</p>
             </div>
             <button onClick={() => navigate('/lead-management/followups')} className="text-[11px] text-primary font-semibold hover:opacity-80 transition-opacity">
               View all →
             </button>
           </div>
           {analytics.today_followups.length === 0
-            ? <p className="text-[12px] text-[#b09e8d]">No follow-ups due today. All clear!</p>
+            ? <p className="text-[13px] text-[#b09e8d]">No follow-ups due today. All clear!</p>
             : (
               <div className="space-y-1">
                 {analytics.today_followups.map((f) => {
@@ -709,7 +708,7 @@ function StaffDashboard({ analytics }: { analytics: Analytics }) {
                     >
                       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOverdue ? 'bg-red-400' : 'bg-emerald-400'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12px] font-semibold text-[#1c1410] truncate">{f.lead_name}</p>
+                        <p className="text-[13px] font-semibold text-[#1c1410] truncate">{f.lead_name}</p>
                         <p className="text-[10px] text-[#8a7c6e] truncate">{f.title}{f.description ? ` · ${f.description}` : ''}</p>
                       </div>
                       <span className={`text-[10px] shrink-0 font-medium ${isOverdue ? 'text-red-500' : 'text-[#8a7c6e]'}`}>
@@ -723,7 +722,7 @@ function StaffDashboard({ analytics }: { analytics: Analytics }) {
         </div>
 
         <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
-          <h3 className="font-headline font-bold text-[#1c1410] text-[14px] mb-3">My Numbers</h3>
+          <h3 className="font-headline font-bold text-[#1c1410] text-[15px] mb-3">My Numbers</h3>
           <div className="grid grid-cols-1 gap-2.5">
             <div className="rounded-xl bg-[var(--app-bg)] px-4 py-3">
               <p className="text-[11px] text-[#7a6b5c] mb-0.5">Total Leads</p>
@@ -747,13 +746,19 @@ function StaffDashboard({ analytics }: { analytics: Analytics }) {
 // ── Main Dashboard Page ───────────────────────────────────────────────────────
 export default function DashboardPage() {
   const level          = useUserLevel();
+  const navigate       = useNavigate();
+  // The dashboard has no list of its own, so its navbar search does a global lead
+  // lookup: pressing Enter jumps to the Leads page filtered by the query.
+  useHeaderSearch('Search leads by name or phone', {
+    onSubmit: (q) => { const t = q.trim(); if (t) navigate(`/leads?search=${encodeURIComponent(t)}`); },
+  });
 
   const [analytics,  setAnalytics]  = useState<Analytics | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [range,      setRange]      = useState('this_week');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo,   setCustomTo]   = useState('');
-  // Lead-count time series for the growth chart — server-side & view-scoped, so
+  // Lead-count time series for the growth chart - server-side & view-scoped, so
   // the chart no longer iterates every lead in the store.
   const [timeline, setTimeline] = useState<{ daily: Record<string, number>; hourly: Record<string, number> }>({ daily: {}, hourly: {} });
 
@@ -766,11 +771,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (range === 'custom' && (!customFrom || !customTo)) return;
-    setLoading(true);
+    // Show the skeleton only on the first load; on date/filter changes keep the
+    // current data visible while the new data loads (no loading flash).
+    if (!analytics) setLoading(true);
     api.get<Analytics>(apiUrl)
       .then((r) => setAnalytics(r))
       .catch(() => null)
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiUrl]);
 
   useEffect(() => {
@@ -917,7 +925,7 @@ export default function DashboardPage() {
       )}
 
       {!loading && !analytics && (
-        <div className="text-center py-20 text-[#b09e8d] text-[14px]">Could not load dashboard data.</div>
+        <div className="text-center py-20 text-[#b09e8d] text-[15px]">Could not load dashboard data.</div>
       )}
     </div>
   );

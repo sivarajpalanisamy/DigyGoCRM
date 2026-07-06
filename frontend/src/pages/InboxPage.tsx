@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useHeaderSearch } from '@/store/headerSearchStore';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import {
@@ -158,8 +159,8 @@ function MediaMessage({ msgId, msgBody, onImageClick }: { msgId: string; msgBody
 
   return (
     <a href={src} download={fileName} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-black/10 bg-white/50 hover:bg-white/80 transition-colors min-w-[180px]">
-      <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-        <File className="w-4 h-4 text-blue-600" />
+      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <File className="w-4 h-4 text-primary" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold text-[#1c1410] truncate">{fileName}</p>
@@ -196,7 +197,7 @@ export default function InboxPage() {
   const [conversations, setConversations]   = useState<ApiConversation[]>([]);
   const [messages, setMessages]             = useState<ApiMessage[]>([]);
   const [selectedId, setSelectedId]         = useState<string | null>(null);
-  const [search, setSearch]                 = useState('');
+  const [search, setSearch]                 = useHeaderSearch('Search conversations');
   const debouncedSearch                     = useDebounce(search, 300);
   const [filterTab, setFilterTab]           = useState<FilterTab>('all');
   const [channelFilter, setChannelFilter]   = useState<ChannelFilter>('all');
@@ -733,7 +734,7 @@ export default function InboxPage() {
     }
   };
 
-  // Typing indicator — sends presence once per 3s typing session (not on every keypress)
+  // Typing indicator - sends presence once per 3s typing session (not on every keypress)
   const handleTypingChange = (val: string) => {
     setMessageText(val);
     if (!selectedId) return;
@@ -987,17 +988,8 @@ export default function InboxPage() {
       {/* Conversation List */}
       <div className={cn('w-full sm:w-80 border-r border-black/5 flex flex-col bg-[#fdf9f7] shrink-0', !showList && 'hidden sm:flex')}>
         <div className="px-3 pt-4 pb-3 border-b border-orange-100 space-y-2.5 bg-[#faf4ef]">
-          {/* Row 1: search bar + New button */}
+          {/* Row 1: New button (conversation search moved to the navbar) */}
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/50" />
-              <input
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-orange-200 bg-white placeholder:text-[#b8a89a] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-colors"
-                placeholder="Search conversations..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
             <button
               onClick={() => setShowNewChat(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shrink-0"
@@ -1023,7 +1015,7 @@ export default function InboxPage() {
               })}
             </div>
 
-            {/* Channel filter — funnel icon only, highlights when active */}
+            {/* Channel filter - funnel icon only, highlights when active */}
             <div className="relative shrink-0">
               <button
                 onClick={() => setShowChannelDropdown((v) => !v)}
@@ -1085,8 +1077,8 @@ export default function InboxPage() {
           {filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center gap-2">
               <MessageCircle className="w-10 h-10 text-orange-200 mb-1" />
-              <p className="text-[13px] font-semibold text-[#1c1410]">No conversations yet</p>
-              <p className="text-[12px] text-[#7a6b5c]">Connect WhatsApp in <strong>Settings → WhatsApp Setup</strong> to start receiving messages here.</p>
+              <p className="text-[14px] font-semibold text-[#1c1410]">No conversations yet</p>
+              <p className="text-[13px] text-[#7a6b5c]">Connect WhatsApp in <strong>Settings → WhatsApp Setup</strong> to start receiving messages here.</p>
             </div>
           )}
           {filtered.map((conv) => (
@@ -1466,8 +1458,8 @@ export default function InboxPage() {
                           <div className="mb-1.5 space-y-1.5">
                             {(msg.metadata.contacts ?? []).map((ct: any, ci: number) => (
                               <div key={ci} className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-black/10 bg-white/50">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                                  <Contact className="w-4 h-4 text-blue-600" />
+                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                  <Contact className="w-4 h-4 text-primary" />
                                 </div>
                                 <div className="min-w-0">
                                   <p className="text-xs font-semibold text-[#1c1410] truncate">{ct.name}</p>
@@ -1647,7 +1639,7 @@ export default function InboxPage() {
               })()}
               {isNote && (
                 <p className="text-xs font-semibold text-yellow-600 mb-2 flex items-center gap-1">
-                  <StickyNote className="w-3 h-3" /> Internal Note — not visible to customer
+                  <StickyNote className="w-3 h-3" /> Internal Note - not visible to customer
                 </p>
               )}
               <div className="flex items-end gap-2">
@@ -1675,7 +1667,7 @@ export default function InboxPage() {
                     accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }}
                   />
-                  {/* Template picker button — for WABA and Personal WA conversations */}
+                  {/* Template picker button - for WABA and Personal WA conversations */}
                   {(isWaba || isPersonalWa) && !isNote && (
                     <button
                       onClick={() => setShowTemplatePicker(!showTemplatePicker)}
@@ -1687,7 +1679,7 @@ export default function InboxPage() {
                       <FileText className="w-5 h-5" />
                     </button>
                   )}
-                  {/* Interactive message button — WABA only */}
+                  {/* Interactive message button - WABA only */}
                   {isWaba && !isNote && (
                     <button
                       onClick={() => setShowInteractive(!showInteractive)}
@@ -1701,7 +1693,7 @@ export default function InboxPage() {
                   )}
                 </div>
 
-                {/* Template picker dropdown — channel-aware */}
+                {/* Template picker dropdown - channel-aware */}
                 {showTemplatePicker && (
                   <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 bg-white rounded-xl border border-black/10 shadow-lg z-30 max-h-72 overflow-hidden flex flex-col">
                     <div className="flex items-center justify-between px-3 py-2 border-b border-black/5">
@@ -1759,7 +1751,7 @@ export default function InboxPage() {
                   </div>
                 )}
 
-                {/* Interactive message composer — WABA only */}
+                {/* Interactive message composer - WABA only */}
                 {showInteractive && isWaba && (
                   <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 bg-white rounded-xl border border-black/10 shadow-lg z-30 p-3 space-y-3 max-h-80 overflow-y-auto">
                     <div className="flex items-center justify-between">

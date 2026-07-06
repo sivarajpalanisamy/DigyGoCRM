@@ -17,7 +17,7 @@ class FollowupsPage extends StatefulWidget {
 class _FollowupsPageState extends State<FollowupsPage> {
   List<dynamic> _items = [];
   String _status = 'pending'; // pending | completed | all
-  String _dateMode = 'today'; // today | all | single | range — defaults to today
+  String _dateMode = 'today'; // today | all | single | range - defaults to today
   DateTime? _singleDate;
   DateTimeRange? _range;
   bool _loading = true;
@@ -116,7 +116,7 @@ class _FollowupsPageState extends State<FollowupsPage> {
               ],
             ),
           ),
-          // Date filter — defaults to Today; pick a single day or a from–to range.
+          // Date filter - defaults to Today; pick a single day or a from-to range.
           SizedBox(
             height: 44,
             child: ListView(
@@ -135,7 +135,7 @@ class _FollowupsPageState extends State<FollowupsPage> {
                 _dateChip(
                     icon: Icons.date_range,
                     label: _dateMode == 'range' && _range != null
-                        ? '${_shortDate(_range!.start)} – ${_shortDate(_range!.end)}'
+                        ? '${_shortDate(_range!.start)} - ${_shortDate(_range!.end)}'
                         : 'Date range',
                     active: _dateMode == 'range',
                     onTap: _pickRange),

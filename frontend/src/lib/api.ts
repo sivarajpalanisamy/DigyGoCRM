@@ -13,7 +13,7 @@ export class ApiError extends Error {
   constructor(status: number, message: string) { super(message); this.name = 'ApiError'; this.status = status; }
 }
 
-// In-memory token — never written to localStorage
+// In-memory token - never written to localStorage
 let _accessToken: string | null = null;
 export const setAccessToken = (t: string | null) => { _accessToken = t; };
 export const getAccessToken = () => _accessToken;
@@ -39,7 +39,7 @@ async function tryRefresh(): Promise<string | null> {
 
 // Hard ceiling so a slow/hung request never blocks the UI forever (e.g. a heavy
 // /api/leads pull under load). On timeout the fetch aborts and the caller's .catch
-// runs — initFromApi treats that as "keep existing data", never wiping the store.
+// runs - initFromApi treats that as "keep existing data", never wiping the store.
 const REQUEST_TIMEOUT_MS = 30_000;
 
 async function request<T>(path: string, options: RequestInit = {}, _retry = true): Promise<T> {

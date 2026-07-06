@@ -195,13 +195,13 @@ function FlowBuilderModal({ initial, onClose, onSave }: {
             </div>
             <div className="flex items-center gap-2 pb-2">
               <Switch checked={isActive} onCheckedChange={setIsActive} />
-              <span className="text-[13px] text-[#7a6b5c]">Active</span>
+              <span className="text-[14px] text-[#7a6b5c]">Active</span>
             </div>
           </div>
 
           {/* Trigger */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Trigger — when should this flow start?</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">Trigger - when should this flow start?</label>
             <div className="grid grid-cols-2 gap-2">
               {TRIGGER_OPTIONS.map((t) => (
                 <button
@@ -222,7 +222,7 @@ function FlowBuilderModal({ initial, onClose, onSave }: {
             )}
             {trigger === 'button_click' && (
               <div className="mt-3">
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Button payload to match (optional — leave blank for any)</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Button payload to match (optional - leave blank for any)</label>
                 <Input value={triggerValue} onChange={(e) => setTriggerValue(e.target.value)} placeholder="e.g. proposal_reply" className="font-mono text-sm" />
               </div>
             )}
@@ -255,7 +255,7 @@ function FlowBuilderModal({ initial, onClose, onSave }: {
                         placeholder="Type your message… Use {%first_name%}, {%booking_link%} etc."
                       />
                       <div className="space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground">Reply Buttons (max 3) — each button leads to the next step</p>
+                        <p className="text-xs font-medium text-muted-foreground">Reply Buttons (max 3) - each button leads to the next step</p>
                         {node.buttons?.map((btn) => (
                           <div key={btn.id} className="flex gap-2 items-center">
                             <Input value={btn.label} onChange={(e) => updateButton(node.id, btn.id, { label: e.target.value })} placeholder="Button label" className="flex-1 text-sm" />
@@ -571,7 +571,7 @@ export default function WhatsAppAutomationPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-bold text-foreground">{selectedFlow.name}</h2>
-                <p className="text-[13px] text-[#7a6b5c] mt-0.5">{selectedFlow.nodes.length} steps · {selectedFlow.executionCount} executions</p>
+                <p className="text-[14px] text-[#7a6b5c] mt-0.5">{selectedFlow.nodes.length} steps · {selectedFlow.executionCount} executions</p>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setEditFlow(selectedFlow)}>Edit Flow</Button>

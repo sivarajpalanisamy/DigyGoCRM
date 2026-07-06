@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { confirmDialog } from '@/lib/confirm';
 import { useNavigate } from 'react-router-dom';
 import { useCrmStore } from '@/store/crmStore';
 import { api } from '@/lib/api';
@@ -146,7 +147,7 @@ export default function AssignmentRulesPage() {
   };
 
   const deleteRule = async (rule: AssignRule) => {
-    if (!window.confirm(`Delete rule "${rule.name}"?`)) return;
+    if (!(await confirmDialog({ message: `Delete rule "${rule.name}"?` }))) return;
     try {
       await api.delete(`/api/assignment-rules/${rule.id}`);
       setRules((prev) => prev.filter((r) => r.id !== rule.id));
@@ -184,13 +185,13 @@ export default function AssignmentRulesPage() {
         <Button className="ml-auto" onClick={() => setShowModal(true)}><Plus className="w-4 h-4 mr-1" /> Add Rule</Button>
       </div>
 
-      <div className="p-4 bg-muted/40 rounded-xl border border-black/5 text-[13px] text-[#7a6b5c]">
+      <div className="p-4 bg-muted/40 rounded-xl border border-black/5 text-[14px] text-[#7a6b5c]">
         Rules are evaluated in order. The first matching rule wins. Toggle off to disable without deleting.
       </div>
 
       <div className="bg-white rounded-2xl border border-black/5 card-shadow overflow-hidden">
         {loading ? (
-          <div className="py-12 text-center text-[13px] text-[#b09e8d]">Loading…</div>
+          <div className="py-12 text-center text-[14px] text-[#b09e8d]">Loading…</div>
         ) : rules.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Shuffle className="w-10 h-10 mx-auto mb-2 opacity-30" />

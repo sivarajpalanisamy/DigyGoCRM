@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { alertDialog } from '@/lib/confirm';
 
 // ── Types (must mirror builder) ──────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ function BlockContent({ block, theme, slug }: { block: Block; theme: Theme; slug
           <h1 className="text-[28px] sm:text-[34px] font-extrabold leading-tight max-w-xl" style={{ color: theme.text }}>{p.headline}</h1>
           <p className="text-[15px] sm:text-[16px] max-w-lg leading-relaxed" style={{ color: theme.muted }}>{p.subtext}</p>
           {p.btnText && (
-            <a href={p.btnUrl || '#'} className="mt-2 px-8 py-3.5 rounded-xl text-[14px] font-bold shadow-lg inline-block no-underline"
+            <a href={p.btnUrl || '#'} className="mt-2 px-8 py-3.5 rounded-xl text-[15px] font-bold shadow-lg inline-block no-underline"
               style={{ background: theme.primary, color: theme.primaryText }}>{p.btnText}</a>
           )}
         </div>
@@ -50,7 +51,7 @@ function BlockContent({ block, theme, slug }: { block: Block; theme: Theme; slug
     case 'paragraph':
       return (
         <div className={`px-6 sm:px-10 py-4 flex flex-col ${alignFlex}`}>
-          <p className={`leading-relaxed max-w-2xl ${p.size === 'sm' ? 'text-[13px]' : p.size === 'lg' ? 'text-[18px]' : 'text-[15px]'}`}
+          <p className={`leading-relaxed max-w-2xl ${p.size === 'sm' ? 'text-[14px]' : p.size === 'lg' ? 'text-[18px]' : 'text-[15px]'}`}
             style={{ color: theme.muted }}>{p.text}</p>
         </div>
       );
@@ -58,7 +59,7 @@ function BlockContent({ block, theme, slug }: { block: Block; theme: Theme; slug
     case 'button':
       return (
         <div className={`px-6 sm:px-10 py-5 flex ${alignFlex}`}>
-          <a href={p.url || '#'} className="px-7 py-3 rounded-xl text-[14px] font-bold transition-all inline-block no-underline" style={
+          <a href={p.url || '#'} className="px-7 py-3 rounded-xl text-[15px] font-bold transition-all inline-block no-underline" style={
             p.style === 'primary' ? { background: theme.primary, color: theme.primaryText } :
             p.style === 'outline' ? { border: `2px solid ${theme.primary}`, color: theme.primary, background: 'transparent' } :
             { color: theme.primary, background: 'transparent', textDecoration: 'underline' }
@@ -70,7 +71,7 @@ function BlockContent({ block, theme, slug }: { block: Block; theme: Theme; slug
       return (
         <div className="px-6 sm:px-10 py-5">
           <img src={p.url} alt={p.alt} className={`w-full object-cover max-h-96 ${p.rounded ? 'rounded-2xl' : ''}`} />
-          {p.caption && <p className="text-center text-[12px] mt-2" style={{ color: theme.muted }}>{p.caption}</p>}
+          {p.caption && <p className="text-center text-[13px] mt-2" style={{ color: theme.muted }}>{p.caption}</p>}
         </div>
       );
 
@@ -92,8 +93,8 @@ function BlockContent({ block, theme, slug }: { block: Block; theme: Theme; slug
             {(p.items ?? []).map((item: any, i: number) => (
               <div key={i} className="flex flex-col gap-2 p-5 rounded-2xl" style={{ background: theme.accent }}>
                 <span className="text-2xl">{item.icon}</span>
-                <h4 className="font-bold text-[14px]" style={{ color: theme.text }}>{item.title}</h4>
-                <p className="text-[12px] leading-relaxed" style={{ color: theme.muted }}>{item.desc}</p>
+                <h4 className="font-bold text-[15px]" style={{ color: theme.text }}>{item.title}</h4>
+                <p className="text-[13px] leading-relaxed" style={{ color: theme.muted }}>{item.desc}</p>
               </div>
             ))}
           </div>
@@ -104,9 +105,9 @@ function BlockContent({ block, theme, slug }: { block: Block; theme: Theme; slug
       return (
         <div className="px-6 sm:px-10 py-14 flex flex-col gap-4 items-center text-center" style={{ background: theme.primary }}>
           <h2 className="text-[24px] sm:text-[26px] font-extrabold" style={{ color: theme.primaryText }}>{p.headline}</h2>
-          <p className="text-[14px] max-w-md opacity-90" style={{ color: theme.primaryText }}>{p.subtext}</p>
+          <p className="text-[15px] max-w-md opacity-90" style={{ color: theme.primaryText }}>{p.subtext}</p>
           {p.btnText && (
-            <button className="mt-2 px-8 py-3.5 rounded-xl text-[14px] font-bold shadow-lg"
+            <button className="mt-2 px-8 py-3.5 rounded-xl text-[15px] font-bold shadow-lg"
               style={{ background: theme.primaryText, color: theme.primary }}>{p.btnText}</button>
           )}
         </div>
@@ -118,8 +119,8 @@ function BlockContent({ block, theme, slug }: { block: Block; theme: Theme; slug
           <span className="text-4xl" style={{ color: theme.primary }}>&ldquo;</span>
           <p className="text-[16px] sm:text-[17px] font-medium max-w-xl leading-relaxed italic" style={{ color: theme.text }}>{p.quote}</p>
           <div>
-            <p className="font-bold text-[14px]" style={{ color: theme.text }}>{p.name}</p>
-            <p className="text-[12px] mt-0.5" style={{ color: theme.muted }}>{p.role}, {p.company}</p>
+            <p className="font-bold text-[15px]" style={{ color: theme.text }}>{p.name}</p>
+            <p className="text-[13px] mt-0.5" style={{ color: theme.muted }}>{p.role}, {p.company}</p>
           </div>
         </div>
       );
@@ -131,7 +132,7 @@ function BlockContent({ block, theme, slug }: { block: Block; theme: Theme; slug
             {(p.items ?? []).map((item: any, i: number) => (
               <div key={i} className="flex flex-col items-center gap-1 p-5 rounded-2xl" style={{ background: theme.accent }}>
                 <span className="text-[28px] font-extrabold" style={{ color: theme.primary }}>{item.value}</span>
-                <span className="text-[12px]" style={{ color: theme.muted }}>{item.label}</span>
+                <span className="text-[13px]" style={{ color: theme.muted }}>{item.label}</span>
               </div>
             ))}
           </div>
@@ -174,7 +175,7 @@ function LeadForm({ block, theme, slug }: { block: Block; theme: Theme; slug: st
       }
       setSubmitted(true);
     } catch (err: any) {
-      alert(err.message || 'Failed to submit. Please try again.');
+      await alertDialog({ title: 'Submission failed', message: err.message || 'Failed to submit. Please try again.' });
     } finally {
       setSubmitting(false);
     }
@@ -188,7 +189,7 @@ function LeadForm({ block, theme, slug }: { block: Block; theme: Theme; slug: st
             ✓
           </div>
           <h3 className="text-[18px] font-bold mb-2" style={{ color: theme.text }}>Thank you!</h3>
-          <p className="text-[14px]" style={{ color: theme.muted }}>We&apos;ll get back to you soon.</p>
+          <p className="text-[15px]" style={{ color: theme.muted }}>We&apos;ll get back to you soon.</p>
         </div>
       </div>
     );
@@ -203,19 +204,19 @@ function LeadForm({ block, theme, slug }: { block: Block; theme: Theme; slug: st
             <textarea key={field} placeholder={field} required rows={3}
               value={formData[field] || ''}
               onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border text-[13px] outline-none resize-none"
+              className="w-full px-4 py-2.5 rounded-xl border text-[14px] outline-none resize-none"
               style={{ borderColor: theme.muted + '40', color: theme.text, background: theme.bg }} />
           ) : (
             <input key={field} placeholder={field} required
               type={field === 'Email' ? 'email' : field === 'Phone' ? 'tel' : 'text'}
               value={formData[field] || ''}
               onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border text-[13px] outline-none"
+              className="w-full px-4 py-2.5 rounded-xl border text-[14px] outline-none"
               style={{ borderColor: theme.muted + '40', color: theme.text, background: theme.bg }} />
           )
         ))}
         <button type="submit" disabled={submitting}
-          className="w-full py-3 rounded-xl text-[14px] font-bold mt-1 shadow-sm disabled:opacity-60"
+          className="w-full py-3 rounded-xl text-[15px] font-bold mt-1 shadow-sm disabled:opacity-60"
           style={{ background: theme.primary, color: theme.primaryText }}>
           {submitting ? 'Sending...' : p.btnText}
         </button>
@@ -257,7 +258,7 @@ export default function PublicLandingPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h1 className="text-[24px] font-bold text-gray-800 mb-2">Page Not Found</h1>
-          <p className="text-[14px] text-gray-500">This page doesn&apos;t exist or is no longer published.</p>
+          <p className="text-[15px] text-gray-500">This page doesn&apos;t exist or is no longer published.</p>
         </div>
       </div>
     );
@@ -275,7 +276,7 @@ export default function PublicLandingPage() {
       ))}
       {blocks.length === 0 && (
         <div className="min-h-screen flex items-center justify-center">
-          <p className="text-[14px]" style={{ color: theme.muted }}>This page has no content yet.</p>
+          <p className="text-[15px]" style={{ color: theme.muted }}>This page has no content yet.</p>
         </div>
       )}
     </div>

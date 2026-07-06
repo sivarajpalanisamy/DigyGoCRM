@@ -85,7 +85,7 @@ export default function NotificationsPage() {
             className="grid grid-cols-[1fr_auto_auto] gap-4 items-center px-5 py-4 border-b border-black/5 last:border-0 hover:bg-[var(--app-bg)] transition-colors"
           >
             <div>
-              <p className="text-[13px] font-semibold text-[#1c1410]">{s.label}</p>
+              <p className="text-[14px] font-semibold text-[#1c1410]">{s.label}</p>
               <p className="text-[11px] text-[#7a6b5c] mt-0.5">{s.description}</p>
             </div>
             <div className="flex justify-center w-16">

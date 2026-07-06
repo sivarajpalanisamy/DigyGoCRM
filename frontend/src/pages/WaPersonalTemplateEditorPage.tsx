@@ -18,7 +18,7 @@ interface WaPersonalTemplate {
   created_at: string;
 }
 
-// Matches the slugify() in FieldsPage — same formula the backend uses to resolve value_tokens
+// Matches the slugify() in FieldsPage - same formula the backend uses to resolve value_tokens
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
 
 // Static standard variables always available
@@ -297,7 +297,7 @@ export default function WaPersonalTemplateEditorPage() {
     Values: valueTokens.map((v) => ({ name: v.name, slug: slugify(v.name), preview: v.replace_with })),
   };
 
-  // For the legend on the right panel — flat list of all fields
+  // For the legend on the right panel - flat list of all fields
   const allPickerFields = [
     ...modalCategories.Standard,
     ...modalCategories.CRM,
@@ -351,13 +351,13 @@ export default function WaPersonalTemplateEditorPage() {
         <div className="flex items-center gap-1.5 min-w-0">
           <button
             onClick={() => navigate('/automation/templates?tab=wa_personal')}
-            className="flex items-center gap-1.5 text-[13px] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors group shrink-0"
+            className="flex items-center gap-1.5 text-[14px] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors group shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
             <span>Templates</span>
           </button>
           <ChevronRight className="w-3.5 h-3.5 text-[#7a6b5c]/30 shrink-0" />
-          <span className="text-[13px] font-semibold text-[#1c1410] truncate">
+          <span className="text-[14px] font-semibold text-[#1c1410] truncate">
             {isEdit ? 'Edit Template' : 'New Template'}
           </span>
           <span className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-[11px] font-medium text-green-700 shrink-0">
@@ -372,7 +372,7 @@ export default function WaPersonalTemplateEditorPage() {
             variant="outline"
             size="sm"
             onClick={() => navigate('/automation/templates?tab=wa_personal')}
-            className="h-8 text-[13px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
+            className="h-8 text-[14px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
           >
             Cancel
           </Button>
@@ -380,7 +380,7 @@ export default function WaPersonalTemplateEditorPage() {
             size="sm"
             onClick={handleSave}
             disabled={saving}
-            className="h-8 text-[13px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
+            className="h-8 text-[14px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
           >
             {saving
               ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</>
@@ -392,7 +392,7 @@ export default function WaPersonalTemplateEditorPage() {
       {/* ── Body: two columns ── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* LEFT — Compose */}
+        {/* LEFT - Compose */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-2xl mx-auto px-8 py-8 space-y-7">
 
@@ -424,13 +424,13 @@ export default function WaPersonalTemplateEditorPage() {
                 <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-orange-50 bg-[#fffbf7]">
                   <span className="text-[11px] font-medium text-[#7a6b5c] mr-1">Format:</span>
                   <FormatBtn onClick={() => wrapSelection('*')} title="Bold  *text*">
-                    <span className="font-bold text-[13px]">B</span>
+                    <span className="font-bold text-[14px]">B</span>
                   </FormatBtn>
                   <FormatBtn onClick={() => wrapSelection('_')} title="Italic  _text_">
-                    <span className="italic text-[13px]">I</span>
+                    <span className="italic text-[14px]">I</span>
                   </FormatBtn>
                   <FormatBtn onClick={() => wrapSelection('~')} title="Strikethrough  ~text~">
-                    <span className="line-through text-[13px]">S</span>
+                    <span className="line-through text-[14px]">S</span>
                   </FormatBtn>
                   <div className="h-4 w-px bg-orange-200 mx-1" />
                   <span className="text-[11px] text-[#7a6b5c] hidden sm:block">Select text then click to format</span>
@@ -446,7 +446,7 @@ export default function WaPersonalTemplateEditorPage() {
                     maxLength={4096}
                     rows={9}
                     placeholder={"Hi {%first_name%}! 👋\n\nThank you for reaching out to us.\n\nHere's what we'd love to share with you..."}
-                    className="w-full text-[13px] text-[#1c1410] placeholder:text-[#7a6b5c]/40 bg-transparent outline-none resize-none leading-relaxed"
+                    className="w-full text-[14px] text-[#1c1410] placeholder:text-[#7a6b5c]/40 bg-transparent outline-none resize-none leading-relaxed"
                   />
                 </div>
 
@@ -454,9 +454,9 @@ export default function WaPersonalTemplateEditorPage() {
                 <div className="px-4 pb-4 pt-2 border-t border-orange-50">
                   <button
                     onClick={() => { setPickerOpen(true); setSearch(''); setActiveTab('Standard'); }}
-                    className="flex items-center gap-1.5 text-[12px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
+                    className="flex items-center gap-1.5 text-[13px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
                   >
-                    <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[13px] leading-none">+</span>
+                    <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[14px] leading-none">+</span>
                     Insert Variable
                     <span className="text-[10px] text-[#7a6b5c] font-normal ml-0.5">({allPickerFields.length} fields)</span>
                   </button>
@@ -540,7 +540,7 @@ export default function WaPersonalTemplateEditorPage() {
           </div>
         </div>
 
-        {/* RIGHT — Live Preview (independent scroll) */}
+        {/* RIGHT - Live Preview (independent scroll) */}
         <div className="w-[380px] shrink-0 border-l border-orange-100 bg-[#fff7f0] overflow-y-auto">
           <div className="p-6 space-y-5">
 
@@ -555,7 +555,7 @@ export default function WaPersonalTemplateEditorPage() {
                   <span className="text-white text-xs font-bold">WA</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-[13px] font-semibold leading-tight">Hawcus CRM</p>
+                  <p className="text-white text-[14px] font-semibold leading-tight">Hawcus CRM</p>
                   <p className="text-green-300 text-[10px]">online</p>
                 </div>
                 <div className="flex gap-2.5">
@@ -568,7 +568,7 @@ export default function WaPersonalTemplateEditorPage() {
               <div className="min-h-[260px] p-3 flex flex-col gap-2" style={{ backgroundColor: '#efeae2' }}>
                 {!message.trim() ? (
                   <div className="flex-1 flex items-center justify-center py-10">
-                    <p className="text-[12px] text-[#9e9e9e] text-center leading-relaxed">
+                    <p className="text-[13px] text-[#9e9e9e] text-center leading-relaxed">
                       Start typing your message<br />to see the preview here
                     </p>
                   </div>
@@ -604,11 +604,11 @@ export default function WaPersonalTemplateEditorPage() {
                       {/* Message text */}
                       <div className="px-3 py-2">
                         <p
-                          className="text-[12px] text-gray-800 leading-relaxed"
+                          className="text-[13px] text-gray-800 leading-relaxed"
                           dangerouslySetInnerHTML={{ __html: renderHtml(message, sample) || '&nbsp;' }}
                         />
 
-                        {/* Link preview card — shown when message contains a URL */}
+                        {/* Link preview card - shown when message contains a URL */}
                         {linkPreviewLoading && (
                           <div className="mt-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 flex items-center gap-2">
                             <Loader2 className="w-3 h-3 animate-spin text-gray-400 shrink-0" />
@@ -660,7 +660,7 @@ export default function WaPersonalTemplateEditorPage() {
               </div>
             </div>
 
-            {/* Variable legend — all categories, all use {%slug%} */}
+            {/* Variable legend - all categories, all use {%slug%} */}
             <div className="bg-white rounded-2xl border border-orange-100 p-4">
               <h3 className="text-[10px] font-bold text-[#92400e] uppercase tracking-widest mb-3">
                 Preview Sample Values
@@ -680,7 +680,7 @@ export default function WaPersonalTemplateEditorPage() {
               <h3 className="text-[10px] font-bold text-[#92400e] uppercase tracking-widest mb-3">
                 WhatsApp Formatting
               </h3>
-              <div className="space-y-2 text-[12px] text-[#7a6b5c]">
+              <div className="space-y-2 text-[13px] text-[#7a6b5c]">
                 <div className="flex items-center gap-2">
                   <code className="bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded text-[11px]">*text*</code>
                   <span>→</span>
@@ -717,7 +717,7 @@ export default function WaPersonalTemplateEditorPage() {
             {/* Modal header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-orange-100 shrink-0">
               <div>
-                <h3 className="text-[14px] font-semibold text-[#1c1410]">Insert Variable</h3>
+                <h3 className="text-[15px] font-semibold text-[#1c1410]">Insert Variable</h3>
                 <p className="text-[11px] text-[#7a6b5c] mt-0.5">Click any field - inserts <code className="bg-orange-50 px-1 rounded text-orange-700">{'{%slug%}'}</code> at cursor</p>
               </div>
               <button
@@ -737,7 +737,7 @@ export default function WaPersonalTemplateEditorPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={`Search across ${allPickerFields.length} fields…`}
-                  className="flex-1 text-[12px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#7a6b5c]/50"
+                  className="flex-1 text-[13px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#7a6b5c]/50"
                 />
                 {search && (
                   <button onClick={() => setSearch('')} className="text-[#7a6b5c] hover:text-[#1c1410]">
@@ -747,7 +747,7 @@ export default function WaPersonalTemplateEditorPage() {
               </div>
             </div>
 
-            {/* Segment tabs — only shown when not searching */}
+            {/* Segment tabs - only shown when not searching */}
             {!search && (
               <div className="flex border-b border-orange-100 px-4 shrink-0 bg-white">
                 {(['Standard', 'CRM', 'Custom', 'Values'] as const).map((tab) => (
@@ -755,7 +755,7 @@ export default function WaPersonalTemplateEditorPage() {
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={cn(
-                      'px-3 py-2.5 text-[12px] font-medium border-b-2 transition-colors whitespace-nowrap',
+                      'px-3 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap',
                       activeTab === tab
                         ? 'border-[var(--brand)] text-[var(--brand)]'
                         : 'border-transparent text-[#7a6b5c] hover:text-[#1c1410]'
@@ -777,13 +777,13 @@ export default function WaPersonalTemplateEditorPage() {
                   <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mb-3">
                     <Search className="w-4 h-4 text-orange-300" />
                   </div>
-                  <p className="text-[13px] font-medium text-[#1c1410]">No fields found</p>
+                  <p className="text-[14px] font-medium text-[#1c1410]">No fields found</p>
                   <p className="text-[11px] text-[#7a6b5c] mt-1">Try a different search term</p>
                 </div>
               ) : (
                 searchResults.map((group) => (
                   <div key={group.label}>
-                    {/* Section header — only shown when searching (shows category label) */}
+                    {/* Section header - only shown when searching (shows category label) */}
                     {search && (
                       <div className="px-4 py-2 bg-orange-50/60 border-b border-orange-50 sticky top-0">
                         <span className="text-[10px] font-bold text-[#92400e] uppercase tracking-widest">{group.label}</span>
@@ -796,7 +796,7 @@ export default function WaPersonalTemplateEditorPage() {
                         className="w-full flex items-center justify-between px-4 py-3 hover:bg-orange-50 transition-colors border-b border-orange-50/80 last:border-0 text-left gap-4 group"
                       >
                         <div className="min-w-0">
-                          <p className="text-[13px] font-medium text-[#1c1410] truncate">{item.name}</p>
+                          <p className="text-[14px] font-medium text-[#1c1410] truncate">{item.name}</p>
                           {item.preview && (
                             <p className="text-[11px] text-[#7a6b5c] mt-0.5 truncate">e.g. {item.preview}</p>
                           )}

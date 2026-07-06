@@ -77,7 +77,7 @@ class SimGate {
     required this.numberBySlot,
   });
 
-  /// Device has (or ever had) ≥2 active SIMs — the case where attribution matters.
+  /// Device has (or ever had) ≥2 active SIMs - the case where attribution matters.
   final bool multiSim;
   /// Live SIM count to report to the backend.
   final int simCount;

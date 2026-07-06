@@ -85,7 +85,7 @@ export default function BrandingPage() {
         banner_url: form.banner_url,
         brand_color: form.brand_color,
         tab_title: form.tab_title,
-        // Theme is fully derived from brand_color — clear any legacy manual overrides
+        // Theme is fully derived from brand_color - clear any legacy manual overrides
         app_bg_color: null,
         accent_color: null,
         login_bg_color: null,
@@ -110,7 +110,7 @@ export default function BrandingPage() {
 
   const pal = derivePalette(form.brand_color);
   const inp = 'w-full px-3 py-2 rounded-lg border border-[#e8ddd4] text-sm text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white';
-  const labelCls = 'text-[12px] font-semibold text-[#1c1410] mb-1 block';
+  const labelCls = 'text-[13px] font-semibold text-[#1c1410] mb-1 block';
   const hintCls = 'text-[11px] text-[#9e8e7e] mt-1';
 
   const Uploader = ({ url, onPick, onClear, size }: { url: string | null; onPick: () => void; onClear: () => void; size: string }) => (
@@ -140,7 +140,7 @@ export default function BrandingPage() {
           </button>
           <div>
             <h1 className="font-headline font-bold text-[#1c1410] text-lg leading-tight">Branding</h1>
-            <p className="text-[12px] text-[#7a6b5c]">Customize your CRM's logo, colors, and identity</p>
+            <p className="text-[13px] text-[#7a6b5c]">Customize your CRM's logo, colors, and identity</p>
           </div>
         </div>
         <button onClick={handleSave} disabled={saving}
@@ -161,7 +161,7 @@ export default function BrandingPage() {
 
             {/* Identity */}
             <section className="bg-white rounded-xl border border-black/5 p-4">
-              <h2 className="font-semibold text-[#1c1410] text-[13px] mb-3">Identity</h2>
+              <h2 className="font-semibold text-[#1c1410] text-[14px] mb-3">Identity</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Company Name</label>
@@ -176,7 +176,7 @@ export default function BrandingPage() {
 
             {/* Images */}
             <section className="bg-white rounded-xl border border-black/5 p-4">
-              <h2 className="font-semibold text-[#1c1410] text-[13px] mb-3">Images</h2>
+              <h2 className="font-semibold text-[#1c1410] text-[14px] mb-3">Images</h2>
               <input ref={logoRef} type="file" accept="image/*" hidden onChange={handleFile('logo_url', 2)} />
               <input ref={faviconRef} type="file" accept="image/png,image/x-icon,image/svg+xml" hidden onChange={handleFile('favicon_url', 1)} />
               <input ref={bannerRef} type="file" accept="image/*" hidden onChange={handleFile('banner_url', 3)} />
@@ -196,10 +196,10 @@ export default function BrandingPage() {
               </div>
             </section>
 
-            {/* Brand Color — one color drives the whole palette */}
+            {/* Brand Color - one color drives the whole palette */}
             <section className="bg-white rounded-xl border border-black/5 p-4">
-              <h2 className="font-semibold text-[#1c1410] text-[13px] mb-1">Brand Color</h2>
-              <p className={`${hintCls} mb-3 mt-0`}>Pick one color — the system automatically builds a matching palette (background, accents, charts) across your whole CRM.</p>
+              <h2 className="font-semibold text-[#1c1410] text-[14px] mb-1">Brand Color</h2>
+              <p className={`${hintCls} mb-3 mt-0`}>Pick one color - the system automatically builds a matching palette (background, accents, charts) across your whole CRM.</p>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {COLOR_PRESETS.map((c) => (
                   <button key={c} type="button" onClick={() => upd('brand_color', c)}
@@ -236,7 +236,7 @@ export default function BrandingPage() {
           {/* ── Right: live preview (sticky) ── */}
           <div className="lg:sticky lg:top-4">
             <div className="bg-white rounded-xl border border-black/5 p-4">
-              <h2 className="font-semibold text-[#1c1410] text-[13px] mb-3">Live Preview</h2>
+              <h2 className="font-semibold text-[#1c1410] text-[14px] mb-3">Live Preview</h2>
 
               {/* Browser tab mock */}
               <div className="flex items-center gap-1.5 bg-[#ece6df] rounded-t-lg px-2 py-1.5 w-fit max-w-full">

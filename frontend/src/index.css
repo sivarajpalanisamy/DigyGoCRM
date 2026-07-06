@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,7 +15,7 @@
     --accent-tint: #f5ede3;    /* warm hover/selected background */
     --app-bg: #faf8f6;         /* app/page background */
 
-    /* ── Core palette — warm orange brand ── */
+    /* ── Core palette - warm orange brand ── */
     --background: 30 25% 97%;          /* #faf8f6 warm off-white */
     --foreground: 20 20% 10%;          /* #1c1410 warm near-black */
     --card: 0 0% 100%;                 /* #ffffff */
@@ -53,7 +53,7 @@
     --warning-bg: 48 96% 89%;
     --warning-foreground: 28 80% 30%;
 
-    /* Sidebar — same warm background */
+    /* Sidebar - same warm background */
     --sidebar-background: 30 25% 97%;
     --sidebar-foreground: 20 20% 10%;
     --sidebar-primary: 21 90% 48%;
@@ -80,7 +80,7 @@
 @layer utilities {
   /* ── Typography ── */
   .font-headline {
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
 
   /* ── Blur surfaces ── */

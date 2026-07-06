@@ -5,9 +5,9 @@ export type UserLevel = 'owner' | 'manager' | 'staff';
 /**
  * Single source of truth for user level across the entire app.
  *
- * owner   — super_admin or owner (permAll = true)
- * manager — staff with staff:manage permission
- * staff   — everyone else
+ * owner   - super_admin or owner (permAll = true)
+ * manager - staff with staff:manage permission
+ * staff   - everyone else
  *
  * Use this instead of scattering `permAll`, `isPrivileged`, `isManager`
  * logic across individual components.

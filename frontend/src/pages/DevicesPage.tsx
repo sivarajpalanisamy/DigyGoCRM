@@ -3,6 +3,7 @@ import { ArrowLeft, Trash2, ShieldCheck, Clock, Smartphone, Unplug, Wifi, WifiOf
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { confirmDialog } from '@/lib/confirm';
 import { usePermission } from '@/hooks/usePermission';
 
 interface VerifiedNumber {
@@ -79,7 +80,7 @@ export default function DevicesPage() {
   }
 
   const revokeDevice = async (id: string, userName: string) => {
-    if (!confirm(`Unpair device for ${userName}? They will need to reinstall the app to reconnect.`)) return;
+    if (!(await confirmDialog({ message: `Unpair device for ${userName}? They will need to reinstall the app to reconnect.`, confirmText: 'Unpair' }))) return;
     try {
       await api.delete(`/api/devices/${id}`);
       toast.success('Device unpaired');
@@ -116,7 +117,7 @@ export default function DevicesPage() {
   };
 
   const deleteNumber = async (id: string) => {
-    if (!confirm('Remove this number? Calls from it will no longer sync/record.')) return;
+    if (!(await confirmDialog({ message: 'Remove this number? Calls from it will no longer sync/record.', confirmText: 'Remove' }))) return;
     try { await api.delete(`/api/devices/number/${id}`); toast.success('Removed'); loadAll(); }
     catch (e: any) { toast.error(e.message ?? 'Failed'); }
   };
@@ -133,15 +134,15 @@ export default function DevicesPage() {
         </button>
         <div>
           <h1 className="font-headline font-bold text-[#1c1410] text-lg leading-tight">Dialer Device Pair</h1>
-          <p className="text-[12px] text-[#7a6b5c]">Assign staff members to mobile numbers and manage connected devices</p>
+          <p className="text-[13px] text-[#7a6b5c]">Assign staff members to mobile numbers and manage connected devices</p>
         </div>
       </div>
 
       {/* Verify a number + assign staff */}
       {canManage && (
         <section className="bg-white rounded-xl border border-black/5 p-5 mb-6">
-          <h2 className="font-semibold text-[#1c1410] text-[14px] mb-1">Add a new number</h2>
-          <p className="text-[12px] text-[#7a6b5c] mb-4">
+          <h2 className="font-semibold text-[#1c1410] text-[15px] mb-1">Add a new number</h2>
+          <p className="text-[13px] text-[#7a6b5c] mb-4">
             Assign a staff member and verify their mobile number. Once verified, install the Hawcus Dialer app on that phone - it auto-connects and records calls under their name.
           </p>
           <div className="flex flex-col gap-3">
@@ -149,7 +150,7 @@ export default function DevicesPage() {
               value={numberStaff}
               onChange={(e) => setNumberStaff(e.target.value)}
               disabled={otpSent}
-              className="w-full border border-black/10 rounded-lg px-3 py-2.5 text-[14px] bg-white disabled:bg-black/5"
+              className="w-full border border-black/10 rounded-lg px-3 py-2.5 text-[15px] bg-white disabled:bg-black/5"
             >
               <option value="">Assign to staff member...</option>
               {staffList.map((s) => (
@@ -164,16 +165,16 @@ export default function DevicesPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+91 98765 43210"
                 disabled={otpSent}
-                className="flex-1 border border-black/10 rounded-lg px-3 py-2.5 text-[14px] disabled:bg-black/5"
+                className="flex-1 border border-black/10 rounded-lg px-3 py-2.5 text-[15px] disabled:bg-black/5"
               />
               {!otpSent ? (
                 <button onClick={sendOtp} disabled={busy}
-                  className="bg-gradient-to-r from-[#c2410c] to-[#ea580c] text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60">
+                  className="bg-gradient-to-r from-[#c2410c] to-[#ea580c] text-white text-[14px] font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60">
                   {busy ? 'Sending...' : 'Send OTP'}
                 </button>
               ) : (
                 <button onClick={() => { setOtpSent(false); setOtp(''); }}
-                  className="border border-black/10 text-[#1c1410] text-[13px] font-semibold px-5 py-2.5 rounded-lg hover:bg-black/5">
+                  className="border border-black/10 text-[#1c1410] text-[14px] font-semibold px-5 py-2.5 rounded-lg hover:bg-black/5">
                   Change
                 </button>
               )}
@@ -186,10 +187,10 @@ export default function DevicesPage() {
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="Enter 6-digit OTP"
                 inputMode="numeric"
-                className="flex-1 border border-black/10 rounded-lg px-3 py-2.5 text-[14px] tracking-widest"
+                className="flex-1 border border-black/10 rounded-lg px-3 py-2.5 text-[15px] tracking-widest"
               />
               <button onClick={verifyOtp} disabled={busy}
-                className="bg-emerald-600 text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60">
+                className="bg-emerald-600 text-white text-[14px] font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60">
                 {busy ? 'Verifying...' : 'Verify'}
               </button>
             </div>
@@ -203,9 +204,9 @@ export default function DevicesPage() {
         </div>
       ) : (
         <>
-          <h3 className="text-[12px] font-bold uppercase tracking-wide text-[#7a6b5c] mb-2">Assigned numbers ({numbers.length})</h3>
+          <h3 className="text-[13px] font-bold uppercase tracking-wide text-[#7a6b5c] mb-2">Assigned numbers ({numbers.length})</h3>
           {numbers.length === 0 ? (
-            <div className="bg-white rounded-xl border border-black/5 p-6 text-center text-[13px] text-[#7a6b5c]">
+            <div className="bg-white rounded-xl border border-black/5 p-6 text-center text-[14px] text-[#7a6b5c]">
               No numbers yet. Add one above.
             </div>
           ) : (
@@ -226,7 +227,7 @@ export default function DevicesPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-[#1c1410] text-[14px]">{n.user_name}</p>
+                        <p className="font-semibold text-[#1c1410] text-[15px]">{n.user_name}</p>
                         <span className="text-[11px] text-[#7a6b5c] font-mono">{n.phone_number}</span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">

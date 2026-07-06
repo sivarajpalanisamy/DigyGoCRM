@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Eye, EyeOff, ArrowRight, Mail } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Mail, Quote, Zap, MessageCircle, BarChart3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useBrandingStore } from '@/store/brandingStore';
 import { toast } from 'sonner';
+
+// Default product name for non-white-label (non-custom-domain) logins.
+// Change this one constant to rebrand the login copy.
+const PRODUCT_NAME = 'Hawcus CRM';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,7 +21,14 @@ export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
   const requestOtp = useAuthStore((s) => s.requestOtp);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const currentUser = useAuthStore((s) => s.currentUser);
   const { isCustomDomain, tenantName, logoUrl, brandColor, bannerUrl, loginBgColor, loaded, fetchBranding } = useBrandingStore();
+
+  // Super admins have no tenant dashboard, so /dashboard is blank for them - send them
+  // to the admin panel instead (matches the AuthGuard redirect on refresh).
+  const homePath = (role?: string) => (role === 'super_admin' ? '/admin' : '/dashboard');
+
+  const brandName = isCustomDomain && tenantName ? tenantName : PRODUCT_NAME;
 
   useEffect(() => {
     fetchBranding().catch(() => null);
@@ -30,10 +41,10 @@ export default function LoginPage() {
     return () => clearTimeout(t);
   }, [resendCooldown]);
 
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated) return <Navigate to={homePath(currentUser?.role)} replace />;
 
   // The password field is a single "secret": the account password, an admin-set PIN,
-  // or a one-time PIN requested by email — any of them logs the user in.
+  // or a one-time PIN requested by email - any of them logs the user in.
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) { setError('Enter your email and your password or PIN'); return; }
@@ -43,7 +54,7 @@ export default function LoginPage() {
     setLoading(false);
     if (result.ok) {
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      navigate(homePath(useAuthStore.getState().currentUser?.role));
     } else {
       setError('Invalid email or password/PIN');
     }
@@ -58,142 +69,189 @@ export default function LoginPage() {
     setResendCooldown(45);
   };
 
+  const submitStyle = isCustomDomain && brandColor !== '#c2410c'
+    ? { background: brandColor }
+    : { background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' };
+
   return (
     <div
-      className="min-h-[100dvh] flex flex-col items-center justify-center bg-[var(--app-bg)] font-sans text-[#1c1410]"
-      style={{ WebkitTapHighlightColor: 'transparent', ...(isCustomDomain && loginBgColor ? { background: loginBgColor } : {}) }}
+      className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-2 font-sans text-[#1c1410]"
+      style={{ WebkitTapHighlightColor: 'transparent' }}
     >
-      {/* Ambient background blobs — hidden when a custom login background is set */}
-      {!(isCustomDomain && loginBgColor) && (
-        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-[5%] -left-[10%] w-[50%] h-[40%] rounded-full bg-primary/5 blur-[80px]" />
-          <div className="absolute bottom-[10%] -right-[10%] w-[45%] h-[40%] rounded-full bg-[var(--accent-tint)]/30 blur-[80px]" />
+      {/* ── Left: brand / marketing panel (hidden on small screens) ───────────── */}
+      <aside
+        className="relative hidden md:flex flex-col justify-center overflow-hidden p-10 lg:p-16 text-white"
+        style={{ background: 'linear-gradient(150deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
+      >
+        {/* White dot grid */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: 'radial-gradient(rgba(255,255,255,0.32) 1.3px, transparent 1.3px)',
+            backgroundSize: '22px 22px',
+            maskImage: 'radial-gradient(140% 120% at 30% 40%, #000 70%, transparent 100%)',
+            WebkitMaskImage: 'radial-gradient(140% 120% at 30% 40%, #000 70%, transparent 100%)',
+          }}
+        />
+
+        {/* Decorative ambient shapes */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-[12%] -left-[10%] w-[55%] h-[45%] rounded-full bg-white/10 blur-[90px]" />
+          <div className="absolute bottom-[-10%] right-[-8%] w-[50%] h-[45%] rounded-full bg-black/10 blur-[90px]" />
         </div>
-      )}
 
-      {/* Banner image (custom domain) */}
-      {isCustomDomain && bannerUrl && (
-        <div className="w-full max-w-md px-5 relative z-10 mb-4">
-          <img src={bannerUrl} alt="" className="w-full h-auto rounded-2xl object-cover max-h-40 shadow-md" />
+        {/* Scattered decorative icons */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <MessageCircle className="absolute top-[12%] right-[13%] w-16 h-16 text-white/15 -rotate-12" strokeWidth={1.5} />
+          <BarChart3 className="absolute bottom-[15%] right-[20%] w-14 h-14 text-white/15 rotate-6" strokeWidth={1.5} />
+          <Zap className="absolute bottom-[26%] left-[9%] w-12 h-12 text-white/15 rotate-12" strokeWidth={1.5} />
         </div>
-      )}
 
-      {/* Content */}
-      <div className="w-full max-w-md px-5 flex flex-col items-center relative z-10 pt-4 pb-0 mt-[-6vh]">
+        {/* Centered brand name + quote + about */}
+        <div className="relative z-10 max-w-[480px]">
+          {/* Logo on a clean white chip so the full-colour logo (incl. the orange dot) stays crisp */}
+          <div className="inline-flex items-center rounded-xl bg-white px-5 py-2.5 shadow-[0_10px_34px_rgba(0,0,0,0.20)] mb-8">
+            {isCustomDomain ? (
+              loaded && logoUrl
+                ? <img src={logoUrl} alt={tenantName ?? ''} className="h-11 lg:h-12 w-auto max-w-[220px] object-contain" />
+                : <span className="font-headline text-3xl lg:text-4xl font-black tracking-tight text-[#1c1410]">{brandName}</span>
+            ) : (
+              <img src="/hawcus-logo.png" alt={brandName} className="h-11 lg:h-12 w-auto max-w-[260px] object-contain" />
+            )}
+          </div>
 
-        {/* Logo — show tenant logo/name on custom domain, DigyGo logo otherwise */}
-        {isCustomDomain ? (
-          loaded ? (
-            logoUrl
-              ? <img src={logoUrl} alt={tenantName ?? ''} className="h-14 max-w-[220px] object-contain drop-shadow-md mb-0" />
-              : <span className="text-2xl font-bold text-[#1c1410] mb-2">{tenantName}</span>
-          ) : (
-            <div className="w-44 h-12 bg-gray-200 rounded-lg animate-pulse mb-0" />
-          )
-        ) : (
-          <img src="/hawcus-logo.png" alt="Hawcus CRM" className="w-44 h-auto object-contain drop-shadow-md mb-0" />
+          <Quote className="w-9 h-9 text-white/40 mb-5" />
+          <h2 className="font-headline text-[24px] lg:text-[28px] font-bold leading-[1.3] tracking-tight">
+            Turn every lead into a conversation, and every conversation into a customer.
+          </h2>
+          <p className="mt-5 text-[14px] lg:text-[15px] leading-relaxed text-white/80">
+            {brandName} brings your leads, pipelines, follow-ups, and WhatsApp conversations into one
+            workspace - so your team spends time closing deals, not chasing tabs.
+          </p>
+        </div>
+
+        {/* Footer pinned to bottom */}
+        <p className="absolute bottom-8 left-10 lg:left-16 z-10 text-[12px] text-white/60">© 2026 {brandName}. All rights reserved.</p>
+      </aside>
+
+      {/* ── Right: login card ─────────────────────────────────────────────────── */}
+      <main
+        className="relative flex items-center justify-center bg-[var(--app-bg)] px-5 py-10"
+        style={isCustomDomain && loginBgColor ? { background: loginBgColor } : undefined}
+      >
+        {/* Ambient blobs (only when no custom login background) */}
+        {!(isCustomDomain && loginBgColor) && (
+          <div className="pointer-events-none absolute inset-0 overflow-hidden md:hidden">
+            <div className="absolute -top-[5%] -left-[10%] w-[60%] h-[35%] rounded-full bg-primary/5 blur-[80px]" />
+            <div className="absolute bottom-[8%] -right-[10%] w-[55%] h-[35%] rounded-full bg-[var(--accent-tint)]/30 blur-[80px]" />
+          </div>
         )}
 
-        {/* Form card */}
-        <main className="w-full">
-          <div className="bg-white rounded-2xl p-5 border border-black/5" style={{ boxShadow: '0 8px 32px -4px rgba(0,0,0,0.06)' }}>
-            {/* Heading inside card */}
-            <div className="text-center mb-4">
-              <h1 className="font-headline text-xl font-bold tracking-tight text-[#1c1410]">Welcome back</h1>
-              <p className="text-[#5c5245] mt-1 text-[13px] leading-relaxed">
-                {`Sign in to your ${isCustomDomain && tenantName ? tenantName : 'Hawcus CRM'} account`}
-              </p>
+        <div className="relative z-10 w-full max-w-[400px]">
+          {/* Banner image (custom domain) */}
+          {isCustomDomain && bannerUrl && (
+            <img src={bannerUrl} alt="" className="w-full h-auto rounded-2xl object-cover max-h-40 shadow-md mb-6" />
+          )}
+
+          {/* Mobile-only logo (left panel is hidden below md) */}
+          <div className="md:hidden mb-6 flex justify-center">
+            {isCustomDomain ? (
+              loaded && logoUrl
+                ? <img src={logoUrl} alt={tenantName ?? ''} className="h-12 max-w-[200px] object-contain drop-shadow" />
+                : <span className="text-2xl font-bold text-[#1c1410]">{brandName}</span>
+            ) : (
+              <img src="/hawcus-logo.png" alt={brandName} className="w-40 h-auto object-contain drop-shadow" />
+            )}
+          </div>
+
+          <div className="mb-7">
+            <h1 className="font-headline text-[26px] font-bold tracking-tight text-[#1c1410]">Welcome back</h1>
+            <p className="text-[#5c5245] mt-1.5 text-[14px] leading-relaxed">
+              Sign in to your {brandName} account to continue.
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] ml-1" htmlFor="email">
+                Email Address
+              </label>
+              <div className="relative group">
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
+                  required
+                  autoFocus
+                  className="pr-11"
+                />
+                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[#7a6b5c] group-focus-within:text-primary transition-colors">
+                  <Mail size={18} />
+                </div>
+              </div>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
-
-              {/* Email */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] ml-1" htmlFor="email">
-                  Email Address
+            {/* Password */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between ml-1">
+                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245]" htmlFor="password">
+                  Password or PIN
                 </label>
-                <div className="relative group">
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                    required
-                    autoFocus
-                    className="pr-11"
-                  />
-                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[#7a6b5c] group-focus-within:text-primary transition-colors">
-                    <Mail size={18} />
-                  </div>
-                </div>
+                <a href="/forgot-password" className="text-[11px] font-semibold text-primary hover:underline">Forgot password?</a>
               </div>
-
-              {/* Password */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between ml-1">
-                  <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245]" htmlFor="password">
-                    Password or PIN
-                  </label>
-                  <a href="/forgot-password" className="text-[11px] font-semibold text-primary hover:underline">Forgot password?</a>
-                </div>
-                <div className="relative group">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Password, PIN, or one-time code"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                    required
-                    className="pr-11"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-4 flex items-center text-[#7a6b5c] hover:text-primary transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {/* Passwordless: email a one-time PIN to type above */}
-                <button type="button" onClick={handleGetOtp} disabled={resendCooldown > 0}
-                  className="text-[11px] font-semibold text-primary hover:underline disabled:text-[#b09e8d] disabled:no-underline disabled:cursor-not-allowed ml-1">
-                  {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Get OTP by email'}
+              <div className="relative group">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Password, PIN, or one-time code"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                  required
+                  className="pr-11"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-4 flex items-center text-[#7a6b5c] hover:text-primary transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-
-              {/* Error */}
-              {error && (
-                <div className="px-3 py-2.5 bg-[#ffdad6] rounded-xl">
-                  <p className="text-sm text-[#ba1a1a] font-medium">{error}</p>
-                </div>
-              )}
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full h-[54px] rounded-xl text-white text-[16px] font-bold flex items-center justify-center gap-2 active:scale-[0.97] transition-all disabled:opacity-70 shadow-lg"
-                style={isCustomDomain && brandColor !== '#c2410c'
-                  ? { background: brandColor }
-                  : { background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }
-                }
-              >
-                <span>{loading ? 'Signing in…' : 'Sign In'}</span>
-                {!loading && <ArrowRight size={20} />}
+              {/* Passwordless: email a one-time PIN to type above */}
+              <button type="button" onClick={handleGetOtp} disabled={resendCooldown > 0}
+                className="text-[11px] font-semibold text-primary hover:underline disabled:text-[#b09e8d] disabled:no-underline disabled:cursor-not-allowed ml-1">
+                {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Get OTP by email'}
               </button>
+            </div>
 
-            </form>
-          </div>
-        </main>
+            {/* Error */}
+            {error && (
+              <div className="px-3 py-2.5 bg-[#ffdad6] rounded-xl">
+                <p className="text-sm text-[#ba1a1a] font-medium">{error}</p>
+              </div>
+            )}
 
-        {/* Footer — hidden on custom domains (full white-label) */}
-        {!isCustomDomain && (
-          <footer className="mt-3 text-center">
-            <p className="text-[11px] text-[#b09e8d]">Powered by Hawcus CRM © 2026</p>
-          </footer>
-        )}
-      </div>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-[54px] rounded-xl text-white text-[16px] font-bold flex items-center justify-center gap-2 active:scale-[0.97] transition-all disabled:opacity-70 shadow-lg"
+              style={submitStyle}
+            >
+              <span>{loading ? 'Signing in…' : 'Sign In'}</span>
+              {!loading && <ArrowRight size={20} />}
+            </button>
+          </form>
+
+          {/* Footer - hidden on custom domains (full white-label) */}
+          {!isCustomDomain && (
+            <p className="mt-8 text-center text-[11px] text-[#b09e8d]">Powered by {PRODUCT_NAME} © 2026</p>
+          )}
+        </div>
+      </main>
     </div>
   );
 }

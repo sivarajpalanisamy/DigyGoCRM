@@ -18,6 +18,7 @@ ThemeData buildTheme() {
   );
   return ThemeData(
     useMaterial3: true,
+    fontFamily: 'Inter',
     colorScheme: scheme,
     scaffoldBackgroundColor: Brand.bg,
     appBarTheme: const AppBarTheme(

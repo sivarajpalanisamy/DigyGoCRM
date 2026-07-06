@@ -3,6 +3,7 @@ import { Trash2, Search, MapPin, RefreshCw, CheckCircle, AlertCircle, Download,
          ArrowRight, Plus, X, Eye, Upload, Edit2, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { confirmDialog } from '@/lib/confirm';
 import { api } from '@/lib/api';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import * as XLSX from 'xlsx';
@@ -86,7 +87,7 @@ export default function PincodeRoutingPage() {
   // Menu open state
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
-  // Track which set id is being uploaded — via ref so it's available synchronously
+  // Track which set id is being uploaded - via ref so it's available synchronously
   const pendingSetIdRef = useRef<string | null>(null);
 
   const loadSets = async () => {
@@ -129,7 +130,7 @@ export default function PincodeRoutingPage() {
 
   // ── Delete set ──────────────────────────────────────────────────────────────
   const handleDelete = async (set: RoutingSet) => {
-    if (!confirm(`Delete "${set.name}" and all its ${set.row_count} rows?`)) return;
+    if (!(await confirmDialog({ message: `Delete "${set.name}" and all its ${set.row_count} rows?` }))) return;
     try {
       await api.delete(`/api/field-routing/sets/${set.id}`);
       setSets((prev) => prev.filter((s) => s.id !== set.id));
@@ -262,7 +263,7 @@ export default function PincodeRoutingPage() {
     pendingSetIdRef.current = setId;
     setUploadingSetId(setId);
     setPreview([]); setMapperOpen(false);
-    fileRef.current?.click(); // must be synchronous — setTimeout breaks browser gesture chain
+    fileRef.current?.click(); // must be synchronous - setTimeout breaks browser gesture chain
   };
 
   // ── Preview rows ────────────────────────────────────────────────────────────
@@ -336,7 +337,7 @@ export default function PincodeRoutingPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-headline font-bold text-[#1c1410]">Field Routing</h1>
-          <p className="text-[13px] text-[#7a6b5c]">Named routing sets — map any field value to a pipeline</p>
+          <p className="text-[14px] text-[#7a6b5c]">Named routing sets - map any field value to a pipeline</p>
         </div>
         <Button
           onClick={() => setShowCreate(true)}
@@ -356,7 +357,7 @@ export default function PincodeRoutingPage() {
         <div className="bg-white rounded-2xl border border-black/5 p-16 text-center">
           <MapPin className="w-12 h-12 text-[#c4b09e] mx-auto mb-3" />
           <p className="font-semibold text-[#1c1410]">No routing sets yet</p>
-          <p className="text-[13px] text-[#7a6b5c] mt-1">Create a routing set to map field values to pipelines</p>
+          <p className="text-[14px] text-[#7a6b5c] mt-1">Create a routing set to map field values to pipelines</p>
           <Button onClick={() => setShowCreate(true)} className="mt-4"
             style={{ background: 'linear-gradient(135deg,var(--brand-dark),var(--brand))' }}>
             <Plus className="w-4 h-4 mr-1" /> Create First Set
@@ -377,7 +378,7 @@ export default function PincodeRoutingPage() {
                       {set.match_type}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 mt-1.5 text-[12px] text-[#7a6b5c]">
+                  <div className="flex items-center gap-4 mt-1.5 text-[13px] text-[#7a6b5c]">
                     <span><strong className="text-[#1c1410]">{set.row_count.toLocaleString()}</strong> rows</span>
                     <span><strong className="text-[#1c1410]">{set.times_used}</strong> times used</span>
                     <span>Updated {formatDistanceToNow(new Date(set.updated_at), { addSuffix: true })}</span>
@@ -388,7 +389,7 @@ export default function PincodeRoutingPage() {
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => { setTestSetId(testSetId === set.id ? null : set.id); setTestVal(''); setTestResult(null); }}
-                    className="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-black/10 hover:bg-[var(--app-bg)] transition-colors"
+                    className="px-3 py-1.5 text-[13px] font-semibold rounded-lg border border-black/10 hover:bg-[var(--app-bg)] transition-colors"
                   >
                     Test
                   </button>
@@ -424,19 +425,19 @@ export default function PincodeRoutingPage() {
                       <div className="absolute right-0 top-8 bg-white rounded-xl border border-black/10 shadow-lg z-20 py-1 min-w-[130px]">
                         <button
                           onClick={() => { setRenamingSet(set); setRenameVal(set.name); setMenuOpen(null); }}
-                          className="w-full px-4 py-2 text-left text-[13px] hover:bg-[var(--app-bg)] flex items-center gap-2"
+                          className="w-full px-4 py-2 text-left text-[14px] hover:bg-[var(--app-bg)] flex items-center gap-2"
                         >
                           <Edit2 className="w-3.5 h-3.5" /> Rename
                         </button>
                         <button
                           onClick={() => { downloadTemplate(set.match_field); setMenuOpen(null); }}
-                          className="w-full px-4 py-2 text-left text-[13px] hover:bg-[var(--app-bg)] flex items-center gap-2"
+                          className="w-full px-4 py-2 text-left text-[14px] hover:bg-[var(--app-bg)] flex items-center gap-2"
                         >
                           <Download className="w-3.5 h-3.5" /> Template
                         </button>
                         <button
                           onClick={() => { handleDelete(set); setMenuOpen(null); }}
-                          className="w-full px-4 py-2 text-left text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          className="w-full px-4 py-2 text-left text-[14px] text-red-600 hover:bg-red-50 flex items-center gap-2"
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Delete
                         </button>
@@ -449,21 +450,21 @@ export default function PincodeRoutingPage() {
               {/* Inline test panel */}
               {testSetId === set.id && (
                 <div className="mt-4 pt-4 border-t border-black/5 space-y-2">
-                  <p className="text-[12px] font-semibold text-[#1c1410]">Test a value</p>
+                  <p className="text-[13px] font-semibold text-[#1c1410]">Test a value</p>
                   <div className="flex gap-2">
                     <input
                       value={testVal}
                       onChange={(e) => setTestVal(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleTest()}
                       placeholder={`Enter ${MATCH_FIELD_LABELS[set.match_field] ?? set.match_field} value…`}
-                      className="flex-1 border border-black/10 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary/40"
+                      className="flex-1 border border-black/10 rounded-xl px-3 py-2 text-[14px] outline-none focus:border-primary/40"
                     />
                     <Button onClick={handleTest} disabled={testing || !testVal.trim()} size="sm">
                       {testing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                     </Button>
                   </div>
                   {testResult && (
-                    <div className={`flex items-start gap-2 p-3 rounded-xl text-[13px] ${testResult.found ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                    <div className={`flex items-start gap-2 p-3 rounded-xl text-[14px] ${testResult.found ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                       {testResult.found
                         ? <><CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
                             <span className="text-green-800">
@@ -483,7 +484,7 @@ export default function PincodeRoutingPage() {
               {uploadingSetId === set.id && (
                 <div className="mt-4 pt-4 border-t border-black/5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-[13px] font-semibold text-[#1c1410]">
+                    <p className="text-[14px] font-semibold text-[#1c1410]">
                       Upload data to "{uploading_set?.name}"
                     </p>
                     <button onClick={() => { setUploadingSetId(null); setPreview([]); setMapperOpen(false); }}
@@ -498,32 +499,32 @@ export default function PincodeRoutingPage() {
                       className="border-2 border-dashed border-[#e8ddd4] rounded-xl p-6 text-center cursor-pointer hover:border-primary/40 hover:bg-[#faf5f0] transition-colors"
                     >
                       <Upload className="w-6 h-6 text-[#c4b09e] mx-auto mb-1.5" />
-                      <p className="text-[13px] font-semibold text-[#1c1410]">Click to select Excel / CSV</p>
-                      <p className="text-[11px] text-[#7a6b5c] mt-0.5">You'll map columns next — match value + pipeline, plus any extra columns to custom fields.</p>
+                      <p className="text-[14px] font-semibold text-[#1c1410]">Click to select Excel / CSV</p>
+                      <p className="text-[11px] text-[#7a6b5c] mt-0.5">You'll map columns next - match value + pipeline, plus any extra columns to custom fields.</p>
                     </div>
                   )}
 
                   {mapperOpen && (
                     <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 space-y-3">
-                      <p className="text-[13px] font-semibold text-[#1c1410]">Map your columns</p>
+                      <p className="text-[14px] font-semibold text-[#1c1410]">Map your columns</p>
 
                       {/* Required: match value + pipeline */}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-[12px] font-semibold text-[#1c1410] w-36 shrink-0">Match value<span className="text-red-500 ml-0.5">*</span></span>
+                          <span className="text-[13px] font-semibold text-[#1c1410] w-36 shrink-0">Match value<span className="text-red-500 ml-0.5">*</span></span>
                           <ArrowRight className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
                           <select value={mapValue} onChange={(e) => setMapValue(e.target.value)}
-                            className="flex-1 border border-black/10 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-primary/40 bg-white">
-                            <option value="">— Not mapped —</option>
+                            className="flex-1 border border-black/10 rounded-lg px-3 py-1.5 text-[13px] outline-none focus:border-primary/40 bg-white">
+                            <option value="">- Not mapped -</option>
                             {rawColumns.map((col) => <option key={col} value={col}>{col}</option>)}
                           </select>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[12px] font-semibold text-[#1c1410] w-36 shrink-0">Pipeline<span className="text-red-500 ml-0.5">*</span></span>
+                          <span className="text-[13px] font-semibold text-[#1c1410] w-36 shrink-0">Pipeline<span className="text-red-500 ml-0.5">*</span></span>
                           <ArrowRight className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
                           <select value={mapPipeline} onChange={(e) => setMapPipeline(e.target.value)}
-                            className="flex-1 border border-black/10 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-primary/40 bg-white">
-                            <option value="">— Not mapped —</option>
+                            className="flex-1 border border-black/10 rounded-lg px-3 py-1.5 text-[13px] outline-none focus:border-primary/40 bg-white">
+                            <option value="">- Not mapped -</option>
                             {rawColumns.map((col) => <option key={col} value={col}>{col}</option>)}
                           </select>
                         </div>
@@ -535,20 +536,20 @@ export default function PincodeRoutingPage() {
                           <p className="text-[11px] font-semibold text-[#7a6b5c] uppercase tracking-wide">Other columns → fields</p>
                           {rawColumns.filter((c) => c !== mapValue && c !== mapPipeline).map((col) => (
                             <div key={col} className="flex items-center gap-2">
-                              <span className="text-[12px] font-semibold text-[#5c5245] w-36 shrink-0 truncate" title={col}>{col}</span>
+                              <span className="text-[13px] font-semibold text-[#5c5245] w-36 shrink-0 truncate" title={col}>{col}</span>
                               <ArrowRight className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
                               <select
                                 value={extraDest[col] ?? ''}
                                 onChange={(e) => { if (e.target.value === 'new') { setCreatingCol(col); return; } setColDest(col, e.target.value); }}
-                                className="flex-1 border border-black/10 rounded-lg px-3 py-1.5 text-[12px] outline-none focus:border-primary/40 bg-white"
+                                className="flex-1 border border-black/10 rounded-lg px-3 py-1.5 text-[13px] outline-none focus:border-primary/40 bg-white"
                               >
-                                <option value="">— Don't import —</option>
+                                <option value="">- Don't import -</option>
                                 {customFields.length > 0 && (
                                   <optgroup label="Existing fields">
                                     {customFields.map((cf) => <option key={cf.slug} value={`cf:${cf.slug}`}>{cf.name}</option>)}
                                   </optgroup>
                                 )}
-                                <option value="new">➕ New custom field…</option>
+                                <option value="new">New custom field…</option>
                               </select>
                             </div>
                           ))}
@@ -569,7 +570,7 @@ export default function PincodeRoutingPage() {
                   {preview.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <p className="text-[13px] font-semibold text-[#1c1410]">{preview.length} rows ready</p>
+                        <p className="text-[14px] font-semibold text-[#1c1410]">{preview.length} rows ready</p>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" onClick={() => setPreview([])}>Cancel</Button>
                           <Button variant="outline" size="sm" onClick={() => handleUpload(false)} disabled={uploading}>
@@ -582,7 +583,7 @@ export default function PincodeRoutingPage() {
                         </div>
                       </div>
                       <div className="overflow-hidden rounded-xl border border-black/5 max-h-48 overflow-y-auto">
-                        <table className="w-full text-[12px]">
+                        <table className="w-full text-[13px]">
                           <thead className="bg-[var(--app-bg)] sticky top-0">
                             <tr>
                               <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-[#7a6b5c]">Value</th>
@@ -609,8 +610,8 @@ export default function PincodeRoutingPage() {
                         </table>
                       </div>
                       <p className="text-[11px] text-[#7a6b5c]">
-                        <strong>Merge</strong> — adds new rows, updates existing by value.&nbsp;
-                        <strong>Replace All</strong> — deletes all existing rows first.
+                        <strong>Merge</strong> - adds new rows, updates existing by value.&nbsp;
+                        <strong>Replace All</strong> - deletes all existing rows first.
                       </p>
                     </div>
                   )}
@@ -624,7 +625,7 @@ export default function PincodeRoutingPage() {
       {/* Hidden file input */}
       <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFile} />
 
-      {/* Create custom field inline (for "➕ New custom field…" in the column mapper) */}
+      {/* Create custom field inline (for "New custom field…" in the column mapper) */}
       {creatingCol !== null && (
         <CreateCustomFieldModal
           initialName={creatingCol}
@@ -645,20 +646,20 @@ export default function PincodeRoutingPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-[12px] font-semibold text-[#1c1410] block mb-1">Name <span className="text-red-500">*</span></label>
+                <label className="text-[13px] font-semibold text-[#1c1410] block mb-1">Name <span className="text-red-500">*</span></label>
                 <input
                   value={newName} onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                   placeholder="e.g. Tamil Nadu Pincodes, City Routing"
-                  className="w-full border border-black/10 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary/40"
+                  className="w-full border border-black/10 rounded-xl px-3 py-2 text-[14px] outline-none focus:border-primary/40"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="text-[12px] font-semibold text-[#1c1410] block mb-1">Match Field</label>
+                <label className="text-[13px] font-semibold text-[#1c1410] block mb-1">Match Field</label>
                 <select
                   value={newMatchField} onChange={(e) => setNewMatchField(e.target.value)}
-                  className="w-full border border-black/10 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary/40"
+                  className="w-full border border-black/10 rounded-xl px-3 py-2 text-[14px] outline-none focus:border-primary/40"
                 >
                   {Object.entries(MATCH_FIELD_LABELS).map(([k, v]) => (
                     <option key={k} value={k}>{v}</option>
@@ -668,13 +669,13 @@ export default function PincodeRoutingPage() {
                 <p className="text-[11px] text-[#7a6b5c] mt-1">Which lead field's value will be looked up in this set</p>
               </div>
               <div>
-                <label className="text-[12px] font-semibold text-[#1c1410] block mb-1">Match Type</label>
+                <label className="text-[13px] font-semibold text-[#1c1410] block mb-1">Match Type</label>
                 <div className="flex gap-2">
                   {(['exact', 'contains'] as const).map((t) => (
                     <button
                       key={t}
                       onClick={() => setNewMatchType(t)}
-                      className={`flex-1 py-2 text-[13px] rounded-xl border font-medium transition-colors ${newMatchType === t ? 'bg-orange-50 border-orange-300 text-orange-700' : 'border-black/10 text-[#7a6b5c] hover:bg-[var(--app-bg)]'}`}
+                      className={`flex-1 py-2 text-[14px] rounded-xl border font-medium transition-colors ${newMatchType === t ? 'bg-orange-50 border-orange-300 text-orange-700' : 'border-black/10 text-[#7a6b5c] hover:bg-[var(--app-bg)]'}`}
                     >
                       {t === 'exact' ? 'Exact match' : 'Contains'}
                     </button>
@@ -704,7 +705,7 @@ export default function PincodeRoutingPage() {
             <input
               value={renameVal} onChange={(e) => setRenameVal(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-              className="w-full border border-black/10 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-primary/40"
+              className="w-full border border-black/10 rounded-xl px-3 py-2 text-[14px] outline-none focus:border-primary/40"
               autoFocus
             />
             <div className="flex gap-2">
@@ -723,7 +724,7 @@ export default function PincodeRoutingPage() {
             <div className="flex items-center justify-between p-5 border-b border-black/5">
               <div>
                 <h2 className="font-bold text-[#1c1410]">{previewSet.name}</h2>
-                <p className="text-[12px] text-[#7a6b5c]">{previewTotal.toLocaleString()} total rows</p>
+                <p className="text-[13px] text-[#7a6b5c]">{previewTotal.toLocaleString()} total rows</p>
               </div>
               <button onClick={() => setPreviewSet(null)} className="p-1 hover:bg-black/5 rounded-lg">
                 <X className="w-5 h-5 text-[#7a6b5c]" />
@@ -736,7 +737,7 @@ export default function PincodeRoutingPage() {
                   value={previewSearch}
                   onChange={(e) => { setPreviewSearch(e.target.value); loadPreviewRows(previewSet, 1, e.target.value); }}
                   placeholder="Search rows…"
-                  className="pl-8 pr-3 py-2 text-[12px] border border-black/10 rounded-xl outline-none focus:border-primary/40 w-full"
+                  className="pl-8 pr-3 py-2 text-[13px] border border-black/10 rounded-xl outline-none focus:border-primary/40 w-full"
                 />
               </div>
             </div>
@@ -746,7 +747,7 @@ export default function PincodeRoutingPage() {
                   <div className="w-6 h-6 border-4 border-[var(--brand)] border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : (
-                <table className="w-full text-[13px]">
+                <table className="w-full text-[14px]">
                   <thead className="bg-[var(--app-bg)] sticky top-0">
                     <tr>{['Value', 'Pipeline', 'Fields'].map((h) => (
                       <th key={h} className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#7a6b5c]">{h}</th>
@@ -773,7 +774,7 @@ export default function PincodeRoutingPage() {
             </div>
             {previewTotal > 50 && (
               <div className="flex items-center justify-between p-4 border-t border-black/5">
-                <span className="text-[12px] text-[#7a6b5c]">Page {previewPage} of {Math.ceil(previewTotal / 50)}</span>
+                <span className="text-[13px] text-[#7a6b5c]">Page {previewPage} of {Math.ceil(previewTotal / 50)}</span>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" disabled={previewPage <= 1}
                     onClick={() => { const p = previewPage - 1; loadPreviewRows(previewSet, p, previewSearch); }}>← Prev</Button>

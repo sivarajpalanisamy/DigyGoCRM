@@ -164,7 +164,7 @@ export default function WhatsAppSetupPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-16 text-[13px] text-[#7a6b5c]">Loading...</div>;
+    return <div className="text-center py-16 text-[14px] text-[#7a6b5c]">Loading...</div>;
   }
 
   const connected = status?.connected === true;
@@ -185,7 +185,7 @@ export default function WhatsAppSetupPage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[15px] font-bold text-green-800">WhatsApp Business Connected</p>
-            <p className="text-[13px] text-green-700 mt-0.5 font-mono">{status.phoneNumber || status.phoneNumberId}</p>
+            <p className="text-[14px] text-green-700 mt-0.5 font-mono">{status.phoneNumber || status.phoneNumberId}</p>
           </div>
           <Badge className="bg-green-100 text-green-700 border-green-200 shrink-0 text-xs">
             <Check className="w-3 h-3 mr-1" /> Active
@@ -198,7 +198,7 @@ export default function WhatsAppSetupPage() {
           </div>
           <div className="flex-1">
             <p className="text-[15px] font-bold text-amber-800">Not Connected</p>
-            <p className="text-[13px] text-amber-700 mt-0.5">Set up your WABA credentials to get started.</p>
+            <p className="text-[14px] text-amber-700 mt-0.5">Set up your WABA credentials to get started.</p>
           </div>
           {!showSetup && (
             <Button onClick={() => setShowSetup(true)} size="sm">
@@ -212,10 +212,10 @@ export default function WhatsAppSetupPage() {
       {connected && stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Templates', value: stats.templates, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', onClick: () => navigate('/automation/waba-templates') },
-            { label: 'Conversations', value: stats.conversations, icon: MessageSquare, color: 'text-purple-600', bg: 'bg-purple-50', onClick: () => navigate('/inbox') },
-            { label: 'Messages Today', value: stats.messagesToday, icon: Send, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'Total Messages', value: stats.totalMessages, icon: Inbox, color: 'text-orange-600', bg: 'bg-orange-50' },
+            { label: 'Templates', value: stats.templates, icon: FileText, color: 'text-primary', bg: 'bg-primary/10', onClick: () => navigate('/automation/waba-templates') },
+            { label: 'Conversations', value: stats.conversations, icon: MessageSquare, color: 'text-primary', bg: 'bg-primary/10', onClick: () => navigate('/inbox') },
+            { label: 'Messages Today', value: stats.messagesToday, icon: Send, color: 'text-primary', bg: 'bg-primary/10' },
+            { label: 'Total Messages', value: stats.totalMessages, icon: Inbox, color: 'text-primary', bg: 'bg-primary/10' },
           ].map((card) => (
             <button
               key={card.label}
@@ -230,7 +230,7 @@ export default function WhatsAppSetupPage() {
                 <card.icon className={cn('w-4.5 h-4.5', card.color)} />
               </div>
               <p className="text-2xl font-bold text-[#1c1410]">{card.value.toLocaleString()}</p>
-              <p className="text-[12px] text-[#7a6b5c] mt-0.5">{card.label}</p>
+              <p className="text-[13px] text-[#7a6b5c] mt-0.5">{card.label}</p>
             </button>
           ))}
         </div>
@@ -239,18 +239,18 @@ export default function WhatsAppSetupPage() {
       {/* Quick Actions */}
       {connected && (
         <div className="bg-white rounded-2xl border border-black/5 p-5">
-          <h3 className="text-[14px] font-bold text-[#1c1410] mb-4">Quick Actions</h3>
+          <h3 className="text-[15px] font-bold text-[#1c1410] mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               onClick={handleSync}
               disabled={syncing}
               className="flex items-center gap-3 p-3.5 rounded-xl border border-black/5 hover:bg-[var(--app-bg)] transition-colors text-left"
             >
-              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                <RefreshCw className={cn('w-4 h-4 text-blue-600', syncing && 'animate-spin')} />
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <RefreshCw className={cn('w-4 h-4 text-primary', syncing && 'animate-spin')} />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-[#1c1410]">{syncing ? 'Syncing...' : 'Sync Templates'}</p>
+                <p className="text-[14px] font-semibold text-[#1c1410]">{syncing ? 'Syncing...' : 'Sync Templates'}</p>
                 <p className="text-[11px] text-[#7a6b5c]">Pull latest from Meta</p>
               </div>
             </button>
@@ -258,11 +258,11 @@ export default function WhatsAppSetupPage() {
               onClick={() => navigate('/automation/waba-templates')}
               className="flex items-center gap-3 p-3.5 rounded-xl border border-black/5 hover:bg-[var(--app-bg)] transition-colors text-left"
             >
-              <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
-                <FileText className="w-4 h-4 text-purple-600" />
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-[#1c1410]">Manage Templates</p>
+                <p className="text-[14px] font-semibold text-[#1c1410]">Manage Templates</p>
                 <p className="text-[11px] text-[#7a6b5c]">View &amp; create templates</p>
               </div>
             </button>
@@ -274,7 +274,7 @@ export default function WhatsAppSetupPage() {
                 <MessageSquare className="w-4 h-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-[#1c1410]">Open Inbox</p>
+                <p className="text-[14px] font-semibold text-[#1c1410]">Open Inbox</p>
                 <p className="text-[11px] text-[#7a6b5c]">View WABA conversations</p>
               </div>
             </button>
@@ -287,7 +287,7 @@ export default function WhatsAppSetupPage() {
         <div className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Shield className="w-4.5 h-4.5 text-[#7a6b5c]" />
-            <h3 className="text-[14px] font-bold text-[#1c1410]">Quality & Limits</h3>
+            <h3 className="text-[15px] font-bold text-[#1c1410]">Quality & Limits</h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className={cn('rounded-xl border p-3', qualityColor[quality.qualityRating ?? 'UNKNOWN'])}>
@@ -317,7 +317,7 @@ export default function WhatsAppSetupPage() {
         <div className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-4.5 h-4.5 text-[#7a6b5c]" />
-            <h3 className="text-[14px] font-bold text-[#1c1410]">Template Analytics</h3>
+            <h3 className="text-[15px] font-bold text-[#1c1410]">Template Analytics</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -351,7 +351,7 @@ export default function WhatsAppSetupPage() {
                             deliveryRate >= 70 ? 'bg-amber-50 text-amber-700' :
                             'bg-red-50 text-red-700'
                           )}>{deliveryRate}%</span>
-                        ) : <span className="text-xs text-[#7a6b5c]">—</span>}
+                        ) : <span className="text-xs text-[#7a6b5c]">-</span>}
                       </td>
                     </tr>
                   );
@@ -371,7 +371,7 @@ export default function WhatsAppSetupPage() {
           <div className="flex items-center gap-3">
             <Zap className="w-5 h-5 text-[#7a6b5c]" />
             <div className="text-left">
-              <h3 className="text-[14px] font-bold text-[#1c1410]">WABA Credentials</h3>
+              <h3 className="text-[15px] font-bold text-[#1c1410]">WABA Credentials</h3>
               <p className="text-[11px] text-[#7a6b5c]">
                 {connected ? 'Update your WhatsApp Business API configuration' : 'Enter your credentials to connect'}
               </p>
@@ -383,7 +383,7 @@ export default function WhatsAppSetupPage() {
         {showSetup && (
           <div className="px-5 pb-5 space-y-5 border-t border-black/5 pt-5">
             <div className="flex items-center justify-between">
-              <span className="text-[12px] text-[#7a6b5c]">Fill in your Meta WhatsApp Business Account details</span>
+              <span className="text-[13px] text-[#7a6b5c]">Fill in your Meta WhatsApp Business Account details</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -460,7 +460,7 @@ export default function WhatsAppSetupPage() {
 
       {/* Webhook Configuration */}
       <div className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
-        <h3 className="text-[14px] font-bold text-[#1c1410]">Webhook Configuration</h3>
+        <h3 className="text-[15px] font-bold text-[#1c1410]">Webhook Configuration</h3>
         <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <p className="text-[11px] text-[#7a6b5c]">
@@ -491,7 +491,7 @@ export default function WhatsAppSetupPage() {
 
       {/* Automation Settings */}
       <div className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
-        <h3 className="text-[14px] font-bold text-[#1c1410]">Automation Settings</h3>
+        <h3 className="text-[15px] font-bold text-[#1c1410]">Automation Settings</h3>
         <div className="space-y-1">
           {[
             {

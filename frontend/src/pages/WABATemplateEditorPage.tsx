@@ -485,13 +485,13 @@ export default function WABATemplateEditorPage() {
         <div className="flex items-center gap-1.5 min-w-0">
           <button
             onClick={() => navigate('/automation/templates?tab=waba')}
-            className="flex items-center gap-1.5 text-[13px] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors group shrink-0"
+            className="flex items-center gap-1.5 text-[14px] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors group shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
             <span>Templates</span>
           </button>
           <ChevronRight className="w-3.5 h-3.5 text-[#7a6b5c]/30 shrink-0" />
-          <span className="text-[13px] font-semibold text-[#1c1410] truncate">
+          <span className="text-[14px] font-semibold text-[#1c1410] truncate">
             {isEdit ? 'Edit Template' : 'New Template'}
           </span>
           <span className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[11px] font-medium text-blue-700 shrink-0">
@@ -503,7 +503,7 @@ export default function WABATemplateEditorPage() {
           <Button
             variant="outline" size="sm"
             onClick={() => navigate('/automation/templates?tab=waba')}
-            className="h-8 text-[13px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
+            className="h-8 text-[14px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
           >
             Cancel
           </Button>
@@ -516,14 +516,14 @@ export default function WABATemplateEditorPage() {
             return <>
               <Button
                 variant="outline" size="sm" onClick={() => handleSave(false)} disabled={saving}
-                className="h-8 text-[13px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
+                className="h-8 text-[14px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
               >
                 {saving && !savingToMeta ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1.5" />}
                 Save Locally
               </Button>
               <Button
                 size="sm" onClick={() => handleSave(true)} disabled={saving || onCooldown}
-                className="h-8 text-[13px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4 disabled:opacity-50"
+                className="h-8 text-[14px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4 disabled:opacity-50"
                 title={onCooldown ? 'Meta allows editing a template only once per 24 hours' : ''}
               >
                 {savingToMeta
@@ -536,7 +536,7 @@ export default function WABATemplateEditorPage() {
           })() : (
             <Button
               size="sm" onClick={() => handleSave(false)} disabled={saving}
-              className="h-8 text-[13px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
+              className="h-8 text-[14px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
             >
               {saving
                 ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving...</>
@@ -549,7 +549,7 @@ export default function WABATemplateEditorPage() {
       {/* ── Body: two columns ── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* LEFT — Compose */}
+        {/* LEFT - Compose */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-2xl mx-auto px-8 py-8 space-y-7">
 
@@ -736,16 +736,16 @@ export default function WABATemplateEditorPage() {
                     value={body} onChange={(e) => setBody(e.target.value)}
                     maxLength={1024} rows={7}
                     placeholder="Hi {{1}}, thanks for reaching out! Your appointment is on {{2}}."
-                    className="w-full text-[13px] text-[#1c1410] placeholder:text-[#7a6b5c]/40 bg-transparent outline-none resize-none leading-relaxed"
+                    className="w-full text-[14px] text-[#1c1410] placeholder:text-[#7a6b5c]/40 bg-transparent outline-none resize-none leading-relaxed"
                   />
                 </div>
 
                 <div className="px-4 pb-4 pt-2 border-t border-orange-50 flex items-center justify-between">
                   <button
                     onClick={() => { setPickerOpen(true); setPickerSearch(''); setPickerTab('Standard'); }}
-                    className="flex items-center gap-1.5 text-[12px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
+                    className="flex items-center gap-1.5 text-[13px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
                   >
-                    <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[13px] leading-none">+</span>
+                    <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[14px] leading-none">+</span>
                     Insert Variable
                     <span className="text-[10px] text-[#7a6b5c] font-normal ml-0.5">({allPickerFields.length} fields)</span>
                   </button>
@@ -879,9 +879,9 @@ export default function WABATemplateEditorPage() {
                 ))}
                 <button
                   onClick={addBtn}
-                  className="flex items-center gap-1.5 text-[12px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
+                  className="flex items-center gap-1.5 text-[13px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
                 >
-                  <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[13px] leading-none">+</span>
+                  <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[14px] leading-none">+</span>
                   Add Button
                 </button>
                 {buttons.length === 0 && (
@@ -950,7 +950,7 @@ export default function WABATemplateEditorPage() {
           </div>
         </div>
 
-        {/* RIGHT — Live Preview */}
+        {/* RIGHT - Live Preview */}
         <div className="w-[380px] shrink-0 border-l border-orange-100 bg-[#fff7f0] overflow-y-auto hidden lg:block">
           <div className="p-6 space-y-5">
             <h2 className="text-[11px] font-bold text-[#92400e] uppercase tracking-widest">Live Preview</h2>
@@ -963,7 +963,7 @@ export default function WABATemplateEditorPage() {
                   <span className="text-white text-xs font-bold">WA</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-[13px] font-semibold leading-tight">Hawcus CRM</p>
+                  <p className="text-white text-[14px] font-semibold leading-tight">Hawcus CRM</p>
                   <p className="text-green-300 text-[10px]">online</p>
                 </div>
               </div>
@@ -972,7 +972,7 @@ export default function WABATemplateEditorPage() {
               <div className="min-h-[260px] p-3 flex flex-col gap-2" style={{ backgroundColor: '#efeae2' }}>
                 {!body.trim() && !header.trim() && headerType === 'none' ? (
                   <div className="flex-1 flex items-center justify-center py-10">
-                    <p className="text-[12px] text-[#9e9e9e] text-center leading-relaxed">
+                    <p className="text-[13px] text-[#9e9e9e] text-center leading-relaxed">
                       Start typing your message<br />to see the preview here
                     </p>
                   </div>
@@ -982,7 +982,7 @@ export default function WABATemplateEditorPage() {
                       {/* Header */}
                       {headerType === 'text' && header.trim() && (
                         <div className="px-3 pt-2.5 pb-0.5">
-                          <p className="text-[13px] font-bold text-gray-900">{header}</p>
+                          <p className="text-[14px] font-bold text-gray-900">{header}</p>
                         </div>
                       )}
                       {headerType === 'image' && (
@@ -1014,7 +1014,7 @@ export default function WABATemplateEditorPage() {
                       {/* Body */}
                       <div className="px-3 py-2">
                         <p
-                          className="text-[12px] text-gray-800 leading-relaxed"
+                          className="text-[13px] text-gray-800 leading-relaxed"
                           dangerouslySetInnerHTML={{ __html: renderPreview(body) || '&nbsp;' }}
                         />
                       </div>
@@ -1034,7 +1034,7 @@ export default function WABATemplateEditorPage() {
                         <div className="border-t border-gray-100">
                           {buttons.filter((b) => b.label.trim()).map((btn) => (
                             <div key={btn.id} className="text-center py-2 border-b border-gray-50 last:border-0">
-                              <span className="text-[12px] font-medium text-[#00a5f4]">{btn.label}</span>
+                              <span className="text-[13px] font-medium text-[#00a5f4]">{btn.label}</span>
                             </div>
                           ))}
                         </div>
@@ -1103,7 +1103,7 @@ export default function WABATemplateEditorPage() {
             {/* Modal header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-orange-100 shrink-0">
               <div>
-                <h3 className="text-[14px] font-semibold text-[#1c1410]">Insert Variable</h3>
+                <h3 className="text-[15px] font-semibold text-[#1c1410]">Insert Variable</h3>
                 <p className="text-[11px] text-[#7a6b5c] mt-0.5">
                   Click a field to insert <code className="bg-orange-50 px-1 rounded text-orange-700">{`{{N}}`}</code> at cursor with auto-filled sample
                 </p>
@@ -1125,7 +1125,7 @@ export default function WABATemplateEditorPage() {
                   value={pickerSearch}
                   onChange={(e) => setPickerSearch(e.target.value)}
                   placeholder={`Search across ${allPickerFields.length} fields...`}
-                  className="flex-1 text-[12px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#7a6b5c]/50"
+                  className="flex-1 text-[13px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#7a6b5c]/50"
                 />
                 {pickerSearch && (
                   <button onClick={() => setPickerSearch('')} className="text-[#7a6b5c] hover:text-[#1c1410]">
@@ -1143,7 +1143,7 @@ export default function WABATemplateEditorPage() {
                     key={tab}
                     onClick={() => setPickerTab(tab)}
                     className={cn(
-                      'px-3 py-2.5 text-[12px] font-medium border-b-2 transition-colors whitespace-nowrap',
+                      'px-3 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap',
                       pickerTab === tab
                         ? 'border-[var(--brand)] text-[var(--brand)]'
                         : 'border-transparent text-[#7a6b5c] hover:text-[#1c1410]'
@@ -1165,7 +1165,7 @@ export default function WABATemplateEditorPage() {
                   <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mb-3">
                     <Search className="w-4 h-4 text-orange-300" />
                   </div>
-                  <p className="text-[13px] font-medium text-[#1c1410]">No fields found</p>
+                  <p className="text-[14px] font-medium text-[#1c1410]">No fields found</p>
                   <p className="text-[11px] text-[#7a6b5c] mt-1">Try a different search term</p>
                 </div>
               ) : (
@@ -1183,7 +1183,7 @@ export default function WABATemplateEditorPage() {
                         className="w-full flex items-center justify-between px-4 py-3 hover:bg-orange-50 transition-colors border-b border-orange-50/80 last:border-0 text-left gap-4 group"
                       >
                         <div className="min-w-0">
-                          <p className="text-[13px] font-medium text-[#1c1410] truncate">{item.label}</p>
+                          <p className="text-[14px] font-medium text-[#1c1410] truncate">{item.label}</p>
                           {item.sample && (
                             <p className="text-[11px] text-[#7a6b5c] mt-0.5 truncate">e.g. {item.sample}</p>
                           )}
@@ -1226,7 +1226,7 @@ function FormatBtn({ label, title, className }: { label: string; title: string; 
       title={title}
       className="w-7 h-7 rounded-md hover:bg-orange-100 text-[#1c1410] transition-colors flex items-center justify-center"
     >
-      <span className={cn('text-[13px]', className)}>{label}</span>
+      <span className={cn('text-[14px]', className)}>{label}</span>
     </button>
   );
 }

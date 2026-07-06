@@ -211,7 +211,7 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
     if (!lastName.trim())  e.lastName  = 'Required';
     if (!email.trim() || !email.includes('@')) e.email = 'Valid email required';
     if (loginPin && !/^\d{4}$/.test(loginPin)) e.loginPin = 'PIN must be 4 digits';
-    // Password is OPTIONAL on create — if left blank, the staff gets an invite email to set their own.
+    // Password is OPTIONAL on create - if left blank, the staff gets an invite email to set their own.
     return e;
   };
 
@@ -436,7 +436,7 @@ function DeactivateDialog({ member, onClose, onConfirm }: { member: StaffMember;
           {isActive ? <UserMinus className="w-5 h-5 text-destructive" /> : <UserCheck className="w-5 h-5 text-success" />}
         </div>
         <h3 className="font-headline font-bold text-[#1c1410] text-center mb-2">{isActive ? 'Deactivate' : 'Reactivate'} {member.name}?</h3>
-        <p className="text-[13px] text-[#7a6b5c] text-center mb-6">
+        <p className="text-[14px] text-[#7a6b5c] text-center mb-6">
           {isActive
             ? 'This member will lose access to the CRM immediately. Their data and lead assignments will be preserved.'
             : 'This member will regain access to the CRM with their previous role and permissions.'}
@@ -464,11 +464,11 @@ function DeleteConfirmModal({ member, onClose, onConfirm }: { member: StaffMembe
           <Trash2 className="w-5 h-5 text-red-600" />
         </div>
         <h3 className="font-headline font-bold text-[#1c1410] text-center mb-1">Delete {member.name}?</h3>
-        <p className="text-[13px] text-[#7a6b5c] text-center mb-5">
+        <p className="text-[14px] text-[#7a6b5c] text-center mb-5">
           This will permanently remove their account and revoke all access. Their assigned leads will become unassigned. This cannot be undone.
         </p>
         <div className="mb-5">
-          <p className="text-[12px] text-[#7a6b5c] mb-1.5">
+          <p className="text-[13px] text-[#7a6b5c] mb-1.5">
             Type <span className="font-semibold text-[#1c1410]">{member.name}</span> to confirm
           </p>
           <Input
@@ -573,7 +573,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
         <div className="flex items-center justify-between px-5 py-3.5 bg-white border-b border-[#ede6dd] shrink-0">
           <div className="flex items-center gap-3">
             <div className={cn(
-              'w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0',
+              'w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0',
               member.status === 'active' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
             )}>
               {member.avatar}
@@ -642,7 +642,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                 >
                   <PermCheckbox checked={permissions[ONLY_ASSIGNED_KEY] ?? false} onChange={() => togglePerm(ONLY_ASSIGNED_KEY)} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-[#1c1410]">Only Assigned Leads</p>
+                    <p className="text-[14px] font-semibold text-[#1c1410]">Only Assigned Leads</p>
                     <p className="text-[11px] text-[#7a6b5c] mt-0.5 leading-relaxed">
                       Staff can only view leads assigned to them - applies to Pipeline, Contacts &amp; Automation
                     </p>
@@ -653,7 +653,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                   <button type="button" onClick={() => togglePerm(MASK_PHONE_KEY)}
                     className="flex items-center gap-2.5 cursor-pointer select-none group">
                     <PermCheckbox checked={permissions[MASK_PHONE_KEY] ?? false} onChange={() => togglePerm(MASK_PHONE_KEY)} />
-                    <span className="text-[13px] text-[#1c1410] group-hover:text-primary transition-colors">Phone Number Masking</span>
+                    <span className="text-[14px] text-[#1c1410] group-hover:text-primary transition-colors">Phone Number Masking</span>
                     <span className="text-[11px] text-[#b09e8d]">- last digits hidden</span>
                   </button>
                   <button type="button"
@@ -671,7 +671,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                         setPermissions(Object.fromEntries(getAllPermKeys().map((k) => [k, !all])));
                       }}
                     />
-                    <span className="text-[13px] font-semibold text-[#1c1410] group-hover:text-primary transition-colors">Select All</span>
+                    <span className="text-[14px] font-semibold text-[#1c1410] group-hover:text-primary transition-colors">Select All</span>
                   </button>
                 </div>
               </div>
@@ -702,7 +702,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                           <button key={item.key} type="button" onClick={() => togglePerm(item.key)}
                             className="flex items-center gap-2.5 cursor-pointer select-none group text-left">
                             <PermCheckbox checked={permissions[item.key] ?? false} onChange={() => togglePerm(item.key)} />
-                            <span className="text-[13px] text-[#2c1f14] group-hover:text-primary transition-colors">{item.label}</span>
+                            <span className="text-[14px] text-[#2c1f14] group-hover:text-primary transition-colors">{item.label}</span>
                           </button>
                         ))}
                       </div>
@@ -722,7 +722,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                             <div key={row.label}
                               className={cn('grid items-center px-3 py-2.5 rounded-lg transition-colors hover:bg-[var(--app-bg)]', i % 2 === 1 && 'bg-[#fdfcfb]')}
                               style={{ gridTemplateColumns: '1fr 80px 80px 80px 80px' }}>
-                              <span className="text-[13px] font-medium text-[#1c1410]">{row.label}</span>
+                              <span className="text-[14px] font-medium text-[#1c1410]">{row.label}</span>
                               {row.keys.map((key, j) => (
                                 <div key={j} className="flex justify-center">
                                   {key
@@ -738,13 +738,13 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                               {group.simpleRows!.map((row, i) => (
                                 <div key={row.label}
                                   className={cn('flex items-center px-3 py-2.5 rounded-lg transition-colors hover:bg-[var(--app-bg)]', i % 2 === 1 && 'bg-[#fdfcfb]')}>
-                                  <span className="text-[13px] font-medium text-[#1c1410] flex-1">{row.label}</span>
+                                  <span className="text-[14px] font-medium text-[#1c1410] flex-1">{row.label}</span>
                                   <div className="flex items-center gap-6">
                                     {row.keys.map(({ key, label }) => (
                                       <button key={key} type="button" onClick={() => togglePerm(key)}
                                         className="flex items-center gap-2 cursor-pointer select-none group">
                                         <PermCheckbox checked={permissions[key] ?? false} onChange={() => togglePerm(key)} />
-                                        <span className="text-[12px] text-[#7a6b5c] group-hover:text-primary transition-colors">{label}</span>
+                                        <span className="text-[13px] text-[#7a6b5c] group-hover:text-primary transition-colors">{label}</span>
                                       </button>
                                     ))}
                                   </div>
@@ -850,7 +850,7 @@ export default function StaffPage() {
   const [permsMember,      setPermsMember]      = useState<StaffMember | null>(null);
   const [openMenuId,       setOpenMenuId]       = useState<string | null>(null);
 
-  // Stable performance data — no Math.random() in render
+  // Stable performance data - no Math.random() in render
   const perfData = useMemo(() => {
     return staff.filter((s) => s.status === 'active').map((s, i) => ({
       id: s.id,
@@ -947,7 +947,7 @@ export default function StaffPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="font-headline text-[17px] font-bold text-[#1c1410]">Team Members</h3>
-              <p className="text-[12px] text-[#7a6b5c] mt-0.5">
+              <p className="text-[13px] text-[#7a6b5c] mt-0.5">
                 {staff.filter((s) => s.status === 'active').length} active
                 {staff.filter((s) => s.status === 'inactive').length > 0 && ` · ${staff.filter((s) => s.status === 'inactive').length} inactive`}
                 {maxUsers != null && ` · ${staff.filter((s) => s.status === 'active').length + 1}/${maxUsers} license used`}
@@ -970,8 +970,8 @@ export default function StaffPage() {
               <div className="w-12 h-12 rounded-2xl bg-[var(--accent-tint)] flex items-center justify-center">
                 <User className="w-6 h-6 text-[var(--brand-dark)]" />
               </div>
-              <p className="text-[14px] font-bold text-[#1c1410]">No team members yet</p>
-              <p className="text-[12px] text-[#7a6b5c]">Add your first staff member to get started</p>
+              <p className="text-[15px] font-bold text-[#1c1410]">No team members yet</p>
+              <p className="text-[13px] text-[#7a6b5c]">Add your first staff member to get started</p>
               {canManageStaff && (
                 <Button className="btn-hover mt-1" onClick={() => setShowInviteModal(true)}>
                   <Plus className="w-4 h-4 mr-1" /> New Staff
@@ -1015,7 +1015,7 @@ export default function StaffPage() {
                       <p className="text-[10px] text-[#7a6b5c] mt-0.5">Leads</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[12px] font-medium text-[#1c1410] whitespace-nowrap">
+                      <p className="text-[13px] font-medium text-[#1c1410] whitespace-nowrap">
                         {formatDistanceToNow(new Date(s.lastActive), { addSuffix: true })}
                       </p>
                       <p className="text-[10px] text-[#7a6b5c] mt-0.5">Last Active</p>
@@ -1103,7 +1103,7 @@ export default function StaffPage() {
         <div className="space-y-5">
           <div>
             <h3 className="font-headline text-[17px] font-bold text-[#1c1410]">Roles &amp; Permissions</h3>
-            <p className="text-[12px] text-[#7a6b5c] mt-0.5">Click a staff member to edit their individual access</p>
+            <p className="text-[13px] text-[#7a6b5c] mt-0.5">Click a staff member to edit their individual access</p>
           </div>
 
           {staff.length === 0 ? (
@@ -1111,8 +1111,8 @@ export default function StaffPage() {
               <div className="w-12 h-12 rounded-2xl bg-[var(--accent-tint)] flex items-center justify-center">
                 <ShieldCheck className="w-6 h-6 text-[var(--brand-dark)]" />
               </div>
-              <p className="text-[14px] font-bold text-[#1c1410]">No staff yet</p>
-              <p className="text-[12px] text-[#7a6b5c]">Add team members first to configure their permissions</p>
+              <p className="text-[15px] font-bold text-[#1c1410]">No staff yet</p>
+              <p className="text-[13px] text-[#7a6b5c]">Add team members first to configure their permissions</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1120,13 +1120,13 @@ export default function StaffPage() {
                 <div key={s.id}
                   className="bg-white rounded-2xl border border-[#ede8e2] p-5 flex items-center gap-4 hover:border-primary/30 hover:shadow-sm transition-all group">
                   <div className={cn(
-                    'w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0',
+                    'w-11 h-11 rounded-full flex items-center justify-center text-[14px] font-bold shrink-0',
                     s.status === 'active' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
                   )}>
                     {s.avatar}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-[#1c1410] truncate">{s.name}</p>
+                    <p className="text-[14px] font-semibold text-[#1c1410] truncate">{s.name}</p>
                     <p className="text-[11px] text-[#7a6b5c] truncate">{s.email}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className={cn('w-1.5 h-1.5 rounded-full', s.status === 'active' ? 'bg-green-500' : 'bg-gray-300')} />
@@ -1176,7 +1176,7 @@ export default function StaffPage() {
                           <span className="text-[11px] text-[#7a6b5c]">{convRate}%</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-[13px] text-[#7a6b5c]">{p.avgResponse} min</td>
+                      <td className="px-4 py-3 text-[14px] text-[#7a6b5c]">{p.avgResponse} min</td>
                       <td className="px-4 py-3 text-sm text-foreground">{p.conversations}</td>
                       <td className="px-4 py-3 text-sm text-foreground">{p.followUps}</td>
                     </tr>

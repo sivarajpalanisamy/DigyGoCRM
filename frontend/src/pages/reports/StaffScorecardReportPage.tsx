@@ -40,7 +40,7 @@ export default function StaffScorecardReportPage() {
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
+      // Keep current data visible on filter changes; spinner shows only on first mount.
       try {
         const params: Record<string, string> = { period };
         if (period === 'custom' && from) params.date_from = from;
@@ -69,7 +69,7 @@ export default function StaffScorecardReportPage() {
     <div className="flex flex-col flex-1 min-h-0 gap-5">
       <div>
         <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">Staff Scorecard</h1>
-        <p className="text-[13px] text-[#7a6b5c] mt-0.5">Activity metrics and performance per staff member</p>
+        <p className="text-[14px] text-[#7a6b5c] mt-0.5">Activity metrics and performance per staff member</p>
       </div>
 
       {/* Filters */}
@@ -77,7 +77,7 @@ export default function StaffScorecardReportPage() {
         {PERIODS.map((p) => (
           <button key={p.value} onClick={() => setPeriod(p.value)}
             className={cn(
-              'text-[12px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
+              'text-[13px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
               period === p.value
                 ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-sm'
                 : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/40',
@@ -88,10 +88,10 @@ export default function StaffScorecardReportPage() {
         {period === 'custom' && (
           <div className="flex items-center gap-2 ml-2">
             <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
-              className="border border-black/10 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--brand)] bg-white" />
-            <span className="text-[12px] text-[#9a8a7a]">to</span>
+              className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] bg-white" />
+            <span className="text-[13px] text-[#9a8a7a]">to</span>
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
-              className="border border-black/10 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-[var(--brand)] bg-white" />
+              className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] bg-white" />
           </div>
         )}
       </div>
@@ -114,12 +114,12 @@ export default function StaffScorecardReportPage() {
             {/* Activity chart */}
             <div className="lg:col-span-2 bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-black/5">
-                <p className="text-[14px] font-bold text-[#1c1410]">Activity Comparison</p>
+                <p className="text-[15px] font-bold text-[#1c1410]">Activity Comparison</p>
                 <p className="text-[11px] text-[#9a8a7a] mt-0.5">Calls, messages, and follow-ups per staff</p>
               </div>
               <div className="p-5">
                 {staff.length === 0 ? (
-                  <div className="h-[260px] flex items-center justify-center text-[13px] text-[#9a8a7a]">No staff data</div>
+                  <div className="h-[260px] flex items-center justify-center text-[14px] text-[#9a8a7a]">No staff data</div>
                 ) : (
                   <ResponsiveContainer width="100%" height={Math.max(260, staff.length * 40)}>
                     <BarChart data={staff} layout="vertical">
@@ -139,9 +139,9 @@ export default function StaffScorecardReportPage() {
             {/* Radar chart for selected staff */}
             <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-black/5">
-                <p className="text-[14px] font-bold text-[#1c1410]">Staff Profile</p>
+                <p className="text-[15px] font-bold text-[#1c1410]">Staff Profile</p>
                 <select value={selected ?? ''} onChange={(e) => setSelected(e.target.value || null)}
-                  className="mt-1 text-[12px] border border-black/10 rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-[var(--brand)]">
+                  className="mt-1 text-[13px] border border-black/10 rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-[var(--brand)]">
                   <option value="">Select staff</option>
                   {staff.map((s) => <option key={s.staff_id} value={s.staff_id}>{s.staff_name}</option>)}
                 </select>
@@ -164,7 +164,7 @@ export default function StaffScorecardReportPage() {
                     </RadarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[220px] flex items-center justify-center text-[13px] text-[#9a8a7a]">Select a staff member</div>
+                  <div className="h-[220px] flex items-center justify-center text-[14px] text-[#9a8a7a]">Select a staff member</div>
                 )}
               </div>
             </div>
@@ -173,10 +173,10 @@ export default function StaffScorecardReportPage() {
           {/* Staff table */}
           <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-black/5">
-              <p className="text-[14px] font-bold text-[#1c1410]">Detailed Scorecard</p>
+              <p className="text-[15px] font-bold text-[#1c1410]">Detailed Scorecard</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-[12px]">
+              <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-black/5 text-left text-[#7a6b5c]">
                     <th className="px-5 py-3 font-semibold">Staff</th>
