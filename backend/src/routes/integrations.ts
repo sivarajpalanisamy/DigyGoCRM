@@ -1990,6 +1990,89 @@ router.get('/waba/quality', checkPermission('integrations:view'), async (req: Au
   }
 });
 
+// GET /api/integrations/waba/embedded-config — expose the app id + Embedded Signup
+// configuration id to the frontend so the "Connect with Facebook" button can launch
+// FB.login({ config_id }). `available` is false unless BOTH env vars are set, in which
+// case the frontend hides the button and shows only the manual token form.
+router.get('/waba/embedded-config', checkPermission('integrations:view'), (_req: AuthRequest, res: Response) => {
+  const appId = process.env.META_APP_ID ?? '';
+  const configId = process.env.META_CONFIG_ID ?? '';
+  const graphVersion = process.env.META_API_VERSION || 'v21.0';
+  res.json({ available: !!(appId && configId), appId, configId, graphVersion });
+});
+
+// POST /api/integrations/waba/embedded-signup — finish WhatsApp Embedded Signup.
+// The frontend runs FB.login({ config_id, response_type:'code' }) and captures the
+// WA_EMBEDDED_SIGNUP postMessage (waba_id + phone_number_id), then posts them here with
+// the OAuth `code`. We exchange the code for a business token and store the WABA per
+// tenant exactly like the manual /waba/setup path (same schema, encryption, subscribe,
+// template sync).
+router.post('/waba/embedded-signup', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
+  const { code, waba_id, phone_number_id } = req.body as {
+    code?: string;
+    waba_id?: string;
+    phone_number_id?: string;
+  };
+  const appId = process.env.META_APP_ID;
+  const appSecret = process.env.META_APP_SECRET;
+  if (!appId || !appSecret || !process.env.META_CONFIG_ID) {
+    res.status(503).json({ error: 'Embedded Signup is not configured on the server' });
+    return;
+  }
+  if (!code || !waba_id || !phone_number_id) {
+    res.status(400).json({ error: 'code, waba_id, phone_number_id are required' });
+    return;
+  }
+  try {
+    // 1. Exchange the Embedded Signup code for a business access token.
+    //    The JS SDK code flow takes NO redirect_uri and NO grant_type (unlike /meta/callback).
+    const tokenData = await graphGet(
+      `/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${encodeURIComponent(code)}`, ''
+    );
+    if (tokenData.error || !tokenData.access_token) {
+      throw new Error('Token exchange failed: ' + (tokenData.error?.message ?? 'no access_token returned'));
+    }
+    const businessToken: string = tokenData.access_token;
+
+    // 2. Validate the phone number id and read its display number with the new token.
+    const phoneData = await graphGet(`/${phone_number_id}?fields=display_phone_number,verified_name`, businessToken);
+    if (phoneData.error) {
+      throw new Error('Could not read phone number: ' + phoneData.error.message);
+    }
+    const resolvedPhone: string = phoneData.display_phone_number ?? '';
+
+    // 3. Persist per tenant — identical schema/encryption to the manual setup path.
+    const encrypted = encrypt(businessToken);
+    await query(
+      `INSERT INTO waba_integrations (tenant_id, phone_number, phone_number_id, waba_id, access_token, is_active)
+       VALUES ($1,$2,$3,$4,$5,TRUE)
+       ON CONFLICT (tenant_id) DO UPDATE
+         SET phone_number=$2, phone_number_id=$3, waba_id=$4, access_token=$5, is_active=TRUE, updated_at=NOW()`,
+      [req.user!.tenantId, resolvedPhone, phone_number_id, waba_id, encrypted]
+    );
+
+    res.json({ success: true, status: 'active', phoneNumber: resolvedPhone });
+
+    // 4. Subscribe our app to the WABA so inbound webhooks arrive (best-effort).
+    const wabaWebhookUrl = (process.env.WEBHOOK_BASE_URL || process.env.FRONTEND_URL || '').replace(/\/$/, '') + '/api/webhooks/whatsapp';
+    graphPost(`/${waba_id}/subscribed_apps`, businessToken, { override_callback_uri: wabaWebhookUrl })
+      .then(() => console.log('[WABA ES] subscribed_apps OK →', wabaWebhookUrl))
+      .catch((e) => console.error('[WABA ES subscribe]', e?.message ?? e));
+
+    // 5. Auto-sync approved templates in the background, mirroring /waba/setup.
+    syncWabaTemplates(req.user!.tenantId!, waba_id, businessToken).catch((e) =>
+      console.error('[WABA ES auto-sync templates]', e?.message ?? e)
+    );
+  } catch (err: any) {
+    console.error('[WABA embedded-signup]', err?.message ?? err);
+    if (err?.code === 'ENOTFOUND') {
+      res.status(400).json({ error: 'Could not reach Meta API. Please try again.' });
+    } else {
+      res.status(400).json({ error: err?.message || 'Embedded Signup failed' });
+    }
+  }
+});
+
 // POST /api/integrations/waba/setup
 router.post('/waba/setup', checkPermission('integrations:manage'), async (req: AuthRequest, res: Response) => {
   const { phone_number, phone_number_id, waba_id, access_token } = req.body as {
