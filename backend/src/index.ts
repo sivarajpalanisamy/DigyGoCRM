@@ -127,7 +127,7 @@ app.use(ipBlockGuard);
 // CRM frontend boots ~14 parallel calls and polls every 30s, so a 100/min cap
 // would lock out normal users. Abuse is handled by ipBlockGuard above + the
 // stricter auth limiters below.
-app.use(makeLimiter({
+app.use(makeLimiter('global', {
   windowMs: 60_000,
   max: process.env.NODE_ENV === 'production' ? 1000 : 5000,
   message: { error: 'Too many requests, please slow down.' },
@@ -135,7 +135,7 @@ app.use(makeLimiter({
 }));
 
 // Strict limiter for login and password setup — brute-force protection
-const authLimiter = makeLimiter({
+const authLimiter = makeLimiter('auth', {
   windowMs: 15 * 60_000,
   max: process.env.NODE_ENV === 'production' ? 30 : 500,
   message: { error: 'Too many login attempts. Try again in 15 minutes.' },
@@ -143,7 +143,7 @@ const authLimiter = makeLimiter({
 
 // Relaxed limiter for token refresh — not a brute-force vector (token itself is the secret)
 // Must handle: multiple tabs, 30s polling, multiple users behind same NAT IP
-const refreshLimiter = makeLimiter({
+const refreshLimiter = makeLimiter('refresh', {
   windowMs: 15 * 60_000,
   max: process.env.NODE_ENV === 'production' ? 300 : 5000,
   message: { error: 'Too many requests, please slow down.' },
