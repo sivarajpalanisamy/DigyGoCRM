@@ -187,15 +187,29 @@ const COUNTRY_CODES = [
   { flag: '🇸🇬', code: '+65', country: 'SG' },
 ];
 
+// Strip country code prefix from a stored phone and return [localPart, matchedCode].
+function parseStoredPhone(raw: string | undefined): [string, typeof COUNTRY_CODES[number]] {
+  if (!raw) return ['', COUNTRY_CODES[0]];
+  // Normalize repeated +91 prefixes (legacy data corruption)
+  let p = raw.replace(/^(\+91)+/, '+91');
+  // Match longest country code first (e.g. +971 before +9)
+  const sorted = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length);
+  for (const cc of sorted) {
+    if (p.startsWith(cc.code)) return [p.slice(cc.code.length), cc];
+  }
+  return [p, COUNTRY_CODES[0]];
+}
+
 function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
   const isEdit = !!initial;
   const [firstName,  setFirstName]  = useState(initial ? initial.name.split(' ')[0] : '');
   const [lastName,   setLastName]   = useState(initial ? initial.name.split(' ').slice(1).join(' ') : '');
   const [email,      setEmail]      = useState(initial?.email ?? '');
   const [fullAccess, setFullAccess] = useState(true);
-  const [phone,      setPhone]      = useState(initial?.phone ?? '');
+  const [parsedPhone, parsedCC] = parseStoredPhone(initial?.phone);
+  const [phone,      setPhone]      = useState(parsedPhone);
   const [password,   setPassword]   = useState('');
-  const [countryCode, setCountryCode] = useState(COUNTRY_CODES[0]);
+  const [countryCode, setCountryCode] = useState(parsedCC);
   const [showCountryDrop, setShowCountryDrop] = useState(false);
   const [staffId,       setStaffId]      = useState(initial?.staff_id ?? '');
   const [avatarUrl,     setAvatarUrl]    = useState<string | null>(null);
