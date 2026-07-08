@@ -489,6 +489,7 @@ async function ingestOneCall(
   deviceId: string | undefined,
   allow: DeviceAllow,
   gateCapable: boolean,
+  devicePairedAt?: Date | null,
 ): Promise<{ clientCallId: string | null; id: string | null; status: 'inserted' | 'duplicate' | 'error' | 'rejected'; error?: string }> {
   const clientCallId = call.clientCallId ?? null;
   try {
@@ -496,6 +497,15 @@ async function ingestOneCall(
     const direction = normalizeDirection(call.direction);
     const duration = Number(call.durationSeconds ?? 0) || 0;
     const outcome = normalizeOutcome(call.outcome, duration);
+
+    // Skip calls that happened before this device was paired to this tenant.
+    // Prevents old call history from a previous tenant leaking into the current one.
+    if (devicePairedAt && call.startedAt) {
+      const callTime = new Date(call.startedAt);
+      if (callTime < devicePairedAt) {
+        return { clientCallId, id: null, status: 'rejected' };
+      }
+    }
 
     // SIM gate — only log calls made/received on a CRM-verified number for this device.
     // The app tags each call with the SIM slot (+ number when known).
@@ -612,6 +622,13 @@ router.post('/calls', async (req: AuthRequest, res: Response) => {
     // Verified-number allow-list for this device — computed once per batch.
     const allow = await loadDeviceAllow(req.deviceId);
 
+    // Fetch device pairing time — calls before this are from a previous tenant and must be skipped.
+    let devicePairedAt: Date | null = null;
+    if (req.deviceId) {
+      const devRow = await query(`SELECT created_at FROM mobile_devices WHERE id=$1::uuid`, [req.deviceId]);
+      if (devRow.rows[0]) devicePairedAt = new Date(devRow.rows[0].created_at);
+    }
+
     // A SIM-aware (new-APK) client reports its live SIM count in the batch envelope.
     // Its presence marks the client as "gate-capable"; we also persist the count so the
     // multi-SIM flag stays fresh (and reflects a SIM added/removed after registration).
@@ -626,7 +643,7 @@ router.post('/calls', async (req: AuthRequest, res: Response) => {
     const results = [];
     let inserted = 0, duplicates = 0, errors = 0, rejected = 0;
     for (const call of calls) {
-      const r = await ingestOneCall(call, tenantId!, userId, staffName, req.deviceId, allow, gateCapable);
+      const r = await ingestOneCall(call, tenantId!, userId, staffName, req.deviceId, allow, gateCapable, devicePairedAt);
       if (r.status === 'inserted') inserted++;
       else if (r.status === 'duplicate') duplicates++;
       else if (r.status === 'rejected') rejected++;
