@@ -38,8 +38,9 @@ export function AppLayout() {
         read:     false,
       });
     };
-    // Fix 14: on reconnect, fetch any notifications missed during the disconnect window
-    const reconnectHandler = () => { refreshNotifications(); };
+    // Fix 14: on reconnect, fetch any notifications missed during the disconnect window.
+    // Super admin has no tenant → tenant-scoped endpoints 403, so skip.
+    const reconnectHandler = () => { if (!isSuperAdmin) refreshNotifications(); };
     const waStatusHandler = (data: { status: string; phone?: string | null }) => {
       setWaPersonalStatus(data.status as any, data.phone);
     };
@@ -52,6 +53,7 @@ export function AppLayout() {
     // Debounced to coalesce bursts (e.g. bulk import emits many events).
     let dataChangeT: ReturnType<typeof setTimeout> | null = null;
     const dataChangeHandler = () => {
+      if (isSuperAdmin) return;
       if (dataChangeT) clearTimeout(dataChangeT);
       dataChangeT = setTimeout(() => { initFromApi(true); }, 700);
     };
@@ -72,16 +74,20 @@ export function AppLayout() {
       socket.off('lead:created', dataChangeHandler);
       socket.off('lead:updated', dataChangeHandler);
     };
-  }, [addNotification, refreshNotifications, setWaPersonalStatus, initFromApi]);
+  }, [addNotification, refreshNotifications, setWaPersonalStatus, initFromApi, isSuperAdmin]);
 
-  // Re-fetch data whenever the user navigates to a new page
+  // Re-fetch data whenever the user navigates to a new page.
+  // Super admin has no tenant → tenant-scoped endpoints (leads, notifications, …)
+  // return 403, so skip all tenant polling for them; they only use /admin.
   useEffect(() => {
+    if (isSuperAdmin) return;
     initFromApi();
     refreshPermissions();
-  }, [location.pathname]);
+  }, [location.pathname, isSuperAdmin]);
 
   // Poll CRM data every 30 seconds; permissions are stable so only refresh every 5 min
   useEffect(() => {
+    if (isSuperAdmin) return;
     pollingRef.current = setInterval(() => {
       initFromApi();
     }, 30_000);
@@ -92,10 +98,11 @@ export function AppLayout() {
       if (pollingRef.current) clearInterval(pollingRef.current);
       clearInterval(permInterval);
     };
-  }, []);
+  }, [isSuperAdmin]);
 
   // Re-fetch when user returns to the tab after it was hidden (e.g. switching tabs, locking screen)
   useEffect(() => {
+    if (isSuperAdmin) return;
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         initFromApi();
@@ -103,7 +110,7 @@ export function AppLayout() {
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
+  }, [isSuperAdmin]);
 
   return (
     <div className="h-[100dvh] flex w-full bg-[var(--app-bg)] overflow-hidden">
