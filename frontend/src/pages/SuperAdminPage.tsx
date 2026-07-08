@@ -50,6 +50,10 @@ const CYCLE_LABEL: Record<string, string> = {
 };
 const cycleOf = (t: { billing_cycle?: string | null }) => (t.billing_cycle === 'yearly' ? 'yearly' : 'monthly');
 
+// CNAME target a client points their custom domain at. Must match the primary app
+// domain that resolves to the server (backend returns the same value from POST /domain).
+const CNAME_TARGET = 'app.hawcus.com';
+
 // Live subscription state for the admin list (blocked = end-of-day expiry passed or manual).
 function subState(t: { subscription_status: string; subscription_expires_at: string | null }) {
   const exp = t.subscription_expires_at ? new Date(t.subscription_expires_at).getTime() : null;
@@ -252,9 +256,9 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
                   <span className="text-gray-400">Value</span>
                   <span className="font-bold">CNAME</span>
                   <span className="font-bold">{subdomain}</span>
-                  <span className="font-bold">crm.digygo.in</span>
+                  <span className="font-bold">{CNAME_TARGET}</span>
                 </div>
-                <button onClick={() => { navigator.clipboard.writeText('crm.digygo.in'); toast.success('Copied!'); }}
+                <button onClick={() => { navigator.clipboard.writeText(CNAME_TARGET); toast.success('Copied!'); }}
                   className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80">
                   <Copy className="w-3 h-3" /> Copy value
                 </button>
