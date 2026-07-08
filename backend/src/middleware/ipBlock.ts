@@ -20,6 +20,24 @@ const BLOCK_TTL = 60 * 60;      // blocked for 1 hour
 const STRIKE_WINDOW = 10 * 60;  // strikes counted over 10 minutes
 const STRIKE_LIMIT = 50;        // 50 abusive responses in the window → block
 
+// Only failed *credential* attempts count toward an IP block. A routine 401 from a
+// data endpoint (expired access token) is NOT abuse: the CRM fires ~14 parallel
+// authed calls per load/poll, so one token expiry would otherwise = 14 strikes and
+// a couple of poll cycles would self-DoS a legitimate user (this is exactly what
+// locked out the owner). Token refresh (/api/auth/refresh) is excluded too — its
+// 401s are benign (multi-tab refresh-token rotation) and the token itself is the
+// secret, so refresh is not a brute-force vector.
+const CREDENTIAL_PATHS = [
+  '/api/auth/login',
+  '/api/auth/setup-password',
+  '/api/auth/reset-password',
+  '/api/auth/request-otp',
+  '/api/auth/activate',
+];
+function isCredentialPath(p: string): boolean {
+  return CREDENTIAL_PATHS.some((cp) => p === cp || p.startsWith(cp + '/'));
+}
+
 // In-memory fallback strike counter (used only when Redis is down/disabled).
 const memStrikes = new Map<string, { n: number; exp: number }>();
 
@@ -86,8 +104,10 @@ export async function ipBlockGuard(req: Request, res: Response, next: NextFuncti
     return;
   }
 
-  // Count abusive responses after they're sent (non-blocking).
+  // Count abusive responses after they're sent (non-blocking). ONLY failed
+  // credential attempts count — never routine data-endpoint 401s (see above).
   res.on('finish', () => {
+    if (!isCredentialPath(req.path)) return;
     if (res.statusCode === 401 || res.statusCode === 429) void recordStrike(ip);
   });
 

@@ -15,8 +15,33 @@ export class ApiError extends Error {
 
 // In-memory token - never written to localStorage
 let _accessToken: string | null = null;
-export const setAccessToken = (t: string | null) => { _accessToken = t; };
+// Epoch ms when the access token expires (0 = unknown). Decoded from the JWT so we
+// can refresh PROACTIVELY, before a burst of parallel calls all fire with a stale
+// token and each 401. Every 401 is an abuse "strike" server-side; the app boots
+// ~14 parallel calls, so one silent expiry used to = 14 strikes → IP auto-block.
+let _accessTokenExp = 0;
+
+function decodeExp(token: string): number {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : 0;
+  } catch { return 0; }
+}
+
+export const setAccessToken = (t: string | null) => {
+  _accessToken = t;
+  _accessTokenExp = t ? decodeExp(t) : 0;
+};
 export const getAccessToken = () => _accessToken;
+
+// Adopt a freshly-minted token everywhere: in-memory, decoded expiry, and the store.
+function applyToken(t: string): void {
+  _accessToken = t;
+  _accessTokenExp = decodeExp(t);
+  import('@/store/authStore').then(({ useAuthStore }) => {
+    setTimeout(() => useAuthStore.getState().setToken(t), 0);
+  });
+}
 
 // Deduplicates concurrent 401 → refresh attempts into one request
 let _refreshPromise: Promise<string | null> | null = null;
@@ -43,6 +68,15 @@ async function tryRefresh(): Promise<string | null> {
 const REQUEST_TIMEOUT_MS = 30_000;
 
 async function request<T>(path: string, options: RequestInit = {}, _retry = true): Promise<T> {
+  // Proactive refresh: if the access token is expired or within 30s of it, refresh
+  // ONCE (deduped) BEFORE sending — so a wave of parallel calls never fires with a
+  // stale token and 401s en masse. On refresh failure, fall through and let the
+  // normal 401 path handle logout.
+  if (_retry && _accessToken && _accessTokenExp && Date.now() >= _accessTokenExp - 30_000) {
+    const t = await tryRefresh();
+    if (t) applyToken(t);
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let res: Response;
@@ -64,10 +98,7 @@ async function request<T>(path: string, options: RequestInit = {}, _retry = true
   if (res.status === 401 && _retry) {
     const newToken = await tryRefresh();
     if (newToken) {
-      _accessToken = newToken;
-      import('@/store/authStore').then(({ useAuthStore }) => {
-        setTimeout(() => useAuthStore.getState().setToken(newToken), 0);
-      });
+      applyToken(newToken);
       return request<T>(path, options, false);
     }
     import('@/store/authStore').then(({ useAuthStore }) => {
