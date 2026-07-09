@@ -187,29 +187,38 @@ const COUNTRY_CODES = [
   { flag: '🇸🇬', code: '+65', country: 'SG' },
 ];
 
-// Strip country code prefix from a stored phone and return [localPart, matchedCode].
-function parseStoredPhone(raw: string | undefined): [string, typeof COUNTRY_CODES[number]] {
-  if (!raw) return ['', COUNTRY_CODES[0]];
-  // Normalize repeated +91 prefixes (legacy data corruption)
-  let p = raw.replace(/^(\+91)+/, '+91');
-  // Match longest country code first (e.g. +971 before +9)
-  const sorted = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length);
-  for (const cc of sorted) {
-    if (p.startsWith(cc.code)) return [p.slice(cc.code.length), cc];
+// Split a stored full phone (e.g. "+919600504963") into a country-code entry + the
+// national number, so the editor shows the number ONCE next to the code picker
+// instead of re-prefixing it. Also self-heals values already corrupted by the old
+// double-prefix bug (e.g. "+91+91+919600504963") by stripping repeated leading codes.
+function splitPhone(full?: string): { code: typeof COUNTRY_CODES[number]; national: string } {
+  const raw = (full ?? '').replace(/[^\d+]/g, '');
+  if (!raw) return { code: COUNTRY_CODES[0], national: '' };
+  const withPlus = raw.startsWith('+') ? raw : '+' + raw;
+  // Longest code first so +971 wins over +91, +1, etc.
+  const byLen = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length);
+  const matched = byLen.find((c) => withPlus.startsWith(c.code));
+  const code = matched ?? COUNTRY_CODES[0];
+  let digits = (matched ? withPlus.slice(matched.code.length) : withPlus).replace(/[^\d]/g, '');
+  // Strip repeated copies of the code left over from the +91+91 bug - but never so far
+  // that fewer than 10 national digits remain (Indian mobile length).
+  const codeDigits = code.code.replace('+', '');
+  while (digits.startsWith(codeDigits) && digits.length - codeDigits.length >= 10) {
+    digits = digits.slice(codeDigits.length);
   }
-  return [p, COUNTRY_CODES[0]];
+  return { code, national: digits };
 }
 
 function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
   const isEdit = !!initial;
+  const initPhone = splitPhone(initial?.phone);
   const [firstName,  setFirstName]  = useState(initial ? initial.name.split(' ')[0] : '');
   const [lastName,   setLastName]   = useState(initial ? initial.name.split(' ').slice(1).join(' ') : '');
   const [email,      setEmail]      = useState(initial?.email ?? '');
   const [fullAccess, setFullAccess] = useState(true);
-  const [parsedPhone, parsedCC] = parseStoredPhone(initial?.phone);
-  const [phone,      setPhone]      = useState(parsedPhone);
+  const [phone,      setPhone]      = useState(initPhone.national);
   const [password,   setPassword]   = useState('');
-  const [countryCode, setCountryCode] = useState(parsedCC);
+  const [countryCode, setCountryCode] = useState(initPhone.code);
   const [showCountryDrop, setShowCountryDrop] = useState(false);
   const [staffId,       setStaffId]      = useState(initial?.staff_id ?? '');
   const [avatarUrl,     setAvatarUrl]    = useState<string | null>(null);
@@ -233,7 +242,10 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length) return;
-    const fullPhone = phone.trim() ? `${countryCode.code}${phone.trim()}` : undefined;
+    // Only digits in the national part — the country code is added exactly once here,
+    // so a value the user pasted with a leading + or code can't double-prefix.
+    const nationalDigits = phone.replace(/[^\d]/g, '');
+    const fullPhone = nationalDigits ? `${countryCode.code}${nationalDigits}` : undefined;
     onSave({
       name: `${firstName.trim()} ${lastName.trim()}`,
       email: email.trim(),

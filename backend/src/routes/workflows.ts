@@ -639,10 +639,14 @@ export async function executeNodes(
         // ── Change Pipeline Stage ──────────────────────────────────────────────
         case 'change_stage': {
           const stageId = node.config.stage_id as string;
+          const newPipelineId = node.config.pipeline_id as string | undefined;
           if (stageId && lead.id) {
+            const setClauses = ['stage_id=$1::uuid', 'updated_at=NOW()'];
+            const params: any[] = [stageId, lead.id, tenantId];
+            if (newPipelineId) { setClauses.splice(1, 0, `pipeline_id=$${params.push(newPipelineId)}::uuid`); }
             await query(
-              `UPDATE leads SET stage_id=$1::uuid, updated_at=NOW() WHERE id=$2::uuid AND tenant_id=$3::uuid`,
-              [stageId, lead.id, tenantId]
+              `UPDATE leads SET ${setClauses.join(', ')} WHERE id=$2::uuid AND tenant_id=$3::uuid`,
+              params
             );
             const sr = await query('SELECT name FROM pipeline_stages WHERE id=$1', [stageId]);
             const stageName = sr.rows[0]?.name ?? stageId;
@@ -653,7 +657,8 @@ export async function executeNodes(
               message = `Moved to ${stageName}`;
               lead.stage_id = stageId;
               lead.stage_name = stageName;
-              setImmediate(() => recordStageEntry(lead.id, tenantId, stageId, lead.pipeline_id).catch(() => null));
+              if (newPipelineId) lead.pipeline_id = newPipelineId;
+              setImmediate(() => recordStageEntry(lead.id, tenantId, stageId, newPipelineId ?? lead.pipeline_id).catch(() => null));
               // Re-fetch with JOIN so socket carries assigned_name display field
               const updatedLead = await query(
                 `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
