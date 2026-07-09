@@ -412,23 +412,39 @@ router.post('/meta/webhook', async (req: Request, res: Response) => {
     // Derive page tokens once per tenant and reuse them across this webhook batch.
     const pageTokenCache = new Map<string, Map<string, string>>(); // tenantId -> (pageId -> pageToken)
 
-    await Promise.allSettled(allChanges.map(async ({ pageId, metaFormId, leadgenId }) => {
+    // A Facebook page can be connected to MULTIPLE CRM tenants. Resolve ALL of
+    // them and process the lead for each - the old `LIMIT 1` silently dropped the
+    // lead for every connected tenant but one (arbitrary), so a shared page could
+    // deliver to the wrong account. Idempotency below is now scoped per-tenant.
+    const pageTenants = new Map<string, any[]>(); // pageId -> meta_integrations rows
+    const resolveTenants = async (pageId: string) => {
+      let rows = pageTenants.get(pageId);
+      if (!rows) {
+        const r = await query(
+          `SELECT * FROM meta_integrations WHERE page_ids @> $1::jsonb`,
+          [JSON.stringify([pageId])]
+        );
+        rows = r.rows;
+        pageTenants.set(pageId, rows);
+      }
+      return rows;
+    };
+    const tasks: Array<{ pageId: string; metaFormId: string; leadgenId: string; mi: any }> = [];
+    for (const chg of allChanges) {
+      const tenants = await resolveTenants(chg.pageId);
+      for (const mi of tenants) tasks.push({ ...chg, mi });
+    }
+
+    await Promise.allSettled(tasks.map(async ({ pageId, metaFormId, leadgenId, mi }) => {
       try {
 
-          // 1. Fast idempotency check — skip if this exact leadgen_id already processed
+          // 1. Per-tenant idempotency - skip only if THIS tenant already imported
+          //    this leadgen_id, so a shared page still delivers to every tenant.
           const idem = await query(
-            `SELECT id FROM leads WHERE source='meta_form' AND source_ref=$1 LIMIT 1`,
-            [leadgenId]
+            `SELECT id FROM leads WHERE tenant_id=$1 AND source='meta_form' AND source_ref=$2 LIMIT 1`,
+            [mi.tenant_id, leadgenId]
           );
           if (idem.rows[0]) return;
-
-          // Find tenant by page_id
-          const miRes = await query(
-            `SELECT * FROM meta_integrations WHERE page_ids @> $1::jsonb LIMIT 1`,
-            [JSON.stringify([pageId])]
-          );
-          const mi = miRes.rows[0];
-          if (!mi) return;
 
           // Auto-create form entry if first time seeing this form_id
           await query(
