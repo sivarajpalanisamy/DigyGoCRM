@@ -624,9 +624,15 @@ export async function executeNodes(
                 lead.stage_name = stageName;
                 setImmediate(() => recordStageEntry(lead.id, tenantId, node.config.stage_id as string, lead.pipeline_id).catch(() => null));
               }
+              // Emit socket update so frontend reflects changes in real-time
+              const updatedLead2 = await query(
+                `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
+                [lead.id]
+              ).catch(() => ({ rows: [] as any[] }));
+              if (updatedLead2.rows[0]) emitToTenant(tenantId, 'lead:updated', updatedLead2.rows[0]);
               if (node.config.stage_id) {
-                const updatedLead2 = (await query('SELECT * FROM leads WHERE id=$1', [lead.id])).rows[0];
-                if (updatedLead2) setImmediate(() => triggerWorkflows('stage_changed', { ...updatedLead2, stage_name: stageName }, tenantId, safeUserId ?? userId).catch(() => null));
+                const raw2 = updatedLead2.rows[0] ?? (await query('SELECT * FROM leads WHERE id=$1', [lead.id])).rows[0];
+                if (raw2) setImmediate(() => triggerWorkflows('stage_changed', { ...raw2, stage_name: stageName }, tenantId, safeUserId ?? userId).catch(() => null));
               }
             }
           } else {
@@ -735,6 +741,12 @@ export async function executeNodes(
             lead.assigned_staff_id   = (rStaff as any).rows[0]?.staff_id ?? '';
             lead.pipeline_name       = (rPipeline as any).rows[0]?.name ?? '';
             lead.stage_name          = (rStage as any).rows[0]?.name ?? '';
+            // Emit socket update so frontend reflects round-robin assignment in real-time
+            const updRR = await query(
+              `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
+              [lead.id]
+            ).catch(() => ({ rows: [] as any[] }));
+            if (updRR.rows[0]) emitToTenant(tenantId, 'lead:updated', updRR.rows[0]);
             message = `Round-robin pair ${pairIdx + 1}: ${lead.pipeline_name} → ${lead.assigned_staff_name}`;
             break;
           }
@@ -822,6 +834,12 @@ export async function executeNodes(
               lead.assigned_staff_name = ur.rows[0]?.name ?? '';
               lead.assigned_staff_id   = ur.rows[0]?.staff_id ?? '';
               message = `Assigned: ${ur.rows[0]?.name ?? staffId}`;
+              // Emit socket update so frontend reflects assignment in real-time
+              const updAssign = await query(
+                `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
+                [lead.id]
+              ).catch(() => ({ rows: [] as any[] }));
+              if (updAssign.rows[0]) emitToTenant(tenantId, 'lead:updated', updAssign.rows[0]);
             }
           } else {
             status = 'skipped'; message = 'assign_staff: no staff configured';
@@ -936,6 +954,11 @@ export async function executeNodes(
               // Keep the in-memory context fresh for downstream nodes (webhook/if_else/etc.)
               lead.custom_fields = { ...(lead.custom_fields ?? {}), lead_quality: quality };
               message = `Quality: ${quality}`;
+              const updQual = await query(
+                `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
+                [lead.id]
+              ).catch(() => ({ rows: [] as any[] }));
+              if (updQual.rows[0]) emitToTenant(tenantId, 'lead:updated', updQual.rows[0]);
             }
           } else {
             status = 'skipped'; message = 'change_lead_quality: no quality configured';
@@ -1023,6 +1046,12 @@ export async function executeNodes(
               ...Object.keys(jsonbMerge),
             ];
             message = `Updated: ${updatedCols.join(', ')}`;
+            // Emit socket update so frontend reflects attribute changes in real-time
+            const updAttr = await query(
+              `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id=l.assigned_to WHERE l.id=$1`,
+              [lead.id]
+            ).catch(() => ({ rows: [] as any[] }));
+            if (updAttr.rows[0]) emitToTenant(tenantId, 'lead:updated', updAttr.rows[0]);
           } else {
             status = 'skipped'; message = 'update_attributes: no field/value configured';
           }
@@ -1062,6 +1091,7 @@ export async function executeNodes(
               status = 'failed'; message = 'remove_from_crm: lead was not marked as deleted';
             } else {
               message = 'Lead removed from CRM';
+              emitToTenant(tenantId, 'lead:deleted', { id: lead.id });
             }
           } else if (lead.id?.startsWith('test-')) {
             status = 'skipped'; message = 'remove_from_crm: test contact is not a real CRM lead';

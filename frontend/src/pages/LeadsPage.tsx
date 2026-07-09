@@ -4649,13 +4649,29 @@ function buildLeadsParams(
   p.set('limit', '2000');
   if (pipelineId) p.set('pipeline_id', pipelineId);
   if (search)     p.set('search', search);
-  // Single-selection filters map directly to API (including 'none' for unassigned)
+
+  // Assignee filter (single or multi)
   if (filters.assignedTo.length === 1) p.set('assigned_to', filters.assignedTo[0]);
+  else if (filters.assignedTo.length > 1) p.set('assigned_tos', filters.assignedTo.join(','));
+
+  // Stage filter (single or multi - resolve names to IDs)
   if (filters.stage.length === 1) {
     const stageId = selectedPipeline?.stages.find((s) => s.name === filters.stage[0])?.id;
     if (stageId) p.set('stage', stageId);
+  } else if (filters.stage.length > 1 && selectedPipeline) {
+    const ids = filters.stage.map((n) => selectedPipeline.stages.find((s) => s.name === n)?.id).filter(Boolean) as string[];
+    if (ids.length) p.set('stages', ids.join(','));
   }
+
+  // Tag filter (single or multi)
   if (filters.tags.length === 1) p.set('tag', filters.tags[0]);
+  else if (filters.tags.length > 1) p.set('tags', filters.tags.join(','));
+
+  // Lead quality filter
+  if (filters.leadQuality.length === 1) p.set('lead_quality', filters.leadQuality[0]);
+  else if (filters.leadQuality.length > 1) p.set('lead_qualities', filters.leadQuality.join(','));
+
+  // Created date filter
   if (filters.createdOn === 'Custom') {
     if (filters.createdFrom) p.set('date_from', new Date(filters.createdFrom + 'T00:00:00').toISOString());
     if (filters.createdTo)   p.set('date_to',   new Date(filters.createdTo + 'T23:59:59.999').toISOString());
@@ -4664,6 +4680,14 @@ function buildLeadsParams(
     if (date_from) p.set('date_from', date_from);
     if (date_to)   p.set('date_to',   date_to);
   }
+
+  // Updated date filter
+  if (filters.updatedOn) {
+    const { date_from, date_to } = dateRangeToIso(filters.updatedOn);
+    if (date_from) p.set('updated_from', date_from);
+    if (date_to)   p.set('updated_to',   date_to);
+  }
+
   return p;
 }
 
@@ -5143,7 +5167,13 @@ export default function LeadsPage() {
     let result = apiLeads ?? leads;
 
     // Client-side-only filters (no backend equivalent)
-    if (filters.contactType.length) result = result.filter((l) => filters.contactType.includes('Customer') ? l.stage === 'Closed Won' : l.stage !== 'Closed Won');
+    if (filters.contactType.length) {
+      const wantCustomer = filters.contactType.includes('Customer');
+      const wantLead = filters.contactType.includes('Lead');
+      // Both selected = show all; single = filter
+      if (wantCustomer && !wantLead) result = result.filter((l) => l.stage === 'Closed Won');
+      else if (wantLead && !wantCustomer) result = result.filter((l) => l.stage !== 'Closed Won');
+    }
     if (filters.opportunityValue.length) result = result.filter((l) => {
       const v = l.dealValue;
       return filters.opportunityValue.some((r) =>
@@ -5155,23 +5185,24 @@ export default function LeadsPage() {
       );
     });
 
-    // When no apiLeads (store-based), apply ALL filters client-side.
-    // When apiLeads exist, the API already handled single-value filters;
-    // apply multi-value filters (>1 selection) client-side as a second pass.
-    const assigneeFilter = (l: Lead) => {
-      const sel = filters.assignedTo;
-      const hasNone = sel.includes('none');
-      const staffIds = sel.filter((v) => v !== 'none');
-      // Match unassigned OR matching staff
-      return (hasNone && !l.assignedTo) || staffIds.includes(l.assignedTo ?? '');
-    };
-
+    // API now handles all filter types (single + multi). Client-side fallback
+    // only needed when apiLeads is null (store-based, before first fetch).
     if (!apiLeads) {
+      const assigneeFilter = (l: Lead) => {
+        const sel = filters.assignedTo;
+        const hasNone = sel.includes('none');
+        const staffIds = sel.filter((v) => v !== 'none');
+        return (hasNone && !l.assignedTo) || staffIds.includes(l.assignedTo ?? '');
+      };
       if (selectedPipelineId) result = result.filter((l) => l.pipelineId === selectedPipelineId);
       if (debouncedSearch) { const s = debouncedSearch.toLowerCase(); result = result.filter((l) => `${l.firstName} ${l.lastName}`.toLowerCase().includes(s) || l.phone.includes(s) || l.email.toLowerCase().includes(s)); }
       if (filters.assignedTo.length) result = result.filter(assigneeFilter);
       if (filters.stage.length) result = result.filter((l) => filters.stage.includes(l.stage));
       if (filters.tags.length) result = result.filter((l) => filters.tags.some((t) => l.tags.includes(t)));
+      if (filters.leadQuality.length) result = result.filter((l) => {
+        const q = (l as any).customFields?.lead_quality ?? '';
+        return filters.leadQuality.includes(q);
+      });
       if (filters.createdOn) {
         const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         result = result.filter((l) => {
@@ -5185,11 +5216,6 @@ export default function LeadsPage() {
           return true;
         });
       }
-    } else {
-      // API handled single-value; apply multi-value client-side
-      if (filters.assignedTo.length > 1) result = result.filter(assigneeFilter);
-      if (filters.stage.length > 1) result = result.filter((l) => filters.stage.includes(l.stage));
-      if (filters.tags.length > 1) result = result.filter((l) => filters.tags.some((t) => l.tags.includes(t)));
     }
 
     return result;

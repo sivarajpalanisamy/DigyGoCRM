@@ -23,15 +23,44 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireTenant); // super_admin must use impersonation to access tenant data (#44)
 
+// Sync leads.tags array to the lead_tags junction table so tag-based filters work.
+// Replaces all junction rows for the lead with the current tags array.
+async function syncLeadTagsToJunction(tenantId: string, leadId: string, tagNames: string[]): Promise<void> {
+  if (!tagNames.length) {
+    await query('DELETE FROM lead_tags WHERE lead_id=$1', [leadId]).catch(() => null);
+    return;
+  }
+  // Ensure all tag names exist in the tags table, then sync junction
+  for (const name of tagNames) {
+    await query(
+      `INSERT INTO tags (tenant_id, name) VALUES ($1, $2) ON CONFLICT (tenant_id, name) DO NOTHING`,
+      [tenantId, name]
+    ).catch(() => null);
+  }
+  await query('DELETE FROM lead_tags WHERE lead_id=$1', [leadId]).catch(() => null);
+  await query(
+    `INSERT INTO lead_tags (lead_id, tag_id)
+     SELECT $1, t.id FROM tags t WHERE t.tenant_id=$2 AND t.name = ANY($3::text[])
+     ON CONFLICT DO NOTHING`,
+    [leadId, tenantId, tagNames]
+  ).catch(() => null);
+}
+
 // GET /api/leads
 router.get('/', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
   const {
     stage, search, pipeline_id, assigned_to, source, source_ref, meta_form_id,
     tag, date_from, date_to, quick,
+    updated_from, updated_to, lead_quality,
     page = '1', limit = '200',
     after,          // cursor: ISO timestamp — when present, enables keyset pagination
   } = req.query as Record<string, string>;
+  // Multi-value filters: tags=a,b, assigned_tos=id1,id2, stages=id1,id2
+  const tags = (req.query.tags as string)?.split(',').filter(Boolean) ?? [];
+  const assignedTos = (req.query.assigned_tos as string)?.split(',').filter(Boolean) ?? [];
+  const stages = (req.query.stages as string)?.split(',').filter(Boolean) ?? [];
+  const leadQualities = (req.query.lead_qualities as string)?.split(',').filter(Boolean) ?? [];
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   // Permission resolution: super_admin sees all; everyone else goes through
@@ -89,9 +118,25 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 
   if (stage)       { params.push(stage);                  sql += ` AND l.stage_id = $${params.length}`; }
+  if (stages.length) { params.push(stages);               sql += ` AND l.stage_id = ANY($${params.length}::uuid[])`; }
   if (pipeline_id) { params.push(pipeline_id);            sql += ` AND l.pipeline_id = $${params.length}`; }
+  // Single assigned_to filter
   if (assigned_to === 'none') { sql += ` AND l.assigned_to IS NULL`; }
-  else if (assigned_to) { params.push(assigned_to);            sql += ` AND l.assigned_to = $${params.length}`; }
+  else if (assigned_to) { params.push(assigned_to);       sql += ` AND l.assigned_to = $${params.length}`; }
+  // Multi assigned_to filter
+  if (assignedTos.length) {
+    const hasNone = assignedTos.includes('none');
+    const staffIds = assignedTos.filter((v) => v !== 'none');
+    if (hasNone && staffIds.length) {
+      params.push(staffIds);
+      sql += ` AND (l.assigned_to IS NULL OR l.assigned_to = ANY($${params.length}::uuid[]))`;
+    } else if (hasNone) {
+      sql += ` AND l.assigned_to IS NULL`;
+    } else if (staffIds.length) {
+      params.push(staffIds);
+      sql += ` AND l.assigned_to = ANY($${params.length}::uuid[])`;
+    }
+  }
   // Dashboard quick-filters (cross-pipeline): stale = no activity 7+ days; converted = in a won stage.
   if (quick === 'stale')     { sql += ` AND l.updated_at < NOW() - INTERVAL '7 days'`; }
   else if (quick === 'converted') { sql += ` AND ps.is_won = TRUE`; }
@@ -100,13 +145,26 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   if (meta_form_id)   { params.push(meta_form_id); sql += ` AND l.meta_form_id = $${params.length}`; }
   if (date_from)   { params.push(date_from);              sql += ` AND l.created_at >= $${params.length}`; }
   if (date_to)     { params.push(date_to);                sql += ` AND l.created_at <= $${params.length}`; }
+  if (updated_from) { params.push(updated_from);          sql += ` AND l.updated_at >= $${params.length}`; }
+  if (updated_to)   { params.push(updated_to);            sql += ` AND l.updated_at <= $${params.length}`; }
+  // Single tag filter
   if (tag) {
     params.push(tag);
-    sql += ` AND EXISTS (
-      SELECT 1 FROM lead_tags lt
-      JOIN tags tg ON tg.id = lt.tag_id
-      WHERE lt.lead_id = l.id AND tg.name = $${params.length}
-    )`;
+    sql += ` AND $${params.length} = ANY(l.tags)`;
+  }
+  // Multi tag filter
+  if (tags.length) {
+    params.push(tags);
+    sql += ` AND l.tags && $${params.length}::text[]`;
+  }
+  // Lead quality filter
+  if (lead_quality) {
+    params.push(lead_quality);
+    sql += ` AND l.custom_fields->>'lead_quality' = $${params.length}`;
+  }
+  if (leadQualities.length) {
+    params.push(leadQualities);
+    sql += ` AND l.custom_fields->>'lead_quality' = ANY($${params.length}::text[])`;
   }
   if (search) {
     params.push(`%${search}%`);
@@ -681,6 +739,9 @@ router.post('/', checkPermission('leads:create'), checkUsage('leads'), validate(
       if (cfResult.rows[0]) lead = cfResult.rows[0];
     }
 
+    // Sync tags to junction table so tag-based filters work
+    if (tags?.length) setImmediate(() => syncLeadTagsToJunction(tenantId!, lead.id, tags).catch(() => null));
+
     await query(
       `INSERT INTO lead_activities (lead_id, tenant_id, type, title, created_by)
        VALUES ($1,$2,'created','Lead created',$3)`,
@@ -853,6 +914,8 @@ router.patch('/:id', checkPermission('leads:edit'), validate(UpdateLeadSchema), 
           [req.params.id, tenantId, `Tags removed: ${removed.join(', ')}`, userId]
         );
       }
+      // Sync junction table so tag-based filters work
+      setImmediate(() => syncLeadTagsToJunction(tenantId!, req.params.id, newTags).catch(() => null));
     }
 
     const withName = await query(
