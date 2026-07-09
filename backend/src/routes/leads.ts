@@ -52,7 +52,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   const {
     stage, search, pipeline_id, assigned_to, source, source_ref, meta_form_id,
     tag, date_from, date_to, quick,
-    updated_from, updated_to, lead_quality,
+    updated_from, updated_to, lead_quality, has_overdue_followup,
     page = '1', limit = '200',
     after,          // cursor: ISO timestamp — when present, enables keyset pagination
   } = req.query as Record<string, string>;
@@ -165,6 +165,9 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   if (leadQualities.length) {
     params.push(leadQualities);
     sql += ` AND l.custom_fields->>'lead_quality' = ANY($${params.length}::text[])`;
+  }
+  if (has_overdue_followup === 'true') {
+    sql += ` AND EXISTS (SELECT 1 FROM lead_followups f WHERE f.lead_id = l.id AND f.completed = FALSE AND f.due_at < NOW())`;
   }
   if (search) {
     params.push(`%${search}%`);

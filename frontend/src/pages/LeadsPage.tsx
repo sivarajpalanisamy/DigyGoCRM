@@ -390,6 +390,7 @@ const emptyFilters = {
   updatedOn: '',
   calendar: '',
   followUp: '',
+  overdueFollowUp: false as boolean,
 };
 type FilterState = typeof emptyFilters;
 
@@ -706,6 +707,22 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
           );
         })}
         {matching.length === 0 && <p className="text-[13px] text-[#b09e8d] text-center py-6">No filters match "{search}"</p>}
+
+        {/* Overdue follow-up toggle */}
+        {(!q || 'overdue follow-up'.includes(q)) && (
+          <div className="px-4 py-2.5 border-t border-black/[0.05]">
+            <button
+              onClick={() => setDraft((d) => ({ ...d, overdueFollowUp: !d.overdueFollowUp }))}
+              className={cn('w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors',
+                draft.overdueFollowUp ? 'bg-[#faf0e8] text-primary' : 'hover:bg-[var(--app-bg)] text-[#1c1410]')}
+            >
+              <div className={cn('w-4 h-4 rounded border-2 flex items-center justify-center shrink-0', draft.overdueFollowUp ? 'bg-primary border-primary' : 'border-gray-300')}>
+                {draft.overdueFollowUp && <Check className="w-2.5 h-2.5 text-white" />}
+              </div>
+              <span className="text-[12.5px] font-medium flex-1">Overdue Follow-ups Only</span>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className={cn('px-4 border-t border-black/5 shrink-0 flex items-center gap-2',
@@ -4680,6 +4697,9 @@ function buildLeadsParams(
     if (date_from) p.set('date_from', date_from);
     if (date_to)   p.set('date_to',   date_to);
   }
+
+  // Overdue follow-up filter
+  if (filters.overdueFollowUp) p.set('has_overdue_followup', 'true');
 
   // Updated date filter
   if (filters.updatedOn) {
