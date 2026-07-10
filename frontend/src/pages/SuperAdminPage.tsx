@@ -475,7 +475,6 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
               { key: 'email_smtp', label: 'Email (SMTP)' },
               { key: 'google_sheets', label: 'Google Sheets' },
               { key: 'razorpay', label: 'Razorpay' },
-              { key: 'superfone', label: 'Superfone' },
             ].map(({ key, label }) => {
               const hidden = form.hidden_integrations.includes(key);
               return (
