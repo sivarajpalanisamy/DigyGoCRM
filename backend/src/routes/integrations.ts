@@ -824,6 +824,17 @@ router.post('/meta/manual-connect', checkPermission('meta_forms:create'), async 
   }
 });
 
+// GET /api/integrations/visibility — returns which integrations are hidden for this tenant
+router.get('/visibility', async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query('SELECT hidden_integrations FROM tenants WHERE id=$1', [req.user!.tenantId]);
+    res.json({ hidden: result.rows[0]?.hidden_integrations ?? [] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/integrations/meta/status
 // Serves purely from DB — no live Meta API calls to avoid rate limits.
 // Live page data is refreshed only on OAuth connect or explicit Sync.

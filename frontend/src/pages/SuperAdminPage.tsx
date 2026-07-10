@@ -37,6 +37,7 @@ interface Tenant {
   superfone_enabled?: boolean;
   email_credits?: number;
   max_users?: number;
+  hidden_integrations?: string[];
 }
 
 // Plans are Monthly / Yearly only (the billing cycle). The old tier field is retired.
@@ -340,6 +341,7 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
     superfone_enabled: !!tenant.superfone_enabled,
     email_credits: tenant.email_credits != null ? String(tenant.email_credits) : '-1',
     max_users: tenant.max_users != null ? String(tenant.max_users) : '5',
+    hidden_integrations: tenant.hidden_integrations ?? [],
   });
   const [saving, setSaving] = useState(false);
   const [renewing, setRenewing] = useState(false);
@@ -461,6 +463,38 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
                 onChange={(e) => setForm({ ...form, superfone_enabled: e.target.checked })} />
             </label>
           </div>
+
+          {/* Integration Visibility */}
+          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Integration Visibility</div>
+          <div className="sm:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {[
+              { key: 'facebook', label: 'Facebook' },
+              { key: 'instagram', label: 'Instagram' },
+              { key: 'whatsapp_business', label: 'WhatsApp Business' },
+              { key: 'whatsapp_personal', label: 'WhatsApp Personal' },
+              { key: 'email_smtp', label: 'Email (SMTP)' },
+              { key: 'google_sheets', label: 'Google Sheets' },
+              { key: 'razorpay', label: 'Razorpay' },
+              { key: 'superfone', label: 'Superfone' },
+            ].map(({ key, label }) => {
+              const hidden = form.hidden_integrations.includes(key);
+              return (
+                <label key={key} className="flex items-center gap-2 px-2.5 py-2 rounded-lg border border-black/10 bg-[var(--app-bg)] cursor-pointer text-xs">
+                  <input type="checkbox" className="w-4 h-4 accent-primary"
+                    checked={!hidden}
+                    onChange={() => setForm({
+                      ...form,
+                      hidden_integrations: hidden
+                        ? form.hidden_integrations.filter((k) => k !== key)
+                        : [...form.hidden_integrations, key],
+                    })}
+                  />
+                  <span className={hidden ? 'text-[#9e8e7e] line-through' : 'text-[#1c1410] font-semibold'}>{label}</span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="sm:col-span-2 text-[11px] text-[#7a6b5c] -mt-1">Unchecked integrations will be hidden from this tenant's Integrations page.</p>
 
           {/* User License */}
           <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">User License</div>
