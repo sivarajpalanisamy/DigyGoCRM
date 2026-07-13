@@ -24,6 +24,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import { ExportModal } from '@/components/ui/ExportModal';
@@ -57,7 +58,7 @@ function getSourceColor(source: string) {
   if (s.startsWith('form:') || s === 'Custom Form')          return 'bg-purple-50 text-purple-600';
   if (s === 'meta_form')    return 'bg-blue-50 text-blue-600';
   if (s === 'whatsapp' || s === 'WhatsApp') return 'bg-emerald-50 text-emerald-600';
-  if (s === 'Manual')       return 'bg-[#faf0e8] text-primary';
+  if (s === 'Manual')       return 'bg-[#f1f3f5] text-primary';
   if (s === 'Landing Page') return 'bg-amber-50 text-amber-600';
   return 'bg-gray-100 text-gray-500';
 }
@@ -68,7 +69,7 @@ const SOURCE_COLORS: Record<string, string> = {
   'WhatsApp':         'bg-emerald-50 text-emerald-600',
   'whatsapp':         'bg-emerald-50 text-emerald-600',
   'Custom Form':      'bg-purple-50 text-purple-600',
-  'Manual':           'bg-[#faf0e8] text-primary',
+  'Manual':           'bg-[#f1f3f5] text-primary',
   'Landing Page':     'bg-amber-50 text-amber-600',
   'calendar_booking': 'bg-teal-50 text-teal-600',
 };
@@ -153,9 +154,9 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const inputCls = 'w-full bg-[#faf8f6] border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 focus:bg-white transition-all placeholder:text-[#b09e8d]';
+  const inputCls = 'w-full bg-[#f4f5f7] border border-black/10 rounded-xl px-3.5 py-2.5 text-[15px] text-[#111318] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 focus:bg-white transition-all placeholder:text-[#9ca3af]';
   const lbl = (text: string, required = false) => (
-    <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">{text}{required && <span className="text-primary ml-0.5">*</span>}</label>
+    <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">{text}{required && <span className="text-primary ml-0.5">*</span>}</label>
   );
 
   return (
@@ -165,9 +166,9 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><Plus className="w-4 h-4 text-primary" /></div>
-            <h3 className="text-[16px] font-bold text-[#1c1410]">Add Lead</h3>
+            <h3 className="text-[16px] font-bold text-[#111318]">Add Lead</h3>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-[#7a6b5c] flex items-center justify-center transition-colors"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-[#6b7280] flex items-center justify-center transition-colors"><X className="w-4 h-4" /></button>
         </div>
 
         {/* Body */}
@@ -179,9 +180,9 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               {lbl('Phone', true)}
-              <div className="flex items-center gap-2 bg-[#faf8f6] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all">
-                <span className="text-[14px] font-semibold text-[#7a6b5c] shrink-0">🇮🇳 +91</span>
-                <input className="flex-1 min-w-0 text-[14px] text-[#1c1410] outline-none bg-transparent placeholder:text-[#b09e8d]" placeholder="81234 56789" value={form.phone.replace('+91 ', '')} onChange={(e) => setForm({ ...form, phone: '+91 ' + e.target.value })} />
+              <div className="flex items-center gap-2 bg-[#f4f5f7] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all">
+                <span className="text-[15px] font-semibold text-[#6b7280] shrink-0">🇮🇳 +91</span>
+                <input className="flex-1 min-w-0 text-[15px] text-[#111318] outline-none bg-transparent placeholder:text-[#9ca3af]" placeholder="81234 56789" value={form.phone.replace('+91 ', '')} onChange={(e) => setForm({ ...form, phone: '+91 ' + e.target.value })} />
               </div>
             </div>
             <div>
@@ -226,7 +227,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
             <div className="sm:col-span-2 relative">
               {lbl('Assign To')}
               <div
-                className="bg-[#faf8f6] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all cursor-text"
+                className="bg-[#f4f5f7] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all cursor-text"
                 onClick={() => setStaffDropOpen(true)}
               >
                 {form.assignedTo.length > 0 && (
@@ -234,7 +235,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                     {form.assignedTo.map((id) => {
                       const s = assignableStaff.find((x: any) => x.id === id);
                       return (
-                        <span key={id} className="text-[11px] font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <span key={id} className="text-[12px] font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md flex items-center gap-1">
                           {s?.name ?? 'Unknown'}
                           <button type="button" onClick={(e) => { e.stopPropagation(); setForm({ ...form, assignedTo: form.assignedTo.filter((x) => x !== id) }); }} className="hover:text-red-500">×</button>
                         </span>
@@ -243,7 +244,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                   </div>
                 )}
                 <input
-                  className="w-full text-[14px] outline-none bg-transparent placeholder:text-[#b09e8d]"
+                  className="w-full text-[15px] outline-none bg-transparent placeholder:text-[#9ca3af]"
                   placeholder={form.assignedTo.length === 0 ? 'Search staff…' : ''}
                   value={staffSearch}
                   onChange={(e) => { setStaffSearch(e.target.value); setStaffDropOpen(true); }}
@@ -262,7 +263,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                           <button
                             key={s.id}
                             type="button"
-                            className={`w-full text-left px-3.5 py-2 text-[14px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
+                            className={`w-full text-left px-3.5 py-2 text-[15px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#111318]'}`}
                             onClick={() => {
                               setForm({ ...form, assignedTo: selected ? form.assignedTo.filter((x) => x !== s.id) : [...form.assignedTo, s.id] });
                             }}
@@ -274,7 +275,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                       })
                     }
                     {assignableStaff.filter((s: any) => s.name.toLowerCase().includes(staffSearch.toLowerCase())).length === 0 && (
-                      <p className="px-3.5 py-2 text-[13px] text-[#b09e8d]">No staff found</p>
+                      <p className="px-3.5 py-2 text-[14px] text-[#9ca3af]">No staff found</p>
                     )}
                   </div>
                 </>
@@ -285,20 +286,20 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
             <div className="sm:col-span-2 relative">
               {lbl('Tags')}
               <div
-                className="bg-[#faf8f6] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all cursor-text"
+                className="bg-[#f4f5f7] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all cursor-text"
                 onClick={() => setTagDropOpen(true)}
               >
                 {form.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-1.5">
                     {form.tags.map((t) => (
-                      <span key={t} className="text-[11px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <span key={t} className="text-[12px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-md flex items-center gap-1">
                         {t}<button type="button" onClick={(e) => { e.stopPropagation(); setForm({ ...form, tags: form.tags.filter((x) => x !== t) }); }} className="hover:text-red-500">×</button>
                       </span>
                     ))}
                   </div>
                 )}
                 <input
-                  className="w-full text-[14px] outline-none bg-transparent placeholder:text-[#b09e8d]"
+                  className="w-full text-[15px] outline-none bg-transparent placeholder:text-[#9ca3af]"
                   placeholder={form.tags.length === 0 ? 'Search or type a tag…' : ''}
                   value={form.tagInput}
                   onChange={(e) => { setForm({ ...form, tagInput: e.target.value }); setTagDropOpen(true); }}
@@ -325,7 +326,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                           <button
                             key={t.id}
                             type="button"
-                            className={`w-full text-left px-3.5 py-2 text-[14px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
+                            className={`w-full text-left px-3.5 py-2 text-[15px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#111318]'}`}
                             onClick={() => {
                               setForm({ ...form, tags: selected ? form.tags.filter((x) => x !== t.name) : [...form.tags, t.name], tagInput: '' });
                             }}
@@ -342,14 +343,14 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                     {form.tagInput.trim() && !storeTags.some((t) => t.name.toLowerCase() === form.tagInput.trim().toLowerCase()) && (
                       <button
                         type="button"
-                        className="w-full text-left px-3.5 py-2 text-[14px] text-primary hover:bg-gray-50 transition-colors"
+                        className="w-full text-left px-3.5 py-2 text-[15px] text-primary hover:bg-gray-50 transition-colors"
                         onClick={() => { setForm({ ...form, tags: [...form.tags, form.tagInput.trim()], tagInput: '' }); }}
                       >
                         + Create "{form.tagInput.trim()}"
                       </button>
                     )}
                     {storeTags.filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase())).length === 0 && !form.tagInput.trim() && (
-                      <p className="px-3.5 py-2 text-[13px] text-[#b09e8d]">No tags available</p>
+                      <p className="px-3.5 py-2 text-[14px] text-[#9ca3af]">No tags available</p>
                     )}
                   </div>
                 </>
@@ -360,10 +361,10 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-black/5 shrink-0">
-          <p className="hidden sm:block text-[11px] text-[#b09e8d]">Created {format(new Date(now), 'dd MMM yyyy, hh:mm aa')}</p>
+          <p className="hidden sm:block text-[12px] text-[#9ca3af]">Created {format(new Date(now), 'dd MMM yyyy, hh:mm aa')}</p>
           <div className="flex gap-2 w-full sm:w-auto">
-            <button onClick={onClose} className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] bg-white border border-black/10 hover:bg-gray-50 active:scale-95 transition-all">Cancel</button>
-            <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-[14px] font-bold text-white bg-primary hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-60">{saving ? 'Saving…' : 'Save Lead'}</button>
+            <button onClick={onClose} className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] bg-white border border-black/10 hover:bg-gray-50 active:scale-95 transition-all">Cancel</button>
+            <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-[15px] font-bold text-white bg-primary hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-60">{saving ? 'Saving…' : 'Save Lead'}</button>
           </div>
         </div>
       </div>
@@ -436,7 +437,7 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
       <div className={cn('w-4 h-4 rounded border-2 flex items-center justify-center shrink-0', checked ? 'border-primary bg-primary' : 'border-gray-300')}>
         {checked && <Check className="w-2.5 h-2.5 text-white" />}
       </div>
-      <span className="text-[15px] text-[#1c1410]">{label}</span>
+      <span className="text-[16px] text-[#111318]">{label}</span>
     </button>
   );
 
@@ -445,7 +446,7 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
       <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0', selected ? 'border-primary' : 'border-gray-300')}>
         {selected && <div className="w-2 h-2 rounded-full bg-primary" />}
       </div>
-      <span className="text-[15px] text-[#1c1410]">{label}</span>
+      <span className="text-[16px] text-[#111318]">{label}</span>
     </button>
   );
 
@@ -492,32 +493,32 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
 
   const BottomBar = () => (
     <div className="flex items-center gap-1.5 px-3 py-3 border-t border-black/5 shrink-0">
-      <button onClick={clearAll} className="text-[13px] font-semibold text-red-500 hover:text-red-600 transition-colors shrink-0 mr-1">Clear all</button>
-      <button onClick={onClose} className="px-3 py-1.5 rounded-lg border border-gray-200 text-[13px] font-semibold text-[#1c1410] hover:bg-gray-50 transition-colors shrink-0">Cancel</button>
-      <button onClick={apply} className="flex-1 py-1.5 rounded-lg text-[13px] font-bold text-white whitespace-nowrap" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)' }}>Apply & Save</button>
-      <button onClick={apply} className="px-3 py-1.5 rounded-lg text-[13px] font-bold text-white shrink-0" style={{ background: 'linear-gradient(135deg, #7f1d1d 0%, #b91c1c 100%)' }}>Apply</button>
+      <button onClick={clearAll} className="text-[14px] font-semibold text-red-500 hover:text-red-600 transition-colors shrink-0 mr-1">Clear all</button>
+      <button onClick={onClose} className="px-3 py-1.5 rounded-lg border border-gray-200 text-[14px] font-semibold text-[#111318] hover:bg-gray-50 transition-colors shrink-0">Cancel</button>
+      <button onClick={apply} className="flex-1 py-1.5 rounded-lg text-[14px] font-bold text-white whitespace-nowrap" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)' }}>Apply & Save</button>
+      <button onClick={apply} className="px-3 py-1.5 rounded-lg text-[14px] font-bold text-white shrink-0" style={{ background: 'linear-gradient(135deg, #7f1d1d 0%, #b91c1c 100%)' }}>Apply</button>
     </div>
   );
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" style={{ backdropFilter: 'blur(3px)', backgroundColor: 'rgba(0,0,0,0.25)' }} onClick={onClose}>
-      <div className="bg-white w-[340px] h-full flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white w-full max-w-[340px] h-full flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-black/5 shrink-0">
           <div className="flex items-center gap-3">
             {subPanel && (
               <button onClick={() => { setSubPanel(''); setSubSearch(''); }} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
-                <ArrowLeft className="w-4 h-4 text-[#7a6b5c]" />
+                <ArrowLeft className="w-4 h-4 text-[#6b7280]" />
               </button>
             )}
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <Filter className="w-4 h-4 text-primary" />
             </div>
-            <span className="font-bold text-[15px] text-[#1c1410]">{subPanel ? activeCat?.label : 'Filters'}</span>
+            <span className="font-bold text-[16px] text-[#111318]">{subPanel ? activeCat?.label : 'Filters'}</span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-            <X className="w-4 h-4 text-[#7a6b5c]" />
+            <X className="w-4 h-4 text-[#6b7280]" />
           </button>
         </div>
 
@@ -526,7 +527,7 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
           <div className="px-4 py-2.5 border-b border-black/5 shrink-0">
             <input
               autoFocus
-              className="w-full px-3 py-2 text-[14px] bg-gray-50 border border-gray-100 rounded-lg outline-none focus:border-primary/30 placeholder:text-gray-400"
+              className="w-full px-3 py-2 text-[15px] bg-gray-50 border border-gray-100 rounded-lg outline-none focus:border-primary/30 placeholder:text-gray-400"
               placeholder="Search"
               value={subSearch}
               onChange={(e) => setSubSearch(e.target.value)}
@@ -544,7 +545,7 @@ function FilterPanel({ filters, onChange, onClose, stages }: { filters: FilterSt
                   className={cn('w-full flex items-center gap-3 px-5 py-4 text-left transition-colors', hasActive(key) ? 'bg-green-50' : 'hover:bg-gray-50')}
                 >
                   <Icon className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span className="flex-1 text-[15px] text-[#1c1410]">{label}</span>
+                  <span className="flex-1 text-[16px] text-[#111318]">{label}</span>
                   <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
                 </button>
               ))
@@ -630,21 +631,21 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
       {isMobile && <div className="flex justify-center pt-2 pb-1 shrink-0"><div className="w-10 h-1 rounded-full bg-black/15" /></div>}
       <div className="px-4 py-3 border-b border-black/5 flex items-center gap-2 shrink-0">
         <Filter className="w-4 h-4 text-primary" />
-        <h4 className="text-[15px] font-bold text-[#1c1410] flex-1">Filters</h4>
+        <h4 className="text-[16px] font-bold text-[#111318] flex-1">Filters</h4>
         {total > 0 && (
-          <button onClick={clearAll} className="text-[11px] font-semibold text-red-500 hover:underline">Clear all · {total}</button>
+          <button onClick={clearAll} className="text-[12px] font-semibold text-red-500 hover:underline">Clear all · {total}</button>
         )}
-        <button onClick={onClose} className="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center text-[#7a6b5c]">
+        <button onClick={onClose} className="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center text-[#6b7280]">
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
       <div className="px-4 py-2 border-b border-black/5 shrink-0">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
           <input
             autoFocus={!isMobile}
-            className="w-full pl-8 pr-3 py-1.5 text-[13px] bg-[var(--app-bg)] border border-transparent rounded-lg outline-none focus:border-primary/30 focus:bg-white placeholder:text-gray-400"
+            className="w-full pl-8 pr-3 py-1.5 text-[14px] bg-[var(--app-bg)] border border-transparent rounded-lg outline-none focus:border-primary/30 focus:bg-white placeholder:text-gray-400"
             placeholder="Search filters..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -659,13 +660,13 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
           return (
             <div key={s.key}>
               <button onClick={() => setExpanded(isOpen ? '' : s.key)} className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-[var(--app-bg)] transition-colors">
-                <span className="flex-1 text-left text-[14px] font-semibold text-[#1c1410]">{s.label}</span>
-                {sel > 0 && <span className="text-[10px] font-bold bg-primary/10 text-primary rounded-full px-2 py-0.5">{sel}</span>}
-                <ChevronDown className={cn('w-3.5 h-3.5 text-[#b09e8d] transition-transform', isOpen && 'rotate-180')} />
+                <span className="flex-1 text-left text-[15px] font-semibold text-[#111318]">{s.label}</span>
+                {sel > 0 && <span className="text-[11px] font-bold bg-primary/10 text-primary rounded-full px-2 py-0.5">{sel}</span>}
+                <ChevronDown className={cn('w-3.5 h-3.5 text-[#9ca3af] transition-transform', isOpen && 'rotate-180')} />
               </button>
               {isOpen && (
                 <div className="px-3 pb-2 pt-0.5 space-y-0.5 max-h-52 overflow-y-auto">
-                  {s.options.length === 0 && <p className="text-[11px] text-[#b09e8d] py-2 italic px-2">No options</p>}
+                  {s.options.length === 0 && <p className="text-[12px] text-[#9ca3af] py-2 italic px-2">No options</p>}
                   {s.options.map((o) => {
                     const isOn = s.type === 'multi' ? (draft[s.key] as string[]).includes(o.value) : (draft[s.key] as string) === o.value;
                     return (
@@ -673,7 +674,7 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
                         key={o.value}
                         onClick={() => s.type === 'multi' ? toggleArr(s.key, o.value) : setRadio(s.key, o.value)}
                         className={cn('w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors',
-                          isOn ? 'bg-[#faf0e8] text-primary' : 'hover:bg-[var(--app-bg)] text-[#1c1410]')}
+                          isOn ? 'bg-[#f1f3f5] text-primary' : 'hover:bg-[var(--app-bg)] text-[#111318]')}
                       >
                         {s.type === 'multi' ? (
                           <div className={cn('w-4 h-4 rounded border-2 flex items-center justify-center shrink-0', isOn ? 'bg-primary border-primary' : 'border-gray-300')}>
@@ -684,20 +685,22 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
                             {isOn && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
                           </div>
                         )}
-                        <span className="text-[12.5px] font-medium flex-1">{o.label}</span>
+                        <span className="text-[13.5px] font-medium flex-1">{o.label}</span>
                       </button>
                     );
                   })}
                   {/* Custom date range picker for the Created filter */}
                   {s.key === 'createdOn' && draft.createdOn === 'Custom' && (
                     <div className="flex items-center gap-1.5 px-2.5 pt-2">
-                      <input type="date" value={draft.createdFrom} max={draft.createdTo || undefined}
-                        onChange={(e) => setDraft((d) => ({ ...d, createdFrom: e.target.value }))}
-                        className="flex-1 min-w-0 h-8 px-2 text-[11px] rounded-lg border border-black/10 bg-white outline-none focus:border-primary/40" title="From date" />
-                      <span className="text-[11px] text-[#9a8a7a] shrink-0">→</span>
-                      <input type="date" value={draft.createdTo} min={draft.createdFrom || undefined}
-                        onChange={(e) => setDraft((d) => ({ ...d, createdTo: e.target.value }))}
-                        className="flex-1 min-w-0 h-8 px-2 text-[11px] rounded-lg border border-black/10 bg-white outline-none focus:border-primary/40" title="To date" />
+                      <DatePicker value={draft.createdFrom} max={draft.createdTo || undefined}
+                        onChange={(v) => setDraft((d) => ({ ...d, createdFrom: v }))}
+                        placeholder="From date"
+                        className="flex-1 min-w-0" />
+                      <span className="text-[12px] text-[#8b929c] shrink-0">→</span>
+                      <DatePicker value={draft.createdTo} min={draft.createdFrom || undefined}
+                        onChange={(v) => setDraft((d) => ({ ...d, createdTo: v }))}
+                        placeholder="To date"
+                        className="flex-1 min-w-0" />
                     </div>
                   )}
                 </div>
@@ -705,7 +708,7 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
             </div>
           );
         })}
-        {matching.length === 0 && <p className="text-[13px] text-[#b09e8d] text-center py-6">No filters match "{search}"</p>}
+        {matching.length === 0 && <p className="text-[14px] text-[#9ca3af] text-center py-6">No filters match "{search}"</p>}
       </div>
 
       <div className={cn('px-4 border-t border-black/5 shrink-0 flex items-center gap-2',
@@ -713,11 +716,11 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
         style={isMobile ? { paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' } : undefined}
       >
         <button onClick={applyFilters}
-          className={cn('flex-1 py-2 rounded-xl text-[14px] font-bold transition-colors',
+          className={cn('flex-1 py-2 rounded-xl text-[15px] font-bold transition-colors',
             hasChanges ? 'bg-primary text-white active:scale-95' : 'bg-primary/60 text-white/80')}
         >Apply{total > 0 ? ` (${total})` : ''}</button>
         {total > 0 && (
-          <button onClick={clearAll} className="px-3 py-2 rounded-xl text-[13px] font-semibold text-red-500 hover:bg-red-50 transition-colors">Clear</button>
+          <button onClick={clearAll} className="px-3 py-2 rounded-xl text-[14px] font-semibold text-red-500 hover:bg-red-50 transition-colors">Clear</button>
         )}
       </div>
     </div>
@@ -729,7 +732,7 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
 // ─── Removable Filter Chip ─────────────────────────────────────────────────────
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-semibold bg-primary/10 text-primary">
       {label}
       <button onClick={onRemove} className="hover:bg-primary/20 rounded-full p-0.5 transition-colors">
         <X className="w-2.5 h-2.5" />
@@ -764,31 +767,31 @@ function WorkflowModal({ leadIds, onClose }: { leadIds: string[]; onClose: () =>
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         <div className="flex items-center justify-between px-6 py-5 border-b border-black/5">
-          <h3 className="font-bold text-[17px] text-[#1c1410]">Trigger Workflow</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-4 h-4 text-[#7a6b5c]" /></button>
+          <h3 className="font-bold text-[17px] text-[#111318]">Trigger Workflow</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-4 h-4 text-[#6b7280]" /></button>
         </div>
         <div className="px-6 py-5 space-y-3">
-          <label className="text-[14px] font-semibold text-[#1c1410] block">Select Active Workflow</label>
+          <label className="text-[15px] font-semibold text-[#111318] block">Select Active Workflow</label>
           <div className="relative">
-            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white appearance-none pr-10">
+            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white appearance-none pr-10">
               <option value="">- Choose a workflow -</option>
               {activeWorkflows.map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
           {activeWorkflows.length === 0 && (
-            <p className="text-[13px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+            <p className="text-[14px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
               No active workflows found. Set a workflow to Active in Automation first.
             </p>
           )}
-          <p className="text-[13px] text-blue-500 flex items-start gap-1.5 pt-1">
+          <p className="text-[14px] text-blue-500 flex items-start gap-1.5 pt-1">
             <Settings className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             {leadIds.length} contact{leadIds.length !== 1 ? 's' : ''} selected - all will be pushed through the chosen workflow.
           </p>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-200 text-[14px] font-bold text-gray-600 hover:bg-gray-300 transition-colors uppercase tracking-wide">Close</button>
-          <button onClick={send} disabled={sending || !selected} className="px-6 py-2 rounded-lg bg-green-500 text-[14px] font-bold text-white hover:bg-green-600 disabled:opacity-50 transition-colors uppercase tracking-wide">
+          <button onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-200 text-[15px] font-bold text-gray-600 hover:bg-gray-300 transition-colors uppercase tracking-wide">Close</button>
+          <button onClick={send} disabled={sending || !selected} className="px-6 py-2 rounded-lg bg-green-500 text-[15px] font-bold text-white hover:bg-green-600 disabled:opacity-50 transition-colors uppercase tracking-wide">
             {sending ? 'Sending…' : 'Send'}
           </button>
         </div>
@@ -951,19 +954,19 @@ function ImportModal({ onClose }: { onClose: () => void }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 shrink-0">
           <div className="flex items-center gap-3">
-            <h3 className="font-bold text-[15px] text-[#1c1410]">Import Leads</h3>
+            <h3 className="font-bold text-[16px] text-[#111318]">Import Leads</h3>
             <div className="flex items-center gap-1.5">
               {(['Upload', 'Map Columns', 'Result'] as const).map((label, i) => (
                 <div key={label} className="flex items-center gap-1.5">
                   {i > 0 && <div className="w-6 h-px bg-gray-200" />}
-                  <span className={cn('text-[11px] font-semibold px-2.5 py-1 rounded-full',
+                  <span className={cn('text-[12px] font-semibold px-2.5 py-1 rounded-full',
                     step === i + 1 ? 'bg-primary/10 text-primary' : step > i + 1 ? 'text-green-600 bg-green-50' : 'text-gray-400'
                   )}>{step > i + 1 ? '✓ ' : ''}{label}</span>
                 </div>
               ))}
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-4 h-4 text-[#7a6b5c]" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-4 h-4 text-[#6b7280]" /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
@@ -986,14 +989,14 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                 {file ? (
                   <>
                     <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2"><Check className="w-5 h-5 text-green-600" /></div>
-                    <p className="font-semibold text-[15px] text-green-700">{file.name}</p>
-                    <p className="text-[13px] text-gray-400 mt-1">{allRows.length} rows detected - click to change</p>
+                    <p className="font-semibold text-[16px] text-green-700">{file.name}</p>
+                    <p className="text-[14px] text-gray-400 mt-1">{allRows.length} rows detected - click to change</p>
                   </>
                 ) : (
                   <>
                     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-2"><Download className="w-5 h-5 text-gray-400" /></div>
-                    <p className="font-semibold text-[15px] text-[#1c1410]">Drag & drop your file here</p>
-                    <p className="text-[13px] text-gray-400 mt-1">or click to browse - CSV or Excel (.xlsx) - max 10 MB</p>
+                    <p className="font-semibold text-[16px] text-[#111318]">Drag & drop your file here</p>
+                    <p className="text-[14px] text-gray-400 mt-1">or click to browse - CSV or Excel (.xlsx) - max 10 MB</p>
                   </>
                 )}
               </div>
@@ -1001,19 +1004,19 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               <div className="grid grid-cols-2 gap-4">
                 {/* Pipeline */}
                 <div>
-                  <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Import into Pipeline</label>
+                  <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">Import into Pipeline</label>
                   <select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setDefaultStageId(''); }}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white">
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[15px] outline-none focus:border-primary/40 bg-white">
                     <option value="">No Pipeline</option>
                     {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 {/* Default Stage */}
                 <div>
-                  <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Default Stage</label>
+                  <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">Default Stage</label>
                   <select value={defaultStageId} onChange={(e) => setDefaultStageId(e.target.value)}
                     disabled={!pipelineId}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white disabled:opacity-40">
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[15px] outline-none focus:border-primary/40 bg-white disabled:opacity-40">
                     <option value="">First Stage</option>
                     {stages.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
@@ -1022,12 +1025,12 @@ function ImportModal({ onClose }: { onClose: () => void }) {
 
               {/* Duplicate handling */}
               <div>
-                <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">If duplicate found (same phone or email)</label>
+                <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">If duplicate found (same phone or email)</label>
                 <div className="grid grid-cols-3 gap-2">
                   {([['skip','Skip duplicate'],['update','Update existing'],['create','Always create']] as const).map(([val, label]) => (
                     <button key={val} onClick={() => setDuplicateHandling(val)}
-                      className={cn('py-2.5 px-3 rounded-xl border text-[13px] font-semibold transition-all',
-                        duplicateHandling === val ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-[#7a6b5c] hover:border-gray-300'
+                      className={cn('py-2.5 px-3 rounded-xl border text-[14px] font-semibold transition-all',
+                        duplicateHandling === val ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-[#6b7280] hover:border-gray-300'
                       )}>{label}</button>
                   ))}
                 </div>
@@ -1035,7 +1038,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
 
               {/* Download template */}
               <button onClick={downloadTemplate}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-primary/20 text-[14px] font-semibold text-primary hover:bg-primary/5 transition-colors">
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-primary/20 text-[15px] font-semibold text-primary hover:bg-primary/5 transition-colors">
                 <Download className="w-4 h-4" /> Download Template (with your custom fields)
               </button>
             </div>
@@ -1045,25 +1048,25 @@ function ImportModal({ onClose }: { onClose: () => void }) {
           {step === 2 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[14px] text-[#7a6b5c]">Map each CSV column to a CRM field. Custom fields are included.</p>
-                <span className="text-[13px] font-semibold text-primary bg-primary/5 px-2.5 py-1 rounded-full">{allRows.length} rows</span>
+                <p className="text-[15px] text-[#6b7280]">Map each CSV column to a CRM field. Custom fields are included.</p>
+                <span className="text-[14px] font-semibold text-primary bg-primary/5 px-2.5 py-1 rounded-full">{allRows.length} rows</span>
               </div>
 
               {/* Mapping table */}
               <div className="border border-gray-100 rounded-xl overflow-hidden">
                 <div className="grid grid-cols-3 gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">CSV Column</span>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Maps to</span>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Sample Value</span>
+                  <span className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">CSV Column</span>
+                  <span className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Maps to</span>
+                  <span className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Sample Value</span>
                 </div>
                 <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
                   {headers.map((h, hi) => (
                     <div key={h} className="grid grid-cols-3 gap-3 px-4 py-2.5 items-center hover:bg-gray-50/50">
-                      <span className="text-[14px] text-[#1c1410] font-medium truncate">{h}</span>
+                      <span className="text-[15px] text-[#111318] font-medium truncate">{h}</span>
                       <select value={mapping[h] ?? 'skip'}
                         onChange={(e) => setMapping((m) => ({ ...m, [h]: e.target.value }))}
-                        className={cn('border rounded-lg px-2.5 py-1.5 text-[13px] outline-none focus:border-primary/40',
-                          mapping[h] && mapping[h] !== 'skip' ? 'border-primary/30 bg-primary/5 text-primary font-semibold' : 'border-gray-200 text-[#7a6b5c]'
+                        className={cn('border rounded-lg px-2.5 py-1.5 text-[14px] outline-none focus:border-primary/40',
+                          mapping[h] && mapping[h] !== 'skip' ? 'border-primary/30 bg-primary/5 text-primary font-semibold' : 'border-gray-200 text-[#6b7280]'
                         )}>
                         <optgroup label="── Standard ──">
                           {crmOptions.filter(o => o.group === 'Standard').map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
@@ -1077,7 +1080,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                           <option value="skip">-- Skip --</option>
                         </optgroup>
                       </select>
-                      <span className="text-[13px] text-gray-400 truncate">{previewRows[0]?.[hi] ?? '-'}</span>
+                      <span className="text-[14px] text-gray-400 truncate">{previewRows[0]?.[hi] ?? '-'}</span>
                     </div>
                   ))}
                 </div>
@@ -1086,12 +1089,12 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               {/* Preview */}
               {previewRows.length > 0 && (
                 <div>
-                  <p className="text-[13px] font-semibold text-[#7a6b5c] mb-2">Preview - first {previewRows.length} rows</p>
+                  <p className="text-[14px] font-semibold text-[#6b7280] mb-2">Preview - first {previewRows.length} rows</p>
                   <div className="overflow-x-auto border border-gray-100 rounded-xl">
-                    <table className="w-full text-[11px]">
+                    <table className="w-full text-[12px]">
                       <thead className="bg-gray-50">
                         <tr>{headers.filter((h) => mapping[h] !== 'skip').map((h) => (
-                          <th key={h} className="px-3 py-2 text-left font-bold text-[#7a6b5c] whitespace-nowrap">
+                          <th key={h} className="px-3 py-2 text-left font-bold text-[#6b7280] whitespace-nowrap">
                             {crmOptions.find(o => o.key === mapping[h])?.label ?? h}
                           </th>
                         ))}</tr>
@@ -1100,7 +1103,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                         {previewRows.map((row, ri) => (
                           <tr key={ri} className="hover:bg-gray-50">
                             {headers.map((h, hi) => mapping[h] !== 'skip' && (
-                              <td key={h} className="px-3 py-2 text-[#1c1410] max-w-[140px] truncate">{row[hi]}</td>
+                              <td key={h} className="px-3 py-2 text-[#111318] max-w-[140px] truncate">{row[hi]}</td>
                             ))}
                           </tr>
                         ))}
@@ -1118,33 +1121,33 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
                 <Check className="w-8 h-8 text-green-500" />
               </div>
-              <h3 className="font-extrabold text-[20px] text-[#1c1410]">Import Complete!</h3>
+              <h3 className="font-extrabold text-[20px] text-[#111318]">Import Complete!</h3>
               <div className="flex gap-6 mt-1">
                 <div className="text-center px-5 py-4 bg-green-50 rounded-2xl">
                   <p className="text-[28px] font-extrabold text-green-600">{result.imported}</p>
-                  <p className="text-[13px] text-green-700 font-semibold">Imported</p>
+                  <p className="text-[14px] text-green-700 font-semibold">Imported</p>
                 </div>
                 {result.updated > 0 && (
                   <div className="text-center px-5 py-4 bg-blue-50 rounded-2xl">
                     <p className="text-[28px] font-extrabold text-blue-600">{result.updated}</p>
-                    <p className="text-[13px] text-blue-700 font-semibold">Updated</p>
+                    <p className="text-[14px] text-blue-700 font-semibold">Updated</p>
                   </div>
                 )}
                 {result.skipped > 0 && (
                   <div className="text-center px-5 py-4 bg-amber-50 rounded-2xl">
                     <p className="text-[28px] font-extrabold text-amber-600">{result.skipped}</p>
-                    <p className="text-[13px] text-amber-700 font-semibold">Skipped</p>
+                    <p className="text-[14px] text-amber-700 font-semibold">Skipped</p>
                   </div>
                 )}
                 {result.errors.length > 0 && (
                   <div className="text-center px-5 py-4 bg-red-50 rounded-2xl">
                     <p className="text-[28px] font-extrabold text-red-500">{result.errors.length}</p>
-                    <p className="text-[13px] text-red-600 font-semibold">Errors</p>
+                    <p className="text-[14px] text-red-600 font-semibold">Errors</p>
                   </div>
                 )}
               </div>
               {result.errors.length > 0 && (
-                <div className="w-full max-h-36 overflow-y-auto text-[11px] text-red-600 space-y-1 border border-red-100 rounded-xl p-3 bg-red-50">
+                <div className="w-full max-h-36 overflow-y-auto text-[12px] text-red-600 space-y-1 border border-red-100 rounded-xl p-3 bg-red-50">
                   {result.errors.map((e) => <div key={e.row}>Row {e.row}: {e.reason}</div>)}
                 </div>
               )}
@@ -1156,29 +1159,29 @@ function ImportModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between px-6 py-4 border-t border-black/5 shrink-0">
           <div>
             {step === 2 && (
-              <p className="text-[13px] text-gray-400">
+              <p className="text-[14px] text-gray-400">
                 {headers.filter(h => mapping[h] && mapping[h] !== 'skip').length} of {headers.length} columns mapped
               </p>
             )}
           </div>
           <div className="flex items-center gap-3">
             {step === 2 && (
-              <button onClick={() => setStep(1)} className="px-5 py-2 rounded-xl border border-gray-200 text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-50 transition-colors">Back</button>
+              <button onClick={() => setStep(1)} className="px-5 py-2 rounded-xl border border-gray-200 text-[15px] font-semibold text-[#6b7280] hover:bg-gray-50 transition-colors">Back</button>
             )}
             {step === 1 && (
               <button onClick={() => { if (!file) { toast.error('Please upload a file first'); return; } setStep(2); }}
-                className="px-6 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5" style={btnStyle}>
+                className="px-6 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5" style={btnStyle}>
                 Next: Map Columns →
               </button>
             )}
             {step === 2 && (
               <button onClick={doImport} disabled={importing}
-                className="px-6 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60" style={btnStyle}>
+                className="px-6 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60" style={btnStyle}>
                 {importing ? 'Importing…' : `Import ${allRows.length} Leads →`}
               </button>
             )}
             {step === 3 && (
-              <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-[14px] font-bold text-white" style={btnStyle}>Done</button>
+              <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-[15px] font-bold text-white" style={btnStyle}>Done</button>
             )}
           </div>
         </div>
@@ -1194,7 +1197,7 @@ function NoteModal({ leadId, onClose, onCreated }: { leadId: string; onClose: ()
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
-  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[15px] text-[#111318] outline-none focus:border-primary/40 placeholder:text-gray-300';
   const submit = async () => {
     if (!title.trim()) { toast.error('Title is required'); return; }
     if (!content.trim()) { toast.error('Note content is required'); return; }
@@ -1215,22 +1218,22 @@ function NoteModal({ leadId, onClose, onCreated }: { leadId: string; onClose: ()
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
-          <h3 className="font-headline font-bold text-[#1c1410] text-[17px]">Add Note</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+          <h3 className="font-headline font-bold text-[#111318] text-[17px]">Add Note</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#6b7280]"><X className="w-4 h-4" /></button>
         </div>
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Title <span className="text-red-400">*</span></label>
+            <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">Title <span className="text-red-400">*</span></label>
             <input className={inputCls} placeholder="e.g. Follow-up call" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div>
-            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Description <span className="text-red-400">*</span></label>
+            <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">Description <span className="text-red-400">*</span></label>
             <textarea className={inputCls + ' resize-none min-h-[100px]'} placeholder="Write your note..." value={content} onChange={(e) => setContent(e.target.value)} />
           </div>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="px-5 py-2 rounded-xl text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-          <button onClick={submit} disabled={saving} className="px-6 py-2 rounded-xl text-[14px] font-bold text-white hover:-translate-y-0.5 transition-all disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>{saving ? 'Saving…' : 'Save Note'}</button>
+          <button onClick={onClose} className="px-5 py-2 rounded-xl text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={submit} disabled={saving} className="px-6 py-2 rounded-xl text-[15px] font-bold text-white hover:-translate-y-0.5 transition-all disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>{saving ? 'Saving…' : 'Save Note'}</button>
         </div>
       </div>
     </div>
@@ -1251,7 +1254,7 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
   const [notes, setNotes] = useState(editItem?.notes ?? '');
   const [dueAt, setDueAt] = useState(editItem?.dueAt ?? '');
   const [saving, setSaving] = useState(false);
-  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-300';
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[15px] text-[#111318] outline-none focus:border-primary/40 placeholder:text-gray-300';
 
   // Outcome chips fetched from tenant config
   const COLOR_MAP: Record<string, string> = {
@@ -1412,31 +1415,31 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col">
           <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
-            <h3 className="font-headline font-bold text-[#1c1410] text-[17px]">{isEdit ? (editItem?.kind === 'note' ? 'Edit Note' : 'Edit Follow-Up') : 'Add Note'}</h3>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+            <h3 className="font-headline font-bold text-[#111318] text-[17px]">{isEdit ? (editItem?.kind === 'note' ? 'Edit Note' : 'Edit Follow-Up') : 'Add Note'}</h3>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#6b7280]"><X className="w-4 h-4" /></button>
           </div>
           <form onSubmit={submit} className="px-6 py-5 space-y-4">
             <div>
-              <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">
+              <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">
                 Title {!(isNote || editItem?.kind === 'note') && <span className="text-red-400">*</span>}
               </label>
               <input className={inputCls} placeholder="e.g. Call back for pre-sales pitch" value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div>
-              <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">
+              <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">
                 {(isNote || editItem?.kind === 'note') ? <>Note Content <span className="text-red-400">*</span></> : 'Notes'}
               </label>
               <textarea className={inputCls + ' resize-none h-20'} placeholder={(isNote || editItem?.kind === 'note') ? 'Write your note...' : 'Add any notes...'} value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
             {!(isNote || editItem?.kind === 'note') && (
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Due Date & Time</label>
+                <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Due Date & Time</label>
                 <input type="datetime-local" className={inputCls} value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
               </div>
             )}
             <div className="flex items-center justify-end gap-3 pt-1">
-              <button type="button" onClick={onClose} className="px-5 py-2 rounded-xl text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-              <button type="submit" disabled={saving} className="px-6 py-2 rounded-xl text-[14px] font-bold text-white hover:-translate-y-0.5 transition-all disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
+              <button type="button" onClick={onClose} className="px-5 py-2 rounded-xl text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors">Cancel</button>
+              <button type="submit" disabled={saving} className="px-6 py-2 rounded-xl text-[15px] font-bold text-white hover:-translate-y-0.5 transition-all disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
                 {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Save Note'}
               </button>
             </div>
@@ -1451,13 +1454,13 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
-          <h3 className="font-headline font-bold text-[#1c1410] text-[17px]">Set Follow-Up</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+          <h3 className="font-headline font-bold text-[#111318] text-[17px]">Set Follow-Up</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#6b7280]"><X className="w-4 h-4" /></button>
         </div>
         <form onSubmit={submit} className="px-6 py-5 space-y-5">
           {/* HOW DID IT GO? */}
           <div>
-            <label className="text-[11px] font-bold text-[#1c1410] tracking-wide mb-3 block">HOW DID IT GO?</label>
+            <label className="text-[12px] font-bold text-[#111318] tracking-wide mb-3 block">HOW DID IT GO?</label>
             <div className="grid grid-cols-3 gap-2">
               {outcomeOptions.map((o) => (
                 <button key={o.key} type="button" onClick={() => {
@@ -1466,7 +1469,7 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
                   className={cn('flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all text-center',
                     selectedOutcome === o.key ? (COLOR_MAP[o.color] ?? 'border-gray-300 bg-gray-50 text-gray-600') + ' ring-1 ring-offset-1 ring-current' : 'border-gray-100 bg-white hover:border-gray-200')}>
                   <span className="text-lg">{o.icon}</span>
-                  <span className={cn('text-[11px] font-semibold leading-tight', selectedOutcome === o.key ? '' : 'text-[#1c1410]')}>{o.label}</span>
+                  <span className={cn('text-[12px] font-semibold leading-tight', selectedOutcome === o.key ? '' : 'text-[#111318]')}>{o.label}</span>
                 </button>
               ))}
             </div>
@@ -1475,14 +1478,14 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
           {/* NEXT FOLLOW-UP */}
           {selectedOutcome && (
             <div className="space-y-3">
-              <label className="text-[11px] font-bold text-[#1c1410] tracking-wide block">NEXT FOLLOW-UP</label>
+              <label className="text-[12px] font-bold text-[#111318] tracking-wide block">NEXT FOLLOW-UP</label>
               <div className="flex gap-2">
                 {dateOptions.map((d, i) => (
                   <button key={i} type="button" onClick={() => applyQuickDate(i, d.value)}
                     className={cn('flex-1 py-2 rounded-xl border text-center transition-colors',
                       selectedDateIdx === i ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 hover:border-[#ea580c]/40')}>
-                    <span className={cn('block text-[13px] font-bold', selectedDateIdx === i ? 'text-white' : 'text-[#1c1410]')}>{d.label}</span>
-                    <span className={cn('block text-[10px]', selectedDateIdx === i ? 'text-white/70' : 'text-[#7a6b5c]')}>{d.sub}</span>
+                    <span className={cn('block text-[14px] font-bold', selectedDateIdx === i ? 'text-white' : 'text-[#111318]')}>{d.label}</span>
+                    <span className={cn('block text-[11px]', selectedDateIdx === i ? 'text-white/70' : 'text-[#6b7280]')}>{d.sub}</span>
                   </button>
                 ))}
                 <button type="button" onClick={() => {
@@ -1491,15 +1494,15 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
                 }}
                   className={cn('px-3 py-2 rounded-xl border text-center transition-colors',
                     selectedDateIdx === 3 ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 hover:border-[#ea580c]/40')}>
-                  <span className={cn('block text-[13px] font-bold', selectedDateIdx === 3 ? 'text-white' : 'text-[#1c1410]')}>Pick</span>
-                  <span className={cn('block text-[10px]', selectedDateIdx === 3 ? 'text-white/70' : 'text-[#7a6b5c]')}>Custom</span>
+                  <span className={cn('block text-[14px] font-bold', selectedDateIdx === 3 ? 'text-white' : 'text-[#111318]')}>Pick</span>
+                  <span className={cn('block text-[11px]', selectedDateIdx === 3 ? 'text-white/70' : 'text-[#6b7280]')}>Custom</span>
                 </button>
               </div>
               <div className="flex gap-2">
                 {timeOptions.map((t, i) => (
                   <button key={i} type="button" onClick={() => applyQuickTime(i)}
-                    className={cn('flex-1 py-2.5 rounded-xl border text-[14px] font-bold transition-colors',
-                      selectedTimeIdx === i ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 text-[#1c1410] hover:border-[#ea580c]/40')}>
+                    className={cn('flex-1 py-2.5 rounded-xl border text-[15px] font-bold transition-colors',
+                      selectedTimeIdx === i ? 'bg-[#ea580c] text-white border-[#ea580c]' : 'bg-white border-gray-200 text-[#111318] hover:border-[#ea580c]/40')}>
                     {t.label}
                   </button>
                 ))}
@@ -1513,7 +1516,7 @@ function FollowUpModal({ leadId, onClose, onCreated, onNoteCreated, editItem, on
           <textarea className={inputCls + ' resize-none'} rows={3} placeholder="Add a note (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
           {/* Submit */}
-          <button type="submit" disabled={saving || !selectedOutcome} className="w-full py-3 rounded-xl text-[15px] font-bold text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
+          <button type="submit" disabled={saving || !selectedOutcome} className="w-full py-3 rounded-xl text-[16px] font-bold text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}>
             {saving ? 'Saving...' : dueAt ? 'Save & set follow-up' : 'Save outcome'}
           </button>
         </form>
@@ -1550,8 +1553,8 @@ function AssignModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
         <div className="p-4 space-y-2">
           {staff.filter((s) => s.status === 'active').map((s) => (
             <button key={s.id} onClick={() => setSelected(s.id)} className={cn('w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left', selected === s.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-[var(--accent-tint)]')}>
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">{s.avatar}</div>
-              <div><p className="text-sm font-medium">{s.name}</p><p className="text-[11px] text-[#7a6b5c] capitalize">{s.role}</p></div>
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[13px] font-semibold text-primary">{s.avatar}</div>
+              <div><p className="text-[15px] font-medium">{s.name}</p><p className="text-[12px] text-[#6b7280] capitalize">{s.role}</p></div>
               {selected === s.id && <Check className="w-4 h-4 text-primary ml-auto" />}
             </button>
           ))}
@@ -1598,10 +1601,10 @@ function OpportunityModal({ leadId, onClose, onCreated }: { leadId: string; onCl
           <h3 className="font-semibold">Create Opportunity</h3><button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
         </div>
         <form onSubmit={submit} className="p-4 space-y-3">
-          <div><label className="text-xs font-medium text-muted-foreground mb-1 block">Title *</label><Input placeholder="e.g. Enterprise License" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-          <div><label className="text-xs font-medium text-muted-foreground mb-1 block">Deal Value (₹) *</label><Input type="number" placeholder="250000" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} /></div>
-          <div><label className="text-xs font-medium text-muted-foreground mb-1 block">Win Probability (%)</label><Input type="number" min="0" max="100" value={form.probability} onChange={(e) => setForm({ ...form, probability: e.target.value })} /></div>
-          <div><label className="text-xs font-medium text-muted-foreground mb-1 block">Expected Close Date</label><Input type="date" value={form.expectedCloseDate} onChange={(e) => setForm({ ...form, expectedCloseDate: e.target.value })} /></div>
+          <div><label className="text-[13px] font-medium text-muted-foreground mb-1 block">Title *</label><Input placeholder="e.g. Enterprise License" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+          <div><label className="text-[13px] font-medium text-muted-foreground mb-1 block">Deal Value (₹) *</label><Input type="number" placeholder="250000" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} /></div>
+          <div><label className="text-[13px] font-medium text-muted-foreground mb-1 block">Win Probability (%)</label><Input type="number" min="0" max="100" value={form.probability} onChange={(e) => setForm({ ...form, probability: e.target.value })} /></div>
+          <div><label className="text-[13px] font-medium text-muted-foreground mb-1 block">Expected Close Date</label><DatePicker className="w-full" value={form.expectedCloseDate} onChange={(v) => setForm({ ...form, expectedCloseDate: v })} placeholder="Select date" /></div>
           <div className="flex gap-2"><Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={saving}>Cancel</Button><Button type="submit" className="flex-1" disabled={saving}>{saving ? 'Saving…' : 'Create'}</Button></div>
         </form>
       </div>
@@ -1623,7 +1626,7 @@ function DeleteLeadModal({ lead, onClose, onDeleted }: { lead: Lead; onClose: ()
   return (
     <ConfirmModal
       title="Remove from Pipeline?"
-      message={<><span className="font-semibold text-[#1c1410]">{lead.firstName} {lead.lastName}</span> will be removed from the pipeline. Their contact data, notes, and history will be kept.</>}
+      message={<><span className="font-semibold text-[#111318]">{lead.firstName} {lead.lastName}</span> will be removed from the pipeline. Their contact data, notes, and history will be kept.</>}
       confirmLabel="Yes, Remove"
       onConfirm={handleConfirm}
       onClose={onClose}
@@ -1722,15 +1725,15 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
   const field = (label: string, child: React.ReactNode, required = false) => (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[13px] text-[#7a6b5c]">
+      <label className="text-[14px] text-[#6b7280]">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       {child}
     </div>
   );
 
-  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1c1410] bg-white outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 transition-all placeholder:text-gray-300';
-  const readonlyCls = 'w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[14px] text-gray-400 bg-gray-50 outline-none cursor-not-allowed';
+  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[15px] text-[#111318] bg-white outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 transition-all placeholder:text-gray-300';
+  const readonlyCls = 'w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[15px] text-gray-400 bg-gray-50 outline-none cursor-not-allowed';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm">
@@ -1739,8 +1742,8 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
-            <p className="text-[11px] text-gray-400 mb-0.5">+ Add opportunity</p>
-            <h3 className="text-[15px] font-bold text-[#1c1410]">
+            <p className="text-[12px] text-gray-400 mb-0.5">+ Add opportunity</p>
+            <h3 className="text-[16px] font-bold text-[#111318]">
               Contact Info (Edit) <span className="font-normal text-gray-400 mx-1">|</span> Contact Type: <span className="text-primary">Lead</span>
             </h3>
           </div>
@@ -1756,10 +1759,10 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
               key={t.key}
               onClick={() => setActiveTab(t.key)}
               className={cn(
-                'px-4 py-1.5 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-all',
+                'px-4 py-1.5 rounded-lg text-[14px] font-semibold whitespace-nowrap transition-all',
                 activeTab === t.key
-                  ? 'bg-[#1c1410] text-white'
-                  : 'text-gray-500 bg-gray-100 hover:bg-gray-200 hover:text-[#1c1410]'
+                  ? 'bg-[#111318] text-white'
+                  : 'text-gray-500 bg-gray-100 hover:bg-gray-200 hover:text-[#111318]'
               )}
             >
               {t.label}
@@ -1799,14 +1802,14 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                 <div className="border border-gray-200 rounded-lg px-3 py-2.5 bg-white focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-300 transition-all">
                   <div className="flex flex-wrap gap-1 mb-1.5">
                     {form.tags.map((tag) => (
-                      <span key={tag} className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
+                      <span key={tag} className="text-[12px] bg-primary/10 text-primary px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
                         {tag}
                         <button onClick={() => setForm({ ...form, tags: form.tags.filter((t) => t !== tag) })} className="hover:text-red-500 ml-0.5 leading-none">×</button>
                       </span>
                     ))}
                   </div>
                   <input
-                    className="w-full text-[14px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300"
+                    className="w-full text-[15px] text-[#111318] outline-none bg-transparent placeholder:text-gray-300"
                     placeholder="Type & press Enter to add tags"
                     value={form.tagInput}
                     onChange={(e) => setForm({ ...form, tagInput: e.target.value })}
@@ -1856,17 +1859,17 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             <div className="flex gap-8">
               {/* Left: add form */}
               <div className="w-64 shrink-0 space-y-4 bg-gray-50 rounded-xl p-5 border border-gray-100 self-start">
-                <p className="text-[14px] font-bold text-[#1c1410] mb-1">Add Follow-Up</p>
+                <p className="text-[15px] font-bold text-[#111318] mb-1">Add Follow-Up</p>
                 <div>
-                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Title <span className="text-red-400">*</span></label>
+                  <label className="text-[14px] text-[#6b7280] mb-1.5 block">Title <span className="text-red-400">*</span></label>
                   <input className={inputCls} placeholder="Enter follow-up title" value={form.fuTitle ?? ''} onChange={(e) => setForm({ ...form, fuTitle: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Notes</label>
+                  <label className="text-[14px] text-[#6b7280] mb-1.5 block">Notes</label>
                   <textarea className={inputCls + ' resize-none h-20'} placeholder="Add any notes..." value={form.fuDesc ?? ''} onChange={(e) => setForm({ ...form, fuDesc: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Due Date <span className="text-red-400">*</span></label>
+                  <label className="text-[14px] text-[#6b7280] mb-1.5 block">Due Date <span className="text-red-400">*</span></label>
                   <input className={inputCls} type="datetime-local" value={form.fuDue ?? ''} onChange={(e) => setForm({ ...form, fuDue: e.target.value })} />
                 </div>
                 <button
@@ -1886,20 +1889,20 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                       setForm({ ...form, fuTitle: '', fuDesc: '', fuDue: '' });
                     } catch (err: any) { toast.error(err.message ?? 'Failed to add follow-up'); }
                   }}
-                  className="w-full py-2 rounded-xl text-white text-[14px] font-bold transition-all hover:-translate-y-0.5"
+                  className="w-full py-2 rounded-xl text-white text-[15px] font-bold transition-all hover:-translate-y-0.5"
                   style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
                 >ADD</button>
               </div>
 
               {/* Right: existing list */}
               <div className="flex-1 min-w-0">
-                <h4 className="font-headline font-bold text-[#1c1410] text-[15px] mb-3">Follow-up Tasks</h4>
+                <h4 className="font-headline font-bold text-[#111318] text-[16px] mb-3">Follow-up Tasks</h4>
                 {leadFollowUps.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <div className="w-10 h-10 rounded-2xl bg-[#faf0e8] flex items-center justify-center mb-2">
+                    <div className="w-10 h-10 rounded-2xl bg-[#f1f3f5] flex items-center justify-center mb-2">
                       <CheckSquare className="w-5 h-5 text-primary" />
                     </div>
-                    <p className="text-[14px] text-[#7a6b5c]">No follow-ups yet.</p>
+                    <p className="text-[15px] text-[#6b7280]">No follow-ups yet.</p>
                   </div>
                 )}
                 <div className="space-y-2">
@@ -1928,14 +1931,14 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                           <div className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', dotCls)} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <p className="text-[14px] font-semibold text-[#1c1410] truncate">{f.note || 'Follow-up'}</p>
+                              <p className="text-[15px] font-semibold text-[#111318] truncate">{f.note || 'Follow-up'}</p>
                               <div className="flex items-center gap-1 shrink-0">
-                                <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', badge.cls)}>{badge.label}</span>
+                                <span className={cn('text-[11px] font-semibold px-2 py-0.5 rounded-full', badge.cls)}>{badge.label}</span>
                                 <button onClick={() => setEditFu({ id: f.id, title: f.note || '', notes: f.description || '', dueAt: format(new Date(f.dueAt), "yyyy-MM-dd'T'HH:mm") })}
-                                  className="p-1 rounded text-[#7a6b5c] hover:bg-white hover:text-primary" title="Edit follow-up"><Pencil className="w-3.5 h-3.5" /></button>
+                                  className="p-1 rounded text-[#6b7280] hover:bg-white hover:text-primary" title="Edit follow-up"><Pencil className="w-3.5 h-3.5" /></button>
                               </div>
                             </div>
-                            <p className="text-[11px] text-[#7a6b5c] mt-0.5">Due: {format(new Date(f.dueAt), 'dd MMM yyyy, h:mm a')}</p>
+                            <p className="text-[12px] text-[#6b7280] mt-0.5">Due: {format(new Date(f.dueAt), 'dd MMM yyyy, h:mm a')}</p>
                           </div>
                         </div>
                       </div>
@@ -1965,7 +1968,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             <div className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
                 <div className="sm:col-span-2">
-                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Calendar Event <span className="text-red-400">*</span></label>
+                  <label className="text-[14px] text-[#6b7280] mb-1.5 block">Calendar Event <span className="text-red-400">*</span></label>
                   <select className={inputCls} value={form.apptEvent ?? ''} onChange={(e) => {
                     const et = bookingLinks.find((b) => b.id === e.target.value) as any | undefined;
                     setForm({ ...form, apptEvent: e.target.value, apptLink: et?.meetingLink ?? '', apptSlot: '' });
@@ -1979,22 +1982,22 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
                 {form.apptEvent && (<>
                   <div>
-                    <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Meeting Type</label>
-                    <input className="w-full border border-gray-100 rounded-lg px-3 py-2 text-[14px] text-[#7a6b5c] bg-gray-50 outline-none" value={apptET?.meetingType || '-'} readOnly />
+                    <label className="text-[14px] text-[#6b7280] mb-1.5 block">Meeting Type</label>
+                    <input className="w-full border border-gray-100 rounded-lg px-3 py-2 text-[15px] text-[#6b7280] bg-gray-50 outline-none" value={apptET?.meetingType || '-'} readOnly />
                   </div>
                   <div>
-                    <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Meeting Link / Address</label>
+                    <label className="text-[14px] text-[#6b7280] mb-1.5 block">Meeting Link / Address</label>
                     <input className={inputCls} placeholder="Meeting link or address" value={form.apptLink ?? ''} onChange={(e) => setForm({ ...form, apptLink: e.target.value })} />
                   </div>
                 </>)}
 
                 <div>
-                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Event Date <span className="text-red-400">*</span></label>
-                  <input className={inputCls} type="date" value={form.apptDate ?? ''} onChange={(e) => setForm({ ...form, apptDate: e.target.value, apptSlot: '' })} />
+                  <label className="text-[14px] text-[#6b7280] mb-1.5 block">Event Date <span className="text-red-400">*</span></label>
+                  <DatePicker className="w-full" value={form.apptDate ?? ''} onChange={(v) => setForm({ ...form, apptDate: v, apptSlot: '' })} placeholder="Select date" />
                 </div>
 
                 <div>
-                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Timezone</label>
+                  <label className="text-[14px] text-[#6b7280] mb-1.5 block">Timezone</label>
                   <select className={inputCls} value={form.apptTz ?? 'Asia/Kolkata'} onChange={(e) => setForm({ ...form, apptTz: e.target.value })}>
                     <option value="Asia/Kolkata">Asia/Kolkata</option>
                     <option value="Asia/Dubai">Asia/Dubai</option>
@@ -2004,7 +2007,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">Timeslot <span className="text-red-400">*</span></label>
+                  <label className="text-[14px] text-[#6b7280] mb-1.5 block">Timeslot <span className="text-red-400">*</span></label>
                   <select className={inputCls} value={form.apptSlot ?? ''} onChange={(e) => setForm({ ...form, apptSlot: e.target.value })} disabled={!form.apptEvent || !form.apptDate}>
                     <option value="">{!form.apptEvent ? 'Select a calendar first' : !form.apptDate ? 'Select a date first' : apptSlots.length === 0 ? 'No slots available this day' : 'Pick a timeslot'}</option>
                     {apptSlots.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -2056,7 +2059,7 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                       toast.error(err.message ?? 'Failed to book appointment');
                     }
                   }}
-                  className="px-8 py-2 rounded-xl text-white text-[14px] font-bold transition-all hover:-translate-y-0.5"
+                  className="px-8 py-2 rounded-xl text-white text-[15px] font-bold transition-all hover:-translate-y-0.5"
                   style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
                 >Book Appointment</button>
               </div>
@@ -2064,17 +2067,17 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
               {/* Existing appointments */}
               {leadEvents.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-black/5">
-                  <p className="text-[13px] font-semibold text-[#7a6b5c]">Existing Appointments</p>
+                  <p className="text-[14px] font-semibold text-[#6b7280]">Existing Appointments</p>
                   {leadEvents.map((ev) => (
                     <div key={ev.id} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--app-bg)] border border-black/5">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <Calendar className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-[14px] font-medium text-[#1c1410]">{ev.title}</p>
-                        <p className="text-[11px] text-[#7a6b5c]">{ev.date} · {ev.time} · {ev.duration} min</p>
+                        <p className="text-[15px] font-medium text-[#111318]">{ev.title}</p>
+                        <p className="text-[12px] text-[#6b7280]">{ev.date} · {ev.time} · {ev.duration} min</p>
                       </div>
-                      <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-md', ev.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : ev.status === 'no-show' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600')}>{ev.status}</span>
+                      <span className={cn('text-[11px] font-medium px-2 py-0.5 rounded-md', ev.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : ev.status === 'no-show' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600')}>{ev.status}</span>
                     </div>
                   ))}
                 </div>
@@ -2087,17 +2090,17 @@ function EditLeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-3.5 border-t border-gray-100">
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[12px] text-gray-400">
             Created On: {format(new Date(lead.createdAt), 'dd/MM/yyyy hh:mm aa')}
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="px-5 py-2 rounded-lg text-[14px] font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-all"
+              className="px-5 py-2 rounded-lg text-[15px] font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-all"
             >DELETE</button>
             <button
               onClick={handleUpdate}
-              className="px-5 py-2 rounded-lg text-[14px] font-bold text-white bg-[#1c1410] hover:bg-[#2d1f18] transition-all"
+              className="px-5 py-2 rounded-lg text-[15px] font-bold text-white bg-[#111318] hover:bg-[#111318] transition-all"
             >UPDATE</button>
           </div>
         </div>
@@ -2169,33 +2172,33 @@ function EditFieldsDrawer({ lead, onClose, onSaved }: {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
           <div>
-            <h3 className="font-headline font-bold text-[15px] text-[#1c1410]">Edit Fields</h3>
-            <p className="text-[11px] text-[#7a6b5c] mt-0.5">{activeDefs.length} fields available</p>
+            <h3 className="font-headline font-bold text-[16px] text-[#111318]">Edit Fields</h3>
+            <p className="text-[12px] text-[#6b7280] mt-0.5">{activeDefs.length} fields available</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] transition-colors">
-            <X className="w-4 h-4 text-[#7a6b5c]" />
+            <X className="w-4 h-4 text-[#6b7280]" />
           </button>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-[14px] text-[#7a6b5c]">Loading fields…</div>
+            <div className="flex items-center justify-center py-16 text-[15px] text-[#6b7280]">Loading fields…</div>
           ) : activeDefs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
               <FileText className="w-8 h-8 text-primary/30" />
-              <p className="text-[14px] font-semibold text-[#1c1410]">No fields defined yet</p>
-              <p className="text-[13px] text-[#7a6b5c]">Go to Settings → Fields to create custom fields</p>
+              <p className="text-[15px] font-semibold text-[#111318]">No fields defined yet</p>
+              <p className="text-[14px] text-[#6b7280]">Go to Settings → Fields to create custom fields</p>
             </div>
           ) : (
             activeDefs.map((def) => (
               <div key={def.id}>
-                <label className="block text-[13px] font-semibold text-[#1c1410] mb-1.5">{def.name}</label>
+                <label className="block text-[14px] font-semibold text-[#111318] mb-1.5">{def.name}</label>
                 <input
                   value={values[def.id] ?? ''}
                   onChange={(e) => setValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
                   placeholder={`Enter ${def.name.toLowerCase()}…`}
-                  className="w-full px-3 py-2 rounded-lg border border-black/10 bg-white text-[14px] text-[#1c1410] placeholder:text-[#7a6b5c]/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-colors"
+                  className="w-full px-3 py-2 rounded-lg border border-black/10 bg-white text-[15px] text-[#111318] placeholder:text-[#6b7280]/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-colors"
                 />
               </div>
             ))
@@ -2204,13 +2207,13 @@ function EditFieldsDrawer({ lead, onClose, onSaved }: {
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-black/5 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors border border-black/10">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors border border-black/10">
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving || loading}
-            className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-lg text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 12px rgba(234,88,12,0.25)' }}
           >
             {saving ? 'Saving…' : 'Save Fields'}
@@ -2255,14 +2258,14 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
     }
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
+  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white';
 
   // Empty state - no questions configured for this pipeline
   if (pipelineQuestions.length === 0) {
     return (
       <div className="px-5 py-4 border-b border-black/5">
-        <h4 className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-2">Additional Info</h4>
-        <p className="text-[13px] text-[#b09e8d] italic">
+        <h4 className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider mb-2">Additional Info</h4>
+        <p className="text-[14px] text-[#9ca3af] italic">
           No questions configured for this pipeline.{' '}
           <a href="/fields" className="text-primary font-semibold hover:underline">Set them up in Fields → Additional Fields</a>
         </p>
@@ -2275,9 +2278,9 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
   return (
     <div className="px-5 py-4 border-b border-black/5">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider">
+        <h4 className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider">
           Additional Info
-          <span className="text-[#b09e8d] font-normal ml-1">· {filledCount}/{pipelineQuestions.length} filled</span>
+          <span className="text-[#9ca3af] font-normal ml-1">· {filledCount}/{pipelineQuestions.length} filled</span>
         </h4>
       </div>
 
@@ -2287,7 +2290,7 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
           const filled = value.trim() !== '';
           return (
             <div key={q.id}>
-              <label className="text-[13px] font-semibold text-[#1c1410] mb-1 flex items-center gap-1">
+              <label className="text-[14px] font-semibold text-[#111318] mb-1 flex items-center gap-1">
                 {q.question}
                 {q.required && <span className="text-red-500">*</span>}
                 {filled && <Check className="w-3 h-3 text-green-500 ml-auto" />}
@@ -2296,7 +2299,7 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
               {/* Render input based on type */}
               {q.type === 'Multi Line' && (
                 <textarea
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white resize-none"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white resize-none"
                   rows={2}
                   placeholder="Type answer..."
                   value={value}
@@ -2321,8 +2324,8 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
                           const next = selected ? current.filter((x) => x !== o) : [...current, o];
                           saveAnswer(q.id, q.question, next.join(', '));
                         }}
-                        className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors',
-                          selected ? 'bg-primary text-white border-primary' : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/30')}
+                        className={cn('px-2.5 py-1 rounded-full text-[12px] font-semibold border transition-colors',
+                          selected ? 'bg-primary text-white border-primary' : 'bg-white text-[#6b7280] border-black/10 hover:border-primary/30')}
                       >
                         {o}
                       </button>
@@ -2341,7 +2344,7 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
                         onChange={() => saveAnswer(q.id, q.question, o)}
                         className="w-4 h-4 accent-primary"
                       />
-                      <span className="text-[14px] text-[#1c1410]">{o}</span>
+                      <span className="text-[15px] text-[#111318]">{o}</span>
                     </label>
                   ))}
                 </div>
@@ -2362,7 +2365,7 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
                           }}
                           className="w-4 h-4 accent-primary"
                         />
-                        <span className="text-[14px] text-[#1c1410]">{o}</span>
+                        <span className="text-[15px] text-[#111318]">{o}</span>
                       </label>
                     );
                   })}
@@ -2371,11 +2374,11 @@ function AdditionalInfoSection({ lead, onUpdate }: { lead: Lead; onUpdate: (fiel
               {q.type === 'Checkbox' && (
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={value === 'true'} onChange={(e) => saveAnswer(q.id, q.question, e.target.checked ? 'true' : 'false')} className="w-4 h-4 accent-primary" />
-                  <span className="text-[14px] text-[#1c1410]">Yes</span>
+                  <span className="text-[15px] text-[#111318]">Yes</span>
                 </label>
               )}
               {q.type === 'Date' && (
-                <input className={inputCls} type="date" value={value} onChange={(e) => saveAnswer(q.id, q.question, e.target.value)} />
+                <DatePicker className="w-full" value={value} onChange={(v) => saveAnswer(q.id, q.question, v)} placeholder="Select date" />
               )}
               {q.type === 'Number' && (
                 <input className={inputCls} type="number" placeholder="0" value={value} onChange={(e) => saveAnswer(q.id, q.question, e.target.value)} />
@@ -2732,7 +2735,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
     return format(d, 'MMM d, h:mm a');
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
+  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white';
 
   return (
     <>
@@ -2742,20 +2745,20 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
       {/* Header */}
       <div className="px-5 py-4 border-b border-black/5 shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="font-bold text-[17px] text-[#1c1410]">Lead Details</h2>
+          <h2 className="font-bold text-[17px] text-[#111318]">Lead Details</h2>
           <div className="flex items-center gap-1">
             {lead.source && (
-              <span className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold', getSourceColor(lead.source))}>
+              <span className={cn('px-2.5 py-1 rounded-full text-[12px] font-semibold', getSourceColor(lead.source))}>
                 {getSourceLabel(lead)}
               </span>
             )}
             {!editMode && canEditLead && (
-              <button onClick={() => setEditMode(true)} title="Edit" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors">
+              <button onClick={() => setEditMode(true)} title="Edit" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-primary transition-colors">
                 <Pencil className="w-4 h-4" />
               </button>
             )}
             {canDeleteLead && (
-              <button onClick={() => setShowDeleteModal(true)} title="Delete" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#c4b09e] hover:text-red-500 transition-colors">
+              <button onClick={() => setShowDeleteModal(true)} title="Delete" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#c3c8cf] hover:text-red-500 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
@@ -2763,7 +2766,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               <DeleteLeadModal lead={lead} onClose={() => setShowDeleteModal(false)} onDeleted={onClose} />
             )}
             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-[var(--accent-tint)] rounded-lg transition-colors">
-              <X className="w-5 h-5 text-[#7a6b5c]" />
+              <X className="w-5 h-5 text-[#6b7280]" />
             </button>
           </div>
         </div>
@@ -2780,8 +2783,8 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 {lead.firstName[0]}{lead.lastName?.[0] ?? ''}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-[17px] text-[#1c1410] leading-tight">{lead.firstName} {lead.lastName}</h3>
-                <p className="text-[14px] text-[#7a6b5c] mt-0.5">Deal value: <span className="font-semibold text-[#1c1410]">₹{lead.dealValue.toLocaleString()}</span></p>
+                <h3 className="font-bold text-[17px] text-[#111318] leading-tight">{lead.firstName} {lead.lastName}</h3>
+                <p className="text-[15px] text-[#6b7280] mt-0.5">Deal value: <span className="font-semibold text-[#111318]">₹{lead.dealValue.toLocaleString()}</span></p>
               </div>
             </div>
 
@@ -2795,11 +2798,11 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 { Icon: Tag, value: getSourceLabel(lead), href: undefined as string | undefined },
               ].map(({ Icon, value, href }, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <Icon className="w-4 h-4 text-[#7a6b5c] shrink-0" />
+                  <Icon className="w-4 h-4 text-[#6b7280] shrink-0" />
                   {href ? (
-                    <a href={href} className="text-[14px] text-[#1c1410] font-medium flex-1 break-words hover:text-primary transition-colors">{value}</a>
+                    <a href={href} className="text-[15px] text-[#111318] font-medium flex-1 break-words hover:text-primary transition-colors">{value}</a>
                   ) : (
-                    <span className="text-[14px] text-[#1c1410] font-medium flex-1 break-words">{value}</span>
+                    <span className="text-[15px] text-[#111318] font-medium flex-1 break-words">{value}</span>
                   )}
                 </div>
               ))}
@@ -2808,12 +2811,12 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               {/* Team Members */}
               {(lead.teamMembers ?? []).length > 0 && (
                 <div className="flex items-start gap-3">
-                  <Users className="w-4 h-4 text-[#7a6b5c] shrink-0 mt-0.5" />
+                  <Users className="w-4 h-4 text-[#6b7280] shrink-0 mt-0.5" />
                   <div className="flex flex-wrap gap-1">
                     {(lead.teamMembers ?? []).map((id) => {
                       const m = allStaffForPanel.find((s) => s.id === id);
                       return m ? (
-                        <span key={id} className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium">{m.name}</span>
+                        <span key={id} className="text-[12px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium">{m.name}</span>
                       ) : null;
                     })}
                   </div>
@@ -2824,7 +2827,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               <div className="pt-0.5">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {lead.tags.map((t) => (
-                    <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-orange-50 text-[var(--brand-dark)] border border-orange-100">
+                    <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-medium bg-orange-50 text-[var(--brand-dark)] border border-orange-100">
                       <Tag className="w-2.5 h-2.5" />{t}
                       {canEditLead && (
                         <button onClick={() => removeTagInline(t)} disabled={savingTag} className="ml-0.5 hover:text-red-500 disabled:opacity-40" title="Remove tag"><X className="w-2.5 h-2.5" /></button>
@@ -2832,12 +2835,12 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                     </span>
                   ))}
                   {canEditLead && !showTagAdd && (
-                    <button onClick={() => setShowTagAdd(true)} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold text-primary border border-dashed border-primary/40 hover:bg-[var(--accent-tint)] transition-colors">
+                    <button onClick={() => setShowTagAdd(true)} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-semibold text-primary border border-dashed border-primary/40 hover:bg-[var(--accent-tint)] transition-colors">
                       <Plus className="w-2.5 h-2.5" /> Add tag
                     </button>
                   )}
                   {lead.tags.length === 0 && !canEditLead && (
-                    <span className="text-[13px] text-[#b09e8d] italic">No tags</span>
+                    <span className="text-[14px] text-[#9ca3af] italic">No tags</span>
                   )}
                 </div>
                 {canEditLead && showTagAdd && (
@@ -2852,10 +2855,10 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                           else if (e.key === 'Escape') { setShowTagAdd(false); setTagAddInput(''); }
                         }}
                         placeholder="Type a tag, press Enter"
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-[13px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-[14px] text-[#111318] outline-none focus:border-primary/40 bg-white"
                       />
-                      <button onClick={() => addTagInline(tagAddInput)} disabled={!tagAddInput.trim() || savingTag} className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[13px] font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40">Add</button>
-                      <button onClick={() => { setShowTagAdd(false); setTagAddInput(''); }} className="px-2 py-1.5 rounded-lg text-[#7a6b5c] text-[13px] hover:bg-black/5">Cancel</button>
+                      <button onClick={() => addTagInline(tagAddInput)} disabled={!tagAddInput.trim() || savingTag} className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[14px] font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40">Add</button>
+                      <button onClick={() => { setShowTagAdd(false); setTagAddInput(''); }} className="px-2 py-1.5 rounded-lg text-[#6b7280] text-[14px] hover:bg-black/5">Cancel</button>
                     </div>
                     {/* Quick-pick from existing tenant tags */}
                     {(() => {
@@ -2865,7 +2868,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                       return suggestions.length > 0 ? (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {suggestions.map((tg) => (
-                            <button key={tg.id} onClick={() => addTagInline(tg.name)} disabled={savingTag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-white text-[#7a6b5c] border border-black/10 hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-40">
+                            <button key={tg.id} onClick={() => addTagInline(tg.name)} disabled={savingTag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-medium bg-white text-[#6b7280] border border-black/10 hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-40">
                               <Tag className="w-2.5 h-2.5" />{tg.name}
                             </button>
                           ))}
@@ -2881,7 +2884,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => setShowCustomFields((v) => !v)}
-                    className="flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:text-[var(--brand-dark)] transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-semibold text-primary hover:text-[var(--brand-dark)] transition-colors"
                   >
                     <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showCustomFields ? 'rotate-90' : ''}`} />
                     Additional Fields {fields.length > 0 ? `(${fields.length})` : ''}
@@ -2889,7 +2892,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   {canEditLead && (
                     <button
                       onClick={() => setShowEditFields(true)}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors px-2 py-1 rounded-lg hover:bg-[var(--accent-tint)]"
+                      className="flex items-center gap-1 text-[12px] font-semibold text-[#6b7280] hover:text-[var(--brand-dark)] transition-colors px-2 py-1 rounded-lg hover:bg-[var(--accent-tint)]"
                     >
                       <Pencil className="w-3 h-3" /> Edit Fields
                     </button>
@@ -2900,10 +2903,10 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                     {fields.length > 0 ? (
                       fields.map((f, i) => (
                         <div key={i} className="flex items-start gap-3">
-                          <FileText className="w-4 h-4 text-[#7a6b5c] shrink-0 mt-1" />
+                          <FileText className="w-4 h-4 text-[#6b7280] shrink-0 mt-1" />
                           <div className="flex-1 min-w-0">
-                            <span className="text-[13px] text-[#7a6b5c]">{f.label}:</span>
-                            <span className="ml-1.5 text-[13px] font-semibold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded-md inline-block break-words mt-0.5">
+                            <span className="text-[14px] text-[#6b7280]">{f.label}:</span>
+                            <span className="ml-1.5 text-[14px] font-semibold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded-md inline-block break-words mt-0.5">
                               {/https?:\/\/\S+/.test(f.value) ? (
                                 <a href={f.value.match(/https?:\/\/\S+/)?.[0]} target="_blank" rel="noreferrer" className="text-blue-600 underline hover:text-blue-800 break-all">{f.value}</a>
                               ) : f.value}
@@ -2912,11 +2915,11 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                         </div>
                       ))
                     ) : cfStatus === 'loading' ? (
-                      <p className="text-[13px] text-[#7a6b5c] pl-1 italic">Loading field values…</p>
+                      <p className="text-[14px] text-[#6b7280] pl-1 italic">Loading field values…</p>
                     ) : cfStatus === 'error' ? (
-                      <button onClick={loadFields} className="text-[13px] text-red-500 pl-1 italic hover:underline">Couldn't load fields - tap to retry</button>
+                      <button onClick={loadFields} className="text-[14px] text-red-500 pl-1 italic hover:underline">Couldn't load fields - tap to retry</button>
                     ) : (
-                      <p className="text-[13px] text-[#7a6b5c] pl-1 italic">No field values yet - click Edit Fields to add</p>
+                      <p className="text-[14px] text-[#6b7280] pl-1 italic">No field values yet - click Edit Fields to add</p>
                     )}
                   </div>
                 )}
@@ -2926,7 +2929,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               <div>
                 <button
                   onClick={() => { setShowEnquiries((v) => !v); loadEnquiries(); }}
-                  className="flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:text-[var(--brand-dark)] transition-colors"
+                  className="flex items-center gap-1.5 text-[14px] font-semibold text-primary hover:text-[var(--brand-dark)] transition-colors"
                 >
                   <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showEnquiries ? 'rotate-90' : ''}`} />
                   Enquiry Journey {enquiryData && enquiryData.enquiries.length > 0 ? `(${enquiryData.enquiries.length})` : ''}
@@ -2934,13 +2937,13 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 {showEnquiries && (
                   <div className="mt-2 space-y-2 pl-1">
                     {enquiryLoading ? (
-                      <p className="text-[13px] text-[#7a6b5c] pl-1 italic">Loading…</p>
+                      <p className="text-[14px] text-[#6b7280] pl-1 italic">Loading…</p>
                     ) : !enquiryData || enquiryData.enquiries.length === 0 ? (
-                      <p className="text-[13px] text-[#7a6b5c] pl-1 italic">No enquiry history recorded yet</p>
+                      <p className="text-[14px] text-[#6b7280] pl-1 italic">No enquiry history recorded yet</p>
                     ) : (
                       <>
                         {enquiryData.leads.length > 1 && (
-                          <div className="text-[11px] text-[#7a6b5c] bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5 mb-1">
+                          <div className="text-[12px] text-[#6b7280] bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5 mb-1">
                             This person has <span className="font-bold text-amber-700">{enquiryData.leads.length} leads</span> across different pipelines
                           </div>
                         )}
@@ -2949,10 +2952,10 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                             <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: e.is_duplicate ? '#f59e0b' : 'var(--brand, #c2410c)' }} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[13px] font-semibold text-[#1c1410]">{e.form_name || e.form_type}</span>
-                                {e.is_duplicate && <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Re-enquiry</span>}
+                                <span className="text-[14px] font-semibold text-[#111318]">{e.form_name || e.form_type}</span>
+                                {e.is_duplicate && <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Re-enquiry</span>}
                               </div>
-                              <p className="text-[11px] text-[#7a6b5c]">
+                              <p className="text-[12px] text-[#6b7280]">
                                 {e.pipeline_name ? `${e.pipeline_name}${e.stage_name ? ` → ${e.stage_name}` : ''}` : ''}
                                 {' · '}
                                 {format(new Date(e.created_at), 'dd MMM yyyy, hh:mm a')}
@@ -2969,9 +2972,9 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               {/* Lead Quality */}
               {lead.leadQuality && (
                 <div className="flex items-center gap-3">
-                  <Star className="w-4 h-4 text-[#7a6b5c] shrink-0" />
+                  <Star className="w-4 h-4 text-[#6b7280] shrink-0" />
                   <span className={cn(
-                    'inline-flex items-center text-[13px] font-semibold px-2.5 py-1 rounded-full',
+                    'inline-flex items-center text-[14px] font-semibold px-2.5 py-1 rounded-full',
                     lead.leadQuality === 'Hot'         ? 'bg-red-100 text-red-700'     :
                     lead.leadQuality === 'Warm'        ? 'bg-amber-100 text-amber-700' :
                     lead.leadQuality === 'Cold'        ? 'bg-blue-100 text-blue-700'   :
@@ -2986,12 +2989,12 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               {/* Timestamps */}
               <div className="pt-1 border-t border-black/5 mt-1 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[#7a6b5c]">Created at</span>
-                  <span className="text-[11px] font-medium text-[#1c1410]">{format(new Date(lead.createdAt), 'dd MMM yyyy, hh:mm:ss a')}</span>
+                  <span className="text-[12px] text-[#6b7280]">Created at</span>
+                  <span className="text-[12px] font-medium text-[#111318]">{format(new Date(lead.createdAt), 'dd MMM yyyy, hh:mm:ss a')}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[#7a6b5c]">Updated at</span>
-                  <span className="text-[11px] font-medium text-[#1c1410]">{format(new Date(lead.lastActivity), 'dd MMM yyyy, hh:mm:ss a')}</span>
+                  <span className="text-[12px] text-[#6b7280]">Updated at</span>
+                  <span className="text-[12px] font-medium text-[#111318]">{format(new Date(lead.lastActivity), 'dd MMM yyyy, hh:mm:ss a')}</span>
                 </div>
               </div>
 
@@ -3000,8 +3003,8 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-black/5 mt-1">
                   {/* 1st Touch */}
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl px-3 py-2.5 border border-blue-100">
-                    <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide">1st Touch</p>
-                    <p className="text-[15px] font-bold text-[#1c1410] mt-0.5">
+                    <p className="text-[11px] font-semibold text-blue-500 uppercase tracking-wide">1st Touch</p>
+                    <p className="text-[16px] font-bold text-[#111318] mt-0.5">
                       {leadStats.firstTouchDelayMs !== null
                         ? leadStats.firstTouchDelayMs < 60000 ? '<1m'
                           : leadStats.firstTouchDelayMs < 3600000 ? `${Math.round(leadStats.firstTouchDelayMs / 60000)}m`
@@ -3009,21 +3012,21 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                           : `${Math.round(leadStats.firstTouchDelayMs / 86400000)}d`
                         : '-'}
                     </p>
-                    <p className="text-[10px] text-blue-600/70 mt-0.5">Response time</p>
+                    <p className="text-[11px] text-blue-600/70 mt-0.5">Response time</p>
                   </div>
                   {/* Calls */}
                   <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl px-3 py-2.5 border border-orange-100">
-                    <p className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide">Calls</p>
-                    <p className="text-[15px] font-bold text-[#1c1410] mt-0.5">{leadStats.calls.total}</p>
-                    <p className="text-[10px] text-orange-600/70 mt-0.5">
+                    <p className="text-[11px] font-semibold text-orange-500 uppercase tracking-wide">Calls</p>
+                    <p className="text-[16px] font-bold text-[#111318] mt-0.5">{leadStats.calls.total}</p>
+                    <p className="text-[11px] text-orange-600/70 mt-0.5">
                       {leadStats.calls.inbound}↓ {leadStats.calls.outbound}↑ {leadStats.calls.missed > 0 ? `${leadStats.calls.missed} missed` : ''}
                     </p>
                   </div>
                   {/* Messages */}
                   <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl px-3 py-2.5 border border-emerald-100">
-                    <p className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wide">Messages</p>
-                    <p className="text-[15px] font-bold text-[#1c1410] mt-0.5">{leadStats.messages.total}</p>
-                    <p className="text-[10px] text-emerald-600/70 mt-0.5">
+                    <p className="text-[11px] font-semibold text-emerald-500 uppercase tracking-wide">Messages</p>
+                    <p className="text-[16px] font-bold text-[#111318] mt-0.5">{leadStats.messages.total}</p>
+                    <p className="text-[11px] text-emerald-600/70 mt-0.5">
                       {leadStats.messages.whatsapp > 0 ? `${leadStats.messages.whatsapp} WA` : ''}
                       {leadStats.messages.email > 0 ? ` ${leadStats.messages.email} email` : ''}
                       {leadStats.messages.inbound > 0 ? ` ${leadStats.messages.inbound}↓` : ''}
@@ -3031,9 +3034,9 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   </div>
                   {/* Follow-ups */}
                   <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl px-3 py-2.5 border border-amber-100">
-                    <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-wide">Follow-ups</p>
-                    <p className="text-[15px] font-bold text-[#1c1410] mt-0.5">{leadStats.followups.total}</p>
-                    <p className="text-[10px] text-amber-600/70 mt-0.5">
+                    <p className="text-[11px] font-semibold text-amber-500 uppercase tracking-wide">Follow-ups</p>
+                    <p className="text-[16px] font-bold text-[#111318] mt-0.5">{leadStats.followups.total}</p>
+                    <p className="text-[11px] text-amber-600/70 mt-0.5">
                       {leadStats.followups.completed} done{leadStats.followups.overdue > 0 ? ` · ${leadStats.followups.overdue} overdue` : ''}
                     </p>
                   </div>
@@ -3047,39 +3050,39 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
 
             {/* ═══ CONTACT SECTION ═══ */}
             <div className="px-5 py-4 border-b border-black/[0.05]">
-              <h4 className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-3">Contact</h4>
+              <h4 className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider mb-3">Contact</h4>
 
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="text-[11px] text-[#7a6b5c] mb-1 block font-medium">First name</label>
+                    <label className="text-[12px] text-[#6b7280] mb-1 block font-medium">First name</label>
                     <input className={inputCls} value={editForm.firstName} onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })} />
                   </div>
                   <div>
-                    <label className="text-[11px] text-[#7a6b5c] mb-1 block font-medium">Last name</label>
+                    <label className="text-[12px] text-[#6b7280] mb-1 block font-medium">Last name</label>
                     <input className={inputCls} value={editForm.lastName} onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })} />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-[#7a6b5c] mb-1 block font-medium">Phone</label>
+                  <label className="text-[12px] text-[#6b7280] mb-1 block font-medium">Phone</label>
                   <input className={inputCls} value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-[#7a6b5c] mb-1 block font-medium">Email</label>
+                  <label className="text-[12px] text-[#6b7280] mb-1 block font-medium">Email</label>
                   <input className={inputCls} type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="text-[11px] text-[#7a6b5c] mb-1 block font-medium">Deal value (₹)</label>
+                    <label className="text-[12px] text-[#6b7280] mb-1 block font-medium">Deal value (₹)</label>
                     <input className={inputCls} type="number" value={editForm.dealValue} onChange={(e) => setEditForm({ ...editForm, dealValue: Number(e.target.value) })} />
                   </div>
                   <div>
-                    <label className="text-[11px] text-[#7a6b5c] mb-1 block font-medium">Source</label>
-                    <div className={inputCls + ' bg-gray-50 text-[#7a6b5c] cursor-default select-none'}>
-                      <span className={cn('text-[11px] font-semibold px-2 py-0.5 rounded-full', getSourceColor(lead.source))}>
+                    <label className="text-[12px] text-[#6b7280] mb-1 block font-medium">Source</label>
+                    <div className={inputCls + ' bg-gray-50 text-[#6b7280] cursor-default select-none'}>
+                      <span className={cn('text-[12px] font-semibold px-2 py-0.5 rounded-full', getSourceColor(lead.source))}>
                         {getSourceLabel(lead)}
                       </span>
                     </div>
@@ -3087,21 +3090,21 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-[#7a6b5c] mb-1 block font-medium">Assigned to</label>
+                  <label className="text-[12px] text-[#6b7280] mb-1 block font-medium">Assigned to</label>
                   {canAssign ? (
                     <select className={inputCls} value={editForm.assignedTo} onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })}>
                       <option value="">Unassigned</option>
                       {allStaffForPanel.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   ) : (
-                    <div className={cn(inputCls, 'bg-gray-50 text-[#7a6b5c] cursor-not-allowed')} title="You don't have permission to reassign leads">
+                    <div className={cn(inputCls, 'bg-gray-50 text-[#6b7280] cursor-not-allowed')} title="You don't have permission to reassign leads">
                       {staff.find((s) => s.id === editForm.assignedTo)?.name ?? 'Unassigned'}
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-[#7a6b5c] mb-1 block font-medium">Lead Quality</label>
+                  <label className="text-[12px] text-[#6b7280] mb-1 block font-medium">Lead Quality</label>
                   <select className={inputCls} value={editForm.leadQuality} onChange={(e) => setEditForm({ ...editForm, leadQuality: e.target.value })}>
                     <option value="">- None -</option>
                     <option value="Hot">Hot</option>
@@ -3113,13 +3116,13 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
 
                 {/* Team Members - multi-select with chips */}
                 <div className="relative">
-                  <label className="text-[11px] text-[#7a6b5c] mb-1.5 block font-medium">Team Members</label>
+                  <label className="text-[12px] text-[#6b7280] mb-1.5 block font-medium">Team Members</label>
                   {editForm.teamMembers.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {editForm.teamMembers.map((id) => {
                         const m = allStaffForPanel.find((s) => s.id === id);
                         return (
-                          <span key={id} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                          <span key={id} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
                             {m?.name ?? 'Unknown'}
                             <button type="button" onClick={() => setEditForm({ ...editForm, teamMembers: editForm.teamMembers.filter((x) => x !== id) })}><X className="w-3 h-3" /></button>
                           </span>
@@ -3132,7 +3135,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                     onClick={() => setEditTeamDropOpen(true)}
                   >
                     <input
-                      className="w-full text-[13px] outline-none bg-transparent placeholder:text-gray-400"
+                      className="w-full text-[14px] outline-none bg-transparent placeholder:text-gray-400"
                       placeholder="Search staff..."
                       value={editTeamSearch}
                       onChange={(e) => { setEditTeamSearch(e.target.value); setEditTeamDropOpen(true); }}
@@ -3149,7 +3152,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                             <button
                               key={s.id}
                               type="button"
-                              className="w-full text-left px-3.5 py-2 text-[13px] hover:bg-gray-50 transition-colors text-[#1c1410]"
+                              className="w-full text-left px-3.5 py-2 text-[14px] hover:bg-gray-50 transition-colors text-[#111318]"
                               onClick={() => { setEditForm({ ...editForm, teamMembers: [...editForm.teamMembers, s.id] }); setEditTeamSearch(''); }}
                             >
                               {s.name}
@@ -3157,7 +3160,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                           ))
                         }
                         {allStaffForPanel.filter((s) => s.id !== editForm.assignedTo && !editForm.teamMembers.includes(s.id) && s.name.toLowerCase().includes(editTeamSearch.toLowerCase())).length === 0 && (
-                          <p className="px-3.5 py-2 text-[11px] text-[#b09e8d]">No staff available</p>
+                          <p className="px-3.5 py-2 text-[12px] text-[#9ca3af]">No staff available</p>
                         )}
                       </div>
                     </>
@@ -3166,11 +3169,11 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
 
                 {/* Tags - chips + dropdown */}
                 <div className="relative">
-                  <label className="text-[11px] text-[#7a6b5c] mb-1.5 block font-medium">Tags</label>
+                  <label className="text-[12px] text-[#6b7280] mb-1.5 block font-medium">Tags</label>
                   {editForm.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {editForm.tags.map((t) => (
-                        <span key={t} className={cn('flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold', TAG_COLORS[t] ?? 'bg-gray-100 text-gray-600')}>
+                        <span key={t} className={cn('flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-semibold', TAG_COLORS[t] ?? 'bg-gray-100 text-gray-600')}>
                           {t}
                           <button onClick={() => setEditForm({ ...editForm, tags: editForm.tags.filter((x) => x !== t) })}><X className="w-3 h-3" /></button>
                         </span>
@@ -3182,7 +3185,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                     onClick={() => setEditTagDropOpen(true)}
                   >
                     <input
-                      className="w-full text-[13px] outline-none bg-transparent placeholder:text-gray-400"
+                      className="w-full text-[14px] outline-none bg-transparent placeholder:text-gray-400"
                       placeholder="Search or type a tag..."
                       value={editForm.tagInput}
                       onChange={(e) => { setEditForm({ ...editForm, tagInput: e.target.value }); setEditTagDropOpen(true); }}
@@ -3207,7 +3210,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                               <button
                                 key={t.id}
                                 type="button"
-                                className={`w-full text-left px-3.5 py-2 text-[13px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#1c1410]'}`}
+                                className={`w-full text-left px-3.5 py-2 text-[14px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#111318]'}`}
                                 onClick={() => {
                                   setEditForm({ ...editForm, tags: selected ? editForm.tags.filter((x) => x !== t.name) : [...editForm.tags, t.name], tagInput: '' });
                                 }}
@@ -3224,14 +3227,14 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                         {editForm.tagInput.trim() && !storeTags.some((t) => t.name.toLowerCase() === editForm.tagInput.trim().toLowerCase()) && (
                           <button
                             type="button"
-                            className="w-full text-left px-3.5 py-2 text-[13px] text-primary hover:bg-gray-50 transition-colors"
+                            className="w-full text-left px-3.5 py-2 text-[14px] text-primary hover:bg-gray-50 transition-colors"
                             onClick={() => { setEditForm({ ...editForm, tags: [...editForm.tags, editForm.tagInput.trim()], tagInput: '' }); }}
                           >
                             + Create "{editForm.tagInput.trim()}"
                           </button>
                         )}
                         {storeTags.filter((t) => t.name.toLowerCase().includes(editForm.tagInput.toLowerCase())).length === 0 && !editForm.tagInput.trim() && (
-                          <p className="px-3.5 py-2 text-[11px] text-[#b09e8d]">No tags available</p>
+                          <p className="px-3.5 py-2 text-[12px] text-[#9ca3af]">No tags available</p>
                         )}
                       </div>
                     </>
@@ -3247,11 +3250,11 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
             <div className="flex gap-2 px-5 py-4 bg-[var(--app-bg)] sticky bottom-0 border-t border-black/5">
               <button
                 onClick={() => { setEditMode(false); setEditForm({ firstName: lead.firstName, lastName: lead.lastName, phone: lead.phone, email: lead.email, dealValue: lead.dealValue, source: lead.source, assignedTo: lead.assignedTo ?? '', tags: [...lead.tags], tagInput: '', leadQuality: lead.leadQuality ?? '', teamMembers: [...(lead.teamMembers ?? [])] }); }}
-                className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors"
+                className="flex-1 py-2.5 rounded-lg text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors"
               >Cancel</button>
               <button
                 onClick={handleSaveEdit}
-                className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
+                className="flex-1 py-2.5 rounded-lg text-[15px] font-bold text-white transition-all hover:-translate-y-0.5"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 12px rgba(234,88,12,0.25)' }}
               >Save Changes</button>
             </div>
@@ -3261,33 +3264,33 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
         {/* Quick Actions */}
         {!editMode && (
           <div className="px-5 py-4 border-b border-black/5">
-            <h4 className="text-[14px] font-bold text-[#1c1410] mb-3">Quick Actions</h4>
+            <h4 className="text-[15px] font-bold text-[#111318] mb-3">Quick Actions</h4>
             <div className="grid grid-cols-4 gap-2">
               <button onClick={() => setShowPipelineModal(true)}
-                className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-black/[0.07] bg-white hover:bg-[#faf0e8] hover:border-primary/30 transition-colors">
-                <Layers className="w-4 h-4 text-[#7a6b5c]" />
-                <span className="text-[10px] font-medium text-[#7a6b5c]">Pipeline</span>
+                className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-black/[0.07] bg-white hover:bg-[#f1f3f5] hover:border-primary/30 transition-colors">
+                <Layers className="w-4 h-4 text-[#6b7280]" />
+                <span className="text-[11px] font-medium text-[#6b7280]">Pipeline</span>
               </button>
 
               {/* WhatsApp - dropdown when personal WA is also connected */}
               <div className="relative">
                 <button
                   onClick={waPersonalStatus === 'connected' ? () => setShowWaDropdown((v) => !v) : handleWhatsApp}
-                  className="w-full flex flex-col items-center gap-1 py-2.5 rounded-xl border border-black/[0.07] bg-white hover:bg-[#faf0e8] hover:border-primary/30 transition-colors">
-                  <MessageCircle className="w-4 h-4 text-[#7a6b5c]" />
-                  <span className="text-[10px] font-medium text-[#7a6b5c]">WhatsApp</span>
+                  className="w-full flex flex-col items-center gap-1 py-2.5 rounded-xl border border-black/[0.07] bg-white hover:bg-[#f1f3f5] hover:border-primary/30 transition-colors">
+                  <MessageCircle className="w-4 h-4 text-[#6b7280]" />
+                  <span className="text-[11px] font-medium text-[#6b7280]">WhatsApp</span>
                 </button>
                 {showWaDropdown && (
                   <>
                     <div className="fixed inset-0 z-30" onClick={() => setShowWaDropdown(false)} />
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-black/10 rounded-xl shadow-xl z-40 w-52 py-1">
                       <button onClick={() => { handleWhatsApp(); setShowWaDropdown(false); }}
-                        className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--accent-tint)] flex items-center gap-2">
+                        className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--accent-tint)] flex items-center gap-2">
                         <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         Open WhatsApp Business
                       </button>
                       <button onClick={() => { setShowWaDropdown(false); setShowWaSendModal(true); }}
-                        className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--accent-tint)] flex items-center gap-2">
+                        className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--accent-tint)] flex items-center gap-2">
                         <Smartphone className="w-3.5 h-3.5 text-teal-600 shrink-0" />
                         Send via Personal WA
                       </button>
@@ -3297,14 +3300,14 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               </div>
 
               <button onClick={() => setShowFuModal(true)}
-                className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-black/[0.07] bg-white hover:bg-[#faf0e8] hover:border-primary/30 transition-colors">
-                <Clock className="w-4 h-4 text-[#7a6b5c]" />
-                <span className="text-[10px] font-medium text-[#7a6b5c]">Follow-up</span>
+                className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-black/[0.07] bg-white hover:bg-[#f1f3f5] hover:border-primary/30 transition-colors">
+                <Clock className="w-4 h-4 text-[#6b7280]" />
+                <span className="text-[11px] font-medium text-[#6b7280]">Follow-up</span>
               </button>
               <button onClick={() => setShowApptModal(true)}
-                className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-black/[0.07] bg-white hover:bg-[#faf0e8] hover:border-primary/30 transition-colors">
-                <CalendarPlus className="w-4 h-4 text-[#7a6b5c]" />
-                <span className="text-[10px] font-medium text-[#7a6b5c]">Appointment</span>
+                className="flex flex-col items-center gap-1 py-2.5 rounded-xl border border-black/[0.07] bg-white hover:bg-[#f1f3f5] hover:border-primary/30 transition-colors">
+                <CalendarPlus className="w-4 h-4 text-[#6b7280]" />
+                <span className="text-[11px] font-medium text-[#6b7280]">Appointment</span>
               </button>
             </div>
           </div>
@@ -3315,16 +3318,16 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
           <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => { setShowWaSendModal(false); setWaMessage(''); }}>
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-1">
-                <h3 className="font-headline font-bold text-[#1c1410] flex items-center gap-2">
+                <h3 className="font-headline font-bold text-[#111318] flex items-center gap-2">
                   <Smartphone className="w-4 h-4 text-teal-600" /> Send via Personal WhatsApp
                 </h3>
                 <button onClick={() => { setShowWaSendModal(false); setWaMessage(''); }} className="text-muted-foreground hover:text-foreground">
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-xs text-[#7a6b5c] mb-3">To: <strong>{lead.phone}</strong></p>
+              <p className="text-[13px] text-[#6b7280] mb-3">To: <strong>{lead.phone}</strong></p>
               <textarea
-                className="w-full border border-black/10 rounded-xl px-3 py-2 text-sm min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-teal-500/20 mb-4"
+                className="w-full border border-black/10 rounded-xl px-3 py-2 text-[15px] min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-teal-500/20 mb-4"
                 placeholder="Type your message..."
                 value={waMessage}
                 onChange={(e) => setWaMessage(e.target.value)}
@@ -3332,11 +3335,11 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               />
               <div className="flex gap-2 justify-end">
                 <button onClick={() => { setShowWaSendModal(false); setWaMessage(''); }}
-                  className="px-4 py-2 text-sm border border-black/10 rounded-xl hover:bg-[var(--accent-tint)] transition-colors">
+                  className="px-4 py-2 text-[15px] border border-black/10 rounded-xl hover:bg-[var(--accent-tint)] transition-colors">
                   Cancel
                 </button>
                 <button onClick={handleSendPersonalWa} disabled={!waMessage.trim() || waSending}
-                  className="px-4 py-2 text-sm bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 transition-colors">
+                  className="px-4 py-2 text-[15px] bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 transition-colors">
                   {waSending ? 'Sending…' : 'Send'}
                 </button>
               </div>
@@ -3352,38 +3355,38 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
               onClick={() => { const n = !showStageTl; setShowStageTl(n); if (n) loadStageTl(); }}
               className="w-full flex items-center justify-between text-left"
             >
-              <span className="text-[14px] font-bold text-[#1c1410] flex items-center gap-1.5">
+              <span className="text-[15px] font-bold text-[#111318] flex items-center gap-1.5">
                 <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showStageTl ? 'rotate-90' : ''}`} />
                 Stage Timeline
               </span>
-              <span className="text-[11px] text-[#9e8e7e]">time in each stage</span>
+              <span className="text-[12px] text-[#8b929c]">time in each stage</span>
             </button>
             {showStageTl && (
               <div className="mt-3 pl-1">
                 {stageTlLoading ? (
-                  <p className="text-[13px] text-[#7a6b5c] italic">Loading…</p>
+                  <p className="text-[14px] text-[#6b7280] italic">Loading…</p>
                 ) : !stageTl || stageTl.history.length === 0 ? (
-                  <p className="text-[13px] text-[#b09e8d] italic">No stage history yet</p>
+                  <p className="text-[14px] text-[#9ca3af] italic">No stage history yet</p>
                 ) : (
                   <div className="space-y-2.5">
                     {stageTl.history.map((s: any, i: number) => (
                       <div key={i} className="flex items-start gap-3">
-                        <div className={cn('w-2.5 h-2.5 rounded-full mt-1 shrink-0', s.is_current ? 'bg-primary ring-2 ring-primary/25' : 'bg-[#cbb9a8]')} />
+                        <div className={cn('w-2.5 h-2.5 rounded-full mt-1 shrink-0', s.is_current ? 'bg-primary ring-2 ring-primary/25' : 'bg-[#c3c8cf]')} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-[14px] font-semibold text-[#1c1410] truncate">{s.stage_name || 'Unknown stage'}</span>
-                            <span className={cn('text-[11px] font-bold shrink-0 px-2 py-0.5 rounded-full',
+                            <span className="text-[15px] font-semibold text-[#111318] truncate">{s.stage_name || 'Unknown stage'}</span>
+                            <span className={cn('text-[12px] font-bold shrink-0 px-2 py-0.5 rounded-full',
                               s.duration_ms > 7 * 864e5 ? 'bg-red-50 text-red-600' : s.duration_ms > 3 * 864e5 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')}>
                               {fmtDur(s.duration_ms)}{s.is_current ? ' · ongoing' : ''}
                             </span>
                           </div>
-                          <span className="text-[11px] text-[#9e8e7e]">Entered {format(new Date(s.entered_at), 'dd MMM yyyy, h:mm a')}</span>
+                          <span className="text-[12px] text-[#8b929c]">Entered {format(new Date(s.entered_at), 'dd MMM yyyy, h:mm a')}</span>
                         </div>
                       </div>
                     ))}
                     <div className="pt-1.5 mt-1 border-t border-black/5 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-[#7a6b5c]">Total in pipeline</span>
-                      <span className="text-[11px] font-bold text-[#1c1410]">
+                      <span className="text-[12px] font-semibold text-[#6b7280]">Total in pipeline</span>
+                      <span className="text-[12px] font-bold text-[#111318]">
                         {fmtDur(stageTl.history.reduce((a: number, s: any) => a + s.duration_ms, 0))}
                       </span>
                     </div>
@@ -3398,7 +3401,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
         {!editMode && (
           <div className="px-5 py-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-[14px] font-bold text-[#1c1410]">Activity Timeline</h4>
+              <h4 className="text-[15px] font-bold text-[#111318]">Activity Timeline</h4>
             </div>
             {/* Type filter pills */}
             <div className="flex flex-wrap gap-1.5 mb-3">
@@ -3414,10 +3417,10 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                   key={key}
                   onClick={() => setTimelineFilter(key)}
                   className={cn(
-                    'px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors',
+                    'px-2.5 py-1 rounded-full text-[12px] font-semibold transition-colors',
                     timelineFilter === key
                       ? 'bg-primary text-white'
-                      : 'bg-black/[0.04] text-[#7a6b5c] hover:bg-black/[0.08]'
+                      : 'bg-black/[0.04] text-[#6b7280] hover:bg-black/[0.08]'
                   )}
                 >
                   {label}
@@ -3431,7 +3434,7 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                 : timelineFilter === 'stage_change' ? timeline.filter((e) => e.type === 'stage_change' || e.type === 'assigned' || e.type === 'created')
                 : timeline.filter((e) => e.type === timelineFilter);
               return filtered.length === 0 ? (
-                <p className="text-[13px] text-[#b09e8d] text-center py-4">No activity yet</p>
+                <p className="text-[14px] text-[#9ca3af] text-center py-4">No activity yet</p>
               ) : (
               <div className="space-y-3">
                 {filtered.map((entry) => {
@@ -3448,17 +3451,17 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                       </div>
                       <div className="flex-1 pt-0.5 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-[14px] font-semibold text-[#1c1410]">{entry.title}</p>
+                          <p className="text-[15px] font-semibold text-[#111318]">{entry.title}</p>
                           {isNote && canEditLead && (
                             <button onClick={() => setEditNote({ id: noteId, title: entry.title === 'Note' ? '' : entry.title, content: entry.detail ?? '' })}
-                              className="p-1 rounded text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-primary shrink-0" title="Edit note"><Pencil className="w-3.5 h-3.5" /></button>
+                              className="p-1 rounded text-[#6b7280] hover:bg-[var(--accent-tint)] hover:text-primary shrink-0" title="Edit note"><Pencil className="w-3.5 h-3.5" /></button>
                           )}
                           {isFu && canEditLead && (
                             <button onClick={() => { const f = leadFollowUps.find((x) => x.id === fuId); if (f) setEditFu({ id: f.id, title: f.note || '', notes: f.description || '', dueAt: format(new Date(f.dueAt), "yyyy-MM-dd'T'HH:mm") }); }}
-                              className="p-1 rounded text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-primary shrink-0" title="Edit follow-up"><Pencil className="w-3.5 h-3.5" /></button>
+                              className="p-1 rounded text-[#6b7280] hover:bg-[var(--accent-tint)] hover:text-primary shrink-0" title="Edit follow-up"><Pencil className="w-3.5 h-3.5" /></button>
                           )}
                         </div>
-                        {entry.detail && <p className="text-[13px] text-[#7a6b5c] mt-0.5 break-words whitespace-pre-wrap">{entry.detail}</p>}
+                        {entry.detail && <p className="text-[14px] text-[#6b7280] mt-0.5 break-words whitespace-pre-wrap">{entry.detail}</p>}
                         {/* Call recording Play/Download */}
                         {isCall && entry.hasRecording && (
                           <div className="flex items-center gap-2 mt-1.5">
@@ -3474,14 +3477,14 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                                   setPlayingCallId(cid);
                                 } catch { toast.error('Recording not available'); }
                               }}
-                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-[11px] font-semibold transition-colors"
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-[12px] font-semibold transition-colors"
                             >
                               {playingCallId === entry.callLogId ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                               {playingCallId === entry.callLogId ? 'Stop' : 'Play'}
                             </button>
                             <button
                               onClick={() => downloadBlob(`/api/calls/${entry.callLogId}/download`, `call-recording.mp3`)}
-                              className="text-[11px] text-[#7a6b5c] hover:text-primary transition-colors"
+                              className="text-[12px] text-[#6b7280] hover:text-primary transition-colors"
                             >Download</button>
                           </div>
                         )}
@@ -3495,10 +3498,10 @@ export function LeadDetailPanel({ lead, onClose, onLeadUpdated }: {
                           />
                         )}
                         <div className="flex items-center justify-between mt-1">
-                          <p className="text-[11px] text-[#b09e8d] flex items-center gap-1">
+                          <p className="text-[12px] text-[#9ca3af] flex items-center gap-1">
                             <Clock className="w-3 h-3" /> {timestampLabel(entry.timestamp)}
                           </p>
-                          <span className="text-[11px] text-[#7a6b5c] font-medium">
+                          <span className="text-[12px] text-[#6b7280] font-medium">
                             ~ {entry.createdBy || 'Automation'}
                           </span>
                         </div>
@@ -3617,23 +3620,23 @@ function QuickEditModal({ lead, onClose, onSaved }: {
     onClose();
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 transition-colors bg-white';
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[15px] text-[#111318] outline-none focus:border-primary/40 transition-colors bg-white';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col" style={{ boxShadow: '0 25px 80px rgba(0,0,0,0.18)' }}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
           <div>
-            <p className="text-[11px] text-[#b09e8d]">Pipeline / Stage / Tags</p>
-            <h3 className="font-bold text-[15px] text-[#1c1410]">{lead.firstName} {lead.lastName}</h3>
+            <p className="text-[12px] text-[#9ca3af]">Pipeline / Stage / Tags</p>
+            <h3 className="font-bold text-[16px] text-[#111318]">{lead.firstName} {lead.lastName}</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#6b7280]"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="px-5 py-4 space-y-4">
           {/* Pipeline */}
           <div>
-            <label className="text-[13px] text-[#7a6b5c] mb-1.5 block font-semibold">Pipeline</label>
+            <label className="text-[14px] text-[#6b7280] mb-1.5 block font-semibold">Pipeline</label>
             <select className={inputCls} value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setStage(''); }}>
               {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -3641,7 +3644,7 @@ function QuickEditModal({ lead, onClose, onSaved }: {
 
           {/* Stage */}
           <div>
-            <label className="text-[13px] text-[#7a6b5c] mb-1.5 block font-semibold">Stage</label>
+            <label className="text-[14px] text-[#6b7280] mb-1.5 block font-semibold">Stage</label>
             <select className={inputCls} value={stage} onChange={(e) => setStage(e.target.value)}>
               <option value="">Select stage</option>
               {stageOptions.map((s) => <option key={s}>{s}</option>)}
@@ -3650,15 +3653,15 @@ function QuickEditModal({ lead, onClose, onSaved }: {
 
           {/* Tags */}
           <div>
-            <label className="text-[13px] text-[#7a6b5c] mb-1.5 block font-semibold">Tags</label>
+            <label className="text-[14px] text-[#6b7280] mb-1.5 block font-semibold">Tags</label>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {tags.map((t) => (
-                <span key={t} className="flex items-center gap-1 bg-primary/10 text-primary text-[11px] font-semibold px-2.5 py-1 rounded-full">
+                <span key={t} className="flex items-center gap-1 bg-primary/10 text-primary text-[12px] font-semibold px-2.5 py-1 rounded-full">
                   {t}
                   <button onClick={() => setTags(tags.filter((x) => x !== t))}><X className="w-3 h-3" /></button>
                 </span>
               ))}
-              {tags.length === 0 && <span className="text-[13px] text-[#c4b09e]">No tags</span>}
+              {tags.length === 0 && <span className="text-[14px] text-[#c3c8cf]">No tags</span>}
             </div>
             <div className="flex gap-2">
               <input
@@ -3672,7 +3675,7 @@ function QuickEditModal({ lead, onClose, onSaved }: {
               <datalist id="tag-suggestions">
                 {storeTags.map((t) => <option key={t.id} value={t.name} />)}
               </datalist>
-              <button onClick={() => addTag(tagInput)} disabled={!tagInput.trim()} className="px-3 py-2 rounded-xl bg-primary/10 text-primary text-[13px] font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40">
+              <button onClick={() => addTag(tagInput)} disabled={!tagInput.trim()} className="px-3 py-2 rounded-xl bg-primary/10 text-primary text-[14px] font-semibold hover:bg-primary/20 transition-colors disabled:opacity-40">
                 Add
               </button>
             </div>
@@ -3680,16 +3683,16 @@ function QuickEditModal({ lead, onClose, onSaved }: {
 
           {/* Created date - read only */}
           <div className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-[var(--app-bg)] border border-black/5">
-            <span className="text-[13px] font-semibold text-[#7a6b5c]">Created</span>
-            <span className="text-[13px] font-bold text-[#1c1410]">
+            <span className="text-[14px] font-semibold text-[#6b7280]">Created</span>
+            <span className="text-[14px] font-bold text-[#111318]">
               {new Date(lead.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
           </div>
         </div>
 
         <div className="flex gap-2 px-5 pb-5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-          <button onClick={handleSave} className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={handleSave} className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
             Update
           </button>
         </div>
@@ -3736,9 +3739,9 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
     setForm((f) => ({ ...f, event: id, locationValue: et?.meetingLink ?? '', slot: '' }));
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 transition-colors bg-white';
+  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[15px] text-[#111318] outline-none focus:border-primary/40 transition-colors bg-white';
   const lbl = (text: string, required = true) => (
-    <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">
+    <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">
       {text} {required && <span className="text-red-500">*</span>}
     </label>
   );
@@ -3790,8 +3793,8 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-black/5">
-          <h3 className="font-bold text-[17px] text-[#1c1410]">Appointment Booking</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c] transition-colors">
+          <h3 className="font-bold text-[17px] text-[#111318]">Appointment Booking</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#6b7280] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -3799,7 +3802,7 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
         <div className="px-6 py-5 space-y-4">
           {/* Lead name - read only */}
           <input
-            className="w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[14px] text-[#7a6b5c] bg-gray-50 outline-none cursor-default"
+            className="w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[15px] text-[#6b7280] bg-gray-50 outline-none cursor-default"
             value={`${lead.firstName} ${lead.lastName}`}
             readOnly
           />
@@ -3821,7 +3824,7 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
               <div>
                 {lbl('Meeting Type', false)}
                 <input
-                  className="w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[14px] text-[#7a6b5c] bg-gray-50 outline-none cursor-default"
+                  className="w-full border border-gray-100 rounded-lg px-3 py-2.5 text-[15px] text-[#6b7280] bg-gray-50 outline-none cursor-default"
                   value={location || '-'}
                   readOnly
                 />
@@ -3842,11 +3845,11 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
           <div className="grid grid-cols-2 gap-4">
             <div>
               {lbl('Event Date')}
-              <input
-                className={inputCls}
-                type="date"
+              <DatePicker
+                className="w-full"
                 value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value, slot: '' })}
+                onChange={(v) => setForm({ ...form, date: v, slot: '' })}
+                placeholder="Select date"
               />
             </div>
             <div>
@@ -3882,7 +3885,7 @@ function AppointmentModal({ lead, onClose, onBooked }: { lead: Lead; onClose: ()
         <div className="flex items-center justify-end px-6 pb-6">
           <button
             onClick={handleBook}
-            className="px-8 py-2.5 rounded-lg text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
+            className="px-8 py-2.5 rounded-lg text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
           >
             Book Appointment
@@ -3913,7 +3916,7 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
   const [showCardMenu, setShowCardMenu] = useState(false);
 
   const initials = `${lead.firstName[0] ?? ''}${lead.lastName[0] ?? ''}`.toUpperCase() || '?';
-  const bgPalette = ['#f5ede3','#dbeafe','#dcfce7','#ede9fe','#fce7f3','#fef9c3'];
+  const bgPalette = ['#eef1f4','#dbeafe','#dcfce7','#ede9fe','#fce7f3','#fef9c3'];
   const fgPalette = ['#c2410c','#1d4ed8','#15803d','#7c3aed','#be185d','#a16207'];
   const ci = (lead.firstName.charCodeAt(0) ?? 0) % bgPalette.length;
 
@@ -3972,11 +3975,11 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
       {...listeners}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.25 : 1 }}
       className={cn(
-        'group bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-150 cursor-grab active:cursor-grabbing',
+        'group bg-white rounded-2xl border card-shadow card-hover transition-all duration-150 cursor-grab active:cursor-grabbing',
         highlighted ? 'border-primary ring-2 ring-primary/30 bg-primary/[0.02]'
-          : fuUrgency === 'overdue' ? 'border-l-[3px] border-l-red-500 border-t-gray-100 border-r-gray-100 border-b-gray-100 bg-[#fff5f5]'
-          : fuUrgency === 'today' ? 'border-l-[3px] border-l-amber-500 border-t-gray-100 border-r-gray-100 border-b-gray-100 bg-[#fffbeb]'
-          : 'border-gray-100',
+          : fuUrgency === 'overdue' ? 'border-l-[3px] border-l-red-500 border-t-[var(--hairline)] border-r-[var(--hairline)] border-b-[var(--hairline)] bg-[#fff5f5]'
+          : fuUrgency === 'today' ? 'border-l-[3px] border-l-amber-500 border-t-[var(--hairline)] border-r-[var(--hairline)] border-b-[var(--hairline)] bg-[#fffbeb]'
+          : 'border-[var(--hairline)]',
       )}
       onClick={onClick}
     >
@@ -3984,15 +3987,15 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
         {/* Row 1: avatar + name/phone (left) | staff avatar + 3-dot menu (right) */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
               style={{ background: bgPalette[ci], color: fgPalette[ci] }}>
               {initials}
             </div>
             <div className="min-w-0">
-              <p className="text-[14px] font-semibold text-[#1c1410] truncate leading-tight">
+              <p className="text-[15px] font-semibold text-[#111318] truncate leading-tight">
                 {lead.firstName} {lead.lastName}
               </p>
-              <p className="text-[11px] text-[#7a6b5c] truncate">
+              <p className="text-[12px] text-[#6b7280] truncate">
                 {showPhone ? lead.phone : lead.phone.replace(/\d(?=\d{4})/g, '*')}
               </p>
             </div>
@@ -4000,14 +4003,14 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
           <div className="flex items-center gap-1.5 shrink-0">
             {assignedCardName && (
               <div title={`Assigned: ${assignedCardName}`}
-                className="w-5 h-5 rounded-full bg-[var(--accent-tint)] flex items-center justify-center text-[9px] font-bold text-primary">
+                className="w-5 h-5 rounded-full bg-[var(--accent-tint)] flex items-center justify-center text-[10px] font-bold text-primary">
                 {assignedCardAvatar}
               </div>
             )}
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => setShowCardMenu((v) => !v)}
-                className="w-6 h-6 rounded-md flex items-center justify-center text-[#1c1410] hover:bg-orange-50 hover:text-primary transition-colors">
+                className="w-6 h-6 rounded-md flex items-center justify-center text-[#111318] hover:bg-orange-50 hover:text-primary transition-colors">
                 <MoreHorizontal className="w-3.5 h-3.5" />
               </button>
               {showCardMenu && (
@@ -4015,21 +4018,21 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
                   <div className="fixed inset-0 z-30" onClick={() => setShowCardMenu(false)} />
                   <div className="absolute right-0 top-7 z-40 w-44 bg-white rounded-xl border border-black/5 shadow-xl overflow-hidden py-1">
                     <button onClick={() => { setShowCardMenu(false); setShowQuickEdit(true); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
-                      <Pencil className="w-3 h-3 text-[#7a6b5c]" /> Edit
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[14px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                      <Pencil className="w-3 h-3 text-[#6b7280]" /> Edit
                     </button>
                     <button onClick={() => { setShowCardMenu(false); onFollowUp(); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
-                      <CheckSquare className="w-3 h-3 text-[#7a6b5c]" /> Follow-up
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[14px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                      <CheckSquare className="w-3 h-3 text-[#6b7280]" /> Follow-up
                     </button>
                     <button onClick={() => { setShowCardMenu(false); setShowAppointment(true); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
-                      <CalendarPlus className="w-3 h-3 text-[#7a6b5c]" /> Book Appointment
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[14px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                      <CalendarPlus className="w-3 h-3 text-[#6b7280]" /> Book Appointment
                     </button>
                     {!assignedCardName && canAssign && (
                       <button onClick={() => { setShowCardMenu(false); onAssign(); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
-                        <User className="w-3 h-3 text-[#7a6b5c]" /> Assign
+                        className="w-full flex items-center gap-2 px-3 py-2 text-[14px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                        <User className="w-3 h-3 text-[#6b7280]" /> Assign
                       </button>
                     )}
                   </div>
@@ -4042,7 +4045,7 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
         {/* Quality badge */}
         {lead.leadQuality && (
           <div className="mt-1.5">
-            <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide ${
+            <span className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide ${
               lead.leadQuality === 'Hot' ? 'bg-red-100 text-red-700' :
               lead.leadQuality === 'Warm' ? 'bg-amber-100 text-amber-700' :
               lead.leadQuality === 'Cold' ? 'bg-blue-100 text-blue-700' :
@@ -4058,27 +4061,27 @@ function LeadCard({ lead, onClick, onFollowUp, onNote, onAssign, showPhone, high
         <div className="flex items-start justify-between gap-3 mt-2 pt-2 border-t border-black/[0.05]">
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex flex-col min-w-0">
-              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Created</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">{fmtDateTime(lead.createdAt)}</span>
+              <span className="text-[10px] font-medium text-[#9ca3af] uppercase tracking-wide leading-none mb-0.5">Created</span>
+              <span className="text-[12px] font-medium text-[#4a4f57] truncate">{fmtDateTime(lead.createdAt)}</span>
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Updated</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">{fmtDateTime(lead.lastActivity)}</span>
+              <span className="text-[10px] font-medium text-[#9ca3af] uppercase tracking-wide leading-none mb-0.5">Updated</span>
+              <span className="text-[12px] font-medium text-[#4a4f57] truncate">{fmtDateTime(lead.lastActivity)}</span>
             </div>
           </div>
           <div className="flex flex-col gap-1 min-w-0 items-end text-right">
             <div className="flex flex-col min-w-0 items-end">
-              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">
-                {lastFU ? fmtFUDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">-</span>}
+              <span className="text-[10px] font-medium text-[#9ca3af] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
+              <span className="text-[12px] font-medium text-[#4a4f57] truncate">
+                {lastFU ? fmtFUDateTime(lastFU.dueAt) : <span className="text-[#c3c8cf]">-</span>}
               </span>
             </div>
             <div className="flex flex-col min-w-0 items-end">
-              <span className={cn("text-[9px] font-medium uppercase tracking-wide leading-none mb-0.5",
-                hasOverdueFU ? 'text-red-500' : hasTodayFU ? 'text-amber-600' : 'text-[#b0a294]')}>Next Follow</span>
-              <span className={cn("text-[11px] font-medium truncate",
-                hasOverdueFU ? 'text-red-600 font-semibold' : hasTodayFU ? 'text-amber-600 font-semibold' : 'text-[#5c5245]')}>
-                {nextFU ? fmtFUDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">-</span>}
+              <span className={cn("text-[10px] font-medium uppercase tracking-wide leading-none mb-0.5",
+                hasOverdueFU ? 'text-red-500' : hasTodayFU ? 'text-amber-600' : 'text-[#9ca3af]')}>Next Follow</span>
+              <span className={cn("text-[12px] font-medium truncate",
+                hasOverdueFU ? 'text-red-600 font-semibold' : hasTodayFU ? 'text-amber-600 font-semibold' : 'text-[#4a4f57]')}>
+                {nextFU ? fmtFUDateTime(nextFU.dueAt) : <span className="text-[#c3c8cf]">-</span>}
               </span>
             </div>
           </div>
@@ -4120,7 +4123,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
   const assignedAvatar = assignedStaff?.avatar || assignedName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   const initials = `${lead.firstName[0] ?? ''}${lead.lastName[0] ?? ''}`.toUpperCase() || '?';
-  const bgPalette = ['#f5ede3', '#dbeafe', '#dcfce7', '#ede9fe', '#fce7f3', '#fef9c3'];
+  const bgPalette = ['#eef1f4', '#dbeafe', '#dcfce7', '#ede9fe', '#fce7f3', '#fef9c3'];
   const fgPalette = ['#c2410c', '#1d4ed8', '#15803d', '#7c3aed', '#be185d', '#a16207'];
   const ci = (lead.firstName.charCodeAt(0) ?? 0) % bgPalette.length;
 
@@ -4176,7 +4179,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
       onPointerUp={cancelLongPress}
       onPointerLeave={cancelLongPress}
       onPointerMove={cancelLongPress}
-      className={cn('relative rounded-2xl border shadow-sm active:bg-[#fcfaf8] transition-colors',
+      className={cn('relative rounded-2xl border shadow-sm active:bg-[#fcfcfd] transition-colors',
         selected ? 'border-primary ring-2 ring-primary/30'
           : 'border-black/[0.06] bg-white')}
     >
@@ -4192,7 +4195,7 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
               <Check className="w-5 h-5" />
             </div>
           ) : (
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-bold shrink-0"
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-[16px] font-bold shrink-0"
               style={{ background: bgPalette[ci], color: fgPalette[ci] }}>
               {initials}
             </div>
@@ -4200,9 +4203,9 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <p className="text-[15px] font-bold text-[#1c1410] truncate leading-tight">{lead.firstName} {lead.lastName}</p>
+              <p className="text-[16px] font-bold text-[#111318] truncate leading-tight">{lead.firstName} {lead.lastName}</p>
               {lead.leadQuality && (
-                <span className={cn('shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide',
+                <span className={cn('shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide',
                   lead.leadQuality === 'Hot' ? 'bg-red-100 text-red-700' :
                   lead.leadQuality === 'Warm' ? 'bg-amber-100 text-amber-700' :
                   lead.leadQuality === 'Cold' ? 'bg-blue-100 text-blue-700' :
@@ -4211,14 +4214,14 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
               )}
             </div>
             <a href={`tel:${lead.phone}`} onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1.5 mt-0.5 text-[14px] font-semibold text-primary">
+              className="inline-flex items-center gap-1.5 mt-0.5 text-[15px] font-semibold text-primary">
               <Phone className="w-3 h-3" /> {phoneShown}
             </a>
           </div>
 
           <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
             <button aria-label="Lead actions" onClick={() => { setMenuOpen((v) => !v); setMoveOpen(false); }}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-[#7a6b5c] active:bg-orange-50 active:text-primary">
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-[#6b7280] active:bg-orange-50 active:text-primary">
               <MoreHorizontal className="w-5 h-5" />
             </button>
             {menuOpen && (
@@ -4227,23 +4230,23 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
                 <div className="absolute right-0 top-10 z-50 w-52 bg-white rounded-2xl border border-black/5 shadow-xl overflow-hidden py-1">
                   {!moveOpen ? (
                     <>
-                      {onEnterSelect && <button onClick={act(() => onEnterSelect())} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><CheckSquare className="w-4 h-4 text-[#7a6b5c]" /> Select</button>}
-                      <button onClick={act(onEdit)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><Pencil className="w-4 h-4 text-[#7a6b5c]" /> Edit</button>
-                      <button onClick={act(onFollowUp)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><CheckSquare className="w-4 h-4 text-[#7a6b5c]" /> Add Follow-up</button>
-                      <button onClick={act(onAppointment)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><CalendarPlus className="w-4 h-4 text-[#7a6b5c]" /> Book Appointment</button>
-                      <button onClick={(e) => { e.stopPropagation(); setMoveOpen(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><ArrowLeftRight className="w-4 h-4 text-[#7a6b5c]" /> Move to stage <ChevronRight className="w-3.5 h-3.5 ml-auto text-[#b09e8d]" /></button>
+                      {onEnterSelect && <button onClick={act(() => onEnterSelect())} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] active:bg-[#f1f3f5]"><CheckSquare className="w-4 h-4 text-[#6b7280]" /> Select</button>}
+                      <button onClick={act(onEdit)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] active:bg-[#f1f3f5]"><Pencil className="w-4 h-4 text-[#6b7280]" /> Edit</button>
+                      <button onClick={act(onFollowUp)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] active:bg-[#f1f3f5]"><CheckSquare className="w-4 h-4 text-[#6b7280]" /> Add Follow-up</button>
+                      <button onClick={act(onAppointment)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] active:bg-[#f1f3f5]"><CalendarPlus className="w-4 h-4 text-[#6b7280]" /> Book Appointment</button>
+                      <button onClick={(e) => { e.stopPropagation(); setMoveOpen(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] active:bg-[#f1f3f5]"><ArrowLeftRight className="w-4 h-4 text-[#6b7280]" /> Move to stage <ChevronRight className="w-3.5 h-3.5 ml-auto text-[#9ca3af]" /></button>
                       {!assignedName && canAssign && (
-                        <button onClick={act(onAssign)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8]"><User className="w-4 h-4 text-[#7a6b5c]" /> Assign</button>
+                        <button onClick={act(onAssign)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] active:bg-[#f1f3f5]"><User className="w-4 h-4 text-[#6b7280]" /> Assign</button>
                       )}
                     </>
                   ) : (
                     <>
-                      <button onClick={(e) => { e.stopPropagation(); setMoveOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-[#7a6b5c] border-b border-black/5"><ArrowLeft className="w-3.5 h-3.5" /> Move to…</button>
+                      <button onClick={(e) => { e.stopPropagation(); setMoveOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[14px] font-semibold text-[#6b7280] border-b border-black/5"><ArrowLeft className="w-3.5 h-3.5" /> Move to…</button>
                       <div className="max-h-56 overflow-y-auto">
                         {stages.filter((s) => s !== lead.stage).map((s) => (
-                          <button key={s} onClick={act(() => onMove(s))} className="w-full text-left px-4 py-2.5 text-[14px] text-[#1c1410] active:bg-[#faf0e8] truncate">{s}</button>
+                          <button key={s} onClick={act(() => onMove(s))} className="w-full text-left px-4 py-2.5 text-[15px] text-[#111318] active:bg-[#f1f3f5] truncate">{s}</button>
                         ))}
-                        {stages.filter((s) => s !== lead.stage).length === 0 && <p className="px-4 py-3 text-[13px] text-[#b09e8d]">No other stages</p>}
+                        {stages.filter((s) => s !== lead.stage).length === 0 && <p className="px-4 py-3 text-[14px] text-[#9ca3af]">No other stages</p>}
                       </div>
                     </>
                   )}
@@ -4255,12 +4258,12 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
 
         {/* Row 2 - meta line: age + assignee */}
         <div className="flex items-center gap-2 flex-wrap mt-2.5 pl-[52px]">
-          <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold', ageColor)}>
+          <span className={cn('inline-flex items-center gap-1 text-[12px] font-semibold', ageColor)}>
             <Clock className="w-3 h-3" /> {daysInPipeline}d
           </span>
           {assignedName && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#7a6b5c]">
-              <span className="w-4 h-4 rounded-full bg-[var(--accent-tint)] flex items-center justify-center text-[8px] font-bold text-primary">{assignedAvatar}</span>
+            <span className="inline-flex items-center gap-1 text-[12px] font-medium text-[#6b7280]">
+              <span className="w-4 h-4 rounded-full bg-[var(--accent-tint)] flex items-center justify-center text-[9px] font-bold text-primary">{assignedAvatar}</span>
               {assignedName.split(' ')[0]}
             </span>
           )}
@@ -4270,27 +4273,27 @@ function MobileLeadCard({ lead, stages, accent, showPhone, onClick, onEdit, onFo
         <div className="flex items-start justify-between gap-3 mt-2.5 pt-2.5 pl-[52px] border-t border-black/[0.05]">
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex flex-col min-w-0">
-              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Created</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">{fmtDateTime(lead.createdAt)}</span>
+              <span className="text-[10px] font-medium text-[#9ca3af] uppercase tracking-wide leading-none mb-0.5">Created</span>
+              <span className="text-[12px] font-medium text-[#4a4f57] truncate">{fmtDateTime(lead.createdAt)}</span>
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Updated</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">{fmtDateTime(lead.lastActivity)}</span>
+              <span className="text-[10px] font-medium text-[#9ca3af] uppercase tracking-wide leading-none mb-0.5">Updated</span>
+              <span className="text-[12px] font-medium text-[#4a4f57] truncate">{fmtDateTime(lead.lastActivity)}</span>
             </div>
           </div>
           <div className="flex flex-col gap-1 min-w-0 items-end text-right">
             <div className="flex flex-col min-w-0 items-end">
-              <span className="text-[9px] font-medium text-[#b0a294] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
-              <span className="text-[11px] font-medium text-[#5c5245] truncate">
-                {lastFU ? fmtFUDateTime(lastFU.dueAt) : <span className="text-[#c4b09e]">-</span>}
+              <span className="text-[10px] font-medium text-[#9ca3af] uppercase tracking-wide leading-none mb-0.5">Last Follow</span>
+              <span className="text-[12px] font-medium text-[#4a4f57] truncate">
+                {lastFU ? fmtFUDateTime(lastFU.dueAt) : <span className="text-[#c3c8cf]">-</span>}
               </span>
             </div>
             <div className="flex flex-col min-w-0 items-end">
-              <span className={cn("text-[9px] font-medium uppercase tracking-wide leading-none mb-0.5",
-                hasOverdueFU ? 'text-red-500' : hasTodayFU ? 'text-amber-600' : 'text-[#b0a294]')}>Next Follow</span>
-              <span className={cn("text-[11px] font-medium truncate",
-                hasOverdueFU ? 'text-red-600 font-semibold' : hasTodayFU ? 'text-amber-600 font-semibold' : 'text-[#5c5245]')}>
-                {nextFU ? fmtFUDateTime(nextFU.dueAt) : <span className="text-[#c4b09e]">-</span>}
+              <span className={cn("text-[10px] font-medium uppercase tracking-wide leading-none mb-0.5",
+                hasOverdueFU ? 'text-red-500' : hasTodayFU ? 'text-amber-600' : 'text-[#9ca3af]')}>Next Follow</span>
+              <span className={cn("text-[12px] font-medium truncate",
+                hasOverdueFU ? 'text-red-600 font-semibold' : hasTodayFU ? 'text-amber-600 font-semibold' : 'text-[#4a4f57]')}>
+                {nextFU ? fmtFUDateTime(nextFU.dueAt) : <span className="text-[#c3c8cf]">-</span>}
               </span>
             </div>
           </div>
@@ -4342,17 +4345,17 @@ function StageColumn({ stage, leads: stageLeads, totalCount, countExact = true, 
 
   return (
     <div
-      className="min-w-[280px] w-[280px] flex-shrink-0 flex flex-col self-stretch rounded-2xl overflow-hidden border"
-      style={{ background: isEmpty ? '#f8f6f3' : '#f2efeb', borderColor: 'rgba(0,0,0,0.07)' }}
+      className="min-w-[280px] w-[280px] flex-shrink-0 flex flex-col self-stretch rounded-2xl overflow-hidden border card-shadow"
+      style={{ background: isEmpty ? 'var(--surface-2)' : 'var(--surface-2)', borderColor: 'var(--hairline)' }}
     >
       {/* Colored top accent strip */}
       <div className="h-[3px] shrink-0" style={{ background: accent }} />
 
       {/* Column header */}
-      <div className="px-4 pt-3 pb-2.5 flex items-center justify-between shrink-0 border-b border-black/[0.06]">
-        <h3 className="text-[14px] font-bold text-[#1c1410] truncate leading-tight">{stage}</h3>
+      <div className="px-4 pt-3 pb-2.5 flex items-center justify-between shrink-0 border-b border-[var(--hairline)]">
+        <h3 className="text-[15px] font-bold text-[#111318] truncate leading-tight">{stage}</h3>
         <span
-          className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white shrink-0 ml-2 tabular-nums"
+          className="text-[12px] font-bold px-2 py-0.5 rounded-full text-white shrink-0 ml-2 tabular-nums"
           style={{ background: accent }}
         >
           {badge}
@@ -4391,8 +4394,8 @@ function StageColumn({ stage, leads: stageLeads, totalCount, countExact = true, 
             >
               <User className="w-4 h-4" style={{ color: accent + '90' }} />
             </div>
-            <p className="text-[11px] font-semibold text-[#c4b09e]">No leads</p>
-            <p className="text-[10px] text-[#d4c4b4]">Drag here to move</p>
+            <p className="text-[12px] font-semibold text-[#c3c8cf]">No leads</p>
+            <p className="text-[11px] text-[#e5e7eb]">Drag here to move</p>
           </div>
         )}
         {/* Load-more sentinel (kept mounted so the observer attaches once) */}
@@ -4440,11 +4443,11 @@ function SortableStageRow({
       </button>
 
       {/* Index */}
-      <span className="text-[11px] text-[#b09e8d] w-5 shrink-0 select-none">{index + 1}.</span>
+      <span className="text-[12px] text-[#9ca3af] w-5 shrink-0 select-none">{index + 1}.</span>
 
       {/* Stage name input */}
       <input
-        className="flex-1 text-[14px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300"
+        className="flex-1 text-[15px] text-[#111318] outline-none bg-transparent placeholder:text-gray-300"
         value={stage.name}
         onChange={(e) => onRename(stage.id, e.target.value)}
         placeholder="Stage name"
@@ -4524,8 +4527,8 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
           <div>
-            <p className="text-[11px] text-gray-400 mb-0.5">Lead Management</p>
-            <h3 className="text-[16px] font-bold text-[#1c1410]">Create New Pipeline</h3>
+            <p className="text-[12px] text-gray-400 mb-0.5">Lead Management</p>
+            <h3 className="text-[16px] font-bold text-[#111318]">Create New Pipeline</h3>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors">
             <X className="w-4 h-4" />
@@ -4537,12 +4540,12 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
 
           {/* Pipeline Name */}
           <div>
-            <label className="text-[13px] text-[#7a6b5c] mb-1.5 block">
+            <label className="text-[14px] text-[#6b7280] mb-1.5 block">
               Pipeline Name <span className="text-red-400">*</span>
             </label>
             <input
               autoFocus
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/50 transition-colors"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[15px] text-[#111318] outline-none focus:border-primary/50 transition-colors"
               placeholder="e.g. Sales Pipeline, Support Pipeline"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -4553,10 +4556,10 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
           {/* Stages */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[13px] text-[#7a6b5c]">
-                Stages <span className="text-[11px] text-gray-400">({stages.length})</span>
+              <label className="text-[14px] text-[#6b7280]">
+                Stages <span className="text-[12px] text-gray-400">({stages.length})</span>
               </label>
-              <span className="text-[11px] text-gray-400 flex items-center gap-1">
+              <span className="text-[12px] text-gray-400 flex items-center gap-1">
                 <GripVertical className="w-3 h-3" /> drag to reorder
               </span>
             </div>
@@ -4581,7 +4584,7 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
             {/* Add stage input */}
             <div className="flex items-center gap-2 mt-1">
               <input
-                className="flex-1 border border-dashed border-gray-300 rounded-xl px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/50 transition-colors placeholder:text-gray-400 bg-gray-50"
+                className="flex-1 border border-dashed border-gray-300 rounded-xl px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/50 transition-colors placeholder:text-gray-400 bg-gray-50"
                 placeholder="+ Type a stage name and press Enter"
                 value={stageInput}
                 onChange={(e) => setStageInput(e.target.value)}
@@ -4590,7 +4593,7 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={addStage}
                 disabled={!stageInput.trim()}
-                className="px-3 py-2 rounded-lg text-[13px] font-semibold text-white disabled:opacity-40 transition-all hover:-translate-y-0.5 shrink-0"
+                className="px-3 py-2 rounded-lg text-[14px] font-semibold text-white disabled:opacity-40 transition-all hover:-translate-y-0.5 shrink-0"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)' }}
               >
                 Add
@@ -4601,12 +4604,12 @@ function NewPipelineModal({ onClose }: { onClose: () => void }) {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors">
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
+            className="px-6 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
           >
             Create Pipeline
@@ -4732,7 +4735,8 @@ export default function LeadsPage() {
   const [pipelineSearch, setPipelineSearch] = useState('');
   const [pipelineOpen, setPipelineOpen] = useState(false);
   const [searchParams] = useSearchParams();
-  const dashFilter = searchParams.get('filter') as 'stale' | 'converted' | null;
+  const dashFilter = searchParams.get('filter') as string | null;
+  const dashStageName = searchParams.get('stage_name'); // cross-pipeline stage filter from the Lead Aging widget
   // Seed the search from ?search= (e.g. arriving from the dashboard global search).
   useEffect(() => {
     const s = searchParams.get('search');
@@ -4973,6 +4977,7 @@ export default function LeadsPage() {
         while (true) {
           const params = buildLeadsParams(filters, search, dashFilter ? null : selectedPipelineId, dashFilter ? undefined : selectedPipeline, cursor);
           if (dashFilter) params.set('quick', dashFilter);
+          if (dashStageName) params.set('stage_name', dashStageName);
           const data = await api.get<{ leads: any[]; nextCursor: string | null }>(`/api/leads?${params}`);
           if (cancelled) return;
           allLeads = [...allLeads, ...data.leads];
@@ -4987,7 +4992,7 @@ export default function LeadsPage() {
     // `leads.length` is intentionally a dep: when a new lead enters the store
     // (realtime lead:created socket → addLead, the manual Add Lead modal, or the
     // 30s background poll), this re-fetches the snapshot so it shows immediately.
-  }, [boardActive, filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, leads.length]);
+  }, [boardActive, filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, dashStageName, leads.length]);
 
   // ── Board: per-column infinite scroll (desktop kanban) ──────────────────────
   // Each stage column loads its own page from the server (stage= + cursor) and
@@ -5033,6 +5038,7 @@ export default function LeadsPage() {
       params.set('stage', stageId);
       params.set('limit', String(BOARD_PAGE));
       if (dashFilter) params.set('quick', dashFilter);
+      if (dashStageName) params.set('stage_name', dashStageName);
       const data = await api.get<{ leads: any[]; nextCursor: string | null }>(`/api/leads?${params}`);
       const mapped = mapApiLeadsToStore(data.leads, stageMap);
       setBoardCols((prev) => {
@@ -5060,7 +5066,7 @@ export default function LeadsPage() {
     }, search ? 300 : 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boardActive, filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter]);
+  }, [boardActive, filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, dashStageName]);
 
   // Exact per-stage badge counts (cheap COUNT(*) GROUP BY). Refreshed on board
   // open, pipeline switch, and whenever the store lead count changes (create/
@@ -5385,8 +5391,8 @@ export default function LeadsPage() {
         <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
           <EyeOff className="w-8 h-8 text-gray-400" />
         </div>
-        <h2 className="text-[18px] font-bold text-[#1c1410] mb-2">No access to leads</h2>
-        <p className="text-[15px] text-[#7a6b5c] max-w-sm">You don't have permission to view leads. Contact your admin to request access.</p>
+        <h2 className="text-[18px] font-bold text-[#111318] mb-2">No access to leads</h2>
+        <p className="text-[16px] text-[#6b7280] max-w-sm">You don't have permission to view leads. Contact your admin to request access.</p>
       </div>
     );
   }
@@ -5395,56 +5401,75 @@ export default function LeadsPage() {
     <div className="flex flex-col flex-1 min-h-0 animate-fade-in">
 
       {/* ── Dashboard filter banner ── */}
-      {dashFilter && (
-        <div className={`flex items-center gap-3 mb-3 px-4 py-2.5 rounded-xl border text-[14px] font-medium ${dashFilter === 'stale' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
-          <span className="flex-1">
-            {dashFilter === 'stale'
-              ? `Showing ${filteredLeads.length} stale lead${filteredLeads.length !== 1 ? 's' : ''} - no activity in 7+ days`
-              : `Showing ${filteredLeads.length} converted lead${filteredLeads.length !== 1 ? 's' : ''} - in won stage`}
-          </span>
-          <a href="/leads" className="text-[11px] font-semibold underline underline-offset-2 opacity-70 hover:opacity-100">Clear filter</a>
-        </div>
-      )}
+      {dashFilter && (() => {
+        const QUICK_DESC: Record<string, string> = {
+          stale: 'stale lead - no activity in 7+ days',
+          converted: 'converted lead - in a won stage',
+          followup_overdue: 'lead with an overdue follow-up',
+          followup_today: 'lead with a follow-up due today',
+          followup_upcoming: 'lead with an upcoming follow-up',
+          age_0_3: 'active lead aged 0-3 days',
+          age_4_7: 'active lead aged 4-7 days',
+          age_8_15: 'active lead aged 8-15 days',
+          age_16_30: 'active lead aged 16-30 days',
+          age_30p: 'active lead aged 30+ days',
+        };
+        const tone = dashFilter === 'stale'
+          ? 'bg-amber-50 border-amber-200 text-amber-700'
+          : dashFilter === 'converted'
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+          : 'bg-primary/10 border-primary/20 text-primary';
+        const n = filteredLeads.length;
+        const desc = QUICK_DESC[dashFilter] ?? 'matching lead';
+        // Pluralize the first word (the noun) of the description.
+        const plural = n !== 1 ? desc.replace(/^([a-z]+ )?lead/, (m) => m.replace('lead', 'leads')) : desc;
+        return (
+          <div className={`flex items-center gap-3 mb-3 px-4 py-2.5 rounded-xl border text-[15px] font-medium ${tone}`}>
+            <span className="flex-1">Showing {n} {plural}{dashStageName ? ` in ${dashStageName}` : ''}</span>
+            <a href="/leads" className="text-[12px] font-semibold underline underline-offset-2 opacity-70 hover:opacity-100">Clear filter</a>
+          </div>
+        );
+      })()}
 
       {/* ── Smart Toolbar ── */}
-      <div className="sticky top-0 z-20 bg-[var(--app-bg)] pt-2 pb-3 space-y-2.5">
+      <div className="sticky top-0 z-20 bg-white pt-2 pb-3 space-y-2.5">
 
         {/* Row 1: Contextual bar - bulk actions when leads selected, else default toolbar */}
         {(isMobile && mobileSelectMode) ? (
           /* ── Mobile Selection Bar ── */
-          <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl border border-primary/30 animate-fade-in" style={{ background: 'linear-gradient(to right, #faf0e8, #fff)' }}>
-            <span className="w-6 h-6 shrink-0 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center tabular-nums">{selectedIds.length}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl border border-primary/30 animate-fade-in" style={{ background: 'linear-gradient(to right, #f1f3f5, #fff)' }}>
+            <span className="w-6 h-6 shrink-0 rounded-full bg-primary text-white text-[12px] font-bold flex items-center justify-center tabular-nums">{selectedIds.length}</span>
             <div className="relative">
-              <button onClick={() => { setShowBulkStage((v) => !v); setShowBulkAssign(false); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[13px] font-semibold text-[#1c1410] active:bg-white whitespace-nowrap"><ArrowLeftRight className="w-3.5 h-3.5" /> Stage</button>
-              {showBulkStage && (<><div className="fixed inset-0 z-30" onClick={() => setShowBulkStage(false)} /><div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-44 py-1 max-h-60 overflow-y-auto">{activeStages.map((s) => (<button key={s} onClick={() => { bulkMove(s); setMobileSelectMode(false); }} className="w-full text-left px-3 py-2 text-[13px] active:bg-[#faf0e8]">{s}</button>))}</div></>)}
+              <button onClick={() => { setShowBulkStage((v) => !v); setShowBulkAssign(false); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[14px] font-semibold text-[#111318] active:bg-white whitespace-nowrap"><ArrowLeftRight className="w-3.5 h-3.5" /> Stage</button>
+              {showBulkStage && (<><div className="fixed inset-0 z-30" onClick={() => setShowBulkStage(false)} /><div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-44 py-1 max-h-60 overflow-y-auto">{activeStages.map((s) => (<button key={s} onClick={() => { bulkMove(s); setMobileSelectMode(false); }} className="w-full text-left px-3 py-2 text-[14px] active:bg-[#f1f3f5]">{s}</button>))}</div></>)}
             </div>
             <div className="relative">
-              <button onClick={() => { setShowBulkAssign((v) => !v); setShowBulkStage(false); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[13px] font-semibold text-[#1c1410] active:bg-white whitespace-nowrap"><User className="w-3.5 h-3.5" /> Assign</button>
-              {showBulkAssign && (<><div className="fixed inset-0 z-30" onClick={() => setShowBulkAssign(false)} /><div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-48 py-1 max-h-60 overflow-y-auto"><button onClick={() => { bulkAssign(''); setMobileSelectMode(false); }} className="w-full text-left px-3 py-2 text-[13px] italic text-[#7a6b5c] active:bg-gray-50">Unassign</button><div className="border-t border-black/5 my-1" />{staff.map((s) => (<button key={s.id} onClick={() => { bulkAssign(s.id); setMobileSelectMode(false); }} className="w-full flex items-center gap-2 text-left px-3 py-2 text-[13px] active:bg-[#faf0e8]"><span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center">{s.avatar}</span>{s.name}</button>))}</div></>)}
+              <button onClick={() => { setShowBulkAssign((v) => !v); setShowBulkStage(false); }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[14px] font-semibold text-[#111318] active:bg-white whitespace-nowrap"><User className="w-3.5 h-3.5" /> Assign</button>
+              {showBulkAssign && (<><div className="fixed inset-0 z-30" onClick={() => setShowBulkAssign(false)} /><div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-48 py-1 max-h-60 overflow-y-auto"><button onClick={() => { bulkAssign(''); setMobileSelectMode(false); }} className="w-full text-left px-3 py-2 text-[14px] italic text-[#6b7280] active:bg-gray-50">Unassign</button><div className="border-t border-black/5 my-1" />{staff.map((s) => (<button key={s.id} onClick={() => { bulkAssign(s.id); setMobileSelectMode(false); }} className="w-full flex items-center gap-2 text-left px-3 py-2 text-[14px] active:bg-[#f1f3f5]"><span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center">{s.avatar}</span>{s.name}</button>))}</div></>)}
             </div>
             {canDeleteLead && (
-              <button aria-label="Delete selected" onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center px-2 py-1.5 rounded-lg text-[13px] font-semibold text-red-500 active:bg-red-50 shrink-0"><Trash2 className="w-4 h-4" /></button>
+              <button aria-label="Delete selected" onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center px-2 py-1.5 rounded-lg text-[14px] font-semibold text-red-500 active:bg-red-50 shrink-0"><Trash2 className="w-4 h-4" /></button>
             )}
             {showBulkDeleteConfirm && (
               <ConfirmModal title={`Delete ${selectedIds.length} contact${selectedIds.length !== 1 ? 's' : ''}?`} message="This will permanently remove them from the CRM. This cannot be undone." confirmLabel="Yes, Delete" onConfirm={() => { bulkDelete(); setMobileSelectMode(false); }} onClose={() => setShowBulkDeleteConfirm(false)} />
             )}
             <div className="flex-1" />
-            <button onClick={() => { setSelectedIds([]); setMobileSelectMode(false); }} className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-white text-[13px] font-bold active:scale-95">Done</button>
+            <button onClick={() => { setSelectedIds([]); setMobileSelectMode(false); }} className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-white text-[14px] font-bold active:scale-95">Done</button>
           </div>
         ) : selectedIds.length > 0 ? (
           /* ── Bulk Action Bar ── */
           <div
             className="flex items-center gap-2 px-4 py-2 rounded-xl border border-primary/30 animate-fade-in"
-            style={{ background: 'linear-gradient(to right, #faf0e8, #fff)', boxShadow: '0 2px 8px rgba(234,88,12,0.08)' }}
+            style={{ background: 'linear-gradient(to right, #f1f3f5, #fff)', boxShadow: '0 2px 8px rgba(234,88,12,0.08)' }}
           >
             <div className="flex items-center gap-2 pr-3 border-r border-primary/20">
-              <div className="w-6 h-6 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center">{selectedIds.length}</div>
-              <span className="text-[13px] font-semibold text-[#1c1410]">selected</span>
+              <div className="w-6 h-6 rounded-full bg-primary text-white text-[12px] font-bold flex items-center justify-center">{selectedIds.length}</div>
+              <span className="text-[14px] font-semibold text-[#111318]">selected</span>
             </div>
 
             {/* Change Stage */}
             <div className="relative">
-              <button onClick={() => { setShowBulkStage((v) => !v); setShowBulkAssign(false); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-[#1c1410] hover:bg-white transition-colors">
+              <button onClick={() => { setShowBulkStage((v) => !v); setShowBulkAssign(false); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-semibold text-[#111318] hover:bg-white transition-colors">
                 <ArrowLeftRight className="w-3.5 h-3.5" /> Change Stage <ChevronDown className="w-3 h-3" />
               </button>
               {showBulkStage && (
@@ -5452,7 +5477,7 @@ export default function LeadsPage() {
                   <div className="fixed inset-0 z-30" onClick={() => setShowBulkStage(false)} />
                   <div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-44 py-1 overflow-hidden">
                     {activeStages.map((s) => (
-                      <button key={s} onClick={() => bulkMove(s)} className="w-full text-left px-3 py-2 text-[13px] hover:bg-[#faf0e8] hover:text-primary transition-colors">{s}</button>
+                      <button key={s} onClick={() => bulkMove(s)} className="w-full text-left px-3 py-2 text-[14px] hover:bg-[#f1f3f5] hover:text-primary transition-colors">{s}</button>
                     ))}
                   </div>
                 </>
@@ -5461,18 +5486,18 @@ export default function LeadsPage() {
 
             {/* Assign */}
             <div className="relative">
-              <button onClick={() => { setShowBulkAssign((v) => !v); setShowBulkStage(false); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-[#1c1410] hover:bg-white transition-colors">
+              <button onClick={() => { setShowBulkAssign((v) => !v); setShowBulkStage(false); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-semibold text-[#111318] hover:bg-white transition-colors">
                 <User className="w-3.5 h-3.5" /> Assign <ChevronDown className="w-3 h-3" />
               </button>
               {showBulkAssign && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setShowBulkAssign(false)} />
                   <div className="absolute left-0 top-10 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-48 py-1 overflow-hidden max-h-60 overflow-y-auto">
-                    <button onClick={() => bulkAssign('')} className="w-full text-left px-3 py-2 text-[13px] text-[#7a6b5c] hover:bg-gray-50 transition-colors italic">Unassign</button>
+                    <button onClick={() => bulkAssign('')} className="w-full text-left px-3 py-2 text-[14px] text-[#6b7280] hover:bg-gray-50 transition-colors italic">Unassign</button>
                     <div className="border-t border-black/5 my-1" />
                     {staff.map((s) => (
-                      <button key={s.id} onClick={() => bulkAssign(s.id)} className="w-full flex items-center gap-2 text-left px-3 py-2 text-[13px] hover:bg-[#faf0e8] hover:text-primary transition-colors">
-                        <div className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold flex items-center justify-center">{s.avatar}</div>
+                      <button key={s.id} onClick={() => bulkAssign(s.id)} className="w-full flex items-center gap-2 text-left px-3 py-2 text-[14px] hover:bg-[#f1f3f5] hover:text-primary transition-colors">
+                        <div className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center">{s.avatar}</div>
                         {s.name}
                       </button>
                     ))}
@@ -5482,7 +5507,7 @@ export default function LeadsPage() {
             </div>
 
             {/* Workflow */}
-            <button onClick={() => setShowWorkflow(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-[#1c1410] hover:bg-white transition-colors">
+            <button onClick={() => setShowWorkflow(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-semibold text-[#111318] hover:bg-white transition-colors">
               <Zap className="w-3.5 h-3.5" /> Trigger Workflow
             </button>
 
@@ -5490,7 +5515,7 @@ export default function LeadsPage() {
 
             {/* Delete */}
             {canDeleteLead && (
-              <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-red-500 hover:bg-red-50 transition-colors">
+              <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-semibold text-red-500 hover:bg-red-50 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" /> Delete
               </button>
             )}
@@ -5505,7 +5530,7 @@ export default function LeadsPage() {
             )}
 
             {/* Clear selection */}
-            <button onClick={() => setSelectedIds([])} className="p-1.5 rounded-lg hover:bg-white transition-colors text-[#7a6b5c]">
+            <button onClick={() => setSelectedIds([])} className="p-1.5 rounded-lg hover:bg-white transition-colors text-[#6b7280]">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -5517,37 +5542,37 @@ export default function LeadsPage() {
             <div className="relative shrink-0">
               <button
                 onClick={() => { setPipelineOpen((o) => !o); setPipelineSearch(''); }}
-                className="flex items-center gap-2.5 pl-3 pr-2.5 h-10 rounded-xl bg-white border border-black/10 text-[14px] font-semibold text-[#1c1410] hover:border-primary/40 hover:bg-orange-50/30 transition-all"
+                className="flex items-center gap-2.5 pl-3 pr-2.5 h-10 rounded-xl bg-white border border-[var(--hairline)] text-[15px] font-semibold text-[#111318] hover:border-primary/40 hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all"
               >
                 <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                   <Layers className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <span className="truncate max-w-[130px]">{selectedPipeline?.name ?? 'Select pipeline'}</span>
-                <span className="text-[11px] font-bold bg-primary/10 text-primary rounded-md px-1.5 py-0.5 min-w-[22px] text-center">{pipelineLeads.length}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-[#9a8a7a]" />
+                <span className="text-[12px] font-bold bg-primary/10 text-primary rounded-md px-1.5 py-0.5 min-w-[22px] text-center">{pipelineLeads.length}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-[#8b929c]" />
               </button>
 
               {pipelineOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setPipelineOpen(false)} />
-                  <div className="absolute left-0 top-12 z-40 bg-white rounded-2xl border border-black/5 shadow-2xl w-64 overflow-hidden">
-                    <div className="flex items-center gap-2 px-3 py-2.5 border-b border-black/5">
-                      <Search className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
-                      <input autoFocus className="flex-1 text-[13px] outline-none text-[#1c1410] placeholder:text-gray-400" placeholder="Search pipeline..." value={pipelineSearch} onChange={(e) => setPipelineSearch(e.target.value)} />
+                  <div className="absolute left-0 top-12 z-40 bg-white rounded-2xl border border-[var(--hairline)] card-shadow w-64 overflow-hidden">
+                    <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--hairline)]">
+                      <Search className="w-3.5 h-3.5 text-[#9ca3af] shrink-0" />
+                      <input autoFocus className="flex-1 text-[14px] outline-none text-[#111318] placeholder:text-gray-400" placeholder="Search pipeline..." value={pipelineSearch} onChange={(e) => setPipelineSearch(e.target.value)} />
                     </div>
                     <div className="max-h-60 overflow-y-auto py-1.5">
                       {filteredPipelines.map((p) => {
                         const cnt = leads.filter((l) => l.pipelineId === p.id).length;
                         return (
                           <button key={p.id} onClick={() => { setPipeline(p.id); setPipelineOpen(false); }}
-                            className={cn('w-full text-left px-4 py-2.5 text-[14px] transition-colors flex items-center gap-2', p.id === selectedPipelineId ? 'bg-[#faf0e8] text-primary font-semibold' : 'text-[#1c1410] hover:bg-[var(--app-bg)]')}>
+                            className={cn('w-full text-left px-4 py-2.5 text-[15px] transition-colors flex items-center gap-2', p.id === selectedPipelineId ? 'bg-[#f1f3f5] text-primary font-semibold' : 'text-[#111318] hover:bg-[var(--app-bg)]')}>
                             {p.id === selectedPipelineId && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
                             <span className="flex-1 truncate">{p.name}</span>
-                            <span className="text-[10px] text-[#b09e8d] font-normal">{cnt}</span>
+                            <span className="text-[11px] text-[#9ca3af] font-normal">{cnt}</span>
                           </button>
                         );
                       })}
-                      {filteredPipelines.length === 0 && <p className="px-4 py-3 text-[13px] text-[#7a6b5c]">No pipelines found</p>}
+                      {filteredPipelines.length === 0 && <p className="px-4 py-3 text-[14px] text-[#6b7280]">No pipelines found</p>}
                     </div>
                   </div>
                 </>
@@ -5562,13 +5587,13 @@ export default function LeadsPage() {
             <div className="flex items-center gap-2 shrink-0 ml-auto md:ml-0">
 
               {/* View toggle - labeled pill (desktop only; phones are board-only) */}
-              <div className="hidden md:flex items-center h-10 bg-gray-100 rounded-xl p-1 gap-0.5">
+              <div className="hidden md:flex items-center h-10 bg-[var(--surface-2)] rounded-full p-1 gap-0.5">
                 <button onClick={() => setKanbanView(true)}
-                  className={cn('flex items-center gap-1.5 px-3 h-8 rounded-lg text-[13px] font-semibold transition-all', kanbanView ? 'bg-white shadow-sm text-primary' : 'text-[#7a6b5c] hover:text-[#1c1410]')}>
+                  className={cn('flex items-center gap-1.5 px-3 h-8 rounded-full text-[14px] font-semibold transition-all active:scale-[0.98]', kanbanView ? 'bg-primary text-white shadow-sm' : 'text-[#6b7280] hover:text-[#111318]')}>
                   <LayoutGrid className="w-3.5 h-3.5" /> Board
                 </button>
                 <button onClick={() => setKanbanView(false)}
-                  className={cn('flex items-center gap-1.5 px-3 h-8 rounded-lg text-[13px] font-semibold transition-all', !kanbanView ? 'bg-white shadow-sm text-primary' : 'text-[#7a6b5c] hover:text-[#1c1410]')}>
+                  className={cn('flex items-center gap-1.5 px-3 h-8 rounded-full text-[14px] font-semibold transition-all active:scale-[0.98]', !kanbanView ? 'bg-primary text-white shadow-sm' : 'text-[#6b7280] hover:text-[#111318]')}>
                   <List className="w-3.5 h-3.5" /> List
                 </button>
               </div>
@@ -5576,12 +5601,12 @@ export default function LeadsPage() {
               {/* Filter */}
               <div className="relative">
                 <button ref={filterBtnRef} onClick={() => setShowFilters((v) => !v)}
-                  className={cn('relative flex items-center gap-1.5 px-3 h-10 rounded-xl border text-[13px] font-semibold transition-all',
-                    activeFiltersCount > 0 || showFilters ? 'bg-orange-50 border-primary/30 text-primary' : 'bg-white border-black/10 text-[#7a6b5c] hover:border-primary/30 hover:text-primary'
+                  className={cn('relative flex items-center gap-1.5 px-3 h-10 rounded-xl border text-[14px] font-semibold transition-all active:scale-[0.98]',
+                    activeFiltersCount > 0 || showFilters ? 'bg-orange-50 border-primary/30 text-primary' : 'bg-white border-[var(--hairline)] text-[#6b7280] hover:border-primary/30 hover:text-primary'
                   )}>
                   <Filter className="w-3.5 h-3.5" />
                   Filter
-                  {activeFiltersCount > 0 && <span className="bg-primary text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{activeFiltersCount}</span>}
+                  {activeFiltersCount > 0 && <span className="bg-primary text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{activeFiltersCount}</span>}
                 </button>
                 {showFilters && <FilterPopover filters={filters} onChange={setFilters} onClose={() => setShowFilters(false)} stages={activeStages} anchorRef={filterBtnRef} isMobile={isMobile} />}
               </div>
@@ -5589,36 +5614,36 @@ export default function LeadsPage() {
               {/* More */}
               <div className="relative" ref={moreMenuRef}>
                 <button onClick={() => setShowMoreMenu((v) => !v)}
-                  className={cn('flex items-center justify-center w-10 h-10 rounded-xl border transition-all', showMoreMenu ? 'bg-orange-50 border-primary/30 text-primary' : 'bg-white border-black/10 text-[#7a6b5c] hover:border-primary/30 hover:text-primary')}>
+                  className={cn('flex items-center justify-center w-10 h-10 rounded-xl border transition-all active:scale-[0.98]', showMoreMenu ? 'bg-orange-50 border-primary/30 text-primary' : 'bg-white border-[var(--hairline)] text-[#6b7280] hover:border-primary/30 hover:text-primary')}>
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
                 {showMoreMenu && (
-                  <div className="absolute right-0 top-12 z-40 w-56 bg-white rounded-xl border border-black/5 shadow-xl overflow-hidden py-1">
-                    <button onClick={() => { setShowMoreMenu(false); setShowImport(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
-                      <Package className="w-3.5 h-3.5 text-[#7a6b5c]" /> Import leads
+                  <div className="absolute right-0 top-12 z-40 w-56 bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden py-1">
+                    <button onClick={() => { setShowMoreMenu(false); setShowImport(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                      <Package className="w-3.5 h-3.5 text-[#6b7280]" /> Import leads
                     </button>
                     {canExport && (
-                      <button onClick={() => { setShowMoreMenu(false); exportLeads(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
-                        <Download className="w-3.5 h-3.5 text-[#7a6b5c]" /> Export leads
+                      <button onClick={() => { setShowMoreMenu(false); exportLeads(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                        <Download className="w-3.5 h-3.5 text-[#6b7280]" /> Export leads
                       </button>
                     )}
                     <div className="border-t border-black/5 my-1" />
-                    <button onClick={() => { setShowMoreMenu(false); setShowWorkflow(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
-                      <Zap className="w-3.5 h-3.5 text-[#7a6b5c]" /> Trigger Workflow
+                    <button onClick={() => { setShowMoreMenu(false); setShowWorkflow(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                      <Zap className="w-3.5 h-3.5 text-[#6b7280]" /> Trigger Workflow
                     </button>
-                    <button onClick={() => { setShowMoreMenu(false); setShowPhone((v) => !v); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
-                      {showPhone ? <EyeOff className="w-3.5 h-3.5 text-[#7a6b5c]" /> : <Eye className="w-3.5 h-3.5 text-[#7a6b5c]" />}
+                    <button onClick={() => { setShowMoreMenu(false); setShowPhone((v) => !v); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                      {showPhone ? <EyeOff className="w-3.5 h-3.5 text-[#6b7280]" /> : <Eye className="w-3.5 h-3.5 text-[#6b7280]" />}
                       {showPhone ? 'Hide contact info' : 'Show contact info'}
                     </button>
                     <div className="border-t border-black/5 my-1" />
-                    <button onClick={() => { setShowMoreMenu(false); setSearch(''); setFilters({ ...emptyFilters }); setSelectedIds([]); toast.success('Reset'); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
-                      <RotateCcw className="w-3.5 h-3.5 text-[#7a6b5c]" /> Reset filters
+                    <button onClick={() => { setShowMoreMenu(false); setSearch(''); setFilters({ ...emptyFilters }); setSelectedIds([]); toast.success('Reset'); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                      <RotateCcw className="w-3.5 h-3.5 text-[#6b7280]" /> Reset filters
                     </button>
                     {canDeleteLead && (
                       <>
                         <div className="border-t border-black/5 my-1" />
-                        <button onClick={() => { setShowMoreMenu(false); setShowTrash(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors">
-                          <Trash2 className="w-3.5 h-3.5 text-[#7a6b5c]" /> Trash
+                        <button onClick={() => { setShowMoreMenu(false); setShowTrash(true); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                          <Trash2 className="w-3.5 h-3.5 text-[#6b7280]" /> Trash
                         </button>
                       </>
                     )}
@@ -5629,7 +5654,7 @@ export default function LeadsPage() {
               {/* Add Lead (desktop button; phones use the floating + button) */}
               {canCreateLead && (
                 <button onClick={() => setShowAddLead(true)}
-                  className="hidden md:flex items-center gap-2 px-4 h-10 rounded-xl text-[14px] font-bold text-white bg-primary hover:bg-primary/90 transition-all active:scale-95 shrink-0">
+                  className="hidden md:flex items-center gap-2 px-4 h-10 rounded-xl text-[15px] font-bold text-white bg-primary hover:bg-primary/90 transition-all active:scale-95 shrink-0">
                   <Plus className="w-4 h-4" /> Add Lead
                 </button>
               )}
@@ -5640,7 +5665,7 @@ export default function LeadsPage() {
         {/* Active filter chips - one per value, instant remove */}
         {selectedIds.length === 0 && activeFiltersCount > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-[#7a6b5c] font-semibold uppercase tracking-wide mr-1">Filtered by:</span>
+            <span className="text-[12px] text-[#6b7280] font-semibold uppercase tracking-wide mr-1">Filtered by:</span>
             {filters.assignedTo.map((id) => {
               const name = id === 'none' ? 'Unassigned' : staff.find((s) => s.id === id)?.name ?? id;
               return <FilterChip key={`a-${id}`} label={`Assignee: ${name}`} onRemove={() => setFilters({ ...filters, assignedTo: filters.assignedTo.filter((x) => x !== id) })} />;
@@ -5662,7 +5687,7 @@ export default function LeadsPage() {
             ))}
             {filters.createdOn && <FilterChip label={`Created: ${filters.createdOn}`} onRemove={() => setFilters({ ...filters, createdOn: '' })} />}
             {filters.followUp && <FilterChip label={`Follow-up: ${filters.followUp}`} onRemove={() => setFilters({ ...filters, followUp: '' })} />}
-            <button onClick={() => setFilters({ ...emptyFilters })} className="ml-1 text-[11px] text-red-500 font-semibold hover:underline">Clear all</button>
+            <button onClick={() => setFilters({ ...emptyFilters })} className="ml-1 text-[12px] text-red-500 font-semibold hover:underline">Clear all</button>
           </div>
         )}
       </div>
@@ -5675,19 +5700,19 @@ export default function LeadsPage() {
       )}
 
       {/* ── Board ── */}
-      <div className={cn('flex-1 flex flex-col min-h-0 overflow-hidden -mb-6 transition-opacity duration-200', filterLoading && 'opacity-50 pointer-events-none')}>
-      {(apiLeads === null && filterLoading) || (!hydrated && leads.length === 0) ? (
+      <div className={cn('flex-1 flex flex-col min-h-0 overflow-hidden -mb-6 transition-opacity duration-200', filterLoading && leads.length === 0 && 'opacity-50 pointer-events-none')}>
+      {(!hydrated && leads.length === 0) ? (
         /* First-load skeleton - placeholder columns of cards while data loads */
         <div className="flex gap-4 overflow-hidden flex-1 min-h-0 items-stretch">
           {Array.from({ length: 4 }).map((_, ci) => (
-            <div key={ci} className="min-w-[280px] w-[280px] flex flex-col rounded-2xl border border-black/5 bg-white overflow-hidden">
+            <div key={ci} className="min-w-[280px] w-[280px] flex flex-col rounded-2xl border border-[var(--hairline)] bg-white card-shadow overflow-hidden">
               <div className="h-[3px] bg-black/10" />
               <div className="px-4 pt-3 pb-2.5 flex items-center justify-between">
                 <Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-6 rounded-full" />
               </div>
               <div className="flex-1 px-3 pb-3 space-y-2.5">
                 {Array.from({ length: 4 }).map((_, ri) => (
-                  <div key={ri} className="rounded-xl border border-black/5 p-3 space-y-2">
+                  <div key={ri} className="rounded-2xl border border-[var(--hairline)] p-3 space-y-2">
                     <Skeleton className="h-3.5 w-3/4" /><Skeleton className="h-3 w-1/2" /><Skeleton className="h-3 w-2/3" />
                   </div>
                 ))}
@@ -5706,11 +5731,11 @@ export default function LeadsPage() {
               const active = currentMobileStage === stage;
               return (
                 <button key={stage} data-active={active ? 'true' : 'false'} onClick={() => setMobileStage(stage)}
-                  className={cn('shrink-0 flex items-center gap-1.5 pl-3.5 pr-2 h-9 rounded-full border text-[14px] font-semibold transition-all active:scale-95',
-                    active ? 'text-white border-transparent shadow-sm' : 'bg-white text-[#7a6b5c] border-black/10')}
+                  className={cn('shrink-0 flex items-center gap-1.5 pl-3.5 pr-2 h-9 rounded-full border text-[15px] font-semibold transition-all active:scale-95',
+                    active ? 'text-white border-transparent shadow-sm' : 'bg-white text-[#6b7280] border-[var(--hairline)]')}
                   style={active ? { background: acc } : undefined}>
                   <span className="truncate max-w-[150px]">{stage}</span>
-                  <span className={cn('text-[11px] font-bold rounded-full px-1.5 min-w-[20px] text-center tabular-nums', active ? 'bg-white/25 text-white' : 'bg-black/[0.06] text-[#7a6b5c]')}>{cnt}</span>
+                  <span className={cn('text-[12px] font-bold rounded-full px-1.5 min-w-[20px] text-center tabular-nums', active ? 'bg-white/25 text-white' : 'bg-black/[0.06] text-[#6b7280]')}>{cnt}</span>
                 </button>
               );
             })}
@@ -5725,11 +5750,11 @@ export default function LeadsPage() {
               if (list.length === 0) {
                 return (
                   <div className="flex flex-col items-center justify-center text-center gap-2 py-20">
-                    <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-black/10 flex items-center justify-center">
-                      <User className="w-6 h-6 text-[#c4b09e]" />
+                    <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-[var(--hairline)] flex items-center justify-center">
+                      <User className="w-6 h-6 text-[#c3c8cf]" />
                     </div>
-                    <p className="text-[15px] font-semibold text-[#7a6b5c]">No leads in {currentMobileStage || 'this stage'}</p>
-                    {canCreateLead && <p className="text-[13px] text-[#b09e8d]">Tap + to add one</p>}
+                    <p className="text-[16px] font-semibold text-[#6b7280]">No leads in {currentMobileStage || 'this stage'}</p>
+                    {canCreateLead && <p className="text-[14px] text-[#9ca3af]">Tap + to add one</p>}
                   </div>
                 );
               }
@@ -5778,14 +5803,15 @@ export default function LeadsPage() {
               );
             })}
           </div>
-          <DragOverlay>{activeLead && <div className="bg-card rounded-lg border-2 border-primary p-3 shadow-2xl opacity-90 w-[280px]"><span className="font-semibold text-sm">{activeLead.firstName} {activeLead.lastName}</span></div>}</DragOverlay>
+          <DragOverlay>{activeLead && <div className="bg-card rounded-lg border-2 border-primary p-3 shadow-2xl opacity-90 w-[280px]"><span className="font-semibold text-[15px]">{activeLead.firstName} {activeLead.lastName}</span></div>}</DragOverlay>
         </DndContext>
       ) : (
         /* ── List View ── */
-        <div className="bg-white rounded-2xl border border-black/5 card-shadow overflow-y-auto flex-1 min-h-0">
-          <table className="w-full text-[14px]">
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-y-auto flex-1 min-h-0">
+          <div className="overflow-x-auto">
+          <table className="w-full text-[15px] min-w-[900px]">
             <thead>
-              <tr className="bg-[var(--app-bg)] border-b border-black/5">
+              <tr className="bg-[var(--surface-2)] border-b border-[var(--hairline)]">
                 <th className="w-10 px-4 py-3">
                   <input type="checkbox"
                     checked={filteredLeads.length > 0 && selectedIds.length === filteredLeads.length}
@@ -5795,7 +5821,7 @@ export default function LeadsPage() {
                 </th>
                 {[['Lead Name', '180px'], ['Contact Email', '210px'], ['Contact Phone', '160px'], ['Pipeline', '170px'], ['Stage', '110px'], ['Quality', '100px'], ['Created', '150px'], ['Updated', '150px']].map(([col]) => (
                   <th key={col} className="px-3 py-3 text-left">
-                    <button className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] hover:text-[#1c1410] transition-colors">
+                    <button className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-wider text-[#6b7280] hover:text-[#111318] transition-colors">
                       {col} <ArrowUpDown className="w-3 h-3 opacity-50" />
                     </button>
                   </th>
@@ -5805,8 +5831,8 @@ export default function LeadsPage() {
             <tbody className="divide-y divide-black/[0.04]">
               {filteredLeads.length === 0 && (
                 <tr><td colSpan={9} className="py-16 text-center">
-                  <User className="w-8 h-8 text-[#c4b09e] mx-auto mb-2" />
-                  <p className="text-[14px] text-[#7a6b5c]">No leads found</p>
+                  <User className="w-8 h-8 text-[#c3c8cf] mx-auto mb-2" />
+                  <p className="text-[15px] text-[#6b7280]">No leads found</p>
                 </td></tr>
               )}
               {pagedListLeads.map((lead) => {
@@ -5825,15 +5851,15 @@ export default function LeadsPage() {
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand))' }}>{initials}</div>
-                        <button onClick={() => setSelectedLeadId(lead.id)} className="text-primary font-semibold hover:underline text-[14px] truncate max-w-[140px]">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold text-white shrink-0" style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand))' }}>{initials}</div>
+                        <button onClick={() => setSelectedLeadId(lead.id)} className="text-primary font-semibold hover:underline text-[15px] truncate max-w-[140px]">
                           {lead.firstName} {lead.lastName}
                         </button>
                       </div>
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[#3d3128] truncate max-w-[160px]">{maskedEmail}</span>
+                        <span className="text-[#2b2f36] truncate max-w-[160px]">{maskedEmail}</span>
                         <button onClick={() => { copyToClipboard(lead.email); toast.success('Email copied'); }} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors shrink-0">
                           <Copy className="w-3 h-3" />
                         </button>
@@ -5847,44 +5873,45 @@ export default function LeadsPage() {
                         </button>
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-[#3d3128] truncate max-w-[170px]">{pipeline?.name ?? '-'}</td>
-                    <td className="px-3 py-3"><span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-primary">{lead.stage}</span></td>
+                    <td className="px-3 py-3 text-[#2b2f36] truncate max-w-[170px]">{pipeline?.name ?? '-'}</td>
+                    <td className="px-3 py-3"><span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-orange-50 text-primary">{lead.stage}</span></td>
                     <td className="px-3 py-3">
                       {lead.leadQuality ? (
-                        <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold',
+                        <span className={cn('px-2 py-0.5 rounded-full text-[11px] font-semibold',
                           lead.leadQuality === 'Hot'         ? 'bg-red-100 text-red-700'     :
                           lead.leadQuality === 'Warm'        ? 'bg-amber-100 text-amber-700' :
                           lead.leadQuality === 'Cold'        ? 'bg-blue-100 text-blue-700'   :
                           lead.leadQuality === 'Unqualified' ? 'bg-gray-100 text-gray-500'   :
                           'bg-emerald-100 text-emerald-700'
                         )}>{lead.leadQuality}</span>
-                      ) : <span className="text-[#c4b09e]">-</span>}
+                      ) : <span className="text-[#c3c8cf]">-</span>}
                     </td>
-                    <td className="px-3 py-3 text-[#7a6b5c] whitespace-nowrap">{format(new Date(lead.createdAt), 'dd/MM/yyyy hh:mm aa')}</td>
-                    <td className="px-3 py-3 text-[#7a6b5c] whitespace-nowrap">{format(new Date(lead.lastActivity), 'dd/MM/yyyy hh:mm aa')}</td>
+                    <td className="px-3 py-3 text-[#6b7280] whitespace-nowrap">{format(new Date(lead.createdAt), 'dd/MM/yyyy hh:mm aa')}</td>
+                    <td className="px-3 py-3 text-[#6b7280] whitespace-nowrap">{format(new Date(lead.lastActivity), 'dd/MM/yyyy hh:mm aa')}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          </div>
           {listTotalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-black/[0.04]">
-              <p className="text-[13px] text-[#7a6b5c]">
+              <p className="text-[14px] text-[#6b7280]">
                 Showing {filteredLeads.length === 0 ? 0 : (listSafePage - 1) * LIST_PAGE_SIZE + 1}–{Math.min(listSafePage * LIST_PAGE_SIZE, filteredLeads.length)} of {filteredLeads.length}
               </p>
               <div className="flex items-center gap-2">
                 <button onClick={() => setListPage((p) => Math.max(1, p - 1))} disabled={listSafePage <= 1}
-                  className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Prev</button>
-                <span className="text-[13px] text-[#7a6b5c]">Page {listSafePage} / {listTotalPages}</span>
+                  className="px-3 py-1.5 rounded-lg border border-black/10 text-[14px] font-medium text-[#111318] disabled:opacity-40 hover:border-primary/40 transition-colors">Prev</button>
+                <span className="text-[14px] text-[#6b7280]">Page {listSafePage} / {listTotalPages}</span>
                 <button onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))} disabled={listSafePage >= listTotalPages}
-                  className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Next</button>
+                  className="px-3 py-1.5 rounded-lg border border-black/10 text-[14px] font-medium text-[#111318] disabled:opacity-40 hover:border-primary/40 transition-colors">Next</button>
               </div>
             </div>
           )}
           {selectedIds.length > 0 && (
             <div className="px-5 py-2.5 bg-blue-50 border-t border-blue-100 flex items-center gap-2">
               <Settings className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <p className="text-[13px] text-blue-600">
+              <p className="text-[14px] text-blue-600">
                 {selectedIds.length} contact(s) selected.{' '}
                 <button onClick={() => setShowWorkflow(true)} className="font-bold underline hover:text-blue-800">Trigger Workflow</button>
               </p>

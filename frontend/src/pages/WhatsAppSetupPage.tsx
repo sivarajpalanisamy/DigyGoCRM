@@ -164,7 +164,7 @@ export default function WhatsAppSetupPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-16 text-[14px] text-[#7a6b5c]">Loading...</div>;
+    return <div className="text-center py-16 text-[15px] text-[#6b7280]">Loading...</div>;
   }
 
   const connected = status?.connected === true;
@@ -173,8 +173,8 @@ export default function WhatsAppSetupPage() {
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-[#1c1410]">WABA Dashboard</h1>
-        <p className="text-sm text-[#7a6b5c] mt-0.5">WhatsApp Business API integration &amp; overview</p>
+        <h1 className="text-xl font-bold text-[#111318]">WABA Dashboard</h1>
+        <p className="text-[15px] text-[#6b7280] mt-0.5">WhatsApp Business API integration &amp; overview</p>
       </div>
 
       {/* Status Banner */}
@@ -184,10 +184,10 @@ export default function WhatsAppSetupPage() {
             <MessageCircle className="w-6 h-6 text-green-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-bold text-green-800">WhatsApp Business Connected</p>
-            <p className="text-[14px] text-green-700 mt-0.5 font-mono">{status.phoneNumber || status.phoneNumberId}</p>
+            <p className="text-[16px] font-bold text-green-800">WhatsApp Business Connected</p>
+            <p className="text-[15px] text-green-700 mt-0.5 font-mono">{status.phoneNumber || status.phoneNumberId}</p>
           </div>
-          <Badge className="bg-green-100 text-green-700 border-green-200 shrink-0 text-xs">
+          <Badge className="bg-green-100 text-green-700 border-green-200 shrink-0 text-[13px]">
             <Check className="w-3 h-3 mr-1" /> Active
           </Badge>
         </div>
@@ -197,8 +197,8 @@ export default function WhatsAppSetupPage() {
             <AlertCircle className="w-6 h-6 text-amber-600" />
           </div>
           <div className="flex-1">
-            <p className="text-[15px] font-bold text-amber-800">Not Connected</p>
-            <p className="text-[14px] text-amber-700 mt-0.5">Set up your WABA credentials to get started.</p>
+            <p className="text-[16px] font-bold text-amber-800">Not Connected</p>
+            <p className="text-[15px] text-amber-700 mt-0.5">Set up your WABA credentials to get started.</p>
           </div>
           {!showSetup && (
             <Button onClick={() => setShowSetup(true)} size="sm">
@@ -222,15 +222,15 @@ export default function WhatsAppSetupPage() {
               onClick={card.onClick}
               disabled={!card.onClick}
               className={cn(
-                'bg-white rounded-2xl border border-black/5 p-4 text-left transition-all',
-                card.onClick ? 'hover:border-black/10 hover:shadow-sm cursor-pointer' : 'cursor-default'
+                'bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-4 text-left transition',
+                card.onClick ? 'card-hover cursor-pointer' : 'cursor-default'
               )}
             >
               <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center mb-3', card.bg)}>
                 <card.icon className={cn('w-4.5 h-4.5', card.color)} />
               </div>
-              <p className="text-2xl font-bold text-[#1c1410]">{card.value.toLocaleString()}</p>
-              <p className="text-[13px] text-[#7a6b5c] mt-0.5">{card.label}</p>
+              <p className="text-2xl font-bold text-[#111318]">{card.value.toLocaleString()}</p>
+              <p className="text-[14px] text-[#6b7280] mt-0.5">{card.label}</p>
             </button>
           ))}
         </div>
@@ -238,44 +238,44 @@ export default function WhatsAppSetupPage() {
 
       {/* Quick Actions */}
       {connected && (
-        <div className="bg-white rounded-2xl border border-black/5 p-5">
-          <h3 className="text-[15px] font-bold text-[#1c1410] mb-4">Quick Actions</h3>
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5">
+          <h3 className="text-[16px] font-bold text-[#111318] mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="flex items-center gap-3 p-3.5 rounded-xl border border-black/5 hover:bg-[var(--app-bg)] transition-colors text-left"
+              className="flex items-center gap-3 p-3.5 rounded-xl border border-[var(--hairline)] bg-[var(--surface-2)] hover:bg-white transition-colors text-left"
             >
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <RefreshCw className={cn('w-4 h-4 text-primary', syncing && 'animate-spin')} />
               </div>
               <div>
-                <p className="text-[14px] font-semibold text-[#1c1410]">{syncing ? 'Syncing...' : 'Sync Templates'}</p>
-                <p className="text-[11px] text-[#7a6b5c]">Pull latest from Meta</p>
+                <p className="text-[15px] font-semibold text-[#111318]">{syncing ? 'Syncing...' : 'Sync Templates'}</p>
+                <p className="text-[12px] text-[#6b7280]">Pull latest from Meta</p>
               </div>
             </button>
             <button
               onClick={() => navigate('/automation/waba-templates')}
-              className="flex items-center gap-3 p-3.5 rounded-xl border border-black/5 hover:bg-[var(--app-bg)] transition-colors text-left"
+              className="flex items-center gap-3 p-3.5 rounded-xl border border-[var(--hairline)] bg-[var(--surface-2)] hover:bg-white transition-colors text-left"
             >
               <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <FileText className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <p className="text-[14px] font-semibold text-[#1c1410]">Manage Templates</p>
-                <p className="text-[11px] text-[#7a6b5c]">View &amp; create templates</p>
+                <p className="text-[15px] font-semibold text-[#111318]">Manage Templates</p>
+                <p className="text-[12px] text-[#6b7280]">View &amp; create templates</p>
               </div>
             </button>
             <button
               onClick={() => navigate('/inbox')}
-              className="flex items-center gap-3 p-3.5 rounded-xl border border-black/5 hover:bg-[var(--app-bg)] transition-colors text-left"
+              className="flex items-center gap-3 p-3.5 rounded-xl border border-[var(--hairline)] bg-[var(--surface-2)] hover:bg-white transition-colors text-left"
             >
               <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
                 <MessageSquare className="w-4 h-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-[14px] font-semibold text-[#1c1410]">Open Inbox</p>
-                <p className="text-[11px] text-[#7a6b5c]">View WABA conversations</p>
+                <p className="text-[15px] font-semibold text-[#111318]">Open Inbox</p>
+                <p className="text-[12px] text-[#6b7280]">View WABA conversations</p>
               </div>
             </button>
           </div>
@@ -284,29 +284,29 @@ export default function WhatsAppSetupPage() {
 
       {/* Quality Rating & Messaging Limits */}
       {connected && quality?.connected && !quality.error && (
-        <div className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <Shield className="w-4.5 h-4.5 text-[#7a6b5c]" />
-            <h3 className="text-[15px] font-bold text-[#1c1410]">Quality & Limits</h3>
+            <Shield className="w-4.5 h-4.5 text-[#6b7280]" />
+            <h3 className="text-[16px] font-bold text-[#111318]">Quality & Limits</h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className={cn('rounded-xl border p-3', qualityColor[quality.qualityRating ?? 'UNKNOWN'])}>
-              <p className="text-[11px] font-medium opacity-70">Quality Rating</p>
+              <p className="text-[12px] font-medium opacity-70">Quality Rating</p>
               <p className="text-lg font-bold mt-0.5">{quality.qualityRating ?? 'N/A'}</p>
             </div>
-            <div className="rounded-xl border border-black/5 p-3 bg-[#faf8f6]">
-              <p className="text-[11px] font-medium text-[#7a6b5c]">Messaging Limit</p>
-              <p className="text-lg font-bold text-[#1c1410] mt-0.5">
+            <div className="rounded-xl border border-[var(--hairline)] p-3 bg-[var(--surface-2)]">
+              <p className="text-[12px] font-medium text-[#6b7280]">Messaging Limit</p>
+              <p className="text-lg font-bold text-[#111318] mt-0.5">
                 {tierLabel[quality.messagingLimitTier ?? ''] ?? quality.messagingLimitTier ?? 'N/A'}
               </p>
             </div>
-            <div className="rounded-xl border border-black/5 p-3 bg-[#faf8f6]">
-              <p className="text-[11px] font-medium text-[#7a6b5c]">Verified Name</p>
-              <p className="text-sm font-semibold text-[#1c1410] mt-1 truncate">{quality.verifiedName ?? 'N/A'}</p>
+            <div className="rounded-xl border border-[var(--hairline)] p-3 bg-[var(--surface-2)]">
+              <p className="text-[12px] font-medium text-[#6b7280]">Verified Name</p>
+              <p className="text-[15px] font-semibold text-[#111318] mt-1 truncate">{quality.verifiedName ?? 'N/A'}</p>
             </div>
-            <div className="rounded-xl border border-black/5 p-3 bg-[#faf8f6]">
-              <p className="text-[11px] font-medium text-[#7a6b5c]">Account Status</p>
-              <p className="text-sm font-semibold text-[#1c1410] mt-1 capitalize">{quality.accountStatus?.toLowerCase() ?? 'N/A'}</p>
+            <div className="rounded-xl border border-[var(--hairline)] p-3 bg-[var(--surface-2)]">
+              <p className="text-[12px] font-medium text-[#6b7280]">Account Status</p>
+              <p className="text-[15px] font-semibold text-[#111318] mt-1 capitalize">{quality.accountStatus?.toLowerCase() ?? 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -314,44 +314,44 @@ export default function WhatsAppSetupPage() {
 
       {/* Template Analytics */}
       {connected && tplAnalytics.length > 0 && (
-        <div className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-4.5 h-4.5 text-[#7a6b5c]" />
-            <h3 className="text-[15px] font-bold text-[#1c1410]">Template Analytics</h3>
+            <BarChart3 className="w-4.5 h-4.5 text-[#6b7280]" />
+            <h3 className="text-[16px] font-bold text-[#111318]">Template Analytics</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[15px]">
               <thead>
-                <tr className="border-b border-black/5">
-                  <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Template</th>
-                  <th className="text-right py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Sent</th>
-                  <th className="text-right py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Delivered</th>
-                  <th className="text-right py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Read</th>
-                  <th className="text-right py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Failed</th>
-                  <th className="text-right py-2 px-3 text-[11px] font-semibold text-[#7a6b5c]">Delivery %</th>
+                <tr className="border-b border-[var(--hairline)]">
+                  <th className="text-left py-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af]">Template</th>
+                  <th className="text-right py-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af]">Sent</th>
+                  <th className="text-right py-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af]">Delivered</th>
+                  <th className="text-right py-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af]">Read</th>
+                  <th className="text-right py-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af]">Failed</th>
+                  <th className="text-right py-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af]">Delivery %</th>
                 </tr>
               </thead>
               <tbody>
                 {tplAnalytics.map((t) => {
                   const deliveryRate = t.sent > 0 ? Math.round((t.delivered / t.sent) * 100) : 0;
                   return (
-                    <tr key={t.id} className="border-b border-black/5 last:border-0 hover:bg-[#faf8f6] transition-colors">
+                    <tr key={t.id} className="border-b border-[var(--hairline)] last:border-0 hover:bg-[var(--surface-2)] transition-colors">
                       <td className="py-2.5 px-3">
-                        <p className="font-medium text-[#1c1410]">{t.name}</p>
-                        <p className="text-[11px] text-[#7a6b5c] font-mono">{t.meta_name}</p>
+                        <p className="font-medium text-[#111318]">{t.name}</p>
+                        <p className="text-[12px] text-[#6b7280] font-mono">{t.meta_name}</p>
                       </td>
-                      <td className="text-right py-2.5 px-3 font-semibold text-[#1c1410]">{t.sent}</td>
+                      <td className="text-right py-2.5 px-3 font-semibold text-[#111318]">{t.sent}</td>
                       <td className="text-right py-2.5 px-3 text-emerald-600 font-semibold">{t.delivered}</td>
                       <td className="text-right py-2.5 px-3 text-blue-600 font-semibold">{t.read}</td>
                       <td className="text-right py-2.5 px-3 text-red-500 font-semibold">{t.failed}</td>
                       <td className="text-right py-2.5 px-3">
                         {t.sent > 0 ? (
-                          <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full',
+                          <span className={cn('text-[13px] font-bold px-2 py-0.5 rounded-full',
                             deliveryRate >= 90 ? 'bg-green-50 text-green-700' :
                             deliveryRate >= 70 ? 'bg-amber-50 text-amber-700' :
                             'bg-red-50 text-red-700'
                           )}>{deliveryRate}%</span>
-                        ) : <span className="text-xs text-[#7a6b5c]">-</span>}
+                        ) : <span className="text-[13px] text-[#6b7280]">-</span>}
                       </td>
                     </tr>
                   );
@@ -363,27 +363,27 @@ export default function WhatsAppSetupPage() {
       )}
 
       {/* Setup / Credentials (collapsible when connected) */}
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
         <button
           onClick={() => setShowSetup(!showSetup)}
-          className="w-full flex items-center justify-between p-5 hover:bg-[var(--app-bg)] transition-colors"
+          className="w-full flex items-center justify-between p-5 hover:bg-[var(--surface-2)] transition-colors"
         >
           <div className="flex items-center gap-3">
-            <Zap className="w-5 h-5 text-[#7a6b5c]" />
+            <Zap className="w-5 h-5 text-[#6b7280]" />
             <div className="text-left">
-              <h3 className="text-[15px] font-bold text-[#1c1410]">WABA Credentials</h3>
-              <p className="text-[11px] text-[#7a6b5c]">
+              <h3 className="text-[16px] font-bold text-[#111318]">WABA Credentials</h3>
+              <p className="text-[12px] text-[#6b7280]">
                 {connected ? 'Update your WhatsApp Business API configuration' : 'Enter your credentials to connect'}
               </p>
             </div>
           </div>
-          {showSetup ? <ChevronUp className="w-4 h-4 text-[#7a6b5c]" /> : <ChevronDown className="w-4 h-4 text-[#7a6b5c]" />}
+          {showSetup ? <ChevronUp className="w-4 h-4 text-[#6b7280]" /> : <ChevronDown className="w-4 h-4 text-[#6b7280]" />}
         </button>
 
         {showSetup && (
-          <div className="px-5 pb-5 space-y-5 border-t border-black/5 pt-5">
+          <div className="px-5 pb-5 space-y-5 border-t border-[var(--hairline)] pt-5">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-[#7a6b5c]">Fill in your Meta WhatsApp Business Account details</span>
+              <span className="text-[14px] text-[#6b7280]">Fill in your Meta WhatsApp Business Account details</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -395,7 +395,7 @@ export default function WhatsAppSetupPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Phone Number</label>
+                <label className="text-[15px] font-medium text-foreground mb-1.5 block">Phone Number</label>
                 <Input
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
@@ -403,26 +403,26 @@ export default function WhatsAppSetupPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">WABA ID *</label>
+                <label className="text-[15px] font-medium text-foreground mb-1.5 block">WABA ID *</label>
                 <Input
                   value={wabaId}
                   onChange={(e) => setWabaId(e.target.value)}
                   placeholder="WhatsApp Business Account ID"
-                  className="font-mono text-sm"
+                  className="font-mono text-[15px]"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Phone Number ID *</label>
+                <label className="text-[15px] font-medium text-foreground mb-1.5 block">Phone Number ID *</label>
                 <Input
                   value={phoneNumberId}
                   onChange={(e) => setPhoneNumberId(e.target.value)}
                   placeholder="Phone Number ID from Meta"
-                  className="font-mono text-sm"
+                  className="font-mono text-[15px]"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">
-                  Access Token *{connected && <span className="text-[11px] text-[#b09e8d] ml-1">(leave blank to keep existing)</span>}
+                <label className="text-[15px] font-medium text-foreground mb-1.5 block">
+                  Access Token *{connected && <span className="text-[12px] text-[#9ca3af] ml-1">(leave blank to keep existing)</span>}
                 </label>
                 <div className="relative">
                   <Input
@@ -430,7 +430,7 @@ export default function WhatsAppSetupPage() {
                     value={accessToken}
                     onChange={(e) => setAccessToken(e.target.value)}
                     placeholder={connected ? '••••••••' : 'EAABwzLix...'}
-                    className="pr-10 font-mono text-sm"
+                    className="pr-10 font-mono text-[15px]"
                   />
                   <button
                     type="button"
@@ -460,27 +460,27 @@ export default function WhatsAppSetupPage() {
 
       {/* Webhook Configuration */}
       <div className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
-        <h3 className="text-[15px] font-bold text-[#1c1410]">Webhook Configuration</h3>
+        <h3 className="text-[16px] font-bold text-[#111318]">Webhook Configuration</h3>
         <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-[#7a6b5c]">
+          <p className="text-[12px] text-[#6b7280]">
             Add these in your Meta App Dashboard under <strong>WhatsApp &rarr; Configuration</strong>.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Inbound Webhook URL</label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Inbound Webhook URL</label>
             <div className="flex gap-2">
-              <Input value={webhookUrl} readOnly className="flex-1 font-mono text-sm bg-[var(--app-bg)]" />
+              <Input value={webhookUrl} readOnly className="flex-1 font-mono text-[15px] bg-[var(--app-bg)]" />
               <Button variant="outline" size="icon" onClick={() => { copyToClipboard(webhookUrl); toast.success('URL copied'); }}>
                 <Copy className="w-4 h-4" />
               </Button>
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Webhook Verify Token</label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Webhook Verify Token</label>
             <div className="flex gap-2">
-              <Input value={verifyToken} readOnly className="flex-1 font-mono text-sm bg-[var(--app-bg)]" />
+              <Input value={verifyToken} readOnly className="flex-1 font-mono text-[15px] bg-[var(--app-bg)]" />
               <Button variant="outline" size="icon" onClick={() => { copyToClipboard(verifyToken); toast.success('Copied'); }}>
                 <Copy className="w-4 h-4" />
               </Button>
@@ -491,7 +491,7 @@ export default function WhatsAppSetupPage() {
 
       {/* Automation Settings */}
       <div className="bg-white rounded-2xl border border-black/5 p-5 space-y-4">
-        <h3 className="text-[15px] font-bold text-[#1c1410]">Automation Settings</h3>
+        <h3 className="text-[16px] font-bold text-[#111318]">Automation Settings</h3>
         <div className="space-y-1">
           {[
             {
@@ -513,10 +513,10 @@ export default function WhatsAppSetupPage() {
               onChange: () => { setAutoReply((v) => !v); toast.success('Setting updated'); },
             },
           ].map((setting) => (
-            <div key={setting.label} className="flex items-center justify-between py-3 border-b border-black/5 last:border-0">
+            <div key={setting.label} className="flex items-center justify-between py-3 border-b border-[var(--hairline)] last:border-0">
               <div>
-                <p className="text-sm font-medium text-foreground">{setting.label}</p>
-                <p className="text-[11px] text-[#7a6b5c] mt-0.5">{setting.description}</p>
+                <p className="text-[15px] font-medium text-foreground">{setting.label}</p>
+                <p className="text-[12px] text-[#6b7280] mt-0.5">{setting.description}</p>
               </div>
               <Switch checked={setting.value} onCheckedChange={setting.onChange} />
             </div>

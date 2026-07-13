@@ -113,17 +113,20 @@ export function AppLayout() {
   }, [isSuperAdmin]);
 
   return (
-    <div className="h-[100dvh] flex w-full bg-[var(--app-bg)] overflow-hidden">
-      {/* Sidebar - desktop only */}
-      <div className="hidden md:flex">
-        <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
+    <div className="h-[100dvh] flex w-full bg-[var(--app-bg)] overflow-hidden md:p-3 md:gap-3">
+      {/* Sidebar - static floating rail on desktop; off-canvas drawer on mobile (opened via the header menu button) */}
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* Right column: header sits ABOVE the panel, on the page background;
+          the dashboard content panel floats as a rounded canvas below it. */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden md:gap-3">
         <AppHeader onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-hidden flex flex-col min-h-0">
-          {/* pb-16 on mobile reserves space for the bottom nav */}
-          <div className="px-3 py-4 md:px-6 md:py-5 flex flex-col flex-1 min-h-0 pb-20 md:pb-10 overflow-y-auto overflow-x-hidden">
+        <main className="flex-1 overflow-hidden flex flex-col min-h-0 bg-white md:rounded-3xl md:border md:border-[var(--hairline)] card-shadow">
+          {/* pb-20 on mobile reserves space for the bottom nav */}
+          <div
+            key={location.pathname}
+            className="page-enter px-3 py-4 md:px-6 md:py-5 flex flex-col flex-1 min-h-0 pb-20 md:pb-8 overflow-y-auto overflow-x-hidden thin-scroll"
+          >
             <Outlet />
           </div>
         </main>

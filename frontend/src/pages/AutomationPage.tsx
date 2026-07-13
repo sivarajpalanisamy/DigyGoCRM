@@ -5,7 +5,7 @@ import { useHeaderSearch } from '@/store/headerSearchStore';
 import { usePermission } from '@/hooks/usePermission';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import {
-  Plus, Zap, MoreVertical, X, CheckCircle2, Clock,
+  Plus, Workflow, MoreVertical, X, CheckCircle2, Clock,
   Users, Activity, Pencil, Copy, Trash2, ChevronRight,
   ToggleRight, ToggleLeft, SkipForward, Loader2, User, TrendingUp,
   ChevronDown, ChevronUp, Play, RefreshCw, AlertTriangle, Send,
@@ -153,7 +153,7 @@ function ContactSidebar({
     return map;
   })();
 
-  const bgPalette = ['#f5ede3','#dbeafe','#dcfce7','#ede9fe','#fce7f3'];
+  const bgPalette = ['#eef1f4','#dbeafe','#dcfce7','#ede9fe','#fce7f3'];
   const fgPalette = ['#c2410c','#1d4ed8','#15803d','#7c3aed','#be185d'];
 
   const labelConfig: Record<SidebarFilter, { label: string; dot: string }> = {
@@ -171,32 +171,32 @@ function ContactSidebar({
     return (
       <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
         {status === 'completed' && (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
             <CheckCircle2 className="w-3 h-3" /> Done
           </span>
         )}
         {status === 'completed_with_errors' && (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
             <AlertTriangle className="w-3 h-3" /> Done w/ Errors
           </span>
         )}
         {status === 'failed' && (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-red-500 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-red-500 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">
             <X className="w-3 h-3" /> Failed
           </span>
         )}
         {status === 'running' && (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
             <Clock className="w-3 h-3" /> Pending
           </span>
         )}
         {status === 'skipped' && (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
             <SkipForward className="w-3 h-3" /> Reentry blocked
           </span>
         )}
         {status !== 'skipped' && skippedCount > 0 && (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
             <SkipForward className="w-3 h-3" /> {skippedCount} skipped
           </span>
         )}
@@ -214,27 +214,27 @@ function ContactSidebar({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="shrink-0 px-5 py-4 border-b border-black/5 flex items-center gap-3">
+        <div className="shrink-0 px-5 py-4 border-b border-[var(--hairline)] flex items-center gap-3">
           <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
             <Activity className="w-4 h-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-[#1c1410] text-[15px] truncate">{workflow.name}</h3>
-            <p className="text-[11px] text-[#7a6b5c] mt-0.5 flex items-center gap-1.5">
+            <h3 className="font-bold text-[#111318] text-[16px] truncate">{workflow.name}</h3>
+            <p className="text-[12px] text-[#6b7280] mt-0.5 flex items-center gap-1.5">
               <span className={cn('w-2 h-2 rounded-full inline-block', labelConfig[filterStatus].dot)} />
               {labelConfig[filterStatus].label}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors shrink-0"
+            className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-primary transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Stats + select-all bar */}
-        <div className="shrink-0 px-5 py-2.5 bg-[var(--app-bg)] border-b border-black/5 flex items-center gap-3">
+        <div className="shrink-0 px-5 py-2.5 bg-[var(--app-bg)] border-b border-[var(--hairline)] flex items-center gap-3">
           {/* Select-all checkbox */}
           {filtered.length > 0 && (
             <button
@@ -258,12 +258,12 @@ function ContactSidebar({
             </button>
           )}
           <div className="flex items-center gap-1.5 flex-1">
-            <Users className="w-3.5 h-3.5 text-[#7a6b5c]" />
-            <span className="text-[13px] font-semibold text-[#1c1410]">
+            <Users className="w-3.5 h-3.5 text-[#6b7280]" />
+            <span className="text-[14px] font-semibold text-[#111318]">
               {filtered.length} contact{filtered.length !== 1 ? 's' : ''}
             </span>
             {selectedCount > 0 && (
-              <span className="text-[11px] text-primary font-semibold ml-1">
+              <span className="text-[12px] text-primary font-semibold ml-1">
                 · {selectedCount} selected
               </span>
             )}
@@ -271,7 +271,7 @@ function ContactSidebar({
           {/* Refresh button */}
           <button
             onClick={loadLogs}
-            className="p-1.5 rounded-lg text-[#b09e8d] hover:text-primary hover:bg-[var(--accent-tint)] transition-colors"
+            className="p-1.5 rounded-lg text-[#9ca3af] hover:text-primary hover:bg-[var(--accent-tint)] transition-colors"
             title="Refresh"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -281,7 +281,7 @@ function ContactSidebar({
         {/* List */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="py-16 text-center text-[14px] text-[#7a6b5c] flex items-center justify-center gap-2">
+            <div className="py-16 text-center text-[15px] text-[#6b7280] flex items-center justify-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" /> Loading…
             </div>
           ) : filtered.length === 0 ? (
@@ -289,8 +289,8 @@ function ContactSidebar({
               <div className="w-12 h-12 bg-[var(--accent-tint)] rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <Users className="w-6 h-6 text-primary" />
               </div>
-              <p className="text-[15px] font-semibold text-[#1c1410] mb-1">No contacts yet</p>
-              <p className="text-[13px] text-[#7a6b5c]">No one in this status yet.</p>
+              <p className="text-[16px] font-semibold text-[#111318] mb-1">No contacts yet</p>
+              <p className="text-[14px] text-[#6b7280]">No one in this status yet.</p>
             </div>
           ) : (
             <div>
@@ -313,7 +313,7 @@ function ContactSidebar({
                   <div
                     key={log.id}
                     className={cn(
-                      'border-b border-black/5 last:border-0 transition-colors',
+                      'border-b border-[var(--hairline)] last:border-0 transition-colors',
                       isChecked && 'bg-primary/[0.03]',
                       rStatus === 'done'    && 'bg-emerald-50/60',
                       rStatus === 'error'   && 'bg-red-50/60',
@@ -339,7 +339,7 @@ function ContactSidebar({
 
                       {/* Avatar */}
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[13px] font-bold"
+                        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[14px] font-bold"
                         style={{ background: bgPalette[ci], color: fgPalette[ci] }}
                       >
                         {rStatus === 'running'
@@ -356,8 +356,8 @@ function ContactSidebar({
                         className="flex-1 min-w-0 cursor-pointer"
                         onClick={() => setExpanded(isOpen ? null : log.id)}
                       >
-                        <p className="text-[14px] font-semibold text-[#1c1410] truncate">{name}</p>
-                        <p className="text-[11px] text-[#7a6b5c]"><a href={`tel:${phone}`} className="hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{phone}</a>{enrolledAt ? ` · ${enrolledAt}` : ''}</p>
+                        <p className="text-[15px] font-semibold text-[#111318] truncate">{name}</p>
+                        <p className="text-[12px] text-[#6b7280]"><a href={`tel:${phone}`} className="hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{phone}</a>{enrolledAt ? ` · ${enrolledAt}` : ''}</p>
                       </div>
 
                       {/* Right side */}
@@ -367,8 +367,8 @@ function ContactSidebar({
                       >
                         {filterStatus === 'all' && execStatusBadge(log)}
                         {isOpen
-                          ? <ChevronUp className="w-3.5 h-3.5 text-[#b09e8d]" />
-                          : <ChevronDown className="w-3.5 h-3.5 text-[#b09e8d]" />}
+                          ? <ChevronUp className="w-3.5 h-3.5 text-[#9ca3af]" />
+                          : <ChevronDown className="w-3.5 h-3.5 text-[#9ca3af]" />}
                       </div>
                     </div>
 
@@ -379,11 +379,11 @@ function ContactSidebar({
                         {log.error && (
                           <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-1">
                             <X className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
-                            <p className="text-[11px] text-red-700 font-mono break-all select-text">{log.error}</p>
+                            <p className="text-[12px] text-red-700 font-mono break-all select-text">{log.error}</p>
                           </div>
                         )}
                         {(log.steps ?? []).length === 0 && actionNodes.length === 0 ? (
-                          <p className="text-[11px] text-[#b09e8d] py-2">No steps configured.</p>
+                          <p className="text-[12px] text-[#9ca3af] py-2">No steps configured.</p>
                         ) : (log.steps ?? []).length > 0 ? (
                           // Render actual executed steps in order - includes nested branch steps
                           (log.steps as any[]).map((step, ni) => {
@@ -395,32 +395,32 @@ function ContactSidebar({
                             return (
                               <div key={step.node_id || ni} className="flex items-start justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-400 text-[9px] flex items-center justify-center font-bold shrink-0">
+                                  <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-400 text-[10px] flex items-center justify-center font-bold shrink-0">
                                     {ni + 1}
                                   </span>
                                   <div className="min-w-0">
-                                    <span className="text-[13px] text-[#1c1410] truncate block">{label}</span>
+                                    <span className="text-[14px] text-[#111318] truncate block">{label}</span>
                                     {(isFailed || isSkip) && step.message && (
-                                      <span className={`text-[10px] break-all block select-text font-mono ${isFailed ? 'text-red-600' : 'text-[#b09e8d]'}`}>
+                                      <span className={`text-[11px] break-all block select-text font-mono ${isFailed ? 'text-red-600' : 'text-[#9ca3af]'}`}>
                                         {step.message}
                                       </span>
                                     )}
                                   </div>
                                 </div>
                                 {isDone ? (
-                                  <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full shrink-0">
+                                  <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full shrink-0">
                                     <CheckCircle2 className="w-3 h-3" /> Done
                                   </span>
                                 ) : isFailed ? (
-                                  <span className="flex items-center gap-1 text-[10px] font-semibold text-red-500 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full shrink-0">
+                                  <span className="flex items-center gap-1 text-[11px] font-semibold text-red-500 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full shrink-0">
                                     <X className="w-3 h-3" /> Failed
                                   </span>
                                 ) : isSkip ? (
-                                  <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full shrink-0">
+                                  <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full shrink-0">
                                     <SkipForward className="w-3 h-3" /> Skipped
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
+                                  <span className="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
                                     Pending
                                   </span>
                                 )}
@@ -432,12 +432,12 @@ function ContactSidebar({
                           actionNodes.map((node: any, ni: number) => (
                             <div key={node.id} className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
-                                <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-400 text-[9px] flex items-center justify-center font-bold shrink-0">
+                                <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-400 text-[10px] flex items-center justify-center font-bold shrink-0">
                                   {ni + 1}
                                 </span>
-                                <span className="text-[13px] text-[#1c1410] truncate block">{node.label}</span>
+                                <span className="text-[14px] text-[#111318] truncate block">{node.label}</span>
                               </div>
-                              <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">Pending</span>
+                              <span className="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">Pending</span>
                             </div>
                           ))
                         )}
@@ -452,24 +452,24 @@ function ContactSidebar({
 
         {/* ── Re-execute footer - shown when contacts are selected ── */}
         {selectedCount > 0 && (
-          <div className="shrink-0 px-4 py-3 border-t border-black/5 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+          <div className="shrink-0 px-4 py-3 border-t border-[var(--hairline)] bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-[#1c1410]">
+                <p className="text-[14px] font-bold text-[#111318]">
                   {selectedCount} contact{selectedCount !== 1 ? 's' : ''} selected
                 </p>
-                <p className="text-[11px] text-[#7a6b5c]">Workflow will restart from step 1</p>
+                <p className="text-[12px] text-[#6b7280]">Workflow will restart from step 1</p>
               </div>
               <button
                 onClick={() => setSelected(new Set())}
-                className="px-3 py-2 rounded-xl text-[13px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors shrink-0"
+                className="px-3 py-2 rounded-xl text-[14px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors shrink-0"
               >
                 Clear
               </button>
               <button
                 onClick={handleRerun}
                 disabled={rerunning}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-60 shrink-0"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[15px] font-bold text-white transition-all disabled:opacity-60 shrink-0"
                 style={{ background: 'linear-gradient(135deg,var(--brand-dark),var(--brand))', boxShadow: '0 3px 10px rgba(194,65,12,0.3)' }}
               >
                 {rerunning
@@ -528,7 +528,7 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
     <div
       onClick={onOpen}
       className={cn(
-        'group flex items-center border-b border-black/[0.04] hover:bg-[var(--app-bg)] cursor-pointer transition-colors',
+        'group flex items-center border-b border-[var(--hairline)] hover:bg-[var(--surface-2)] cursor-pointer transition-colors',
         selected && 'bg-orange-50/40'
       )}
     >
@@ -550,14 +550,14 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
       {/* Automation Name */}
       <div className="flex-1 min-w-0 py-4 pr-4">
         <div className="flex items-center gap-2">
-          <p className="font-semibold text-[14px] text-[#1c1410] truncate">{wf.name}</p>
+          <p className="font-semibold text-[15px] text-[#111318] truncate">{wf.name}</p>
           {wf.status === 'inactive' && (
-            <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200 leading-none">
+            <span className="shrink-0 text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200 leading-none">
               Draft
             </span>
           )}
         </div>
-        <p className="text-[11px] text-[#7a6b5c] mt-0.5 truncate">
+        <p className="text-[12px] text-[#6b7280] mt-0.5 truncate">
           {wf.status === 'inactive'
             ? 'Not published - toggle to activate'
             : triggerDesc}
@@ -583,42 +583,42 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
       {/* Done */}
       <div className="w-20 shrink-0 py-4 text-center" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onContactPanel('completed')} className="w-full text-center hover:opacity-70 transition-opacity">
-          <p className="text-[15px] font-bold text-[#1c1410]">{wf.completed}</p>
-          <p className="text-[11px] text-[#7a6b5c]">Done</p>
+          <p className="text-[16px] font-bold text-[#111318]">{wf.completed}</p>
+          <p className="text-[12px] text-[#6b7280]">Done</p>
         </button>
       </div>
 
       {/* Errors */}
       <div className="w-20 shrink-0 py-4 text-center" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onContactPanel('completed_with_errors')} className="w-full text-center hover:opacity-70 transition-opacity">
-          <p className={cn('text-[15px] font-bold', wf.completedWithErrors > 0 ? 'text-amber-500' : 'text-[#1c1410]')}>
+          <p className={cn('text-[16px] font-bold', wf.completedWithErrors > 0 ? 'text-amber-500' : 'text-[#111318]')}>
             {wf.completedWithErrors}
           </p>
-          <p className="text-[11px] text-[#7a6b5c]">Errors</p>
+          <p className="text-[12px] text-[#6b7280]">Errors</p>
         </button>
       </div>
 
       {/* Skipped */}
       <div className="w-20 shrink-0 py-4 text-center" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onContactPanel('skipped')} className="w-full text-center hover:opacity-70 transition-opacity">
-          <p className="text-[15px] font-bold text-[#1c1410]">{wf.skipped}</p>
-          <p className="text-[11px] text-[#7a6b5c]">Skipped</p>
+          <p className="text-[16px] font-bold text-[#111318]">{wf.skipped}</p>
+          <p className="text-[12px] text-[#6b7280]">Skipped</p>
         </button>
       </div>
 
       {/* Contacts */}
       <div className="w-24 shrink-0 py-4 text-center" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onContactPanel('all')} className="w-full text-center hover:opacity-70 transition-opacity">
-          <p className="text-[15px] font-bold text-[#1c1410]">{wf.totalContacts}</p>
-          <p className="text-[11px] text-[#7a6b5c]">Contacts</p>
+          <p className="text-[16px] font-bold text-[#111318]">{wf.totalContacts}</p>
+          <p className="text-[12px] text-[#6b7280]">Contacts</p>
         </button>
       </div>
 
       {/* Failed */}
       <div className="w-20 shrink-0 py-4 text-center" onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onContactPanel('failed')} className="w-full text-center hover:opacity-70 transition-opacity">
-          <p className="text-[15px] font-bold text-[#1c1410]">{wf.failed}</p>
-          <p className="text-[11px] text-[#7a6b5c]">Failed</p>
+          <p className="text-[16px] font-bold text-[#111318]">{wf.failed}</p>
+          <p className="text-[12px] text-[#6b7280]">Failed</p>
         </button>
       </div>
 
@@ -638,46 +638,46 @@ function WorkflowRow({ wf, onOpen, onToggle, onDuplicate, onDelete, menuOpen, on
             }
             onToggleMenu();
           })}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-[#7a6b5c] hover:bg-white hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:bg-white hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
         >
           <MoreVertical className="w-4 h-4" />
         </button>
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-30" onClick={stop(onToggleMenu)} />
-            <div className={`absolute right-0 z-40 w-44 bg-white rounded-xl border border-black/5 shadow-xl py-1 overflow-hidden ${flipUp ? 'bottom-9' : 'top-9'}`}>
+            <div className={`absolute right-0 z-40 w-44 bg-white rounded-xl border border-[var(--hairline)] shadow-xl py-1 overflow-hidden ${flipUp ? 'bottom-9' : 'top-9'}`}>
               {canManageAutomation && (
-                <button onClick={stop(onOpen)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
-                  <Pencil className="w-3.5 h-3.5 text-[#7a6b5c]" /> Edit
+                <button onClick={stop(onOpen)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-[#111318] hover:bg-[#f1f3f5] transition-colors text-left">
+                  <Pencil className="w-3.5 h-3.5 text-[#6b7280]" /> Edit
                 </button>
               )}
-              <button onClick={stop(onAnalytics)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
-                <TrendingUp className="w-3.5 h-3.5 text-[#7a6b5c]" /> Analytics
+              <button onClick={stop(onAnalytics)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-[#111318] hover:bg-[#f1f3f5] transition-colors text-left">
+                <TrendingUp className="w-3.5 h-3.5 text-[#6b7280]" /> Analytics
               </button>
               {canManageAutomation && (
-                <button onClick={stop(onDuplicate)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors text-left">
-                  <Copy className="w-3.5 h-3.5 text-[#7a6b5c]" /> Duplicate
+                <button onClick={stop(onDuplicate)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-[#111318] hover:bg-[#f1f3f5] transition-colors text-left">
+                  <Copy className="w-3.5 h-3.5 text-[#6b7280]" /> Duplicate
                 </button>
               )}
               {canManageAutomation && triggerNode?.actionType === 'broadcast_to_group' && (
-                <button onClick={stop(onRunBroadcast)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-emerald-600 hover:bg-emerald-50 transition-colors text-left">
+                <button onClick={stop(onRunBroadcast)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-emerald-600 hover:bg-emerald-50 transition-colors text-left">
                   <Send className="w-3.5 h-3.5" /> Run Broadcast
                 </button>
               )}
               {canManageAutomation && (
-                <button onClick={stop(onRetry)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[var(--brand-dark)] hover:bg-orange-50 transition-colors text-left">
+                <button onClick={stop(onRetry)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-[var(--brand-dark)] hover:bg-orange-50 transition-colors text-left">
                   <RefreshCw className="w-3.5 h-3.5" /> Retry skipped
                 </button>
               )}
               {canManageAutomation && wf.completedWithErrors > 0 && (
-                <button onClick={stop(onRetryErrors)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-amber-600 hover:bg-amber-50 transition-colors text-left">
+                <button onClick={stop(onRetryErrors)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-amber-600 hover:bg-amber-50 transition-colors text-left">
                   <AlertTriangle className="w-3.5 h-3.5" /> Retry {wf.completedWithErrors} error{wf.completedWithErrors !== 1 ? 's' : ''}
                 </button>
               )}
               {canManageAutomation && (
                 <>
-                  <div className="border-t border-black/5 my-1" />
-                  <button onClick={stop(onDelete)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-500 hover:bg-red-50 transition-colors text-left">
+                  <div className="border-t border-[var(--hairline)] my-1" />
+                  <button onClick={stop(onDelete)} className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-red-500 hover:bg-red-50 transition-colors text-left">
                     <Trash2 className="w-3.5 h-3.5" /> Delete
                   </button>
                 </>
@@ -929,23 +929,23 @@ export default function AutomationPage() {
     <div className="flex flex-col flex-1 animate-fade-in min-h-0">
 
       {/* ── Top bar ── */}
-      <div className="flex items-center justify-between pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
         {/* Filter cards */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Total Workflows */}
           <button
             onClick={() => setStatusFilter('All')}
             className={cn(
-              'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all',
+              'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition active:scale-[0.98]',
               statusFilter === 'All'
-                ? 'bg-[#1c1410] border-[#1c1410] text-white shadow-sm'
-                : 'bg-white border-black/[0.07] text-[#1c1410] hover:border-black/20'
+                ? 'bg-[#111318] border-[#111318] text-white shadow-sm'
+                : 'bg-white border-[var(--hairline)] card-shadow text-[#111318] hover:bg-[var(--surface-2)]'
             )}
           >
-            <Zap className={cn('w-4 h-4', statusFilter === 'All' ? 'text-orange-300' : 'text-primary')} />
+            <Workflow className={cn('w-4 h-4', statusFilter === 'All' ? 'text-orange-300' : 'text-primary')} />
             <div className="text-left">
-              <p className="text-[15px] font-bold leading-tight">{stats.total}</p>
-              <p className={cn('text-[10px]', statusFilter === 'All' ? 'text-white/60' : 'text-[#7a6b5c]')}>Total Workflows</p>
+              <p className="text-[16px] font-bold leading-tight">{stats.total}</p>
+              <p className={cn('text-[11px]', statusFilter === 'All' ? 'text-white/60' : 'text-[#6b7280]')}>Total Workflows</p>
             </div>
           </button>
 
@@ -953,16 +953,16 @@ export default function AutomationPage() {
           <button
             onClick={() => setStatusFilter(statusFilter === 'Active' ? 'All' : 'Active')}
             className={cn(
-              'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all',
+              'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition active:scale-[0.98]',
               statusFilter === 'Active'
                 ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
-                : 'bg-white border-black/[0.07] text-[#1c1410] hover:border-emerald-200'
+                : 'bg-white border-[var(--hairline)] card-shadow text-[#111318] hover:bg-[var(--surface-2)]'
             )}
           >
             <ToggleRight className={cn('w-4 h-4', statusFilter === 'Active' ? 'text-white' : 'text-emerald-500')} />
             <div className="text-left">
-              <p className="text-[15px] font-bold leading-tight">{stats.active}</p>
-              <p className={cn('text-[10px]', statusFilter === 'Active' ? 'text-white/70' : 'text-[#7a6b5c]')}>Active</p>
+              <p className="text-[16px] font-bold leading-tight">{stats.active}</p>
+              <p className={cn('text-[11px]', statusFilter === 'Active' ? 'text-white/70' : 'text-[#6b7280]')}>Active</p>
             </div>
           </button>
 
@@ -970,22 +970,22 @@ export default function AutomationPage() {
           <button
             onClick={() => setStatusFilter(statusFilter === 'Paused' ? 'All' : 'Paused')}
             className={cn(
-              'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all',
+              'flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition active:scale-[0.98]',
               statusFilter === 'Paused'
                 ? 'bg-gray-500 border-gray-500 text-white shadow-sm'
-                : 'bg-white border-black/[0.07] text-[#1c1410] hover:border-gray-300'
+                : 'bg-white border-[var(--hairline)] card-shadow text-[#111318] hover:bg-[var(--surface-2)]'
             )}
           >
             <ToggleLeft className={cn('w-4 h-4', statusFilter === 'Paused' ? 'text-white' : 'text-gray-400')} />
             <div className="text-left">
-              <p className="text-[15px] font-bold leading-tight">{stats.paused}</p>
-              <p className={cn('text-[10px]', statusFilter === 'Paused' ? 'text-white/70' : 'text-[#7a6b5c]')}>Inactive</p>
+              <p className="text-[16px] font-bold leading-tight">{stats.paused}</p>
+              <p className={cn('text-[11px]', statusFilter === 'Paused' ? 'text-white/70' : 'text-[#6b7280]')}>Inactive</p>
             </div>
           </button>
         </div>
 
         {canManageAutomation && (
-          <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 shrink-0" style={shadowStyle}>
+          <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 shrink-0" style={shadowStyle}>
             <Plus className="w-4 h-4" /> Create Workflow
           </button>
         )}
@@ -996,19 +996,19 @@ export default function AutomationPage() {
       {/* ── Bulk action bar ── */}
       {canManageAutomation && selectedRows.size > 0 && (
         <div className="flex items-center justify-between gap-3 mb-3 px-4 py-2.5 rounded-xl bg-primary/5 border border-primary/20">
-          <p className="text-[14px] font-semibold text-[#1c1410]">
+          <p className="text-[15px] font-semibold text-[#111318]">
             {selectedRows.size} selected
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelectedRows(new Set())}
-              className="px-3 py-1.5 rounded-lg text-[13px] font-semibold text-[#7a6b5c] hover:bg-black/5 transition-colors"
+              className="px-3 py-1.5 rounded-lg text-[14px] font-semibold text-[#6b7280] hover:bg-black/5 transition-colors"
             >
               Clear
             </button>
             <button
               onClick={() => setBulkDeleteConfirm(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" /> Delete selected ({selectedRows.size})
             </button>
@@ -1017,12 +1017,13 @@ export default function AutomationPage() {
       )}
 
       {/* ── Main content ── */}
-      <div className="flex flex-1 min-h-0 rounded-2xl border border-black/[0.06] overflow-hidden bg-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="flex flex-1 min-h-0 rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden bg-white">
 
         {/* List */}
-        <div className="flex-1 min-w-0 overflow-y-auto">
+        <div className="flex-1 min-w-0 overflow-auto">
+          <div className="min-w-[880px]">
           {/* Column header */}
-          <div className="flex items-center border-b border-black/[0.06] bg-[var(--app-bg)] sticky top-0 z-10">
+          <div className="flex items-center border-b border-[var(--hairline)] bg-[var(--surface-2)] sticky top-0 z-10">
             {/* Select-all checkbox */}
             <div className="w-10 flex items-center justify-center shrink-0 py-2.5">
               <button
@@ -1047,14 +1048,14 @@ export default function AutomationPage() {
                 )}
               </button>
             </div>
-            <p className="flex-1 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] py-2.5">Automation Name</p>
-            <p className="w-32 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] text-center shrink-0 py-2.5">Allow Re-entry</p>
-            <p className="w-20 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] text-center shrink-0 py-2.5">Done</p>
-            <p className="w-20 text-[11px] font-bold uppercase tracking-wider text-amber-500 text-center shrink-0 py-2.5">Errors</p>
-            <p className="w-20 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] text-center shrink-0 py-2.5">Skipped</p>
-            <p className="w-24 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] text-center shrink-0 py-2.5">Contacts</p>
-            <p className="w-20 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] text-center shrink-0 py-2.5">Failed</p>
-            <p className="w-20 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] text-center shrink-0 py-2.5">Status</p>
+            <p className="flex-1 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] py-2.5">Automation Name</p>
+            <p className="w-32 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] text-center shrink-0 py-2.5">Allow Re-entry</p>
+            <p className="w-20 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] text-center shrink-0 py-2.5">Done</p>
+            <p className="w-20 text-[12px] font-bold uppercase tracking-wider text-amber-500 text-center shrink-0 py-2.5">Errors</p>
+            <p className="w-20 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] text-center shrink-0 py-2.5">Skipped</p>
+            <p className="w-24 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] text-center shrink-0 py-2.5">Contacts</p>
+            <p className="w-20 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] text-center shrink-0 py-2.5">Failed</p>
+            <p className="w-20 text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] text-center shrink-0 py-2.5">Status</p>
             <div className="w-10 shrink-0" />
           </div>
 
@@ -1065,12 +1066,12 @@ export default function AutomationPage() {
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
-                <Zap className="w-6 h-6 text-primary" />
+                <Workflow className="w-6 h-6 text-primary" />
               </div>
-              <p className="text-[15px] font-bold text-[#1c1410] mb-1">{search ? 'No results' : 'No workflows yet'}</p>
-              <p className="text-[13px] text-[#7a6b5c] mb-4">{search ? 'Try a different search.' : 'Create your first workflow to start automating.'}</p>
+              <p className="text-[16px] font-bold text-[#111318] mb-1">{search ? 'No results' : 'No workflows yet'}</p>
+              <p className="text-[14px] text-[#6b7280] mb-4">{search ? 'Try a different search.' : 'Create your first workflow to start automating.'}</p>
               {!search && canManageAutomation && (
-                <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-bold text-white" style={shadowStyle}>
+                <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2 rounded-xl text-[15px] font-bold text-white" style={shadowStyle}>
                   <Plus className="w-4 h-4" /> Create Workflow
                 </button>
               )}
@@ -1096,6 +1097,7 @@ export default function AutomationPage() {
               />
             ))
           )}
+          </div>
         </div>
       </div>
 
@@ -1113,11 +1115,11 @@ export default function AutomationPage() {
             <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mb-4">
               <span className="text-amber-600 text-lg font-bold">!</span>
             </div>
-            <h3 className="text-[15px] font-bold text-[#1c1410] mb-2">No Trigger Set</h3>
-            <p className="text-[14px] text-[#7a6b5c] mb-6">A workflow must have a trigger before it can be activated. Open the editor and choose a trigger first.</p>
+            <h3 className="text-[16px] font-bold text-[#111318] mb-2">No Trigger Set</h3>
+            <p className="text-[15px] text-[#6b7280] mb-6">A workflow must have a trigger before it can be activated. Open the editor and choose a trigger first.</p>
             <button
               onClick={() => setNoTriggerPopup(false)}
-              className="w-full py-2.5 rounded-xl bg-[var(--brand-dark)] hover:bg-[var(--brand)] text-white text-[14px] font-bold transition-colors"
+              className="w-full py-2.5 rounded-xl bg-[var(--brand-dark)] hover:bg-[var(--brand)] text-white text-[15px] font-bold transition-colors"
             >
               Got it
             </button>
@@ -1129,7 +1131,7 @@ export default function AutomationPage() {
         return (
           <ConfirmDeleteModal
             title="Delete Workflow?"
-            message={<>Delete <span className="font-semibold text-[#1c1410]">"{wf?.name}"</span>? All execution history will be lost. This cannot be undone.</>}
+            message={<>Delete <span className="font-semibold text-[#111318]">"{wf?.name}"</span>? All execution history will be lost. This cannot be undone.</>}
             confirmLabel="Yes, Delete"
             onConfirm={() => deleteWorkflow(deleteConfirmId)}
             onClose={() => setDeleteConfirmId(null)}
@@ -1140,7 +1142,7 @@ export default function AutomationPage() {
       {bulkDeleteConfirm && (
         <ConfirmDeleteModal
           title={`Delete ${selectedRows.size} Workflow${selectedRows.size > 1 ? 's' : ''}?`}
-          message={<>Delete <span className="font-semibold text-[#1c1410]">{selectedRows.size}</span> selected workflow{selectedRows.size > 1 ? 's' : ''}? All their execution history will be lost. This cannot be undone.</>}
+          message={<>Delete <span className="font-semibold text-[#111318]">{selectedRows.size}</span> selected workflow{selectedRows.size > 1 ? 's' : ''}? All their execution history will be lost. This cannot be undone.</>}
           confirmLabel={bulkDeleting ? 'Deleting…' : 'Yes, Delete'}
           onConfirm={bulkDelete}
           onClose={() => { if (!bulkDeleting) setBulkDeleteConfirm(false); }}

@@ -156,23 +156,23 @@ function AttachRow({
 
   return (
     <div>
-      <label className="text-sm font-medium text-foreground mb-1.5 block">{label}</label>
+      <label className="text-[15px] font-medium text-foreground mb-1.5 block">{label}</label>
       {existingName && !removed && !picked && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-lg px-3 py-2 mb-2">
+        <div className="flex items-center gap-2 text-[15px] text-muted-foreground bg-muted/30 rounded-lg px-3 py-2 mb-2">
           <Paperclip className="w-4 h-4 shrink-0" />
           <span className="flex-1 truncate">{existingName}</span>
-          <button type="button" onClick={() => { setRemoved(true); onRemoveExisting(); }} className="text-xs text-destructive hover:underline shrink-0">Remove</button>
+          <button type="button" onClick={() => { setRemoved(true); onRemoveExisting(); }} className="text-[13px] text-destructive hover:underline shrink-0">Remove</button>
         </div>
       )}
       <div className="flex items-center gap-2">
-        <button type="button" onClick={() => ref.current?.click()} className="flex items-center gap-1.5 text-sm px-3 py-1.5 border border-border rounded-lg hover:bg-muted/30 transition-colors">
+        <button type="button" onClick={() => ref.current?.click()} className="flex items-center gap-1.5 text-[15px] px-3 py-1.5 border border-border rounded-lg hover:bg-muted/30 transition-colors">
           <Upload className="w-4 h-4" />
           {picked ? picked.name : existingName && !removed ? 'Replace file' : 'Choose file'}
         </button>
-        {picked && <button type="button" onClick={() => { setPicked(null); onFile(null); }} className="text-xs text-muted-foreground hover:underline">Clear</button>}
+        {picked && <button type="button" onClick={() => { setPicked(null); onFile(null); }} className="text-[13px] text-muted-foreground hover:underline">Clear</button>}
       </div>
       <input ref={ref} type="file" className="hidden" accept={accept} onChange={(e) => { const f = e.target.files?.[0] ?? null; setPicked(f); onFile(f); e.target.value = ''; }} />
-      <p className="text-xs text-muted-foreground mt-1">Images (5 MB) · Video/Audio (16 MB) · Documents (100 MB)</p>
+      <p className="text-[13px] text-muted-foreground mt-1">Images (5 MB) · Video/Audio (16 MB) · Documents (100 MB)</p>
     </div>
   );
 }
@@ -268,35 +268,35 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-card rounded-2xl border border-black/5 w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5 shrink-0">
-          <h3 className="font-bold text-[#1c1410]">{initial ? 'Edit WABA Template' : 'Create WABA Template'}</h3>
+      <div className="bg-card rounded-2xl border border-[var(--hairline)] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)] shrink-0">
+          <h3 className="font-bold text-[#111318]">{initial ? 'Edit WABA Template' : 'Create WABA Template'}</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--accent-tint)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Name / Category / Language */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-1">
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Template Name *</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. welcome_lead" className="font-mono text-sm" />
-              <p className="text-[11px] text-[#7a6b5c] mt-1">Lowercase, underscores only</p>
+              <label className="text-[15px] font-medium text-foreground mb-1.5 block">Template Name *</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. welcome_lead" className="font-mono text-[15px]" />
+              <p className="text-[12px] text-[#6b7280] mt-1">Lowercase, underscores only</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Category</label>
-              <select className="w-full border border-black/5 rounded-lg px-3 py-2 text-sm bg-card focus:border-primary outline-none" value={category} onChange={(e) => setCategory(e.target.value as WABACategory)}>
+              <label className="text-[15px] font-medium text-foreground mb-1.5 block">Category</label>
+              <select className="w-full border border-[var(--hairline)] rounded-lg px-3 py-2 text-[15px] bg-card focus:border-primary outline-none" value={category} onChange={(e) => setCategory(e.target.value as WABACategory)}>
                 {WABA_CATS.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Language</label>
-              <select className="w-full border border-black/5 rounded-lg px-3 py-2 text-sm bg-card focus:border-primary outline-none" value={language} onChange={(e) => setLanguage(e.target.value)}>
+              <label className="text-[15px] font-medium text-foreground mb-1.5 block">Language</label>
+              <select className="w-full border border-[var(--hairline)] rounded-lg px-3 py-2 text-[15px] bg-card focus:border-primary outline-none" value={language} onChange={(e) => setLanguage(e.target.value)}>
                 {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.name} ({l.code})</option>)}
               </select>
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Header Text <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Header Text <span className="text-muted-foreground font-normal">(optional)</span></label>
             <Input value={header} onChange={(e) => setHeader(e.target.value)} placeholder="Bold header text displayed above body" />
           </div>
 
@@ -310,71 +310,71 @@ function WABAModal({ initial, onClose, onSaved }: { initial?: Template | null; o
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-sm font-medium text-foreground">Body Text *</label>
-              <span className="text-xs text-muted-foreground">{body.length}/1024</span>
+              <label className="text-[15px] font-medium text-foreground">Body Text *</label>
+              <span className="text-[13px] text-muted-foreground">{body.length}/1024</span>
             </div>
             <textarea
-              className="w-full border border-black/5 rounded-lg px-3 py-2 text-sm bg-card focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-none"
+              className="w-full border border-[var(--hairline)] rounded-lg px-3 py-2 text-[15px] bg-card focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-none"
               rows={5} value={body} onChange={(e) => setBody(e.target.value)} maxLength={1024}
               placeholder="Hi {{1}}, thanks for reaching out! Your appointment is on {{2}}."
             />
-            <p className="text-[11px] text-[#7a6b5c] mt-1">
+            <p className="text-[12px] text-[#6b7280] mt-1">
               Use {'{{1}}'}, {'{{2}}'}, etc. for variables. Meta requires sample values for approval.
             </p>
             {bodyVars.length > 0 && (
               <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2.5">
-                <p className="text-xs font-medium text-amber-800">Samples for body content</p>
+                <p className="text-[13px] font-medium text-amber-800">Samples for body content</p>
                 {bodyVars.map((v) => (
                   <div key={v} className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-amber-700 shrink-0 w-12">{`{{${v}}}`}</span>
+                    <span className="text-[13px] font-mono text-amber-700 shrink-0 w-12">{`{{${v}}}`}</span>
                     <Input
                       value={bodyExamples[v] ?? ''}
                       onChange={(e) => setBodyExamples((prev) => ({ ...prev, [v]: e.target.value }))}
                       placeholder={`Sample value for {{${v}}}`}
-                      className="flex-1 text-xs h-8 border-amber-200 bg-white focus:border-amber-400"
+                      className="flex-1 text-[13px] h-8 border-amber-200 bg-white focus:border-amber-400"
                     />
                   </div>
                 ))}
-                <p className="text-[10px] text-amber-600">These samples help Meta reviewers understand your template. At send time, real lead data will be used.</p>
+                <p className="text-[11px] text-amber-600">These samples help Meta reviewers understand your template. At send time, real lead data will be used.</p>
               </div>
             )}
           </div>
 
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Footer <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Footer <span className="text-muted-foreground font-normal">(optional)</span></label>
             <Input value={footer} onChange={(e) => setFooter(e.target.value)} placeholder="e.g. Reply STOP to unsubscribe" />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-foreground">Buttons <span className="text-muted-foreground font-normal text-xs">(max 3)</span></label>
-              <button onClick={addBtn} className="text-xs text-primary flex items-center gap-1 hover:underline"><Plus className="w-3 h-3" />Add Button</button>
+              <label className="text-[15px] font-medium text-foreground">Buttons <span className="text-muted-foreground font-normal text-[13px]">(max 3)</span></label>
+              <button onClick={addBtn} className="text-[13px] text-primary flex items-center gap-1 hover:underline"><Plus className="w-3 h-3" />Add Button</button>
             </div>
             <div className="space-y-2">
               {buttons.map((btn) => (
-                <div key={btn.id} className="flex gap-2 items-center p-2.5 rounded-xl border border-black/5 bg-[var(--app-bg)]">
-                  <select className="border border-black/5 rounded-lg px-2 py-1.5 text-xs bg-card outline-none shrink-0" value={btn.type} onChange={(e) => upd(btn.id, 'type', e.target.value)}>
+                <div key={btn.id} className="flex gap-2 items-center p-2.5 rounded-xl border border-[var(--hairline)] bg-[var(--app-bg)]">
+                  <select className="border border-[var(--hairline)] rounded-lg px-2 py-1.5 text-[13px] bg-card outline-none shrink-0" value={btn.type} onChange={(e) => upd(btn.id, 'type', e.target.value)}>
                     <option value="QUICK_REPLY">Quick Reply</option>
                     <option value="URL">URL</option>
                     <option value="PHONE_NUMBER">Phone</option>
                   </select>
-                  <Input value={btn.label} onChange={(e) => upd(btn.id, 'label', e.target.value)} placeholder="Button label" className="flex-1 text-xs" />
+                  <Input value={btn.label} onChange={(e) => upd(btn.id, 'label', e.target.value)} placeholder="Button label" className="flex-1 text-[13px]" />
                   <Input value={btn.value} onChange={(e) => upd(btn.id, 'value', e.target.value)}
                     placeholder={btn.type === 'URL' ? 'https://...' : btn.type === 'PHONE_NUMBER' ? '+919876543210' : 'payload'}
-                    className="flex-1 text-xs font-mono" />
+                    className="flex-1 text-[13px] font-mono" />
                   <button onClick={() => del(btn.id)} className="p-1 text-muted-foreground hover:text-destructive rounded"><X className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
-              {buttons.length === 0 && <p className="text-[11px] text-[#7a6b5c] py-2 text-center border border-dashed border-border rounded-lg">No buttons added. Quick Reply buttons let users respond with one tap.</p>}
+              {buttons.length === 0 && <p className="text-[12px] text-[#6b7280] py-2 text-center border border-dashed border-border rounded-lg">No buttons added. Quick Reply buttons let users respond with one tap.</p>}
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-between px-5 py-4 border-t border-black/5 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-t border-[var(--hairline)] shrink-0">
           {!initial && (
-            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-[15px] cursor-pointer select-none">
               <input type="checkbox" checked={submitMeta} onChange={(e) => setSubmitMeta(e.target.checked)}
                 className="rounded border-gray-300 text-primary focus:ring-primary/30" />
-              <span className="text-[#7a6b5c]">Submit to Meta for approval</span>
+              <span className="text-[#6b7280]">Submit to Meta for approval</span>
             </label>
           )}
           {initial && <div />}
@@ -426,28 +426,28 @@ function EmailModal({ initial, onClose, onSaved }: { initial?: Template | null; 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-card rounded-2xl border border-black/5 w-full max-w-xl shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5 shrink-0">
-          <h3 className="font-bold text-[#1c1410]">{initial ? 'Edit Email Template' : 'Create Email Template'}</h3>
+      <div className="bg-card rounded-2xl border border-[var(--hairline)] w-full max-w-xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)] shrink-0">
+          <h3 className="font-bold text-[#111318]">{initial ? 'Edit Email Template' : 'Create Email Template'}</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--accent-tint)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Template Name *</label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Template Name *</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Welcome Email" />
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Subject Line *</label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Subject Line *</label>
             <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="e.g. Welcome, {%first_name%}!" />
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Email Body *</label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Email Body *</label>
             <textarea
-              className="w-full border border-black/5 rounded-lg px-3 py-2 text-sm bg-card focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-none"
+              className="w-full border border-[var(--hairline)] rounded-lg px-3 py-2 text-[15px] bg-card focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-none"
               rows={8} value={body} onChange={(e) => setBody(e.target.value)}
               placeholder="Email body. Supports {%first_name%}, {%assigned_to%}, {%deal_value%}, etc."
             />
-            <p className="text-[11px] text-[#7a6b5c] mt-1">Variables: {'{%first_name%} {%last_name%} {%email%} {%assigned_to%} {%deal_value%}'}</p>
+            <p className="text-[12px] text-[#6b7280] mt-1">Variables: {'{%first_name%} {%last_name%} {%email%} {%assigned_to%} {%deal_value%}'}</p>
           </div>
           <AttachRow
             accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.csv"
@@ -457,7 +457,7 @@ function EmailModal({ initial, onClose, onSaved }: { initial?: Template | null; 
             onRemoveExisting={() => setRemoveFile(true)}
           />
         </div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-black/5 shrink-0">
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[var(--hairline)] shrink-0">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Saving…</> : <><Check className="w-4 h-4 mr-1" />{initial ? 'Save Changes' : 'Create'}</>}
@@ -496,34 +496,34 @@ function SMSModal({ initial, onClose, onSaved }: { initial?: Template | null; on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-card rounded-2xl border border-black/5 w-full max-w-lg shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
-          <h3 className="font-bold text-[#1c1410]">{initial ? 'Edit SMS Template' : 'Create SMS Template'}</h3>
+      <div className="bg-card rounded-2xl border border-[var(--hairline)] w-full max-w-lg shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)]">
+          <h3 className="font-bold text-[#111318]">{initial ? 'Edit SMS Template' : 'Create SMS Template'}</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--accent-tint)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Template Name *</label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Template Name *</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Welcome SMS" />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-sm font-medium text-foreground">Message Body *</label>
-              <span className={cn('text-xs', body.length > 160 ? 'text-destructive font-medium' : 'text-muted-foreground')}>{body.length}/160 · {body.length > 160 ? '2 SMS' : '1 SMS'}</span>
+              <label className="text-[15px] font-medium text-foreground">Message Body *</label>
+              <span className={cn('text-[13px]', body.length > 160 ? 'text-destructive font-medium' : 'text-muted-foreground')}>{body.length}/160 · {body.length > 160 ? '2 SMS' : '1 SMS'}</span>
             </div>
             <textarea
-              className="w-full border border-black/5 rounded-lg px-3 py-2 text-sm bg-card focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-none"
+              className="w-full border border-[var(--hairline)] rounded-lg px-3 py-2 text-[15px] bg-card focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-none"
               rows={4} value={body} onChange={(e) => setBody(e.target.value)}
               placeholder="Short message. Use {%first_name%}, {%phone%} for personalization."
             />
-            <p className="text-[11px] text-[#7a6b5c] mt-1">Variables: {'{%first_name%} {%last_name%} {%phone%} {%email%}'}</p>
+            <p className="text-[12px] text-[#6b7280] mt-1">Variables: {'{%first_name%} {%last_name%} {%phone%} {%email%}'}</p>
           </div>
-          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-[13px] text-amber-700">
             <span className="shrink-0 mt-0.5">ℹ️</span>
             <span>SMS does not support file attachments. Use Email or WhatsApp templates for media.</span>
           </div>
         </div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-black/5">
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[var(--hairline)]">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Saving…</> : <><Check className="w-4 h-4 mr-1" />{initial ? 'Save Changes' : 'Create'}</>}
@@ -562,27 +562,27 @@ function WAPersonalModal({ initial, onClose, onSaved }: { initial?: WaPersonalTe
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-card rounded-2xl border border-black/5 w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5 shrink-0">
-          <h3 className="font-bold text-[#1c1410]">{initial ? 'Edit WA Personal Template' : 'Create WA Personal Template'}</h3>
+      <div className="bg-card rounded-2xl border border-[var(--hairline)] w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)] shrink-0">
+          <h3 className="font-bold text-[#111318]">{initial ? 'Edit WA Personal Template' : 'Create WA Personal Template'}</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--accent-tint)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Template Name *</label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Template Name *</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Welcome Message" />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-sm font-medium text-foreground">Message *</label>
-              <span className="text-xs text-muted-foreground">{message.length}/4096</span>
+              <label className="text-[15px] font-medium text-foreground">Message *</label>
+              <span className="text-[13px] text-muted-foreground">{message.length}/4096</span>
             </div>
             <textarea
-              className="w-full border border-black/5 rounded-lg px-3 py-2 text-sm bg-card focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-none"
+              className="w-full border border-[var(--hairline)] rounded-lg px-3 py-2 text-[15px] bg-card focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-none"
               rows={6} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={4096}
               placeholder="Message text. Use {first_name}, {phone}, {email}, {assigned_staff}, etc."
             />
-            <p className="text-[11px] text-[#7a6b5c] mt-1">Variables: {'{first_name} {last_name} {phone} {email} {assigned_staff} {stage}'}</p>
+            <p className="text-[12px] text-[#6b7280] mt-1">Variables: {'{first_name} {last_name} {phone} {email} {assigned_staff} {stage}'}</p>
           </div>
           <AttachRow
             accept="image/*,.pdf,.doc,.docx"
@@ -592,7 +592,7 @@ function WAPersonalModal({ initial, onClose, onSaved }: { initial?: WaPersonalTe
             onRemoveExisting={() => setRemoveFile(true)}
           />
         </div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-black/5 shrink-0">
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[var(--hairline)] shrink-0">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Saving…</> : <><Check className="w-4 h-4 mr-1" />{initial ? 'Save Changes' : 'Create'}</>}
@@ -608,29 +608,29 @@ function WABAPreview({ template, onClose }: { template: Template; onClose: () =>
   const btns = parseButtons(template.buttons);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-card rounded-2xl border border-black/5 w-full max-w-sm shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
-          <h3 className="font-bold text-[#1c1410]">Preview</h3>
+      <div className="bg-card rounded-2xl border border-[var(--hairline)] w-full max-w-sm shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)]">
+          <h3 className="font-bold text-[#111318]">Preview</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--accent-tint)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5">
-          <div className="bg-[#e5ddd5] rounded-2xl p-4 min-h-40">
+          <div className="bg-[#e5e7eb] rounded-2xl p-4 min-h-40">
             <div className="bg-white rounded-2xl rounded-tl-sm p-3 max-w-[85%] shadow-sm">
               {template.file_name && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 rounded-lg px-2 py-1.5 mb-2">
+                <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground bg-muted/30 rounded-lg px-2 py-1.5 mb-2">
                   {fileIcon(template.file_type)}
                   <span className="truncate">{template.file_name}</span>
                 </div>
               )}
-              {template.header && <p className="font-semibold text-sm text-gray-900 mb-1">{template.header}</p>}
-              <p className="text-sm text-gray-800 whitespace-pre-line">{template.body.replace(/{%(\w+)%}/g, (_, k) => `[${k}]`)}</p>
-              {template.footer && <p className="text-xs text-gray-500 mt-1.5">{template.footer}</p>}
-              <p className="text-[10px] text-gray-400 mt-1 text-right">10:30 AM</p>
+              {template.header && <p className="font-semibold text-[15px] text-gray-900 mb-1">{template.header}</p>}
+              <p className="text-[15px] text-gray-800 whitespace-pre-line">{template.body.replace(/{%(\w+)%}/g, (_, k) => `[${k}]`)}</p>
+              {template.footer && <p className="text-[13px] text-gray-500 mt-1.5">{template.footer}</p>}
+              <p className="text-[11px] text-gray-400 mt-1 text-right">10:30 AM</p>
             </div>
             {btns.length > 0 && (
               <div className="mt-2 space-y-1.5">
                 {btns.map((btn) => (
-                  <div key={btn.id} className="bg-white rounded-xl py-2 text-center text-sm font-medium text-blue-600 shadow-sm">{btn.label}</div>
+                  <div key={btn.id} className="bg-white rounded-xl py-2 text-center text-[15px] font-medium text-blue-600 shadow-sm">{btn.label}</div>
                 ))}
               </div>
             )}
@@ -822,12 +822,12 @@ export default function AutomationTemplatesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-[#1c1410] transition-colors shrink-0">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-[#111318] transition-colors shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-[#1c1410]">Templates</h1>
-            <p className="text-sm text-[#7a6b5c]">Reusable message templates for WhatsApp, Email and SMS</p>
+            <h1 className="text-xl font-bold text-[#111318]">Templates</h1>
+            <p className="text-[15px] text-[#6b7280]">Reusable message templates for WhatsApp, Email and SMS</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -850,25 +850,25 @@ export default function AutomationTemplatesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-black/5">
+      <div className="flex gap-1 border-b border-[var(--hairline)] overflow-x-auto">
         {tabs.map((t) => (
-          <button key={t.key} onClick={() => handleTabChange(t.key)} className={cn('px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5', tab === t.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
+          <button key={t.key} onClick={() => handleTabChange(t.key)} className={cn('px-4 py-2.5 text-[15px] font-medium border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0', tab === t.key ? 'border-primary text-primary' : 'border-transparent text-[#6b7280] hover:text-[#111318]')}>
             {t.label}
-            <span className={cn('text-xs rounded-full px-1.5 py-0.5', tab === t.key ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>{t.count}</span>
+            <span className={cn('text-[13px] rounded-full px-1.5 py-0.5', tab === t.key ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>{t.count}</span>
           </button>
         ))}
       </div>
 
       {/* Category filter for WABA tab */}
       {tab === 'waba' && wabaAll.length > 0 && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[#7a6b5c] font-medium">Category:</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[13px] text-[#6b7280] font-medium">Category:</span>
           {['all', ...WABA_CATS].map((c) => {
             const count = c === 'all' ? wabaAll.length : wabaAll.filter((t) => t.category === c).length;
             return (
               <button key={c} onClick={() => setCatFilter(c)}
-                className={cn('px-2.5 py-1 text-xs rounded-full border transition-colors',
-                  catFilter === c ? 'bg-primary text-white border-primary' : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/30')}>
+                className={cn('px-2.5 py-1 text-[13px] rounded-full border transition active:scale-[0.98]',
+                  catFilter === c ? 'bg-primary text-white border-primary' : 'bg-[var(--surface-2)] text-[#6b7280] border-[var(--hairline)] hover:text-[#111318]')}>
                 {c === 'all' ? 'All' : c.charAt(0) + c.slice(1).toLowerCase()} ({count})
               </button>
             );
@@ -886,7 +886,7 @@ export default function AutomationTemplatesPage() {
               <FileText className="w-7 h-7 text-muted-foreground" />
             </div>
             <p className="font-semibold text-foreground">{emptyLabel.wa_personal}</p>
-            <p className="text-sm text-muted-foreground max-w-sm">{emptyDesc.wa_personal}</p>
+            <p className="text-[15px] text-muted-foreground max-w-sm">{emptyDesc.wa_personal}</p>
             {canManage && (
               <Button onClick={() => navigate('/automation/templates/wa-personal/new')}>
                 <Plus className="w-4 h-4 mr-1" />Create First Template
@@ -896,19 +896,19 @@ export default function AutomationTemplatesPage() {
         ) : (
           <div className="space-y-3">
             {waPersonalTemplates.map((t) => (
-              <div key={t.id} className="bg-white rounded-2xl border border-black/5 p-4 hover:shadow-md transition-all">
+              <div key={t.id} className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover p-4 transition">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-bold text-[#1c1410]">{t.name}</p>
+                      <p className="text-[15px] font-bold text-[#111318]">{t.name}</p>
                       {t.file_name && (
-                        <span className="flex items-center gap-1 text-[11px] text-teal-700 bg-teal-50 border border-teal-100 px-1.5 py-0.5 rounded-md">
+                        <span className="flex items-center gap-1 text-[12px] text-teal-700 bg-teal-50 border border-teal-100 px-1.5 py-0.5 rounded-md">
                           {fileIcon(t.file_type)}
                           <span className="max-w-[130px] truncate">{t.file_name}</span>
                         </span>
                       )}
                     </div>
-                    <p className="text-[14px] text-[#7a6b5c] mt-1 line-clamp-2 whitespace-pre-line">{t.message}</p>
+                    <p className="text-[15px] text-[#6b7280] mt-1 line-clamp-2 whitespace-pre-line">{t.message}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <button onClick={() => { copyToClipboard(t.name); toast.success('Template name copied'); }} className="p-1.5 rounded-md hover:bg-[var(--accent-tint)] text-muted-foreground hover:text-foreground transition-colors" title="Copy name"><Copy className="w-4 h-4" /></button>
@@ -928,7 +928,7 @@ export default function AutomationTemplatesPage() {
               <FileText className="w-7 h-7 text-muted-foreground" />
             </div>
             <p className="font-semibold text-foreground">{emptyLabel[tab]}</p>
-            <p className="text-sm text-muted-foreground max-w-sm">{emptyDesc[tab]}</p>
+            <p className="text-[15px] text-muted-foreground max-w-sm">{emptyDesc[tab]}</p>
             {canManage && (
               <Button onClick={() => {
                 if (tab === 'wa_personal') navigate('/automation/templates/wa-personal/new');
@@ -944,19 +944,19 @@ export default function AutomationTemplatesPage() {
             {current.map((t) => {
               const btns = parseButtons(t.buttons);
               return (
-                <div key={t.id} className="bg-white rounded-2xl border border-black/5 p-4 hover:shadow-md transition-all">
+                <div key={t.id} className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover p-4 transition">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={cn('text-sm font-bold text-[#1c1410]', tab === 'waba' && t.meta_name && 'font-mono')}>{t.name}</p>
+                        <p className={cn('text-[15px] font-bold text-[#111318]', tab === 'waba' && t.meta_name && 'font-mono')}>{t.name}</p>
                         {tab === 'waba' && t.meta_name && (
-                          <Badge className="border-0 text-[10px] bg-emerald-50 text-emerald-700">Synced</Badge>
+                          <Badge className="border-0 text-[11px] bg-emerald-50 text-emerald-700">Synced</Badge>
                         )}
                         {tab === 'waba' && !t.meta_name && (
-                          <Badge className="border-0 text-[10px] bg-gray-100 text-gray-500">Local</Badge>
+                          <Badge className="border-0 text-[11px] bg-gray-100 text-gray-500">Local</Badge>
                         )}
                         {tab === 'waba' && t.category && !['EMAIL','SMS'].includes(t.category) && (
-                          <Badge className={cn('border-0 text-xs', catColor[t.category] ?? 'bg-gray-100 text-gray-700')}>{t.category}</Badge>
+                          <Badge className={cn('border-0 text-[13px]', catColor[t.category] ?? 'bg-gray-100 text-gray-700')}>{t.category}</Badge>
                         )}
                         {tab === 'waba' && (() => {
                           const cooldownMs = t.last_meta_edit_at ? 24 * 60 * 60 * 1000 - (Date.now() - new Date(t.last_meta_edit_at).getTime()) : 0;
@@ -965,41 +965,41 @@ export default function AutomationTemplatesPage() {
                             : t.status === 'pending' ? 'Approval Pending'
                             : t.status;
                           return <>
-                            <Badge className={cn('border-0 text-xs capitalize', statusColor[t.status] ?? 'bg-gray-100 text-gray-700')}>
+                            <Badge className={cn('border-0 text-[13px] capitalize', statusColor[t.status] ?? 'bg-gray-100 text-gray-700')}>
                               {label}
                             </Badge>
                             {onCooldown && t.status !== 'pending' && (
-                              <span className="text-[10px] text-amber-600" title="Meta allows editing once per 24 hours">
+                              <span className="text-[11px] text-amber-600" title="Meta allows editing once per 24 hours">
                                 {cooldownMs > 3600000 ? `${Math.ceil(cooldownMs / 3600000)}h cooldown` : `${Math.ceil(cooldownMs / 60000)}m cooldown`}
                               </span>
                             )}
                           </>;
                         })()}
-                        {tab === 'waba' && t.language && <span className="text-[11px] text-[#7a6b5c] uppercase">{t.language}</span>}
+                        {tab === 'waba' && t.language && <span className="text-[12px] text-[#6b7280] uppercase">{t.language}</span>}
                         {t.file_name && (
-                          <span className="flex items-center gap-1 text-[11px] text-teal-700 bg-teal-50 border border-teal-100 px-1.5 py-0.5 rounded-md">
+                          <span className="flex items-center gap-1 text-[12px] text-teal-700 bg-teal-50 border border-teal-100 px-1.5 py-0.5 rounded-md">
                             {fileIcon(t.file_type)}
                             <span className="max-w-[130px] truncate">{t.file_name}</span>
                           </span>
                         )}
                       </div>
                       {tab === 'email' && t.subject && (
-                        <p className="text-[11px] text-[#7a6b5c] mt-0.5 font-medium">Subject: {t.subject}</p>
+                        <p className="text-[12px] text-[#6b7280] mt-0.5 font-medium">Subject: {t.subject}</p>
                       )}
-                      {tab === 'waba' && t.meta_name && <p className="text-[11px] text-[#7a6b5c] mt-0.5 font-mono">Meta: {t.meta_name}</p>}
-                      {tab === 'waba' && t.header && <p className="text-sm font-semibold text-[#1c1410] mt-2">{t.header}</p>}
-                      <p className="text-[14px] text-[#7a6b5c] mt-1 line-clamp-2 whitespace-pre-line">{t.body}</p>
+                      {tab === 'waba' && t.meta_name && <p className="text-[12px] text-[#6b7280] mt-0.5 font-mono">Meta: {t.meta_name}</p>}
+                      {tab === 'waba' && t.header && <p className="text-[15px] font-semibold text-[#111318] mt-2">{t.header}</p>}
+                      <p className="text-[15px] text-[#6b7280] mt-1 line-clamp-2 whitespace-pre-line">{t.body}</p>
                       {tab === 'waba' && btns.length > 0 && (
                         <div className="flex gap-2 mt-2 flex-wrap">
                           {btns.map((btn) => (
-                            <span key={btn.id} className={cn('inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border font-medium', btn.type === 'QUICK_REPLY' ? 'border-primary/30 text-primary bg-primary/5' : 'border-blue-200 text-blue-600 bg-blue-50')}>
+                            <span key={btn.id} className={cn('inline-flex items-center gap-1 text-[13px] px-2.5 py-1 rounded-lg border font-medium', btn.type === 'QUICK_REPLY' ? 'border-primary/30 text-primary bg-primary/5' : 'border-blue-200 text-blue-600 bg-blue-50')}>
                               {btn.type === 'URL' ? <LinkIcon className="w-3 h-3" /> : btn.type === 'PHONE_NUMBER' ? <Phone className="w-3 h-3" /> : null}{btn.label}
                             </span>
                           ))}
                         </div>
                       )}
                       {tab === 'sms' && (
-                        <p className="text-[11px] text-[#7a6b5c] mt-1">{t.body.length}/160 chars · {t.body.length > 160 ? '2 SMS' : '1 SMS'}</p>
+                        <p className="text-[12px] text-[#6b7280] mt-1">{t.body.length}/160 chars · {t.body.length > 160 ? '2 SMS' : '1 SMS'}</p>
                       )}
                     </div>
                     <div className="flex gap-1 shrink-0">

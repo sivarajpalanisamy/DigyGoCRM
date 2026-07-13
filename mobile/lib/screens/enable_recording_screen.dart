@@ -87,7 +87,7 @@ class _EnableRecordingScreenState extends State<EnableRecordingScreen> with Widg
                 const Text(
                   'Android does not allow apps to record calls directly. Recording '
                   'is done by your phone\'s own call recorder. Turn it on once, and '
-                  'DigyGo will automatically attach each recording to its call in the CRM.',
+                  'Hawcus will automatically attach each recording to its call in the CRM.',
                   style: TextStyle(color: Brand.muted, fontSize: 13, height: 1.45),
                 ),
                 const SizedBox(height: 22),
@@ -108,13 +108,13 @@ class _EnableRecordingScreenState extends State<EnableRecordingScreen> with Widg
                 const SizedBox(height: 24),
 
                 // Step 2 - file access (so we can read the recordings)
-                _sectionHeader('2', 'Allow DigyGo to read recordings'),
+                _sectionHeader('2', 'Allow Hawcus to read recordings'),
                 const SizedBox(height: 8),
                 if (_fileAccess)
                   _inlineStatus(true, 'File access granted')
                 else ...[
                   const Text(
-                    'DigyGo needs file access to read the recordings your phone saves, '
+                    'Hawcus needs file access to read the recordings your phone saves, '
                     'so it can upload them to the CRM.',
                     style: TextStyle(color: Brand.muted, fontSize: 13, height: 1.45),
                   ),
@@ -153,7 +153,7 @@ class _EnableRecordingScreenState extends State<EnableRecordingScreen> with Widg
             ? 'Almost there'
             : 'Call recording not set up';
     final msg = ok
-        ? 'Your phone is recording calls and DigyGo can read them ($_fileCount found). New calls will sync automatically.'
+        ? 'Your phone is recording calls and Hawcus can read them ($_fileCount found). New calls will sync automatically.'
         : partial
             ? 'File access is granted but no recordings were found yet. Make sure automatic call recording is turned ON (Step 1), then make a test call.'
             : 'Follow the steps below to start capturing call recordings.';

@@ -11,8 +11,8 @@ class PrivacyScreen extends StatefulWidget {
   final Future<void> Function() onAgree;
 
   // Hosted policy/terms - update to your live URLs.
-  static const privacyUrl = 'https://digygo.in/privacy';
-  static const termsUrl = 'https://digygo.in/terms';
+  static const privacyUrl = 'https://app.hawcus.com/privacy-policy.html';
+  static const termsUrl = 'https://app.hawcus.com/privacy-policy.html';
 
   @override
   State<PrivacyScreen> createState() => _PrivacyScreenState();
@@ -76,7 +76,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                     body:
                         '• Call logs and recordings are synced to your company\'s CRM so your '
                         'team can track and review calls with leads.\n'
-                        '• Data is sent securely to your organisation\'s DigyGo workspace and is '
+                        '• Data is sent securely to your organisation\'s Hawcus workspace and is '
                         'visible only to your authorised admins.\n'
                         '• We do not sell your data or share it with third parties.',
                   ),

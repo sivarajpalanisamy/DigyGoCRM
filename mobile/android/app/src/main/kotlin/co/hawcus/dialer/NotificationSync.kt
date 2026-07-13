@@ -1,4 +1,4 @@
-package co.digygo.digygo_dialer
+package co.hawcus.dialer
 
 import android.app.Notification
 import android.app.NotificationChannel

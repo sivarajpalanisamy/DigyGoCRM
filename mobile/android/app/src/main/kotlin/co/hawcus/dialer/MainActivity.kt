@@ -1,4 +1,4 @@
-package co.digygo.digygo_dialer
+package co.hawcus.dialer
 
 import android.Manifest
 import android.app.role.RoleManager
@@ -32,7 +32,7 @@ import io.flutter.plugin.common.MethodChannel
  */
 class MainActivity : FlutterActivity() {
 
-    private val channel = "digygo/dialer"
+    private val channel = "hawcus/dialer"
     private val reqDefaultDialer = 4101
     private var pendingResult: MethodChannel.Result? = null
     private var methodChannel: MethodChannel? = null
@@ -95,7 +95,7 @@ class MainActivity : FlutterActivity() {
         }
 
         // Call-state stream → Flutter
-        EventChannel(flutterEngine.dartExecutor.binaryMessenger, "digygo/call_events")
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, "hawcus/call_events")
             .setStreamHandler(object : EventChannel.StreamHandler {
                 override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
                     CallManager.setEventSink(events)

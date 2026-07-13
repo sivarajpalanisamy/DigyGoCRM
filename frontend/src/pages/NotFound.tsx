@@ -16,13 +16,13 @@ const NotFound = () => {
         <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
           <span className="font-headline text-3xl font-extrabold text-primary">404</span>
         </div>
-        <h1 className="font-headline text-[28px] font-extrabold text-[#1c1410] mb-2">Page not found</h1>
-        <p className="text-[15px] text-[#7a6b5c] mb-8 max-w-[280px] mx-auto">
+        <h1 className="font-headline text-[28px] font-extrabold text-[#111318] mb-2">Page not found</h1>
+        <p className="text-[16px] text-[#6b7280] mb-8 max-w-[280px] mx-auto">
           The page you're looking for doesn't exist or has been moved.
         </p>
         <button
           onClick={() => navigate('/dashboard')}
-          className="px-6 py-3 rounded-xl text-white text-sm font-semibold active:scale-[0.97] transition-all shadow-lg shadow-primary/20"
+          className="px-6 py-3 rounded-xl text-white text-[15px] font-semibold active:scale-[0.97] transition-all shadow-lg shadow-primary/20"
           style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
         >
           Back to Dashboard

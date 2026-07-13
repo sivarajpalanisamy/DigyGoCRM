@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserSquare, MessageSquare, Calendar, BarChart3,
-  Settings, Zap, Phone, UserCog, Megaphone, ListChecks, User,
+  Settings, Workflow, Phone, UserCog, Megaphone, ListChecks, User,
 } from 'lucide-react';
 import {
   CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem,
@@ -21,7 +21,7 @@ const NAV: { label: string; path: string; icon: typeof Users }[] = [
   { label: 'Calendar', path: '/calendar', icon: Calendar },
   { label: 'Calls', path: '/calls', icon: Phone },
   { label: 'Reports', path: '/reports', icon: BarChart3 },
-  { label: 'Automation', path: '/automation/workflows', icon: Zap },
+  { label: 'Automation', path: '/automation/workflows', icon: Workflow },
   { label: 'Broadcast', path: '/automation/waba-broadcast', icon: Megaphone },
   { label: 'Staff', path: '/staff', icon: UserCog },
   { label: 'Settings', path: '/settings', icon: Settings },
@@ -77,7 +77,7 @@ export default function CommandPalette() {
         <CommandGroup heading="Go to">
           {NAV.map((n) => (
             <CommandItem key={n.path} value={`nav ${n.label}`} onSelect={() => go(n.path)}>
-              <n.icon className="mr-2 h-4 w-4 text-[#7a6b5c]" />
+              <n.icon className="mr-2 h-4 w-4 text-[#6b7280]" />
               <span>{n.label}</span>
             </CommandItem>
           ))}
@@ -91,9 +91,9 @@ export default function CommandPalette() {
                 value={`lead ${l.name ?? ''} ${l.phone ?? ''} ${l.email ?? ''} ${l.id}`}
                 onSelect={() => go(`/leads?highlight=${l.id}`)}
               >
-                <User className="mr-2 h-4 w-4 text-[#7a6b5c]" />
+                <User className="mr-2 h-4 w-4 text-[#6b7280]" />
                 <span className="truncate">{l.name || 'Unnamed lead'}</span>
-                {l.phone && <span className="ml-2 text-xs text-muted-foreground truncate">{l.phone}</span>}
+                {l.phone && <span className="ml-2 text-[13px] text-muted-foreground truncate">{l.phone}</span>}
               </CommandItem>
             ))}
           </CommandGroup>

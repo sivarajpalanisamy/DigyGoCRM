@@ -55,8 +55,10 @@ export function derivePalette(hex: string) {
     brand:      hex,
     brandDark:  shade(hex, -0.14),    // gradients, hover, headings
     brandLight: shade(hex, 0.10),     // gradient end
-    accentTint: mixWhite(hex, 0.90),  // soft hover / selected backgrounds
-    appBg:      mixWhite(hex, 0.96),  // subtle brand-tinted app background
+    // Cool neutral surfaces (design system) - the brand color stays the accent,
+    // but backgrounds/hovers are neutral grey, not brand-tinted, so the UI reads clean.
+    accentTint: '#eef1f4',  // soft neutral hover / selected background
+    appBg:      '#eceef1',  // neutral app background
   };
 }
 

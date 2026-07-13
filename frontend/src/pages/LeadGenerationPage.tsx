@@ -77,21 +77,21 @@ function KpiCard({ label, value, sub, icon: Icon, accent = false }: {
         <Icon className="w-4 h-4 text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] opacity-75 truncate">{label}</p>
+        <p className="text-[12px] opacity-75 truncate">{label}</p>
         <h3 className="font-headline text-[22px] font-bold leading-tight">{value}</h3>
-        {sub && <p className="text-[10px] opacity-65 truncate mt-0.5">{sub}</p>}
+        {sub && <p className="text-[11px] opacity-65 truncate mt-0.5">{sub}</p>}
       </div>
     </div>
   );
   return (
-    <div className="bg-white rounded-xl px-4 py-3 flex items-center gap-3 card-shadow border border-black/5">
+    <div className="bg-white rounded-2xl px-4 py-3 flex items-center gap-3 card-shadow border border-[var(--hairline)]">
       <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
         <Icon className="w-4 h-4 text-primary" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] text-[#7a6b5c] truncate">{label}</p>
-        <h3 className="font-headline text-[22px] font-bold text-[#1c1410] leading-tight">{value}</h3>
-        {sub && <p className="text-[10px] text-[#9a8a7a] truncate mt-0.5">{sub}</p>}
+        <p className="text-[12px] text-[#6b7280] truncate">{label}</p>
+        <h3 className="font-headline text-[22px] font-bold text-[#111318] leading-tight">{value}</h3>
+        {sub && <p className="text-[11px] text-[#8b929c] truncate mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -153,23 +153,23 @@ function ExpandedRow({ form }: { form: FormRow }) {
   const hasData  = data && data.sparkline.some(d => d.count > 0);
 
   return (
-    <div className="px-4 py-4 bg-[var(--app-bg)] border-t border-black/[0.06]">
+    <div className="px-4 py-4 bg-[var(--app-bg)] border-t border-[var(--hairline)]">
       <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4">
 
         {/* Sparkline */}
-        <div className="bg-white rounded-xl border border-black/5 p-4">
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider">Lead Inflow</p>
+            <p className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider">Lead Inflow</p>
             {/* Period picker */}
-            <div className="flex items-center gap-1 bg-[#f5f0eb] rounded-lg p-0.5">
+            <div className="flex items-center gap-1 bg-[var(--surface-2)] rounded-lg p-0.5">
               {SPARK_PERIODS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => setPeriod(opt.value)}
-                  className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
                     period === opt.value
-                      ? 'bg-white text-[#1c1410] shadow-sm'
-                      : 'text-[#9a8a7a] hover:text-[#1c1410]'
+                      ? 'bg-white text-[#111318] shadow-sm'
+                      : 'text-[#8b929c] hover:text-[#111318]'
                   }`}
                 >
                   {opt.label}
@@ -179,34 +179,34 @@ function ExpandedRow({ form }: { form: FormRow }) {
           </div>
 
           {loading ? (
-            <div className="h-[100px] bg-[#f5f0eb] rounded-lg animate-pulse" />
+            <div className="h-[100px] bg-[var(--surface-2)] rounded-lg animate-pulse" />
           ) : !hasData ? (
-            <p className="text-[13px] text-[#b09e8d] py-6 text-center">No leads in this period.</p>
+            <p className="text-[14px] text-[#9ca3af] py-6 text-center">No leads in this period.</p>
           ) : (
             <ResponsiveContainer width="100%" height={100}>
               <BarChart data={data!.sparkline} barSize={period === 'all' ? 18 : period === 'month' ? 8 : 20}>
                 <XAxis
                   dataKey="day"
-                  tick={{ fontSize: 9, fill: '#9a8a7a' }}
+                  tick={{ fontSize: 9, fill: '#8b929c' }}
                   tickFormatter={tickFmt}
                   axisLine={false} tickLine={false}
                   interval={period === 'month' ? Math.floor((data!.sparkline.length) / 6) : 0}
                 />
                 <YAxis hide allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ borderRadius: 8, border: 'none', background: '#1c1410', color: '#fff', fontSize: 11 }}
+                  contentStyle={{ borderRadius: 8, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }}
                   labelFormatter={tooltipFmt}
                   formatter={(v) => [v, 'Leads']}
                 />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {data!.sparkline.map((entry, i) => (
-                    <Cell key={i} fill={entry.count > 0 ? brandHex() : '#f0ece8'} />
+                    <Cell key={i} fill={entry.count > 0 ? brandHex() : '#eceef1'} />
                   ))}
                   <LabelList
                     dataKey="count"
                     position="top"
                     formatter={(v: number) => (v > 0 ? v : '')}
-                    style={{ fontSize: 10, fontWeight: 700, fill: '#1c1410' }}
+                    style={{ fontSize: 10, fontWeight: 700, fill: '#111318' }}
                   />
                 </Bar>
               </BarChart>
@@ -215,14 +215,14 @@ function ExpandedRow({ form }: { form: FormRow }) {
         </div>
 
         {/* Recent leads */}
-        <div className="bg-white rounded-xl border border-black/5 p-4">
-          <p className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-3">Recent Leads</p>
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-4">
+          <p className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider mb-3">Recent Leads</p>
           {!data ? (
             <div className="space-y-2">
-              {[1, 2, 3].map(i => <div key={i} className="h-8 bg-[#f5f0eb] rounded-lg animate-pulse" />)}
+              {[1, 2, 3].map(i => <div key={i} className="h-8 bg-[var(--surface-2)] rounded-lg animate-pulse" />)}
             </div>
           ) : data.recent_leads.length === 0 ? (
-            <p className="text-[13px] text-[#b09e8d] py-4 text-center">No leads yet from this form.</p>
+            <p className="text-[14px] text-[#9ca3af] py-4 text-center">No leads yet from this form.</p>
           ) : (
             <div className="space-y-1.5">
               {data.recent_leads.map(lead => (
@@ -231,15 +231,15 @@ function ExpandedRow({ form }: { form: FormRow }) {
                   onClick={() => navigate('/leads')}
                   className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-[var(--app-bg)] transition-colors cursor-pointer"
                 >
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
                     style={{ background: 'linear-gradient(135deg,var(--brand-dark),var(--brand-light))' }}>
                     {(lead.name ?? '?')[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-[#1c1410] truncate">{lead.name}</p>
-                    <p className="text-[10px] text-[#9a8a7a] truncate">{lead.phone || lead.email || '-'}</p>
+                    <p className="text-[14px] font-semibold text-[#111318] truncate">{lead.name}</p>
+                    <p className="text-[11px] text-[#8b929c] truncate">{lead.phone || lead.email || '-'}</p>
                   </div>
-                  <span className="text-[10px] text-[#b09e8d] shrink-0 whitespace-nowrap">
+                  <span className="text-[11px] text-[#9ca3af] shrink-0 whitespace-nowrap">
                     {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
                   </span>
                 </div>
@@ -251,22 +251,22 @@ function ExpandedRow({ form }: { form: FormRow }) {
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-3 mt-3">
-        <button onClick={() => navigate('/leads')} className="flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:opacity-70 transition-opacity">
+        <button onClick={() => navigate('/leads')} className="flex items-center gap-1.5 text-[14px] font-semibold text-primary hover:opacity-70 transition-opacity">
           <ExternalLink className="w-3.5 h-3.5" /> View Leads
         </button>
         {form.channel === 'custom' && form.slug && (
-          <button onClick={copyLink} className="flex items-center gap-1.5 text-[13px] font-semibold text-[#7a6b5c] hover:text-primary transition-colors">
+          <button onClick={copyLink} className="flex items-center gap-1.5 text-[14px] font-semibold text-[#6b7280] hover:text-primary transition-colors">
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? 'Copied!' : 'Copy Link'}
           </button>
         )}
         {form.channel === 'meta' && (
-          <button onClick={() => navigate('/lead-generation/meta-forms')} className="flex items-center gap-1.5 text-[13px] font-semibold text-[#7a6b5c] hover:text-primary transition-colors">
+          <button onClick={() => navigate('/lead-generation/meta-forms')} className="flex items-center gap-1.5 text-[14px] font-semibold text-[#6b7280] hover:text-primary transition-colors">
             <RefreshCw className="w-3.5 h-3.5" /> Meta Forms
           </button>
         )}
         {form.channel === 'custom' && (
-          <button onClick={() => navigate('/lead-generation/custom-forms')} className="flex items-center gap-1.5 text-[13px] font-semibold text-[#7a6b5c] hover:text-primary transition-colors">
+          <button onClick={() => navigate('/lead-generation/custom-forms')} className="flex items-center gap-1.5 text-[14px] font-semibold text-[#6b7280] hover:text-primary transition-colors">
             <ArrowRight className="w-3.5 h-3.5" /> Edit Form
           </button>
         )}
@@ -284,7 +284,7 @@ function SortBtn({ col, current, dir, onSort, children }: {
   return (
     <button
       onClick={() => onSort(col)}
-      className={`flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors ${active ? 'text-primary' : 'text-[#b09e8d] hover:text-[#7a6b5c]'}`}
+      className={`flex items-center gap-0.5 text-[11px] font-bold uppercase tracking-wide transition-colors ${active ? 'text-primary' : 'text-[#9ca3af] hover:text-[#6b7280]'}`}
     >
       {children}
       {active && (dir === 'desc' ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />)}
@@ -360,17 +360,17 @@ export default function LeadGenerationPage() {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-4">
-        <h2 className="font-headline text-[22px] font-extrabold tracking-tight text-[#1c1410]">Lead Generation</h2>
+        <h2 className="font-headline text-[22px] font-extrabold tracking-tight text-[#111318]">Lead Generation</h2>
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/lead-generation/meta-forms')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/10 bg-white text-[13px] font-semibold text-[#1c1410] hover:border-primary/40 transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--hairline)] bg-white text-[14px] font-semibold text-[#111318] hover:bg-[var(--surface-2)] active:scale-[0.98] transition shadow-sm"
           >
             <Facebook className="w-3.5 h-3.5 text-blue-500" /> Meta Forms
           </button>
           <button
             onClick={() => navigate('/lead-generation/custom-forms')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-semibold text-white transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[14px] font-semibold text-white active:scale-[0.98] transition shadow-sm"
             style={{ background: 'linear-gradient(135deg,var(--brand-dark),var(--brand-light))' }}
           >
             <FileText className="w-3.5 h-3.5" /> New Form
@@ -382,7 +382,7 @@ export default function LeadGenerationPage() {
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl px-4 py-3 h-16 animate-pulse border border-black/5 card-shadow" />
+            <div key={i} className="bg-white rounded-2xl px-4 py-3 h-16 animate-pulse border border-[var(--hairline)] card-shadow" />
           ))}
         </div>
       ) : summary && (
@@ -402,21 +402,21 @@ export default function LeadGenerationPage() {
 
 
       {/* ── Table ── */}
-      <div className="bg-white rounded-2xl border border-black/5 card-shadow overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 pt-4 pb-3 border-b border-black/[0.06]">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 pt-4 pb-3 border-b border-[var(--hairline)]">
           {/* Tabs */}
-          <div className="flex items-center gap-1 bg-[#f5f0eb] rounded-lg p-0.5">
+          <div className="flex items-center gap-1 bg-[var(--surface-2)] rounded-lg p-0.5">
             {(['all', 'meta', 'custom'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-3 py-1.5 rounded-md text-[13px] font-semibold transition-colors capitalize ${
-                  tab === t ? 'bg-white text-[#1c1410] shadow-sm' : 'text-[#7a6b5c] hover:text-[#1c1410]'
+                className={`px-3 py-1.5 rounded-md text-[14px] font-semibold transition-colors capitalize ${
+                  tab === t ? 'bg-white text-[#111318] shadow-sm' : 'text-[#6b7280] hover:text-[#111318]'
                 }`}
               >
                 {t === 'all' ? 'All' : t === 'meta' ? 'Meta Forms' : 'Custom Forms'}
-                <span className="ml-1.5 text-[10px] text-[#b09e8d]">
+                <span className="ml-1.5 text-[11px] text-[#9ca3af]">
                   {tabCounts[t]}
                 </span>
               </button>
@@ -425,24 +425,25 @@ export default function LeadGenerationPage() {
 
           {/* Search */}
           <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search forms…"
-              className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-black/10 rounded-lg outline-none focus:border-primary/40 bg-white"
+              className="w-full pl-8 pr-3 py-1.5 text-[14px] border border-[var(--hairline)] rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white"
             />
           </div>
 
-          <button onClick={load} className="ml-auto text-[#b09e8d] hover:text-primary transition-colors shrink-0">
+          <button onClick={load} className="ml-auto text-[#9ca3af] hover:text-primary transition-colors shrink-0">
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
 
         {/* Column headers */}
-        <div className="grid grid-cols-[2fr_1fr_60px_60px_80px_110px_40px] gap-2 items-center px-4 py-2 border-b border-black/[0.04] bg-[var(--app-bg)]">
+        <div className="overflow-x-auto">
+        <div className="grid grid-cols-[2fr_1fr_60px_60px_80px_110px_40px] min-w-[640px] gap-2 items-center px-4 py-2 border-b border-[var(--hairline)] bg-[var(--surface-2)]">
           <SortBtn col="name"         current={sortBy} dir={sortDir} onSort={handleSort}>Form</SortBtn>
-          <span className="text-[10px] font-bold uppercase tracking-wide text-[#b09e8d]">Status</span>
+          <span className="text-[11px] font-bold uppercase tracking-wide text-[#9ca3af]">Status</span>
           <SortBtn col="leads_today"  current={sortBy} dir={sortDir} onSort={handleSort}>Today</SortBtn>
           <SortBtn col="leads_week"   current={sortBy} dir={sortDir} onSort={handleSort}>Week</SortBtn>
           <SortBtn col="leads_month"  current={sortBy} dir={sortDir} onSort={handleSort}>Month</SortBtn>
@@ -452,24 +453,24 @@ export default function LeadGenerationPage() {
 
         {/* Rows */}
         {loading ? (
-          <div className="divide-y divide-black/[0.04]">
+          <div className="divide-y divide-[var(--hairline)]">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="px-4 py-3 flex items-center gap-3">
-                <div className="flex-1 h-4 bg-[#f0ece8] rounded animate-pulse" />
-                <div className="w-16 h-4 bg-[#f0ece8] rounded animate-pulse" />
-                <div className="w-10 h-4 bg-[#f0ece8] rounded animate-pulse" />
+                <div className="flex-1 h-4 bg-[#eceef1] rounded animate-pulse" />
+                <div className="w-16 h-4 bg-[#eceef1] rounded animate-pulse" />
+                <div className="w-10 h-4 bg-[#eceef1] rounded animate-pulse" />
               </div>
             ))}
           </div>
         ) : filteredForms.length === 0 ? (
           <div className="py-16 text-center">
-            <Zap className="w-8 h-8 text-[#e8d5c4] mx-auto mb-2" />
-            <p className="text-[14px] text-[#b09e8d]">
+            <Zap className="w-8 h-8 text-[#e5e7eb] mx-auto mb-2" />
+            <p className="text-[15px] text-[#9ca3af]">
               {search ? 'No forms match your search.' : 'No forms yet - connect Meta or create a custom form.'}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-black/[0.04]">
+          <div className="divide-y divide-[var(--hairline)]">
             {filteredForms.map(form => {
               const badge    = statusBadge(form.channel, form.status);
               const expanded = expandedId === form.id;
@@ -478,7 +479,7 @@ export default function LeadGenerationPage() {
                 <div key={form.id}>
                   <div
                     onClick={() => handleExpand(form)}
-                    className="grid grid-cols-[2fr_1fr_60px_60px_80px_110px_40px] gap-2 items-center px-4 py-3 hover:bg-[var(--app-bg)] cursor-pointer transition-colors"
+                    className="grid grid-cols-[2fr_1fr_60px_60px_80px_110px_40px] min-w-[640px] gap-2 items-center px-4 py-3 hover:bg-[var(--app-bg)] cursor-pointer transition-colors"
                   >
                     {/* Name + channel */}
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -489,35 +490,35 @@ export default function LeadGenerationPage() {
                         }
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[14px] font-semibold text-[#1c1410] truncate">
+                        <p className="text-[15px] font-semibold text-[#111318] truncate">
                           {form.name}
                         </p>
                         {form.page_name && (
-                          <p className="text-[10px] text-[#9a8a7a] truncate">{form.page_name}</p>
+                          <p className="text-[11px] text-[#8b929c] truncate">{form.page_name}</p>
                         )}
                       </div>
                     </div>
 
                     {/* Status */}
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold w-fit ${badge.cls}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold w-fit ${badge.cls}`}>
                       {badge.label}
                     </span>
 
                     {/* Counts */}
-                    <span className="text-[14px] font-semibold text-[#1c1410] text-right">{form.leads_today}</span>
-                    <span className="text-[14px] font-semibold text-[#1c1410] text-right">{form.leads_week}</span>
-                    <span className="text-[14px] font-bold text-primary text-right">{form.leads_month}</span>
+                    <span className="text-[15px] font-semibold text-[#111318] text-right">{form.leads_today}</span>
+                    <span className="text-[15px] font-semibold text-[#111318] text-right">{form.leads_week}</span>
+                    <span className="text-[15px] font-bold text-primary text-right">{form.leads_month}</span>
 
                     {/* Last lead */}
-                    <span className="text-[11px] truncate flex items-center gap-1 text-[#9a8a7a]">
+                    <span className="text-[12px] truncate flex items-center gap-1 text-[#8b929c]">
                       {form.last_lead_at && <Clock className="w-3 h-3 shrink-0" />}
                       {lastLeadLabel(form.last_lead_at)}
                     </span>
 
                     {/* Expand toggle */}
                     {expanded
-                      ? <ChevronUp className="w-4 h-4 text-[#b09e8d] justify-self-end" />
-                      : <ChevronDown className="w-4 h-4 text-[#b09e8d] justify-self-end" />
+                      ? <ChevronUp className="w-4 h-4 text-[#9ca3af] justify-self-end" />
+                      : <ChevronDown className="w-4 h-4 text-[#9ca3af] justify-self-end" />
                     }
                   </div>
 
@@ -527,11 +528,12 @@ export default function LeadGenerationPage() {
             })}
           </div>
         )}
+        </div>
 
         {/* Footer count */}
         {!loading && filteredForms.length > 0 && (
-          <div className="px-4 py-2.5 border-t border-black/[0.04] bg-[var(--app-bg)]">
-            <p className="text-[11px] text-[#b09e8d]">
+          <div className="px-4 py-2.5 border-t border-[var(--hairline)] bg-[var(--surface-2)]">
+            <p className="text-[12px] text-[#9ca3af]">
               {filteredForms.length} form{filteredForms.length !== 1 ? 's' : ''}
               {search ? ` matching "${search}"` : ''}
             </p>
@@ -559,16 +561,16 @@ export default function LeadGenerationPage() {
             <div
               key={item.label}
               onClick={() => navigate(item.path)}
-              className="group bg-white rounded-2xl border border-black/5 card-shadow p-5 flex flex-col gap-3 cursor-pointer hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+              className="group bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover p-5 flex flex-col gap-3 cursor-pointer hover:-translate-y-0.5 transition-all duration-200"
             >
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.iconCls}`}>
                 <item.icon className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-semibold text-[#1c1410] text-[15px]">{item.label}</h4>
-                <p className="text-[13px] text-[#7a6b5c] mt-1 leading-relaxed">{item.desc}</p>
+                <h4 className="font-semibold text-[#111318] text-[16px]">{item.label}</h4>
+                <p className="text-[14px] text-[#6b7280] mt-1 leading-relaxed">{item.desc}</p>
               </div>
-              <div className="flex items-center gap-1 text-[13px] font-semibold text-primary mt-auto">
+              <div className="flex items-center gap-1 text-[14px] font-semibold text-primary mt-auto">
                 {item.cta} <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </div>
             </div>

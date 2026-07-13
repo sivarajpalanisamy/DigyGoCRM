@@ -50,8 +50,8 @@ class PhoneCall {
   PhoneCall._();
   static final PhoneCall instance = PhoneCall._();
 
-  static const _ch = MethodChannel('digygo/dialer');
-  static const _events = EventChannel('digygo/call_events');
+  static const _ch = MethodChannel('hawcus/dialer');
+  static const _events = EventChannel('hawcus/call_events');
 
   Stream<Map>? _raw;
   Stream<Map> get _rawStream =>

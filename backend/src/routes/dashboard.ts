@@ -525,4 +525,109 @@ router.get('/lead-timeline', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Exclude Won / Lost (by flag or by conventional stage name) - shared by both widgets below.
+const NOT_WON_LOST = `NOT (COALESCE(ps.is_won,FALSE) OR COALESCE(ps.is_closed_won,FALSE) OR COALESCE(ps.is_closed_lost,FALSE) OR lower(COALESCE(ps.name,'')) IN ('won','lost'))`;
+
+// Resolve leads:only_assigned once (super_admin/owner bypass; on error fail closed to assigned-only).
+async function resolveOnlyAssigned(userId: string, tenantId: string, role: string): Promise<boolean> {
+  if (role === 'super_admin' || role === 'owner') return false;
+  try { return await hasPermission(userId, 'leads:only_assigned', tenantId); } catch { return true; }
+}
+
+// GET /api/dashboard/followup-priority — Overdue / Due Today / Upcoming open follow-ups.
+// Tenant-scoped, respects leads:only_assigned, excludes deleted + won/lost leads. Cached 60s.
+router.get('/followup-priority', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  if (!tenantId) { res.json({ overdue: 0, due_today: 0, upcoming: 0, total: 0 }); return; }
+  try {
+    const onlyAssigned = await resolveOnlyAssigned(userId, tenantId, role);
+    await serveCached(res, { tenantId, userId, name: 'followup-priority', ttlSec: 60, params: {} }, async () => {
+      const assignedClause = onlyAssigned ? ' AND l.assigned_to = $2' : '';
+      const params = onlyAssigned ? [tenantId, userId] : [tenantId];
+      const r = await query(`
+        SELECT
+          COUNT(*) FILTER (WHERE f.due_at::date < CURRENT_DATE)::int AS overdue,
+          COUNT(*) FILTER (WHERE f.due_at::date = CURRENT_DATE)::int AS due_today,
+          COUNT(*) FILTER (WHERE f.due_at::date > CURRENT_DATE)::int AS upcoming
+        FROM lead_followups f
+        JOIN leads l ON l.id = f.lead_id
+        LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
+        WHERE f.tenant_id = $1 AND f.completed = FALSE AND l.is_deleted = FALSE
+          AND ${NOT_WON_LOST}${assignedClause}
+      `, params);
+      const overdue = r.rows[0].overdue, due_today = r.rows[0].due_today, upcoming = r.rows[0].upcoming;
+      return { overdue, due_today, upcoming, total: overdue + due_today + upcoming };
+    });
+  } catch (err) {
+    console.error('[dashboard:followup-priority]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/dashboard/lead-aging — active leads bucketed by age (CURRENT_DATE - created_at).
+// Tenant-scoped, respects leads:only_assigned, excludes deleted + won/lost leads. Cached 60s.
+router.get('/lead-aging', async (req: AuthRequest, res: Response) => {
+  const { tenantId, userId, role } = req.user!;
+  const empty = {
+    buckets: [
+      { key: '0-3',   label: '0-3 Days',   count: 0, quick: 'age_0_3' },
+      { key: '4-7',   label: '4-7 Days',   count: 0, quick: 'age_4_7' },
+      { key: '8-15',  label: '8-15 Days',  count: 0, quick: 'age_8_15' },
+      { key: '16-30', label: '16-30 Days', count: 0, quick: 'age_16_30' },
+      { key: '30+',   label: '30+ Days',   count: 0, quick: 'age_30p' },
+    ],
+    total: 0,
+  };
+  if (!tenantId) { res.json({ ...empty, stages: [] }); return; }
+  const stageFilter = String(req.query.stage ?? '').trim(); // optional pipeline-stage NAME to scope by
+  try {
+    const onlyAssigned = await resolveOnlyAssigned(userId, tenantId, role);
+    await serveCached(res, { tenantId, userId, name: 'lead-aging', ttlSec: 60, params: { stage: stageFilter } }, async () => {
+      const params: any[] = [tenantId];
+      let assignedClause = '';
+      if (onlyAssigned) { params.push(userId); assignedClause = ` AND l.assigned_to = $${params.length}`; }
+      let stageClause = '';
+      if (stageFilter) { params.push(stageFilter); stageClause = ` AND ps.name = $${params.length}`; }
+
+      const r = await query(`
+        SELECT
+          COUNT(*) FILTER (WHERE age BETWEEN 0 AND 3)::int   AS d0_3,
+          COUNT(*) FILTER (WHERE age BETWEEN 4 AND 7)::int   AS d4_7,
+          COUNT(*) FILTER (WHERE age BETWEEN 8 AND 15)::int  AS d8_15,
+          COUNT(*) FILTER (WHERE age BETWEEN 16 AND 30)::int AS d16_30,
+          COUNT(*) FILTER (WHERE age > 30)::int              AS d30p
+        FROM (
+          SELECT (CURRENT_DATE - l.created_at::date) AS age
+          FROM leads l
+          LEFT JOIN pipeline_stages ps ON ps.id = l.stage_id
+          WHERE l.tenant_id = $1 AND l.is_deleted = FALSE AND ${NOT_WON_LOST}${assignedClause}${stageClause}
+        ) x
+      `, params);
+
+      // Distinct active (non-won/lost) stage names for the dropdown, ordered by pipeline position.
+      const stageRows = await query(`
+        SELECT ps.name, MIN(ps.stage_order) AS ord
+        FROM pipeline_stages ps
+        WHERE ps.tenant_id = $1 AND ${NOT_WON_LOST}
+        GROUP BY ps.name
+        ORDER BY ord ASC, ps.name ASC
+      `, [tenantId]);
+      const stages: string[] = stageRows.rows.map((s: any) => s.name);
+
+      const b = r.rows[0];
+      const buckets = [
+        { key: '0-3',   label: '0-3 Days',   count: b.d0_3,   quick: 'age_0_3' },
+        { key: '4-7',   label: '4-7 Days',   count: b.d4_7,   quick: 'age_4_7' },
+        { key: '8-15',  label: '8-15 Days',  count: b.d8_15,  quick: 'age_8_15' },
+        { key: '16-30', label: '16-30 Days', count: b.d16_30, quick: 'age_16_30' },
+        { key: '30+',   label: '30+ Days',   count: b.d30p,   quick: 'age_30p' },
+      ];
+      return { buckets, total: buckets.reduce((s, x) => s + x.count, 0), stages };
+    });
+  } catch (err) {
+    console.error('[dashboard:lead-aging]', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;

@@ -21,16 +21,16 @@ export default function SettingsPage() {
           <button
             key={card.title}
             onClick={() => card.path && navigate(card.path)}
-            className="bg-white rounded-2xl border border-black/5 card-shadow p-6 text-left flex items-center gap-4 w-full hover:-translate-y-0.5 transition-all duration-200 group"
+            className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover p-6 text-left flex items-center gap-4 w-full active:scale-[0.99] transition group"
           >
-            <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center shrink-0', card.iconBg)}>
+            <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center shrink-0', card.iconBg)}>
               <card.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h3 className="font-headline font-bold text-[#1c1410]">{card.title}</h3>
-              <p className="text-[14px] text-[#7a6b5c] mt-0.5">{card.description}</p>
+              <h3 className="font-headline font-bold text-[#111318]">{card.title}</h3>
+              <p className="text-[15px] text-[#6b7280] mt-0.5">{card.description}</p>
             </div>
-            <ChevronRight className="w-5 h-5 text-[#b09e8d] shrink-0 group-hover:text-primary transition-colors" />
+            <ChevronRight className="w-5 h-5 text-[#9ca3af] shrink-0 group-hover:text-primary transition-colors" />
           </button>
         ))}
       </div>

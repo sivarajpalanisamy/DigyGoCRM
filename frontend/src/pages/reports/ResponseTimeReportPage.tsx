@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useCrmStore } from '@/store/crmStore';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const PERIODS = [
   { value: 'today', label: 'Today' },
@@ -83,20 +84,20 @@ export default function ResponseTimeReportPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-5">
       <div>
-        <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">Lead Response Time</h1>
-        <p className="text-[14px] text-[#7a6b5c] mt-0.5">How quickly your team contacts new leads</p>
+        <h1 className="text-[22px] font-headline font-bold text-[#111318]">Lead Response Time</h1>
+        <p className="text-[15px] text-[#6b7280] mt-0.5">How quickly your team contacts new leads</p>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-2)] p-1 flex-wrap">
           {PERIODS.map((p) => (
             <button key={p.value} onClick={() => setPeriod(p.value)}
               className={cn(
-                'text-[13px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
+                'text-[14px] font-semibold px-3.5 py-1.5 rounded-full transition-all',
                 period === p.value
-                  ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-sm'
-                  : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/40',
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-[#6b7280] hover:text-[#111318]',
               )}>
               {p.label}
             </button>
@@ -104,15 +105,13 @@ export default function ResponseTimeReportPage() {
         </div>
         {period === 'custom' && (
           <div className="flex items-center gap-2">
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
-              className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] bg-white" />
-            <span className="text-[13px] text-[#9a8a7a]">to</span>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
-              className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] bg-white" />
+            <DatePicker value={from} onChange={setFrom} placeholder="Start date" />
+            <span className="text-[14px] text-[#8b929c]">to</span>
+            <DatePicker value={to} onChange={setTo} placeholder="End date" />
           </div>
         )}
         <select value={pipelineId} onChange={(e) => setPipelineId(e.target.value)}
-          className="text-[13px] border border-black/10 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-[var(--brand)]">
+          className="text-[14px] border border-[var(--hairline)] rounded-xl px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
           <option value="">All Pipelines</option>
           {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
@@ -123,7 +122,7 @@ export default function ResponseTimeReportPage() {
           <RefreshCw className="w-5 h-5 animate-spin text-[var(--brand-dark)]" />
         </div>
       ) : !kpi ? (
-        <div className="text-center py-20 text-[14px] text-[#9a8a7a]">No data available</div>
+        <div className="text-center py-20 text-[15px] text-[#8b929c]">No data available</div>
       ) : (
         <>
           {/* KPI Cards */}
@@ -137,22 +136,22 @@ export default function ResponseTimeReportPage() {
           {/* Charts row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Daily trend */}
-            <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-black/5">
-                <p className="text-[15px] font-bold text-[#1c1410]">Response Time Trend</p>
-                <p className="text-[11px] text-[#9a8a7a] mt-0.5">Average response time per day (minutes)</p>
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+              <div className="px-5 py-4 border-b border-[var(--hairline)]">
+                <p className="text-[16px] font-bold text-[#111318]">Response Time Trend</p>
+                <p className="text-[12px] text-[#8b929c] mt-0.5">Average response time per day (minutes)</p>
               </div>
               <div className="p-5">
                 {daily.length === 0 ? (
-                  <div className="h-[200px] flex items-center justify-center text-[14px] text-[#9a8a7a]">No data</div>
+                  <div className="h-[200px] flex items-center justify-center text-[15px] text-[#8b929c]">No data</div>
                 ) : (
                   <ResponsiveContainer width="100%" height={220}>
                     <LineChart data={daily}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#8a7c6e' }} axisLine={false} tickLine={false}
+                      <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false}
                         tickFormatter={(v: string) => { const d = new Date(v); return `${d.getDate()}/${d.getMonth()+1}`; }} />
-                      <YAxis tick={{ fontSize: 10, fill: '#8a7c6e' }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#1c1410', color: '#fff', fontSize: 11 }}
+                      <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }}
                         formatter={(v: number) => [`${v} min`, 'Avg Response']} />
                       <Line type="monotone" dataKey="avg_response_min" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} name="Avg Response (min)" />
                     </LineChart>
@@ -162,10 +161,10 @@ export default function ResponseTimeReportPage() {
             </div>
 
             {/* Response distribution */}
-            <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-black/5">
-                <p className="text-[15px] font-bold text-[#1c1410]">Response Distribution</p>
-                <p className="text-[11px] text-[#9a8a7a] mt-0.5">Leads by response time bucket</p>
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+              <div className="px-5 py-4 border-b border-[var(--hairline)]">
+                <p className="text-[16px] font-bold text-[#111318]">Response Distribution</p>
+                <p className="text-[12px] text-[#8b929c] mt-0.5">Leads by response time bucket</p>
               </div>
               <div className="p-5">
                 <ResponsiveContainer width="100%" height={220}>
@@ -174,14 +173,14 @@ export default function ResponseTimeReportPage() {
                     { bucket: '5-30 min', count: kpi.within_30min - kpi.within_5min, fill: '#3b82f6' },
                     { bucket: '30-60 min', count: kpi.within_1hr - kpi.within_30min, fill: '#f59e0b' },
                     { bucket: '> 1 hr', count: kpi.total_leads - kpi.within_1hr - kpi.no_response, fill: '#ef4444' },
-                    { bucket: 'No Response', count: kpi.no_response, fill: '#9a8a7a' },
+                    { bucket: 'No Response', count: kpi.no_response, fill: '#8b929c' },
                   ]} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 10, fill: '#8a7c6e' }} axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="bucket" width={90} tick={{ fontSize: 10, fill: '#8a7c6e' }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#1c1410', color: '#fff', fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="bucket" width={90} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                      <LabelList dataKey="count" position="right" style={{ fontSize: 10, fill: '#7a6b5c' }} />
+                      <LabelList dataKey="count" position="right" style={{ fontSize: 10, fill: '#6b7280' }} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -190,15 +189,15 @@ export default function ResponseTimeReportPage() {
           </div>
 
           {/* Staff table */}
-          <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-black/5">
-              <p className="text-[15px] font-bold text-[#1c1410]">Staff Response Times</p>
-              <p className="text-[11px] text-[#9a8a7a] mt-0.5">Per-agent breakdown with benchmark targets</p>
+          <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+            <div className="px-5 py-4 border-b border-[var(--hairline)]">
+              <p className="text-[16px] font-bold text-[#111318]">Staff Response Times</p>
+              <p className="text-[12px] text-[#8b929c] mt-0.5">Per-agent breakdown with benchmark targets</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[14px]">
                 <thead>
-                  <tr className="border-b border-black/5 text-left text-[#7a6b5c]">
+                  <tr className="border-b border-[var(--hairline)] text-left text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af]">
                     <th className="px-5 py-3 font-semibold">Staff</th>
                     <th className="px-3 py-3 font-semibold text-right">Leads</th>
                     <th className="px-3 py-3 font-semibold text-right">Avg Time</th>
@@ -210,12 +209,12 @@ export default function ResponseTimeReportPage() {
                 </thead>
                 <tbody>
                   {staff.length === 0 ? (
-                    <tr><td colSpan={7} className="text-center py-8 text-[#9a8a7a]">No staff data</td></tr>
+                    <tr><td colSpan={7} className="text-center py-8 text-[#8b929c]">No staff data</td></tr>
                   ) : staff.map((s) => {
                     const score = s.total_leads > 0 ? Math.round((s.within_5min / s.total_leads) * 100) : 0;
                     return (
-                      <tr key={s.staff_id} className="border-b border-black/5 hover:bg-[#faf8f6]">
-                        <td className="px-5 py-3 font-medium text-[#1c1410]">{s.staff_name ?? 'Unassigned'}</td>
+                      <tr key={s.staff_id} className="border-b border-[var(--hairline)] hover:bg-[var(--surface-2)] transition-colors">
+                        <td className="px-5 py-3 font-medium text-[#111318]">{s.staff_name ?? 'Unassigned'}</td>
                         <td className="px-3 py-3 text-right">{s.total_leads}</td>
                         <td className="px-3 py-3 text-right font-medium">{formatMin(s.avg_response_min)}</td>
                         <td className="px-3 py-3 text-right">{s.within_5min}</td>
@@ -223,7 +222,7 @@ export default function ResponseTimeReportPage() {
                         <td className="px-3 py-3 text-right">{s.within_1hr}</td>
                         <td className="px-3 py-3 text-right">
                           <span className={cn(
-                            'inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold',
+                            'inline-block px-2 py-0.5 rounded-full text-[12px] font-semibold',
                             score >= 70 ? 'bg-emerald-50 text-emerald-700' :
                             score >= 40 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700',
                           )}>
@@ -251,19 +250,19 @@ function KpiCard({ label, value, sub, icon: Icon, accent }: {
       style={{ background: 'linear-gradient(135deg,var(--brand-dark) 0%,var(--brand) 55%,var(--brand-light) 100%)', boxShadow: '0 4px 20px rgba(234,88,12,0.25)' }}>
       <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-white" /></div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] opacity-75 text-white truncate">{label}</p>
+        <p className="text-[12px] opacity-75 text-white truncate">{label}</p>
         <h3 className="font-bold text-[24px] leading-tight tracking-tight text-white">{value}</h3>
-        {sub && <p className="text-[10px] mt-0.5 opacity-65 text-white truncate">{sub}</p>}
+        {sub && <p className="text-[11px] mt-0.5 opacity-65 text-white truncate">{sub}</p>}
       </div>
     </div>
   );
   return (
-    <div className="bg-white rounded-xl px-4 py-3.5 flex items-center gap-3 border border-black/5 shadow-sm">
+    <div className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3 border border-[var(--hairline)] card-shadow">
       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-primary/10"><Icon className="w-4 h-4 text-primary" /></div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] text-[#7a6b5c] truncate">{label}</p>
-        <h3 className="font-bold text-[24px] leading-tight tracking-tight text-[#1c1410]">{value}</h3>
-        {sub && <p className="text-[10px] mt-0.5 text-[#9a8a7a] truncate">{sub}</p>}
+        <p className="text-[12px] text-[#6b7280] truncate">{label}</p>
+        <h3 className="font-bold text-[24px] leading-tight tracking-tight text-[#111318]">{value}</h3>
+        {sub && <p className="text-[11px] mt-0.5 text-[#8b929c] truncate">{sub}</p>}
       </div>
     </div>
   );

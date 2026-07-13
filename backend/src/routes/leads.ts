@@ -28,7 +28,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   const { tenantId, userId, role } = req.user!;
   const {
     stage, search, pipeline_id, assigned_to, source, source_ref, meta_form_id,
-    tag, date_from, date_to, quick,
+    tag, date_from, date_to, quick, stage_name,
     page = '1', limit = '200',
     after,          // cursor: ISO timestamp — when present, enables keyset pagination
   } = req.query as Record<string, string>;
@@ -89,12 +89,35 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 
   if (stage)       { params.push(stage);                  sql += ` AND l.stage_id = $${params.length}`; }
+  // Filter by stage NAME (cross-pipeline) - used by the dashboard Lead Aging stage dropdown.
+  if (stage_name)  { params.push(stage_name);             sql += ` AND ps.name = $${params.length}`; }
   if (pipeline_id) { params.push(pipeline_id);            sql += ` AND l.pipeline_id = $${params.length}`; }
   if (assigned_to === 'none') { sql += ` AND l.assigned_to IS NULL`; }
   else if (assigned_to) { params.push(assigned_to);            sql += ` AND l.assigned_to = $${params.length}`; }
   // Dashboard quick-filters (cross-pipeline): stale = no activity 7+ days; converted = in a won stage.
   if (quick === 'stale')     { sql += ` AND l.updated_at < NOW() - INTERVAL '7 days'`; }
   else if (quick === 'converted') { sql += ` AND ps.is_won = TRUE`; }
+  else if (typeof quick === 'string' && (quick.startsWith('followup_') || quick.startsWith('age_'))) {
+    // Active (non-won/non-lost) leads only, for the Follow-up Priority & Lead Aging widgets.
+    const notWonLost = ` AND NOT (COALESCE(ps.is_won,FALSE) OR COALESCE(ps.is_closed_won,FALSE) OR COALESCE(ps.is_closed_lost,FALSE) OR lower(COALESCE(ps.name,'')) IN ('won','lost'))`;
+    if (quick === 'followup_overdue') {
+      sql += ` AND EXISTS (SELECT 1 FROM lead_followups f WHERE f.lead_id = l.id AND f.completed = FALSE AND f.due_at::date < CURRENT_DATE)` + notWonLost;
+    } else if (quick === 'followup_today') {
+      sql += ` AND EXISTS (SELECT 1 FROM lead_followups f WHERE f.lead_id = l.id AND f.completed = FALSE AND f.due_at::date = CURRENT_DATE)` + notWonLost;
+    } else if (quick === 'followup_upcoming') {
+      sql += ` AND EXISTS (SELECT 1 FROM lead_followups f WHERE f.lead_id = l.id AND f.completed = FALSE AND f.due_at::date > CURRENT_DATE)` + notWonLost;
+    } else if (quick === 'age_0_3') {
+      sql += ` AND (CURRENT_DATE - l.created_at::date) BETWEEN 0 AND 3` + notWonLost;
+    } else if (quick === 'age_4_7') {
+      sql += ` AND (CURRENT_DATE - l.created_at::date) BETWEEN 4 AND 7` + notWonLost;
+    } else if (quick === 'age_8_15') {
+      sql += ` AND (CURRENT_DATE - l.created_at::date) BETWEEN 8 AND 15` + notWonLost;
+    } else if (quick === 'age_16_30') {
+      sql += ` AND (CURRENT_DATE - l.created_at::date) BETWEEN 16 AND 30` + notWonLost;
+    } else if (quick === 'age_30p') {
+      sql += ` AND (CURRENT_DATE - l.created_at::date) > 30` + notWonLost;
+    }
+  }
   if (source)         { params.push(source);       sql += ` AND l.source = $${params.length}`; }
   if (source_ref)     { params.push(source_ref);   sql += ` AND l.source_ref = $${params.length}`; }
   if (meta_form_id)   { params.push(meta_form_id); sql += ` AND l.meta_form_id = $${params.length}`; }

@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useCrmStore } from '@/store/crmStore';
 import { Lead } from '@/data/mockData';
 import { LeadDetailPanel } from './LeadsPage';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useUserLevel } from '@/hooks/useUserLevel';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -136,24 +137,24 @@ function CreateModal({
       <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl overflow-hidden"
         style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[#f0ebe5]">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[var(--hairline)]">
           <div>
-            <h3 className="text-[15px] font-bold text-[#1c1410]">
+            <h3 className="text-[16px] font-bold text-[#111318]">
               {step === 'search' ? 'New Follow-up' : `Follow-up · ${selectedLead?.name}`}
             </h3>
             {step === 'form' && selectedLead?.phone && (
-              <a href={`tel:${selectedLead.phone}`} className="text-[13px] text-[#7a6b5c] mt-0.5 hover:text-primary transition-colors block">{selectedLead.phone}</a>
+              <a href={`tel:${selectedLead.phone}`} className="text-[14px] text-[#6b7280] mt-0.5 hover:text-primary transition-colors block">{selectedLead.phone}</a>
             )}
           </div>
           <div className="flex items-center gap-2">
             {step === 'form' && !preselectedLead && (
               <button onClick={() => setStep('search')}
-                className="text-[13px] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors font-medium">
+                className="text-[14px] text-[#6b7280] hover:text-[var(--brand-dark)] transition-colors font-medium">
                 Change lead
               </button>
             )}
             <button onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors">
+              className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -163,31 +164,31 @@ function CreateModal({
         {step === 'search' && (
           <div className="px-5 py-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#b09e8d]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af]" />
               <input
                 autoFocus
                 placeholder="Search lead by name or phone…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 h-11 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                className="w-full pl-10 pr-4 h-11 rounded-xl border border-[var(--hairline)] text-[15px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
               />
               {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--brand-dark)] animate-spin" />}
             </div>
 
             <div className="mt-3 max-h-60 overflow-y-auto space-y-1">
               {search.trim().length < 2 ? (
-                <p className="text-[13px] text-[#b09e8d] text-center py-6">Type at least 2 characters to search</p>
+                <p className="text-[14px] text-[#9ca3af] text-center py-6">Type at least 2 characters to search</p>
               ) : results.length === 0 && !searching ? (
-                <p className="text-[13px] text-[#b09e8d] text-center py-6">No leads found</p>
+                <p className="text-[14px] text-[#9ca3af] text-center py-6">No leads found</p>
               ) : results.map((lead) => (
                 <button key={lead.id} onClick={() => selectLead(lead)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#faf0e8] transition-colors text-left">
-                  <div className="w-8 h-8 rounded-full bg-[var(--accent-tint)] flex items-center justify-center text-[11px] font-bold text-[var(--brand-dark)] shrink-0">
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#f1f3f5] transition-colors text-left">
+                  <div className="w-8 h-8 rounded-full bg-[var(--accent-tint)] flex items-center justify-center text-[12px] font-bold text-[var(--brand-dark)] shrink-0">
                     {(lead.name ?? '?')[0].toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[14px] font-semibold text-[#1c1410] truncate">{lead.name}</p>
-                    {lead.phone && <a href={`tel:${lead.phone}`} className="text-[11px] text-[#7a6b5c] hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{lead.phone}</a>}
+                    <p className="text-[15px] font-semibold text-[#111318] truncate">{lead.name}</p>
+                    {lead.phone && <a href={`tel:${lead.phone}`} className="text-[12px] text-[#6b7280] hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{lead.phone}</a>}
                   </div>
                 </button>
               ))}
@@ -199,7 +200,7 @@ function CreateModal({
         {step === 'form' && (
           <div className="px-5 py-4 space-y-4">
             <div>
-              <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide block mb-1.5">
+              <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wide block mb-1.5">
                 What to follow up on *
               </label>
               <input
@@ -207,52 +208,51 @@ function CreateModal({
                 placeholder="e.g. Call back after demo"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                className="w-full px-3 h-10 rounded-xl border border-[var(--hairline)] text-[15px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide block mb-1.5">Date *</label>
-                <input
-                  type="date"
+                <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wide block mb-1.5">Date *</label>
+                <DatePicker
                   value={date}
                   min={format(new Date(), 'yyyy-MM-dd')}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                  onChange={setDate}
+                  className="w-full"
                 />
               </div>
               <div>
-                <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide block mb-1.5">Time *</label>
+                <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wide block mb-1.5">Time *</label>
                 <input
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                  className="w-full px-3 h-10 rounded-xl border border-[var(--hairline)] text-[15px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide block mb-1.5">Note</label>
+              <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wide block mb-1.5">Note</label>
               <textarea
                 placeholder="Optional note…"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all resize-none"
+                className="w-full px-3 py-2 rounded-xl border border-[var(--hairline)] text-[15px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all resize-none"
               />
             </div>
 
             <div className="flex gap-3 pt-1">
               <button onClick={onClose}
-                className="flex-1 h-10 rounded-xl border border-black/10 text-[14px] font-semibold text-[#7a6b5c] hover:bg-[var(--accent-tint)] transition-colors">
+                className="flex-1 h-10 rounded-xl border border-[var(--hairline)] text-[15px] font-semibold text-[#6b7280] hover:bg-[var(--accent-tint)] transition-colors">
                 Cancel
               </button>
               <button
                 onClick={submit}
                 disabled={saving || !title.trim() || !date || !time}
-                className="flex-1 h-10 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 h-10 rounded-xl text-[15px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Schedule</>}
@@ -326,53 +326,51 @@ function CompleteModal({
         style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
 
         {/* Header */}
-        <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-[#f0ebe5]">
+        <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-[var(--hairline)]">
           <div className="flex-1 min-w-0 pr-3">
-            <p className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide mb-1">Mark as Done</p>
-            <h3 className="text-[15px] font-bold text-[#1c1410] truncate">{fu.leadName}</h3>
-            {fu.leadPhone && <p className="text-[13px] text-[#7a6b5c] mt-0.5">{fu.leadPhone}</p>}
-            <p className="text-[11px] text-[#b09e8d] mt-1.5 line-clamp-1">"{fu.title}"</p>
+            <p className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wide mb-1">Mark as Done</p>
+            <h3 className="text-[16px] font-bold text-[#111318] truncate">{fu.leadName}</h3>
+            {fu.leadPhone && <p className="text-[14px] text-[#6b7280] mt-0.5">{fu.leadPhone}</p>}
+            <p className="text-[12px] text-[#9ca3af] mt-1.5 line-clamp-1">"{fu.title}"</p>
           </div>
           <button onClick={onCancel}
-            className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors shrink-0">
+            className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Schedule next */}
         <div className="px-5 py-5 space-y-4">
-          <p className="text-[14px] font-bold text-[#1c1410]">Schedule next follow-up</p>
+          <p className="text-[15px] font-bold text-[#111318]">Schedule next follow-up</p>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide block mb-1.5">Date</label>
-              <input
-                autoFocus
-                type="date"
+              <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wide block mb-1.5">Date</label>
+              <DatePicker
                 value={date}
                 min={format(new Date(), 'yyyy-MM-dd')}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                onChange={setDate}
+                className="w-full"
               />
             </div>
             <div>
-              <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide block mb-1.5">Time</label>
+              <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wide block mb-1.5">Time</label>
               <input
                 type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                className="w-full px-3 h-10 rounded-xl border border-[var(--hairline)] text-[15px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide block mb-1.5">Note</label>
+            <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wide block mb-1.5">Note</label>
             <input
               placeholder="What to follow up on…"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full px-3 h-10 rounded-xl border border-black/10 text-[14px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+              className="w-full px-3 h-10 rounded-xl border border-[var(--hairline)] text-[15px] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
             />
           </div>
 
@@ -380,14 +378,14 @@ function CompleteModal({
             <button
               onClick={markDoneOnly}
               disabled={saving}
-              className="flex-1 h-10 rounded-xl border border-black/10 text-[13px] font-semibold text-[#7a6b5c] hover:bg-[var(--accent-tint)] transition-colors disabled:opacity-50"
+              className="flex-1 h-10 rounded-xl border border-[var(--hairline)] text-[14px] font-semibold text-[#6b7280] hover:bg-[var(--accent-tint)] transition-colors disabled:opacity-50"
             >
               No Follow-up Needed
             </button>
             <button
               onClick={markDoneAndSchedule}
               disabled={saving || !date}
-              className="flex-1 h-10 rounded-xl text-[14px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 h-10 rounded-xl text-[15px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Done &amp; Schedule</>}
@@ -434,56 +432,55 @@ function FollowUpCard({
     <div
       onClick={() => onNavigate(fu.leadId)}
       className={cn(
-        'group flex items-stretch bg-white rounded-xl border transition-all cursor-pointer hover:shadow-md hover:-translate-y-[1px]',
-        fu.completed ? 'border-black/5 opacity-60' : 'border-black/8',
+        'group flex items-stretch bg-white rounded-2xl border card-shadow transition-all cursor-pointer hover:shadow-md hover:-translate-y-[1px]',
+        fu.completed ? 'border-[var(--hairline)] opacity-60' : 'border-[var(--hairline)]',
         st === 'overdue' && !fu.completed && 'border-red-200',
       )}
-      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
     >
       {/* Left status bar */}
-      <div className={cn('w-1 rounded-l-xl shrink-0', S[st].bar)} />
+      <div className={cn('w-1 rounded-l-2xl shrink-0', S[st].bar)} />
 
       {/* Content */}
       <div className="flex-1 min-w-0 px-4 py-3">
         {/* Lead name + phone */}
         <div className="flex items-center gap-2 mb-1">
-          <p className={cn('text-[14px] font-bold truncate', fu.completed ? 'line-through text-gray-400' : 'text-[#1c1410]')}>
+          <p className={cn('text-[15px] font-bold truncate', fu.completed ? 'line-through text-gray-400' : 'text-[#111318]')}>
             {fu.leadName}
           </p>
-          <span className={cn('shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border', S[st].bg, S[st].text, S[st].border)}>
+          <span className={cn('shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full border', S[st].bg, S[st].text, S[st].border)}>
             {S[st].label}
           </span>
         </div>
 
         {fu.leadPhone && (
           <div className="flex items-center gap-1.5 mb-1.5">
-            <Phone className="w-3 h-3 text-[#b09e8d]" />
-            <span className="text-[11px] text-[#7a6b5c]">{fu.leadPhone}</span>
+            <Phone className="w-3 h-3 text-[#9ca3af]" />
+            <span className="text-[12px] text-[#6b7280]">{fu.leadPhone}</span>
           </div>
         )}
 
         {/* Title */}
-        <p className={cn('text-[13px] font-medium', fu.completed ? 'text-gray-400 line-through' : 'text-[#4a3c30]')}>
+        <p className={cn('text-[14px] font-medium', fu.completed ? 'text-gray-400 line-through' : 'text-[#3a3f47]')}>
           {fu.title}
         </p>
 
         {/* Note */}
         {fu.description && (
-          <p className="text-[11px] text-[#7a6b5c] mt-0.5 line-clamp-1">{fu.description}</p>
+          <p className="text-[12px] text-[#6b7280] mt-0.5 line-clamp-1">{fu.description}</p>
         )}
 
         {/* Meta row */}
         <div className="flex items-center gap-3 mt-2">
           <div className="flex items-center gap-1.5">
-            <Clock className="w-3 h-3 text-[#b09e8d]" />
-            <span className={cn('text-[11px]', st === 'overdue' && !fu.completed ? 'text-red-500 font-semibold' : 'text-[#7a6b5c]')}>
+            <Clock className="w-3 h-3 text-[#9ca3af]" />
+            <span className={cn('text-[12px]', st === 'overdue' && !fu.completed ? 'text-red-500 font-semibold' : 'text-[#6b7280]')}>
               {formattedDate}
             </span>
           </div>
           {showAssignee && fu.assignedName && (
             <div className="flex items-center gap-1.5">
-              <User className="w-3 h-3 text-[#b09e8d]" />
-              <span className="text-[11px] text-[#7a6b5c]">{fu.assignedName}</span>
+              <User className="w-3 h-3 text-[#9ca3af]" />
+              <span className="text-[12px] text-[#6b7280]">{fu.assignedName}</span>
             </div>
           )}
         </div>
@@ -517,8 +514,8 @@ function FollowUpCard({
 function SectionHeader({ label, count, color }: { label: string; count: number; color: string }) {
   return (
     <div className="flex items-center gap-3 mb-3">
-      <span className={cn('text-[11px] font-bold uppercase tracking-wider', color)}>{label}</span>
-      <span className="text-[11px] font-bold text-[#b09e8d]">{count}</span>
+      <span className={cn('text-[12px] font-bold uppercase tracking-wider', color)}>{label}</span>
+      <span className="text-[12px] font-bold text-[#9ca3af]">{count}</span>
       <div className="flex-1 h-px bg-black/5" />
     </div>
   );
@@ -685,7 +682,7 @@ export default function FollowUpsPage() {
   };
 
   const TABS: { key: FUFilter; label: string; count: number; color: string }[] = [
-    { key: 'all',       label: 'All',       count: items.length,      color: 'text-[#1c1410]' },
+    { key: 'all',       label: 'All',       count: items.length,      color: 'text-[#111318]' },
     { key: 'overdue',   label: 'Overdue',   count: stats.overdue,     color: 'text-red-600'   },
     { key: 'today',     label: 'Today',     count: stats.today,       color: 'text-[var(--brand-dark)]' },
     { key: 'upcoming',  label: 'Upcoming',  count: stats.upcoming,    color: 'text-violet-600' },
@@ -706,8 +703,8 @@ export default function FollowUpsPage() {
       {/* ── Top Bar ── */}
       <div className="flex items-start justify-between gap-4 pb-4 flex-wrap">
         <div>
-          <h2 className="font-headline text-[24px] font-extrabold text-[#1c1410] leading-tight">Follow-ups</h2>
-          <p className="text-[13px] text-[#7a6b5c] mt-0.5">{items.length} total tasks</p>
+          <h2 className="font-headline text-[24px] font-extrabold text-[#111318] leading-tight">Follow-ups</h2>
+          <p className="text-[14px] text-[#6b7280] mt-0.5">{items.length} total tasks</p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -717,14 +714,14 @@ export default function FollowUpsPage() {
               <select
                 value={staffFilter}
                 onChange={(e) => setStaffFilter(e.target.value)}
-                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[13px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
+                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-[var(--hairline)] text-[14px] font-medium text-[#111318] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
               >
                 <option value="all">All Staff</option>
                 {staff.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7a6b5c] pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6b7280] pointer-events-none" />
             </div>
           )}
 
@@ -734,14 +731,14 @@ export default function FollowUpsPage() {
               <select
                 value={pipelineFilter}
                 onChange={(e) => { setPipelineFilter(e.target.value); setStageFilter(''); }}
-                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[13px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
+                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-[var(--hairline)] text-[14px] font-medium text-[#111318] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
               >
                 <option value="">All Pipelines</option>
                 {pipelines.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7a6b5c] pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6b7280] pointer-events-none" />
             </div>
           )}
 
@@ -751,14 +748,14 @@ export default function FollowUpsPage() {
               <select
                 value={stageFilter}
                 onChange={(e) => setStageFilter(e.target.value)}
-                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-black/10 text-[13px] font-medium text-[#1c1410] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
+                className="appearance-none h-9 pl-3 pr-8 rounded-xl border border-[var(--hairline)] text-[14px] font-medium text-[#111318] bg-white outline-none focus:border-primary/40 cursor-pointer transition-all"
               >
                 <option value="">All Stages</option>
                 {selectedPipelineStages.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7a6b5c] pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6b7280] pointer-events-none" />
             </div>
           )}
 
@@ -767,7 +764,7 @@ export default function FollowUpsPage() {
           {/* New follow-up */}
           <button
             onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 12px rgba(194,65,12,0.3)' }}
           >
             <Plus className="w-4 h-4" /> New Follow-up
@@ -776,22 +773,22 @@ export default function FollowUpsPage() {
       </div>
 
       {/* ── Filter Tabs ── */}
-      <div className="flex items-center gap-1 pb-4 border-b border-[#f0ebe5] overflow-x-auto">
+      <div className="flex items-center gap-1 pb-4 overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
             className={cn(
-              'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-all',
+              'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[14px] font-semibold whitespace-nowrap active:scale-[0.98] transition-all',
               filter === tab.key
-                ? 'bg-[#1c1410] text-white'
-                : 'text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-[#1c1410]'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-[#6b7280] hover:bg-[var(--surface-2)] hover:text-[#111318]'
             )}
           >
             {tab.label}
             <span className={cn(
-              'text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none',
-              filter === tab.key ? 'bg-white/20 text-white' : 'bg-[#f0ebe5] text-[#7a6b5c]'
+              'text-[11px] font-bold px-1.5 py-0.5 rounded-full leading-none',
+              filter === tab.key ? 'bg-white/20 text-white' : 'bg-[var(--surface-2)] text-[#6b7280]'
             )}>
               {tab.count}
             </span>
@@ -806,10 +803,10 @@ export default function FollowUpsPage() {
             <div className="w-14 h-14 rounded-2xl bg-[var(--accent-tint)] flex items-center justify-center mb-3">
               <Calendar className="w-6 h-6 text-[var(--brand-dark)]" />
             </div>
-            <p className="text-[15px] font-bold text-[#1c1410] mb-1">
+            <p className="text-[16px] font-bold text-[#111318] mb-1">
               {filter === 'today' ? 'Nothing due today' : `No ${filter} follow-ups`}
             </p>
-            <p className="text-[13px] text-[#7a6b5c]">
+            <p className="text-[14px] text-[#6b7280]">
               {search ? 'Try a different search term.' : 'You\'re all caught up!'}
             </p>
           </div>

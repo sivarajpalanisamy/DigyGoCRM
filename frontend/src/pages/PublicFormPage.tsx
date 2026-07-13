@@ -128,14 +128,14 @@ export default function PublicFormPage() {
   };
 
   const bg = form?.form_bg_color ?? '#ffffff';
-  const textColor = form?.form_text_color ?? '#1c1410';
+  const textColor = form?.form_text_color ?? '#111318';
   const btnColor = form?.btn_color ?? '#ea580c';
   const btnText = form?.btn_text_color ?? '#ffffff';
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)]">
-        <p className="text-[15px] text-[#7a6b5c]">Loading form…</p>
+        <p className="text-[16px] text-[#6b7280]">Loading form…</p>
       </div>
     );
   }
@@ -144,8 +144,8 @@ export default function PublicFormPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)]">
         <div className="text-center">
-          <p className="text-[18px] font-bold text-[#1c1410] mb-2">Form not found</p>
-          <p className="text-[15px] text-[#7a6b5c]">This form is no longer active or the link is incorrect.</p>
+          <p className="text-[18px] font-bold text-[#111318] mb-2">Form not found</p>
+          <p className="text-[16px] text-[#6b7280]">This form is no longer active or the link is incorrect.</p>
         </div>
       </div>
     );
@@ -161,7 +161,7 @@ export default function PublicFormPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p className="text-[18px] font-bold text-[#1c1410] mb-2">{thankYou}</p>
+          <p className="text-[18px] font-bold text-[#111318] mb-2">{thankYou}</p>
         </div>
       </div>
     );
@@ -169,7 +169,7 @@ export default function PublicFormPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)] px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl shadow-xl p-8" style={{ background: bg, color: textColor }}>
+      <div className="w-full max-w-md rounded-2xl border border-[var(--hairline)] card-shadow p-8" style={{ background: bg, color: textColor }}>
         <h1 className="text-[22px] font-bold mb-6" style={{ color: textColor }}>{form.name}</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -181,7 +181,7 @@ export default function PublicFormPage() {
 
             return (
               <div key={field.id ?? field.label}>
-                <label className="block text-[13px] font-semibold mb-1.5" style={{ color: textColor }}>
+                <label className="block text-[14px] font-semibold mb-1.5" style={{ color: textColor }}>
                   {field.label}
                   {field.required && <span className="text-red-500 ml-0.5">*</span>}
                 </label>
@@ -192,7 +192,7 @@ export default function PublicFormPage() {
                     placeholder={field.placeholder}
                     required={field.required}
                     rows={3}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-white/70 text-[14px] outline-none focus:border-orange-400 resize-none ${err ? 'border-red-400' : 'border-black/10'}`}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-white/70 text-[15px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition resize-none ${err ? 'border-red-400' : 'border-[var(--hairline)]'}`}
                     style={{ color: textColor }}
                   />
                 ) : field.type === 'dropdown' ? (
@@ -200,7 +200,7 @@ export default function PublicFormPage() {
                     value={val}
                     onChange={(e) => set(e.target.value)}
                     required={field.required}
-                    className="w-full px-3 py-2.5 rounded-xl border border-black/10 bg-white/70 text-[14px] outline-none focus:border-orange-400"
+                    className="w-full px-3 py-2.5 rounded-xl border border-[var(--hairline)] bg-white/70 text-[15px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition"
                     style={{ color: textColor }}
                   >
                     <option value="">- Select -</option>
@@ -222,7 +222,7 @@ export default function PublicFormPage() {
                           className="w-4 h-4"
                           style={{ accentColor: btnColor }}
                         />
-                        <span className="text-[14px]" style={{ color: textColor }}>{opt}</span>
+                        <span className="text-[15px]" style={{ color: textColor }}>{opt}</span>
                       </label>
                     ))}
                   </div>
@@ -245,7 +245,7 @@ export default function PublicFormPage() {
                             className="w-4 h-4 rounded"
                             style={{ accentColor: btnColor }}
                           />
-                          <span className="text-[14px]" style={{ color: textColor }}>{opt}</span>
+                          <span className="text-[15px]" style={{ color: textColor }}>{opt}</span>
                         </label>
                       );
                     })}
@@ -259,7 +259,7 @@ export default function PublicFormPage() {
                       className="w-4 h-4 rounded"
                       style={{ accentColor: btnColor }}
                     />
-                    <span className="text-[14px]" style={{ color: textColor }}>{field.placeholder || field.label}</span>
+                    <span className="text-[15px]" style={{ color: textColor }}>{field.placeholder || field.label}</span>
                   </div>
                 ) : (
                   <input
@@ -268,11 +268,11 @@ export default function PublicFormPage() {
                     onChange={(e) => set(e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className={`w-full px-3 py-2.5 rounded-xl border bg-white/70 text-[14px] outline-none focus:border-orange-400 ${err ? 'border-red-400' : 'border-black/10'}`}
+                    className={`w-full px-3 py-2.5 rounded-xl border bg-white/70 text-[15px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition ${err ? 'border-red-400' : 'border-[var(--hairline)]'}`}
                     style={{ color: textColor }}
                   />
                 )}
-                {err && <p className="text-[11px] text-red-500 mt-1">{err}</p>}
+                {err && <p className="text-[12px] text-red-500 mt-1">{err}</p>}
               </div>
             );
           })}
@@ -287,7 +287,7 @@ export default function PublicFormPage() {
                 className="w-4 h-4 mt-0.5 rounded shrink-0"
                 style={{ accentColor: btnColor }}
               />
-              <label htmlFor="declaration" className="text-[13px] cursor-pointer" style={{ color: textColor }}>
+              <label htmlFor="declaration" className="text-[14px] cursor-pointer" style={{ color: textColor }}>
                 {form.declaration_title}
                 {form.declaration_link && (
                   <a href={form.declaration_link} target="_blank" rel="noreferrer"
@@ -300,7 +300,7 @@ export default function PublicFormPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3 rounded-xl text-[15px] font-semibold mt-2 disabled:opacity-60 transition-opacity"
+            className="w-full py-3 rounded-xl text-[16px] font-semibold mt-2 disabled:opacity-60 transition-all active:scale-[0.98]"
             style={{ background: btnColor, color: btnText }}
           >
             {submitting ? 'Submitting…' : (form.submit_label || 'Submit')}

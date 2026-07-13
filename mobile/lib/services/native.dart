@@ -177,7 +177,7 @@ class Native {
   Native._();
   static final Native instance = Native._();
 
-  static const _ch = MethodChannel('digygo/dialer');
+  static const _ch = MethodChannel('hawcus/dialer');
 
   /// Probe whether (and how well) this device can record calls.
   Future<RecordingCapability> recordingSelfTest() async {

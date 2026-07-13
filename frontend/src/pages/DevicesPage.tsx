@@ -123,26 +123,26 @@ export default function DevicesPage() {
   };
 
   if (!canView) {
-    return <div className="p-8 text-center text-[#7a6b5c]">You don't have permission to view this page.</div>;
+    return <div className="p-8 text-center text-[#6b7280]">You don't have permission to view this page.</div>;
   }
 
   return (
     <div className="max-w-3xl mx-auto w-full">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/settings')} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]">
+        <button onClick={() => navigate('/settings')} className="p-1.5 rounded-lg hover:bg-[var(--surface-2)] text-[#6b7280]">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="font-headline font-bold text-[#1c1410] text-lg leading-tight">Dialer Device Pair</h1>
-          <p className="text-[13px] text-[#7a6b5c]">Assign staff members to mobile numbers and manage connected devices</p>
+          <h1 className="font-headline font-bold text-[#111318] text-lg leading-tight">Dialer Device Pair</h1>
+          <p className="text-[14px] text-[#6b7280]">Assign staff members to mobile numbers and manage connected devices</p>
         </div>
       </div>
 
       {/* Verify a number + assign staff */}
       {canManage && (
-        <section className="bg-white rounded-xl border border-black/5 p-5 mb-6">
-          <h2 className="font-semibold text-[#1c1410] text-[15px] mb-1">Add a new number</h2>
-          <p className="text-[13px] text-[#7a6b5c] mb-4">
+        <section className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 mb-6">
+          <h2 className="font-semibold text-[#111318] text-[16px] mb-1">Add a new number</h2>
+          <p className="text-[14px] text-[#6b7280] mb-4">
             Assign a staff member and verify their mobile number. Once verified, install the Hawcus Dialer app on that phone - it auto-connects and records calls under their name.
           </p>
           <div className="flex flex-col gap-3">
@@ -150,7 +150,7 @@ export default function DevicesPage() {
               value={numberStaff}
               onChange={(e) => setNumberStaff(e.target.value)}
               disabled={otpSent}
-              className="w-full border border-black/10 rounded-lg px-3 py-2.5 text-[15px] bg-white disabled:bg-black/5"
+              className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2.5 text-[16px] bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:bg-[var(--surface-2)]"
             >
               <option value="">Assign to staff member...</option>
               {staffList.map((s) => (
@@ -165,16 +165,16 @@ export default function DevicesPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+91 98765 43210"
                 disabled={otpSent}
-                className="flex-1 border border-black/10 rounded-lg px-3 py-2.5 text-[15px] disabled:bg-black/5"
+                className="flex-1 border border-[var(--hairline)] rounded-xl px-3 py-2.5 text-[16px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:bg-[var(--surface-2)]"
               />
               {!otpSent ? (
                 <button onClick={sendOtp} disabled={busy}
-                  className="bg-gradient-to-r from-[#c2410c] to-[#ea580c] text-white text-[14px] font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60">
+                  className="bg-gradient-to-r from-[#c2410c] to-[#ea580c] text-white text-[15px] font-semibold px-5 py-2.5 rounded-xl hover:opacity-90 active:scale-[0.98] transition disabled:opacity-60">
                   {busy ? 'Sending...' : 'Send OTP'}
                 </button>
               ) : (
                 <button onClick={() => { setOtpSent(false); setOtp(''); }}
-                  className="border border-black/10 text-[#1c1410] text-[14px] font-semibold px-5 py-2.5 rounded-lg hover:bg-black/5">
+                  className="bg-white border border-[var(--hairline)] text-[#111318] text-[15px] font-semibold px-5 py-2.5 rounded-xl hover:bg-[var(--surface-2)] transition">
                   Change
                 </button>
               )}
@@ -187,10 +187,10 @@ export default function DevicesPage() {
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="Enter 6-digit OTP"
                 inputMode="numeric"
-                className="flex-1 border border-black/10 rounded-lg px-3 py-2.5 text-[15px] tracking-widest"
+                className="flex-1 border border-[var(--hairline)] rounded-xl px-3 py-2.5 text-[16px] tracking-widest outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
               />
               <button onClick={verifyOtp} disabled={busy}
-                className="bg-emerald-600 text-white text-[14px] font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-60">
+                className="bg-emerald-600 text-white text-[15px] font-semibold px-5 py-2.5 rounded-xl hover:opacity-90 active:scale-[0.98] transition disabled:opacity-60">
                 {busy ? 'Verifying...' : 'Verify'}
               </button>
             </div>
@@ -204,9 +204,9 @@ export default function DevicesPage() {
         </div>
       ) : (
         <>
-          <h3 className="text-[13px] font-bold uppercase tracking-wide text-[#7a6b5c] mb-2">Assigned numbers ({numbers.length})</h3>
+          <h3 className="text-[14px] font-bold uppercase tracking-wide text-[#6b7280] mb-2">Assigned numbers ({numbers.length})</h3>
           {numbers.length === 0 ? (
-            <div className="bg-white rounded-xl border border-black/5 p-6 text-center text-[14px] text-[#7a6b5c]">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-6 text-center text-[15px] text-[#6b7280]">
               No numbers yet. Add one above.
             </div>
           ) : (
@@ -215,7 +215,7 @@ export default function DevicesPage() {
                 const device = deviceByPhone.get(n.phone_number);
                 const connected = !!device;
                 return (
-                  <div key={n.id} className="bg-white rounded-xl border border-black/5 p-4 flex items-center gap-3">
+                  <div key={n.id} className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-4 flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                       !n.verified ? 'bg-yellow-100 text-yellow-600'
                         : connected ? 'bg-emerald-100 text-emerald-600'
@@ -227,18 +227,18 @@ export default function DevicesPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-[#1c1410] text-[15px]">{n.user_name}</p>
-                        <span className="text-[11px] text-[#7a6b5c] font-mono">{n.phone_number}</span>
+                        <p className="font-semibold text-[#111318] text-[16px]">{n.user_name}</p>
+                        <span className="text-[12px] text-[#6b7280] font-mono">{n.phone_number}</span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         {!n.verified ? (
-                          <span className="text-[11px] text-yellow-600 font-medium">Pending OTP</span>
+                          <span className="text-[12px] text-yellow-600 font-medium">Pending OTP</span>
                         ) : connected ? (
-                          <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                          <span className="text-[12px] text-emerald-600 font-medium flex items-center gap-1">
                             <Wifi className="w-3 h-3" /> Connected · Last seen {new Date(device!.last_seen_at!).toLocaleDateString()}
                           </span>
                         ) : (
-                          <span className="text-[11px] text-blue-600 font-medium flex items-center gap-1">
+                          <span className="text-[12px] text-blue-600 font-medium flex items-center gap-1">
                             <WifiOff className="w-3 h-3" /> Verified - waiting for app install
                           </span>
                         )}

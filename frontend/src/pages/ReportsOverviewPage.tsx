@@ -58,8 +58,8 @@ export default function ReportsOverviewPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="mb-6">
-        <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">Reports</h1>
-        <p className="text-[14px] text-[#7a6b5c] mt-0.5">Analytics and insights to drive your sales performance</p>
+        <h1 className="text-[22px] font-headline font-bold text-[#111318]">Reports</h1>
+        <p className="text-[15px] text-[#6b7280] mt-0.5">Analytics and insights to drive your sales performance</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -67,15 +67,15 @@ export default function ReportsOverviewPage() {
           <button
             key={r.path}
             onClick={() => navigate(r.path)}
-            className="text-left bg-white rounded-2xl border border-black/[0.07] p-5 hover:border-primary/30 hover:shadow-sm transition-all group"
+            className="text-left bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover p-5 transition group"
           >
             <div className="flex items-start gap-3">
               <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
                 <r.icon className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="text-[15px] font-semibold text-[#1c1410] group-hover:text-primary transition-colors">{r.title}</h3>
-                <p className="text-[13px] text-[#7a6b5c] mt-1 leading-relaxed">{r.description}</p>
+                <h3 className="text-[16px] font-semibold text-[#111318] group-hover:text-primary transition-colors">{r.title}</h3>
+                <p className="text-[14px] text-[#6b7280] mt-1 leading-relaxed">{r.description}</p>
               </div>
             </div>
           </button>

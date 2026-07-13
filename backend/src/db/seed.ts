@@ -38,21 +38,42 @@ async function seed() {
       ON CONFLICT (tenant_id) DO NOTHING
     `, [tenantId, 'Saral Bakery Pvt. Ltd.', 'Food & Beverage', 'Asia/Kolkata', 'INR']);
 
-    // Pipeline
-    const pipelineRes = await client.query(`
-      INSERT INTO pipelines (tenant_id, name) VALUES ($1, 'Sales Pipeline') RETURNING id
-    `, [tenantId]);
-    const pipelineId = pipelineRes.rows[0].id;
+    // Pipeline - idempotent: reuse the existing Sales Pipeline if the seed already ran,
+    // otherwise re-running seed.ts duplicates the pipeline (+ its stages + leads) and the
+    // pipeline dropdown shows "Sales Pipeline" twice.
+    const existingPipeline = await client.query(
+      `SELECT id FROM pipelines WHERE tenant_id=$1 AND name='Sales Pipeline' ORDER BY created_at ASC LIMIT 1`,
+      [tenantId]
+    );
+    let pipelineId: string;
+    if (existingPipeline.rows[0]) {
+      pipelineId = existingPipeline.rows[0].id;
+    } else {
+      const pipelineRes = await client.query(
+        `INSERT INTO pipelines (tenant_id, name, is_default) VALUES ($1, 'Sales Pipeline', TRUE) RETURNING id`,
+        [tenantId]
+      );
+      pipelineId = pipelineRes.rows[0].id;
+    }
 
-    // Stages
+    // Stages - reuse existing (by name) so a re-seed doesn't duplicate stages either.
     const stages = ['New Lead', 'Contacted', 'Qualified', 'Proposal Sent', 'Won', 'Lost'];
     const stageIds: string[] = [];
     for (let i = 0; i < stages.length; i++) {
-      const r = await client.query(`
-        INSERT INTO pipeline_stages (tenant_id, pipeline_id, name, stage_order)
-        VALUES ($1, $2, $3, $4) RETURNING id
-      `, [tenantId, pipelineId, stages[i], i]);
-      stageIds.push(r.rows[0].id);
+      const existingStage = await client.query(
+        `SELECT id FROM pipeline_stages WHERE pipeline_id=$1 AND name=$2 LIMIT 1`,
+        [pipelineId, stages[i]]
+      );
+      if (existingStage.rows[0]) {
+        stageIds.push(existingStage.rows[0].id);
+      } else {
+        const r = await client.query(
+          `INSERT INTO pipeline_stages (tenant_id, pipeline_id, name, stage_order)
+           VALUES ($1, $2, $3, $4) RETURNING id`,
+          [tenantId, pipelineId, stages[i], i]
+        );
+        stageIds.push(r.rows[0].id);
+      }
     }
 
     // Demo staff member (for testing permissions)

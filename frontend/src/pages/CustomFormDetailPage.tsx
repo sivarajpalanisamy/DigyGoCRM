@@ -106,13 +106,13 @@ const STANDARD_CRM_FIELDS = [
 function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-2">{label}</label>
+      <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] mb-2">{label}</label>
       <label className="flex items-center gap-3 cursor-pointer">
-        <div className="flex-1 h-9 rounded-xl border border-black/8 relative overflow-hidden" style={{ background: value }}>
+        <div className="flex-1 h-9 rounded-xl border border-[var(--hairline)] relative overflow-hidden" style={{ background: value }}>
           <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
             className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" />
         </div>
-        <span className="text-[11px] font-mono text-[#7a6b5c] shrink-0 w-16">{value}</span>
+        <span className="text-[12px] font-mono text-[#6b7280] shrink-0 w-16">{value}</span>
       </label>
     </div>
   );
@@ -160,7 +160,7 @@ function AddFieldPickerModal({
           'flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl border transition-all',
           added
             ? 'border-emerald-200 bg-emerald-50 cursor-not-allowed'
-            : 'border-black/8 bg-white hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm',
+            : 'border-[var(--hairline)] bg-white hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm',
         )}
       >
         <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
@@ -171,10 +171,10 @@ function AddFieldPickerModal({
             : <Icon className="w-4 h-4 text-primary" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className={cn('text-[14px] font-semibold truncate', added ? 'text-emerald-700' : 'text-[#1c1410]')}>{name}</p>
-          <p className="text-[10px] text-[#b09e8d] capitalize">{type}</p>
+          <p className={cn('text-[15px] font-semibold truncate', added ? 'text-emerald-700' : 'text-[#111318]')}>{name}</p>
+          <p className="text-[11px] text-[#9ca3af] capitalize">{type}</p>
         </div>
-        {added && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">Added</span>}
+        {added && <span className="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">Added</span>}
       </button>
     );
   };
@@ -184,24 +184,24 @@ function AddFieldPickerModal({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)]">
           <div>
-            <h3 className="font-bold text-[#1c1410] text-[15px]">Add a Field</h3>
-            <p className="text-[11px] text-[#7a6b5c] mt-0.5">Pick an existing CRM field or create a new one</p>
+            <h3 className="font-bold text-[#111318] text-[16px]">Add a Field</h3>
+            <p className="text-[12px] text-[#6b7280] mt-0.5">Pick an existing CRM field or create a new one</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#6b7280]"><X className="w-4 h-4" /></button>
         </div>
 
         {/* Search */}
         <div className="px-5 pt-4 pb-2">
-          <div className="flex items-center gap-2 bg-[var(--app-bg)] border border-black/8 rounded-xl px-3 py-2">
-            <Search className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
+          <div className="flex items-center gap-2 bg-[var(--app-bg)] border border-[var(--hairline)] rounded-xl px-3 py-2">
+            <Search className="w-3.5 h-3.5 text-[#9ca3af] shrink-0" />
             <input
               autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search fields…"
-              className="flex-1 text-[14px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#b09e8d]"
+              className="flex-1 text-[15px] bg-transparent outline-none text-[#111318] placeholder:text-[#9ca3af]"
             />
           </div>
         </div>
@@ -212,7 +212,7 @@ function AddFieldPickerModal({
           {/* Standard Fields */}
           {filteredStd.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-2">Standard Fields</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] mb-2">Standard Fields</p>
               <div className="space-y-1.5">
                 {filteredStd.map((f) => (
                   <FieldCard key={f.slug} slug={f.slug} name={f.name} type={f.type} Icon={f.Icon} />
@@ -224,7 +224,7 @@ function AddFieldPickerModal({
           {/* Custom Fields */}
           {filteredCustom.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-2">Custom Fields</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] mb-2">Custom Fields</p>
               <div className="space-y-1.5">
                 {filteredCustom.map((f) => {
                   const FIcon = FIELD_ICONS[customTypeToFieldType(f.type)] ?? Type;
@@ -243,15 +243,15 @@ function AddFieldPickerModal({
           )}
 
           {filteredStd.length === 0 && filteredCustom.length === 0 && (
-            <p className="text-center text-[14px] text-[#b09e8d] py-6">No fields match "{search}"</p>
+            <p className="text-center text-[15px] text-[#9ca3af] py-6">No fields match "{search}"</p>
           )}
         </div>
 
         {/* Footer - Create new */}
-        <div className="shrink-0 px-5 py-4 border-t border-black/5">
+        <div className="shrink-0 px-5 py-4 border-t border-[var(--hairline)]">
           <button
             onClick={() => { onClose(); onCreateNew(); }}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-bold text-white transition-all hover:opacity-90"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-bold text-white transition-all hover:opacity-90"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
           >
             <Plus className="w-4 h-4" /> Create New Field
@@ -319,29 +319,29 @@ function CreateFieldModal({
       )}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)]">
           <div className="flex items-center gap-2.5">
             {step === 'detail' && (
-              <button onClick={() => setStep('pick')} className="p-1 rounded-lg hover:bg-gray-100 text-[#7a6b5c]">
+              <button onClick={() => setStep('pick')} className="p-1 rounded-lg hover:bg-gray-100 text-[#6b7280]">
                 <ArrowLeft className="w-3.5 h-3.5" />
               </button>
             )}
             <div>
-              <h3 className="font-bold text-[#1c1410] text-[15px] leading-tight">
+              <h3 className="font-bold text-[#111318] text-[16px] leading-tight">
                 {step === 'pick' ? 'Choose field type' : `New Field - ${dataType}`}
               </h3>
-              <p className="text-[11px] text-[#7a6b5c] mt-0.5">
+              <p className="text-[12px] text-[#6b7280] mt-0.5">
                 {step === 'pick' ? 'Pick the type of data this field will capture' : "Name it - it'll be saved to your Fields page too"}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#6b7280]"><X className="w-4 h-4" /></button>
         </div>
 
         {/* Step 1: Type picker */}
         {step === 'pick' && (
           <div className="flex-1 overflow-y-auto px-5 py-4">
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {CREATOR_TYPES.map((t) => {
                 const active = dataType === t.label;
                 return (
@@ -352,12 +352,12 @@ function CreateFieldModal({
                       'flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl border transition-all text-center',
                       active
                         ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-black/[0.06] hover:border-primary/40 hover:bg-primary/5 text-[#7a6b5c] hover:text-primary'
+                        : 'border-[var(--hairline)] hover:border-primary/40 hover:bg-primary/5 text-[#6b7280] hover:text-primary'
                     )}
                   >
                     <t.Icon className="w-4 h-4" />
-                    <span className="text-[10px] font-semibold leading-tight">{t.label}</span>
-                    <span className="text-[9px] text-[#b09e8d] leading-tight hidden sm:block">{t.hint}</span>
+                    <span className="text-[11px] font-semibold leading-tight">{t.label}</span>
+                    <span className="text-[10px] text-[#9ca3af] leading-tight hidden sm:block">{t.hint}</span>
                   </button>
                 );
               })}
@@ -369,7 +369,7 @@ function CreateFieldModal({
         {step === 'detail' && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             <div>
-              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
+              <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">
                 Field Name <span className="text-red-400">*</span>
               </label>
               <input
@@ -377,10 +377,10 @@ function CreateFieldModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Age Group, Course Name…"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                className="w-full border border-[var(--hairline)] rounded-lg px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white"
               />
               {slug && (
-                <p className="text-[11px] text-[#b09e8d] mt-1">
+                <p className="text-[12px] text-[#9ca3af] mt-1">
                   Slug: <code className="bg-[var(--app-bg)] px-1 py-0.5 rounded font-mono">{slug}</code>
                 </p>
               )}
@@ -389,14 +389,14 @@ function CreateFieldModal({
             {/* Placeholder - only for non-option types */}
             {!needsOptions && (
               <div>
-                <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
-                  Placeholder <span className="text-[#b09e8d] font-normal">(optional)</span>
+                <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">
+                  Placeholder <span className="text-[#9ca3af] font-normal">(optional)</span>
                 </label>
                 <input
                   value={placeholder}
                   onChange={(e) => setPlaceholder(e.target.value)}
                   placeholder="Hint shown inside the empty field"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                  className="w-full border border-[var(--hairline)] rounded-lg px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white"
                 />
               </div>
             )}
@@ -404,21 +404,21 @@ function CreateFieldModal({
             {/* Options builder for Dropdown / Radio / Multi-select */}
             {needsOptions && (
               <div>
-                <label className="text-[13px] font-semibold text-[#7a6b5c] mb-2 block">Options <span className="text-red-400">*</span></label>
+                <label className="text-[14px] font-semibold text-[#6b7280] mb-2 block">Options <span className="text-red-400">*</span></label>
                 <div className="space-y-2">
                   {options.map((opt, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="text-[11px] text-[#b09e8d] w-5 shrink-0 text-right">{idx + 1}.</span>
+                      <span className="text-[12px] text-[#9ca3af] w-5 shrink-0 text-right">{idx + 1}.</span>
                       <input
                         value={opt}
                         onChange={(e) => updateOption(idx, e.target.value)}
                         placeholder={`Option ${idx + 1}`}
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                        className="flex-1 border border-[var(--hairline)] rounded-lg px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white"
                       />
                       <button
                         onClick={() => removeOption(idx)}
                         disabled={options.length <= 1}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-[#c4b09e] hover:text-red-500 transition-colors disabled:opacity-30"
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-[#c3c8cf] hover:text-red-500 transition-colors disabled:opacity-30"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -427,7 +427,7 @@ function CreateFieldModal({
                 </div>
                 <button
                   onClick={addOption}
-                  className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                  className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-[14px] font-semibold text-primary hover:bg-primary/5 rounded-lg transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add option
                 </button>
@@ -436,21 +436,21 @@ function CreateFieldModal({
 
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} className="w-4 h-4 accent-primary" />
-              <span className="text-[14px] text-[#1c1410]">Mark as required</span>
+              <span className="text-[15px] text-[#111318]">Mark as required</span>
             </label>
           </div>
         )}
 
         {/* Footer */}
         {step === 'detail' && (
-          <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">
+          <div className="flex gap-2 px-6 py-4 border-t border-[var(--hairline)]">
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors">
               Cancel
             </button>
             <button
               onClick={handleCreate}
               disabled={saving}
-              className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white disabled:opacity-60"
+              className="flex-1 py-2.5 rounded-lg text-[15px] font-bold text-white disabled:opacity-60"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
             >
               {saving ? 'Creating…' : 'Create & Add to Form'}
@@ -506,7 +506,7 @@ export default function CustomFormDetailPage() {
   const [btnTextColor, setBtnTextColor] = useState('#ffffff');
   const [transparentForm, setTransparentForm] = useState(false);
   const [formBgColor, setFormBgColor] = useState('#ffffff');
-  const [formTextColor, setFormTextColor] = useState('#1c1410');
+  const [formTextColor, setFormTextColor] = useState('#111318');
   const [thankYouMessage, setThankYouMessage] = useState('Thank you for your submission!');
 
   // Fields
@@ -555,7 +555,7 @@ export default function CustomFormDetailPage() {
         setBtnColor(form.btn_color ?? '#ea580c');
         setBtnTextColor(form.btn_text_color ?? '#ffffff');
         setFormBgColor(form.form_bg_color ?? '#ffffff');
-        setFormTextColor(form.form_text_color ?? '#1c1410');
+        setFormTextColor(form.form_text_color ?? '#111318');
         setPipelineId(form.pipeline_id ?? '');
         setStageId(form.stage_id ?? '');
         setTags(Array.isArray(form.tags) ? form.tags : []);
@@ -699,7 +699,7 @@ export default function CustomFormDetailPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-[14px] text-[#7a6b5c]">Loading form…</p>
+        <p className="text-[15px] text-[#6b7280]">Loading form…</p>
       </div>
     );
   }
@@ -708,15 +708,15 @@ export default function CustomFormDetailPage() {
     <div className="h-full flex flex-col -m-5 md:-m-8">
 
       {/* Top bar */}
-      <div className="shrink-0 bg-white border-b border-black/5 px-6 py-3 flex items-center gap-4">
+      <div className="shrink-0 bg-white border-b border-[var(--hairline)] px-6 py-3 flex items-center gap-4">
         <button
           onClick={() => navigate('/lead-generation/custom-forms')}
-          className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors"
+          className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-primary transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="flex-1 min-w-0">
-          <h2 className="font-headline text-[17px] font-bold text-[#1c1410] truncate">
+          <h2 className="font-headline text-[17px] font-bold text-[#111318] truncate">
             {formName || 'Untitled Form'}
           </h2>
         </div>
@@ -726,27 +726,27 @@ export default function CustomFormDetailPage() {
       <div className="flex-1 flex overflow-hidden">
 
         {/* ── Left: Settings ── */}
-        <div className="w-full lg:w-[55%] overflow-y-auto border-r border-black/5 bg-[var(--app-bg)]">
+        <div className="w-full lg:w-[55%] overflow-y-auto border-r border-[var(--hairline)] bg-[var(--app-bg)]">
           <div className="p-6 space-y-5">
 
             {/* Form Name */}
-            <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5">
-              <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Form Name *</label>
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5">
+              <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-2">Form Name *</label>
               <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g. Contact Us, Demo Request…" />
             </div>
 
             {/* ── Form Fields ── */}
-            <div className="bg-white rounded-2xl border border-black/5 card-shadow overflow-hidden">
-              <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+              <div className="px-5 py-4 border-b border-[var(--hairline)] flex items-center justify-between">
                 <div>
-                  <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Form Fields</h3>
-                  <p className="text-[11px] text-[#7a6b5c] mt-0.5">
+                  <h3 className="font-headline font-bold text-[#111318] text-[16px]">Form Fields</h3>
+                  <p className="text-[12px] text-[#6b7280] mt-0.5">
                     {fields.length} field{fields.length !== 1 ? 's' : ''} · each maps to a CRM field automatically
                   </p>
                 </div>
                 <button
                   onClick={() => setShowPicker(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-bold text-white transition-all hover:opacity-90"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[14px] font-bold text-white transition-all hover:opacity-90"
                   style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Field
@@ -755,7 +755,7 @@ export default function CustomFormDetailPage() {
 
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleFieldDragEnd}>
               <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-              <div className="divide-y divide-black/5">
+              <div className="divide-y divide-[var(--hairline)]">
                 {fields.map((field) => {
                   const Icon = FIELD_ICONS[field.type] ?? Type;
                   const mappedName = allCrmFields.find((f) => f.slug === field.mapTo)?.name;
@@ -765,7 +765,7 @@ export default function CustomFormDetailPage() {
                     <div className="px-5 py-4">
                       {/* Top row: drag handle, icon, label, placeholder, delete */}
                       <div className="flex items-center gap-2.5">
-                        <button {...dragHandleProps} className="shrink-0 cursor-grab active:cursor-grabbing text-[#b09e8d] hover:text-[#7a6b5c] transition-colors touch-none">
+                        <button {...dragHandleProps} className="shrink-0 cursor-grab active:cursor-grabbing text-[#9ca3af] hover:text-[#6b7280] transition-colors touch-none">
                           <GripVertical className="w-4 h-4" />
                         </button>
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -774,19 +774,19 @@ export default function CustomFormDetailPage() {
 
                         <div className="flex-1 grid grid-cols-2 gap-3 min-w-0">
                           <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-1">Label</label>
+                            <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] mb-1">Label</label>
                             <Input value={field.label} onChange={(e) => updateField(field.id, { label: e.target.value })}
-                              placeholder="Field label" className="h-9 text-sm" />
+                              placeholder="Field label" className="h-9 text-[15px]" />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-1">Placeholder</label>
+                            <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] mb-1">Placeholder</label>
                             <Input value={field.placeholder} onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
-                              placeholder="Hint text" className="h-9 text-sm" />
+                              placeholder="Hint text" className="h-9 text-[15px]" />
                           </div>
                         </div>
 
                         <button onClick={() => removeField(field.id)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-[#b09e8d] hover:text-red-500 transition-colors shrink-0">
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-[#9ca3af] hover:text-red-500 transition-colors shrink-0">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -794,16 +794,16 @@ export default function CustomFormDetailPage() {
                       {/* Options (for dropdown / radio / multi-select) */}
                       {(field.type === 'dropdown' || field.type === 'radio' || field.type === 'multiselect') && (
                         <div className="mt-2.5 ml-[54px]">
-                          <label className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-1.5">
+                          <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280] mb-1.5">
                             Options
-                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] normal-case font-semibold">
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] normal-case font-semibold">
                               {field.type === 'dropdown' ? 'Select' : field.type === 'radio' ? 'Radio' : 'Multi-select'}
                             </span>
                           </label>
                           <div className="space-y-1.5">
                             {(field.options ?? ['']).map((opt, idx) => (
                               <div key={idx} className="flex items-center gap-2">
-                                <span className="text-[11px] text-[#b09e8d] w-4 shrink-0 text-right">{idx + 1}.</span>
+                                <span className="text-[12px] text-[#9ca3af] w-4 shrink-0 text-right">{idx + 1}.</span>
                                 <input
                                   value={opt}
                                   onChange={(e) => {
@@ -812,20 +812,20 @@ export default function CustomFormDetailPage() {
                                     updateField(field.id, { options: next });
                                   }}
                                   placeholder={`Option ${idx + 1}`}
-                                  className="flex-1 border border-black/8 rounded-lg px-2.5 py-1.5 text-[13px] bg-[var(--app-bg)] outline-none focus:border-primary/40"
+                                  className="flex-1 border border-[var(--hairline)] rounded-lg px-2.5 py-1.5 text-[14px] bg-[var(--app-bg)] outline-none focus:border-primary/40"
                                 />
                                 <button
                                   onClick={() => {
                                     const next = (field.options ?? ['']).filter((_, i) => i !== idx);
                                     updateField(field.id, { options: next.length ? next : [''] });
                                   }}
-                                  className="p-1 rounded hover:bg-red-50 text-[#c4b09e] hover:text-red-500 transition-colors"
+                                  className="p-1 rounded hover:bg-red-50 text-[#c3c8cf] hover:text-red-500 transition-colors"
                                 ><X className="w-3 h-3" /></button>
                               </div>
                             ))}
                             <button
                               onClick={() => updateField(field.id, { options: [...(field.options ?? ['']), ''] })}
-                              className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:bg-primary/5 px-2 py-1 rounded-lg transition-colors"
+                              className="flex items-center gap-1 text-[12px] font-semibold text-primary hover:bg-primary/5 px-2 py-1 rounded-lg transition-colors"
                             >
                               <Plus className="w-3 h-3" /> Add option
                             </button>
@@ -849,7 +849,7 @@ export default function CustomFormDetailPage() {
                               const autoRequired = mapTo === 'email' || mapTo === 'phone';
                               updateField(field.id, { mapTo, ...(autoRequired ? { required: true } : {}) });
                             }}
-                            className="text-[11px] border border-emerald-200 rounded-lg px-2 py-1 bg-emerald-50 text-emerald-800 outline-none focus:border-emerald-400 font-medium max-w-[200px]"
+                            className="text-[12px] border border-emerald-200 rounded-lg px-2 py-1 bg-emerald-50 text-emerald-800 outline-none focus:border-emerald-400 font-medium max-w-[200px]"
                           >
                             <option value="">- Not mapped -</option>
                             <optgroup label="Standard Fields">
@@ -873,7 +873,7 @@ export default function CustomFormDetailPage() {
                             checked={field.required}
                             onCheckedChange={(v) => updateField(field.id, { required: v })}
                           />
-                          <span className="text-[11px] font-medium text-[#7a6b5c]">Required</span>
+                          <span className="text-[12px] font-medium text-[#6b7280]">Required</span>
                         </div>
                       </div>
                     </div>
@@ -887,38 +887,38 @@ export default function CustomFormDetailPage() {
 
               {/* Empty state */}
               {fields.length === 0 && (
-                <div className="px-5 py-10 text-center text-[14px] text-[#b09e8d]">
+                <div className="px-5 py-10 text-center text-[15px] text-[#9ca3af]">
                   No fields yet. Click <strong>Add Field</strong> to get started.
                 </div>
               )}
             </div>
 
             {/* Add to CRM */}
-            <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 space-y-4">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Database className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Add to CRM</h3>
-                  <p className="text-[11px] text-[#7a6b5c]">Auto-create a lead when this form is submitted</p>
+                  <h3 className="font-headline font-bold text-[#111318] text-[16px]">Add to CRM</h3>
+                  <p className="text-[12px] text-[#6b7280]">Auto-create a lead when this form is submitted</p>
                 </div>
                 <button
                   onClick={handleRefreshPipelines}
                   disabled={refreshingPipelines}
                   title="Refresh pipelines"
-                  className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors disabled:opacity-50"
+                  className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-primary transition-colors disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${refreshingPipelines ? 'animate-spin' : ''}`} />
                 </button>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Pipeline</label>
+                <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-2">Pipeline</label>
                 <select
                   value={pipelineId}
                   onChange={(e) => { setPipelineId(e.target.value); setStageId(''); }}
-                  className="w-full text-[14px] border border-black/8 rounded-xl px-3 py-2.5 bg-[var(--app-bg)] text-[#1c1410] outline-none focus:border-primary/30"
+                  className="w-full text-[15px] border border-[var(--hairline)] rounded-xl px-3 py-2.5 bg-[var(--app-bg)] text-[#111318] outline-none focus:border-primary/30"
                 >
                   <option value="">- Select a pipeline -</option>
                   {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -926,28 +926,28 @@ export default function CustomFormDetailPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Initial Stage</label>
+                <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-2">Initial Stage</label>
                 <select
                   value={stageId}
                   onChange={(e) => setStageId(e.target.value)}
                   disabled={!pipelineId}
-                  className="w-full text-[14px] border border-black/8 rounded-xl px-3 py-2.5 bg-[var(--app-bg)] text-[#1c1410] outline-none focus:border-primary/30 disabled:opacity-40"
+                  className="w-full text-[15px] border border-[var(--hairline)] rounded-xl px-3 py-2.5 bg-[var(--app-bg)] text-[#111318] outline-none focus:border-primary/30 disabled:opacity-40"
                 >
                   <option value="">- Select a stage -</option>
                   {(selectedPipeline?.stages ?? []).map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
-                {!pipelineId && <p className="text-[11px] text-[#b09e8d] mt-1">Select a pipeline first</p>}
+                {!pipelineId && <p className="text-[12px] text-[#9ca3af] mt-1">Select a pipeline first</p>}
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2 flex items-center gap-1">
+                <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-2 flex items-center gap-1">
                   <Tag className="w-3 h-3" /> Tags
                 </label>
-                <div className="flex flex-wrap gap-1.5 p-2.5 rounded-xl border border-black/8 bg-[var(--app-bg)] min-h-[42px]">
+                <div className="flex flex-wrap gap-1.5 p-2.5 rounded-xl border border-[var(--hairline)] bg-[var(--app-bg)] min-h-[42px]">
                   {tags.map((t) => (
-                    <span key={t} className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[11px] font-medium">
+                    <span key={t} className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[12px] font-medium">
                       {t}
                       <button onClick={() => setTags(tags.filter((x) => x !== t))} className="hover:text-red-500 transition-colors">
                         <X className="w-3 h-3" />
@@ -957,38 +957,38 @@ export default function CustomFormDetailPage() {
                   <input value={tagInput} onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={handleTagKey} onBlur={addTag}
                     placeholder={tags.length === 0 ? 'Type a tag and press Enter…' : 'Add more…'}
-                    className="flex-1 min-w-[120px] text-[14px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#b09e8d]"
+                    className="flex-1 min-w-[120px] text-[15px] bg-transparent outline-none text-[#111318] placeholder:text-[#9ca3af]"
                   />
                 </div>
               </div>
             </div>
 
             {/* Declaration */}
-            <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                     <FileCheck className="w-3.5 h-3.5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Declaration</h3>
-                    <p className="text-[11px] text-[#7a6b5c]">Show a consent / policy checkbox to users</p>
+                    <h3 className="font-headline font-bold text-[#111318] text-[16px]">Declaration</h3>
+                    <p className="text-[12px] text-[#6b7280]">Show a consent / policy checkbox to users</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={declarationEnabled} onCheckedChange={setDeclarationEnabled} />
-                  <span className="text-[13px] font-medium text-[#7a6b5c]">{declarationEnabled ? 'Enabled' : 'Off'}</span>
+                  <span className="text-[14px] font-medium text-[#6b7280]">{declarationEnabled ? 'Enabled' : 'Off'}</span>
                 </div>
               </div>
               {declarationEnabled && (
                 <div className="space-y-3 pt-1">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Policy Title</label>
+                    <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-2">Policy Title</label>
                     <Input value={policyTitle} onChange={(e) => setPolicyTitle(e.target.value)}
                       placeholder="e.g. I agree to the Terms & Privacy Policy" />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Policy Link</label>
+                    <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-2">Policy Link</label>
                     <Input value={policyLink} onChange={(e) => setPolicyLink(e.target.value)}
                       placeholder="https://yoursite.com/privacy-policy" />
                   </div>
@@ -997,24 +997,24 @@ export default function CustomFormDetailPage() {
             </div>
 
             {/* Button */}
-            <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 space-y-4">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Link2 className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Button</h3>
+                <h3 className="font-headline font-bold text-[#111318] text-[16px]">Button</h3>
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Button Title</label>
+                <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-2">Button Title</label>
                 <Input value={submitLabel} onChange={(e) => setSubmitLabel(e.target.value)} placeholder="e.g. Submit, Enquire Now" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Thank You Message</label>
+                <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-2">Thank You Message</label>
                 <Input value={thankYouMessage} onChange={(e) => setThankYouMessage(e.target.value)} placeholder="Thank you for your submission!" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-1">Redirect Link</label>
-                <p className="text-[11px] text-[#b09e8d] mb-2">Where to send the user after form is submitted (optional)</p>
+                <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-1">Redirect Link</label>
+                <p className="text-[12px] text-[#9ca3af] mb-2">Where to send the user after form is submitted (optional)</p>
                 <Input value={redirectLink} onChange={(e) => setRedirectLink(e.target.value)} placeholder="https://yoursite.com/thank-you" />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1024,18 +1024,18 @@ export default function CustomFormDetailPage() {
             </div>
 
             {/* Form Colors */}
-            <div className="bg-white rounded-2xl border border-black/5 card-shadow p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Palette className="w-3.5 h-3.5 text-primary" />
                   </div>
-                  <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Form Colors</h3>
+                  <h3 className="font-headline font-bold text-[#111318] text-[16px]">Form Colors</h3>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" checked={transparentForm} onChange={(e) => setTransparentForm(e.target.checked)}
                     className="w-4 h-4 rounded accent-orange-500" />
-                  <span className="text-[13px] font-medium text-[#7a6b5c]">Transparent background</span>
+                  <span className="text-[14px] font-medium text-[#6b7280]">Transparent background</span>
                 </label>
               </div>
               <div className={`grid grid-cols-2 gap-4 transition-opacity ${transparentForm ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -1046,7 +1046,7 @@ export default function CustomFormDetailPage() {
 
             {/* Save button */}
             <div className="pb-2">
-              <Button onClick={handleSave} disabled={saving} className="w-full py-3 text-[15px]">
+              <Button onClick={handleSave} disabled={saving} className="w-full py-3 text-[16px]">
                 <Check className="w-4 h-4" /> {saving ? 'Saving…' : 'Save Form'}
               </Button>
             </div>
@@ -1057,9 +1057,9 @@ export default function CustomFormDetailPage() {
         {/* ── Right: Live Preview ── */}
         <div className="hidden lg:flex flex-1 flex-col overflow-y-auto bg-[var(--accent-tint)]/30 sticky top-0">
           <div className="p-6">
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-5">Live Preview</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] mb-5">Live Preview</p>
 
-            <div className="rounded-2xl border border-black/5 card-shadow p-6 max-w-sm mx-auto"
+            <div className="rounded-2xl border border-[var(--hairline)] card-shadow p-6 max-w-sm mx-auto"
               style={{ background: previewBg, color: formTextColor }}>
               <h3 className="font-headline text-[17px] font-bold mb-5" style={{ color: formTextColor }}>
                 {formName || 'Untitled Form'}
@@ -1067,20 +1067,20 @@ export default function CustomFormDetailPage() {
               <div className="space-y-4">
                 {fields.map((field) => (
                   <div key={field.id}>
-                    <label className="block text-[13px] font-semibold mb-1.5" style={{ color: formTextColor }}>
+                    <label className="block text-[14px] font-semibold mb-1.5" style={{ color: formTextColor }}>
                       {field.label || 'Field'}
                       {field.required && <span className="text-red-400 ml-0.5">*</span>}
                       {field.mapTo && (
-                        <span className="ml-2 text-[10px] font-normal text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                        <span className="ml-2 text-[11px] font-normal text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">
                           → {allCrmFields.find((f) => f.slug === field.mapTo)?.name ?? field.mapTo}
                         </span>
                       )}
                     </label>
                     {field.type === 'textarea' ? (
                       <textarea disabled placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                        className="w-full h-20 px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[14px] text-[#7a6b5c] placeholder:text-[#b09e8d] resize-none outline-none" />
+                        className="w-full h-20 px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-[var(--hairline)] text-[15px] text-[#6b7280] placeholder:text-[#9ca3af] resize-none outline-none" />
                     ) : field.type === 'dropdown' ? (
-                      <select disabled className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[14px] text-[#7a6b5c] outline-none">
+                      <select disabled className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-[var(--hairline)] text-[15px] text-[#6b7280] outline-none">
                         <option>- Select -</option>
                         {(field.options ?? []).map((o) => <option key={o}>{o}</option>)}
                       </select>
@@ -1089,30 +1089,30 @@ export default function CustomFormDetailPage() {
                         {(field.options ?? []).map((o) => (
                           <label key={o} className="flex items-center gap-2">
                             <input type="radio" disabled className="w-3.5 h-3.5" style={{ accentColor: btnColor }} />
-                            <span className="text-[13px]" style={{ color: formTextColor }}>{o}</span>
+                            <span className="text-[14px]" style={{ color: formTextColor }}>{o}</span>
                           </label>
                         ))}
-                        {(!field.options || field.options.length === 0) && <p className="text-[11px] text-[#b09e8d] italic">No options added</p>}
+                        {(!field.options || field.options.length === 0) && <p className="text-[12px] text-[#9ca3af] italic">No options added</p>}
                       </div>
                     ) : field.type === 'multiselect' ? (
                       <div className="space-y-1.5 pt-1">
                         {(field.options ?? []).map((o) => (
                           <label key={o} className="flex items-center gap-2">
                             <input type="checkbox" disabled className="w-3.5 h-3.5 rounded" style={{ accentColor: btnColor }} />
-                            <span className="text-[13px]" style={{ color: formTextColor }}>{o}</span>
+                            <span className="text-[14px]" style={{ color: formTextColor }}>{o}</span>
                           </label>
                         ))}
-                        {(!field.options || field.options.length === 0) && <p className="text-[11px] text-[#b09e8d] italic">No options added</p>}
+                        {(!field.options || field.options.length === 0) && <p className="text-[12px] text-[#9ca3af] italic">No options added</p>}
                       </div>
                     ) : field.type === 'checkbox' ? (
                       <div className="flex items-center gap-2">
                         <input type="checkbox" disabled className="w-4 h-4 rounded" style={{ accentColor: btnColor }} />
-                        <span className="text-[14px]" style={{ color: formTextColor }}>{field.placeholder || field.label}</span>
+                        <span className="text-[15px]" style={{ color: formTextColor }}>{field.placeholder || field.label}</span>
                       </div>
                     ) : (
                       <input disabled type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : field.type === 'date' ? 'date' : 'text'}
                         placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                        className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-black/5 text-[14px] text-[#7a6b5c] placeholder:text-[#b09e8d] outline-none" />
+                        className="w-full px-3 py-2.5 rounded-xl bg-[var(--app-bg)] border border-[var(--hairline)] text-[15px] text-[#6b7280] placeholder:text-[#9ca3af] outline-none" />
                     )}
                   </div>
                 ))}
@@ -1121,14 +1121,14 @@ export default function CustomFormDetailPage() {
               {declarationEnabled && policyTitle && (
                 <div className="flex items-start gap-2 mt-4">
                   <input type="checkbox" disabled className="w-4 h-4 mt-0.5 rounded shrink-0" />
-                  <span className="text-[13px]" style={{ color: formTextColor }}>
+                  <span className="text-[14px]" style={{ color: formTextColor }}>
                     {policyTitle}
                     {policyLink && <span className="underline ml-1 opacity-60">View Policy</span>}
                   </span>
                 </div>
               )}
 
-              <button disabled className="mt-6 w-full py-3 rounded-xl text-[15px] font-semibold"
+              <button disabled className="mt-6 w-full py-3 rounded-xl text-[16px] font-semibold"
                 style={{ background: btnColor, color: btnTextColor }}>
                 {submitLabel || 'Submit'}
               </button>
@@ -1136,9 +1136,9 @@ export default function CustomFormDetailPage() {
 
             {(pipelineId || tags.length > 0) && (
               <div className="mt-5 max-w-sm mx-auto bg-emerald-50 border border-emerald-100 rounded-2xl p-4 space-y-1.5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-700">CRM Mapping</p>
+                <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-emerald-700">CRM Mapping</p>
                 {selectedPipeline && (
-                  <p className="text-[13px] text-emerald-800">
+                  <p className="text-[14px] text-emerald-800">
                     Pipeline: <span className="font-semibold">{selectedPipeline.name}</span>
                     {stageId && selectedPipeline.stages && (
                       <> → <span className="font-semibold">
@@ -1150,7 +1150,7 @@ export default function CustomFormDetailPage() {
                 {tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1">
                     {tags.map((t) => (
-                      <span key={t} className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-700 text-[11px] font-medium">{t}</span>
+                      <span key={t} className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-700 text-[12px] font-medium">{t}</span>
                     ))}
                   </div>
                 )}

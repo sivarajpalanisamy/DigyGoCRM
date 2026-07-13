@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useCrmStore } from '@/store/crmStore';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const PERIODS = [
   { value: 'today', label: 'Today' },
@@ -77,24 +78,24 @@ export default function ConversionFunnelReportPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-5">
       <div>
-        <h1 className="text-[22px] font-headline font-bold text-[#1c1410]">Conversion Funnel</h1>
-        <p className="text-[14px] text-[#7a6b5c] mt-0.5">Drop-off rate at each pipeline stage</p>
+        <h1 className="text-[22px] font-headline font-bold text-[#111318]">Conversion Funnel</h1>
+        <p className="text-[15px] text-[#6b7280] mt-0.5">Drop-off rate at each pipeline stage</p>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <select value={pipelineId} onChange={(e) => setPipelineId(e.target.value)}
-          className="text-[13px] border border-black/10 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-[var(--brand)] font-semibold">
+          className="text-[14px] border border-[var(--hairline)] rounded-xl px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-semibold">
           {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-2)] p-1 flex-wrap">
           {PERIODS.map((p) => (
             <button key={p.value} onClick={() => setPeriod(p.value)}
               className={cn(
-                'text-[13px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
+                'text-[14px] font-semibold px-3.5 py-1.5 rounded-full transition-all',
                 period === p.value
-                  ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-sm'
-                  : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/40',
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-[#6b7280] hover:text-[#111318]',
               )}>
               {p.label}
             </button>
@@ -102,11 +103,9 @@ export default function ConversionFunnelReportPage() {
         </div>
         {period === 'custom' && (
           <div className="flex items-center gap-2">
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
-              className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] bg-white" />
-            <span className="text-[13px] text-[#9a8a7a]">to</span>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
-              className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] bg-white" />
+            <DatePicker value={from} onChange={setFrom} placeholder="Start date" />
+            <span className="text-[14px] text-[#8b929c]">to</span>
+            <DatePicker value={to} onChange={setTo} placeholder="End date" />
           </div>
         )}
       </div>
@@ -116,7 +115,7 @@ export default function ConversionFunnelReportPage() {
           <RefreshCw className="w-5 h-5 animate-spin text-[var(--brand-dark)]" />
         </div>
       ) : stages.length === 0 ? (
-        <div className="text-center py-20 text-[14px] text-[#9a8a7a]">Select a pipeline to view funnel</div>
+        <div className="text-center py-20 text-[15px] text-[#8b929c]">Select a pipeline to view funnel</div>
       ) : (
         <>
           {/* KPI row */}
@@ -129,24 +128,24 @@ export default function ConversionFunnelReportPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Funnel visualization */}
-            <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-black/5">
-                <p className="text-[15px] font-bold text-[#1c1410]">Stage Funnel</p>
-                <p className="text-[11px] text-[#9a8a7a] mt-0.5">Lead count at each stage</p>
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+              <div className="px-5 py-4 border-b border-[var(--hairline)]">
+                <p className="text-[16px] font-bold text-[#111318]">Stage Funnel</p>
+                <p className="text-[12px] text-[#8b929c] mt-0.5">Lead count at each stage</p>
               </div>
               <div className="p-5">
                 <ResponsiveContainer width="100%" height={Math.max(280, stages.length * 50)}>
                   <BarChart data={stages} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe4" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 10, fill: '#8a7c6e' }} axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="stage_name" width={110} tick={{ fontSize: 10, fill: '#8a7c6e' }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#1c1410', color: '#fff', fontSize: 11 }}
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="stage_name" width={110} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }}
                       formatter={(v: number, _n: string, p: any) => [`${v} leads (${p.payload.conversion_pct}%)`, 'Count']} />
                     <Bar dataKey="current_count" radius={[0, 4, 4, 0]} barSize={24}>
                       {stages.map((_, i) => (
                         <Cell key={i} fill={FUNNEL_COLORS[i % FUNNEL_COLORS.length]} />
                       ))}
-                      <LabelList dataKey="conversion_pct" position="right" style={{ fontSize: 10, fill: '#7a6b5c' }}
+                      <LabelList dataKey="conversion_pct" position="right" style={{ fontSize: 10, fill: '#6b7280' }}
                         formatter={(v: number) => `${v}%`} />
                     </Bar>
                   </BarChart>
@@ -155,10 +154,10 @@ export default function ConversionFunnelReportPage() {
             </div>
 
             {/* Stage-to-stage drop-off */}
-            <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-black/5">
-                <p className="text-[15px] font-bold text-[#1c1410]">Stage Drop-off</p>
-                <p className="text-[11px] text-[#9a8a7a] mt-0.5">Conversion between consecutive stages</p>
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+              <div className="px-5 py-4 border-b border-[var(--hairline)]">
+                <p className="text-[16px] font-bold text-[#111318]">Stage Drop-off</p>
+                <p className="text-[12px] text-[#8b929c] mt-0.5">Conversion between consecutive stages</p>
               </div>
               <div className="p-5 space-y-3">
                 {stages.map((s, i) => {
@@ -170,12 +169,12 @@ export default function ConversionFunnelReportPage() {
                   return (
                     <div key={s.stage_id ?? i}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[13px] font-medium text-[#1c1410]">{s.stage_name}</span>
+                        <span className="text-[14px] font-medium text-[#111318]">{s.stage_name}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-[#7a6b5c]">{curr} leads</span>
+                          <span className="text-[12px] text-[#6b7280]">{curr} leads</span>
                           {i > 0 && (
                             <span className={cn(
-                              'text-[10px] font-semibold px-1.5 py-0.5 rounded',
+                              'text-[11px] font-semibold px-1.5 py-0.5 rounded',
                               dropPct > 50 ? 'bg-red-50 text-red-600' :
                               dropPct > 20 ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
                             )}>
@@ -184,14 +183,14 @@ export default function ConversionFunnelReportPage() {
                           )}
                         </div>
                       </div>
-                      <div className="h-2 bg-[#f0ebe4] rounded-full overflow-hidden">
+                      <div className="h-2 bg-[var(--surface-2)] rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all" style={{
                           width: `${Math.max(fillPct, 2)}%`,
                           backgroundColor: FUNNEL_COLORS[i % FUNNEL_COLORS.length],
                         }} />
                       </div>
                       {s.avg_days_in_stage > 0 && (
-                        <p className="text-[10px] text-[#9a8a7a] mt-0.5">Avg {s.avg_days_in_stage}d in stage</p>
+                        <p className="text-[11px] text-[#8b929c] mt-0.5">Avg {s.avg_days_in_stage}d in stage</p>
                       )}
                     </div>
                   );
@@ -201,14 +200,14 @@ export default function ConversionFunnelReportPage() {
           </div>
 
           {/* Detailed table */}
-          <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-black/5">
-              <p className="text-[15px] font-bold text-[#1c1410]">Stage Details</p>
+          <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+            <div className="px-5 py-4 border-b border-[var(--hairline)]">
+              <p className="text-[16px] font-bold text-[#111318]">Stage Details</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[14px]">
                 <thead>
-                  <tr className="border-b border-black/5 text-left text-[#7a6b5c]">
+                  <tr className="border-b border-[var(--hairline)] text-left text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af]">
                     <th className="px-5 py-3 font-semibold">Stage</th>
                     <th className="px-3 py-3 font-semibold text-right">Current Leads</th>
                     <th className="px-3 py-3 font-semibold text-right">Total Entered</th>
@@ -218,18 +217,18 @@ export default function ConversionFunnelReportPage() {
                 </thead>
                 <tbody>
                   {stages.map((s, i) => (
-                    <tr key={s.stage_id ?? i} className="border-b border-black/5 hover:bg-[#faf8f6]">
+                    <tr key={s.stage_id ?? i} className="border-b border-[var(--hairline)] hover:bg-[var(--surface-2)] transition-colors">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: FUNNEL_COLORS[i % FUNNEL_COLORS.length] }} />
-                          <span className="font-medium text-[#1c1410]">{s.stage_name}</span>
-                          {s.is_won && <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-semibold">Won</span>}
+                          <span className="font-medium text-[#111318]">{s.stage_name}</span>
+                          {s.is_won && <span className="text-[11px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-semibold">Won</span>}
                         </div>
                       </td>
                       <td className="px-3 py-3 text-right">{s.current_count}</td>
                       <td className="px-3 py-3 text-right">{s.total_entered || '-'}</td>
                       <td className="px-3 py-3 text-right font-semibold">{s.conversion_pct}%</td>
-                      <td className="px-3 py-3 text-right text-[#7a6b5c]">{s.avg_days_in_stage}d</td>
+                      <td className="px-3 py-3 text-right text-[#6b7280]">{s.avg_days_in_stage}d</td>
                     </tr>
                   ))}
                 </tbody>
@@ -249,13 +248,13 @@ function KpiCard({ label, value, icon: Icon, accent }: {
     <div className="rounded-xl px-4 py-3.5 flex items-center gap-3"
       style={{ background: 'linear-gradient(135deg,var(--brand-dark) 0%,var(--brand) 55%,var(--brand-light) 100%)', boxShadow: '0 4px 20px rgba(234,88,12,0.25)' }}>
       <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-white" /></div>
-      <div className="min-w-0 flex-1"><p className="text-[11px] opacity-75 text-white truncate">{label}</p><h3 className="font-bold text-[20px] leading-tight text-white truncate">{value}</h3></div>
+      <div className="min-w-0 flex-1"><p className="text-[12px] opacity-75 text-white truncate">{label}</p><h3 className="font-bold text-[20px] leading-tight text-white truncate">{value}</h3></div>
     </div>
   );
   return (
-    <div className="bg-white rounded-xl px-4 py-3.5 flex items-center gap-3 border border-black/5 shadow-sm">
+    <div className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3 border border-[var(--hairline)] card-shadow">
       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-primary/10"><Icon className="w-4 h-4 text-primary" /></div>
-      <div className="min-w-0 flex-1"><p className="text-[11px] text-[#7a6b5c] truncate">{label}</p><h3 className="font-bold text-[24px] leading-tight text-[#1c1410]">{value}</h3></div>
+      <div className="min-w-0 flex-1"><p className="text-[12px] text-[#6b7280] truncate">{label}</p><h3 className="font-bold text-[24px] leading-tight text-[#111318]">{value}</h3></div>
     </div>
   );
 }

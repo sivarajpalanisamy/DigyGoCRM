@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'native.dart';
 
-/// Single source of truth for talking to the DigyGo backend from the device.
+/// Single source of truth for talking to the Hawcus backend from the device.
 ///
 /// The server URL is **editable in-app** (pairing screen → Server URL) and stored,
 /// so a changing PC IP never requires a rebuild. The compile-time default is just

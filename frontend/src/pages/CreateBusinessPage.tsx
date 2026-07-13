@@ -64,30 +64,29 @@ export default function CreateBusinessPage() {
   };
 
   const inp = (hasErr?: string) =>
-    `w-full px-3 py-2.5 rounded border text-[15px] text-[#1c1410] outline-none transition-all bg-white placeholder:text-gray-300 ${
+    `w-full px-3 py-2.5 rounded-xl border text-[16px] text-[#111318] outline-none transition bg-white placeholder:text-gray-300 ${
       hasErr
         ? 'border-red-400 focus:border-red-400 focus:ring-2 focus:ring-red-100'
-        : 'border-gray-200 focus:border-primary/50 focus:ring-2 focus:ring-primary/10'
+        : 'border-[var(--hairline)] focus:border-primary/40 focus:ring-2 focus:ring-primary/20'
     }`;
 
-  const lbl = 'block text-[15px] font-semibold text-[#1c1410] mb-1.5';
+  const lbl = 'block text-[16px] font-semibold text-[#111318] mb-1.5';
 
   return (
     <div className="max-w-6xl mx-auto px-1 sm:px-0">
 
       {/* Page title */}
       <div className="mb-4 sm:mb-6">
-        <h2 className="font-headline font-bold text-[18px] sm:text-[22px] text-[#1c1410]">Create New Business</h2>
-        <p className="text-[13px] sm:text-[14px] text-[#7a6b5c] mt-1">Fill in the details to create a new business account.</p>
+        <h2 className="font-headline font-bold text-[18px] sm:text-[22px] text-[#111318]">Create New Business</h2>
+        <p className="text-[14px] sm:text-[15px] text-[#6b7280] mt-1">Fill in the details to create a new business account.</p>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-2xl border border-black/5 overflow-hidden"
-          style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
 
           {/* ── LEFT: Seller Info ── */}
-          <div className="p-5 sm:p-8 lg:border-r border-black/[0.06] space-y-5">
-            <h3 className="font-bold text-[16px] sm:text-[18px] text-[#1c1410] mb-4 sm:mb-6">Owner Info</h3>
+          <div className="p-5 sm:p-8 lg:border-r border-[var(--hairline)] space-y-5">
+            <h3 className="font-bold text-[16px] sm:text-[18px] text-[#111318] mb-4 sm:mb-6">Owner Info</h3>
 
             {/* First + Last Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -99,7 +98,7 @@ export default function CreateBusinessPage() {
                   className={inp(errors.firstName)}
                   placeholder=""
                 />
-                {errors.firstName && <p className="text-[13px] text-red-500 mt-1">{errors.firstName}</p>}
+                {errors.firstName && <p className="text-[14px] text-red-500 mt-1">{errors.firstName}</p>}
               </div>
               <div>
                 <label className={lbl}>Last Name <span className="text-red-500">*</span></label>
@@ -109,7 +108,7 @@ export default function CreateBusinessPage() {
                   className={inp(errors.lastName)}
                   placeholder=""
                 />
-                {errors.lastName && <p className="text-[13px] text-red-500 mt-1">{errors.lastName}</p>}
+                {errors.lastName && <p className="text-[14px] text-red-500 mt-1">{errors.lastName}</p>}
               </div>
             </div>
 
@@ -123,7 +122,7 @@ export default function CreateBusinessPage() {
                 className={inp(errors.email)}
                 placeholder=""
               />
-              {errors.email && <p className="text-[13px] text-red-500 mt-1">{errors.email}</p>}
+              {errors.email && <p className="text-[14px] text-red-500 mt-1">{errors.email}</p>}
             </div>
 
             {/* Login Pin */}
@@ -138,27 +137,27 @@ export default function CreateBusinessPage() {
                 className={inp()}
                 placeholder=""
               />
-              <p className="text-[14px] text-blue-500 mt-1.5 font-medium">Can be used instead of OTP</p>
+              <p className="text-[15px] text-blue-500 mt-1.5 font-medium">Can be used instead of OTP</p>
             </div>
 
             {/* Phone */}
             <div>
               <label className={lbl}>Phone <span className="text-red-500">*</span></label>
-              <div className={`flex items-center rounded border ${errors.phone ? 'border-red-400' : 'border-gray-200'} overflow-hidden focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 bg-white transition-all`}>
-                <div className="flex items-center gap-1.5 px-3 py-2.5 border-r border-gray-200 bg-gray-50 shrink-0">
+              <div className={`flex items-center rounded-xl border ${errors.phone ? 'border-red-400' : 'border-[var(--hairline)]'} overflow-hidden focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/20 bg-white transition`}>
+                <div className="flex items-center gap-1.5 px-3 py-2.5 border-r border-[var(--hairline)] bg-[var(--surface-2)] shrink-0">
                   <span className="text-[16px]">🇮🇳</span>
                   <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-[14px] text-[#1c1410] font-medium">+91</span>
+                  <span className="text-[15px] text-[#111318] font-medium">+91</span>
                 </div>
                 <input
                   type="tel"
                   value={form.phone}
                   onChange={set('phone')}
                   placeholder="81234 56789"
-                  className="flex-1 px-3 py-2.5 text-[15px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300"
+                  className="flex-1 px-3 py-2.5 text-[16px] text-[#111318] outline-none bg-transparent placeholder:text-gray-300"
                 />
               </div>
-              {errors.phone && <p className="text-[13px] text-red-500 mt-1">{errors.phone}</p>}
+              {errors.phone && <p className="text-[14px] text-red-500 mt-1">{errors.phone}</p>}
             </div>
 
             {/* Selected Subscription */}
@@ -175,7 +174,7 @@ export default function CreateBusinessPage() {
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
-              {errors.plan && <p className="text-[13px] text-red-500 mt-1">{errors.plan}</p>}
+              {errors.plan && <p className="text-[14px] text-red-500 mt-1">{errors.plan}</p>}
             </div>
 
             {/* Snapshot */}
@@ -185,7 +184,7 @@ export default function CreateBusinessPage() {
                 <select
                   value={form.snapshot}
                   onChange={set('snapshot')}
-                  className={`${inp()} appearance-none pr-9 ${!form.snapshot ? 'text-gray-400' : 'text-[#1c1410]'}`}
+                  className={`${inp()} appearance-none pr-9 ${!form.snapshot ? 'text-gray-400' : 'text-[#111318]'}`}
                 >
                   <option value="" disabled>Select Snapshot</option>
                   {SNAPSHOTS.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -196,8 +195,8 @@ export default function CreateBusinessPage() {
           </div>
 
           {/* ── RIGHT: General Info ── */}
-          <div className="p-5 sm:p-8 space-y-5 bg-white border-t lg:border-t-0 border-black/[0.06]">
-            <h3 className="font-bold text-[16px] sm:text-[18px] text-[#1c1410] mb-4 sm:mb-6">General Info</h3>
+          <div className="p-5 sm:p-8 space-y-5 bg-white border-t lg:border-t-0 border-[var(--hairline)]">
+            <h3 className="font-bold text-[16px] sm:text-[18px] text-[#111318] mb-4 sm:mb-6">General Info</h3>
 
             {/* Business Name */}
             <div>
@@ -208,7 +207,7 @@ export default function CreateBusinessPage() {
                 className={inp(errors.businessName)}
                 placeholder=""
               />
-              {errors.businessName && <p className="text-[13px] text-red-500 mt-1">{errors.businessName}</p>}
+              {errors.businessName && <p className="text-[14px] text-red-500 mt-1">{errors.businessName}</p>}
             </div>
 
             {/* User License */}
@@ -222,7 +221,7 @@ export default function CreateBusinessPage() {
                 className={inp()}
                 placeholder="5"
               />
-              <p className="text-[14px] text-[#7a6b5c] mt-1.5">Max users this tenant can create (including owner)</p>
+              <p className="text-[15px] text-[#6b7280] mt-1.5">Max users this tenant can create (including owner)</p>
             </div>
 
             {/* Address */}
@@ -235,7 +234,7 @@ export default function CreateBusinessPage() {
                 className={`${inp(errors.address)} resize-none`}
                 placeholder=""
               />
-              {errors.address && <p className="text-[13px] text-red-500 mt-1">{errors.address}</p>}
+              {errors.address && <p className="text-[14px] text-red-500 mt-1">{errors.address}</p>}
             </div>
 
             {/* Submit */}
@@ -243,7 +242,7 @@ export default function CreateBusinessPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full sm:w-auto px-8 py-3 rounded text-white text-[14px] font-bold uppercase tracking-wider transition-all disabled:opacity-60 hover:opacity-90 active:scale-[0.98]"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl text-white text-[15px] font-bold uppercase tracking-wider transition disabled:opacity-60 hover:opacity-90 active:scale-[0.98]"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
               >
                 {loading ? 'Creating…' : 'Create Business'}

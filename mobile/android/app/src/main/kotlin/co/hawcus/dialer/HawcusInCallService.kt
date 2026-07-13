@@ -1,4 +1,4 @@
-package co.digygo.digygo_dialer
+package co.hawcus.dialer
 
 import android.content.Intent
 import android.telecom.Call
@@ -10,7 +10,7 @@ import android.telecom.InCallService
  * (incoming + outgoing) here. We forward the call to CallManager and bring our
  * own in-call UI (MainActivity → Flutter InCallScreen) to the foreground.
  */
-class DigygoInCallService : InCallService() {
+class HawcusInCallService : InCallService() {
 
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)

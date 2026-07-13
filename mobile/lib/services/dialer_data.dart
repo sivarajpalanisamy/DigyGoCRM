@@ -21,6 +21,37 @@ class DialerData {
     return list;
   }
 
+  // True when a call-log entry is on a CRM-verified SIM (or SIM can't matter).
+  // Mirrors the fail-closed rule in [syncToCrm]: on a dual-SIM phone a call is
+  // trusted only when its slot resolves AND is a verified slot; a single-SIM
+  // phone (or nothing verified yet to compare) has no ambiguity, so it's allowed.
+  bool _isOnVerifiedSim(SimGate gate, CallLogEntry e) {
+    if (gate.multiSim && gate.verifiedSlots.isNotEmpty) {
+      final slot = gate.slotFor(e.phoneAccountId);
+      return slot != null && gate.verifiedSlots.contains(slot);
+    }
+    return true;
+  }
+
+  /// Newest call-log entry that ended within [withinMs] AND is on a CRM-verified
+  /// SIM. The post-call popup uses this instead of the raw newest row, so a call
+  /// on the skipped/unverified SIM of a dual-SIM phone is never surfaced or
+  /// pre-filled into the create-lead screen (matches the background sync gate).
+  Future<CallLogEntry?> latestVerifiedSimCall({required int withinMs}) async {
+    final logs = await callLogs(); // newest first
+    if (logs.isEmpty) return null;
+    final gate = await Native.instance.simGateInfo();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (final e in logs) {
+      final ts = e.timestamp ?? 0;
+      final endMs = ts + ((e.duration ?? 0) * 1000);
+      if (now - endMs > withinMs) break; // sorted desc → all remaining are older
+      if ((e.number ?? '').isEmpty) continue;
+      if (_isOnVerifiedSim(gate, e)) return e;
+    }
+    return null;
+  }
+
   // ── Contacts ─────────────────────────────────────────────────────────────
   Future<List<Contact>> contacts() async {
     if (!await FlutterContacts.requestPermission(readonly: true)) return [];
@@ -35,7 +66,7 @@ class DialerData {
   // the default-dialer role; otherwise fall back to the system dialer.
   Future<void> dial(String number) async {
     var isDefault = await Native.instance.isDefaultDialer();
-    // First call attempt: ask to make DigyGo the default dialer so the call runs in-app.
+    // First call attempt: ask to make Hawcus the default dialer so the call runs in-app.
     if (!isDefault) {
       isDefault = await Native.instance.requestDefaultDialer();
     }

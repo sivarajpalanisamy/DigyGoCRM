@@ -75,7 +75,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-2 font-sans text-[#1c1410]"
+      className="min-h-[100dvh] grid grid-cols-1 md:grid-cols-2 font-sans text-[#111318]"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
       {/* ── Left: brand / marketing panel (hidden on small screens) ───────────── */}
@@ -114,7 +114,7 @@ export default function LoginPage() {
             {isCustomDomain ? (
               loaded && logoUrl
                 ? <img src={logoUrl} alt={tenantName ?? ''} className="h-11 lg:h-12 w-auto max-w-[220px] object-contain" />
-                : <span className="font-headline text-3xl lg:text-4xl font-black tracking-tight text-[#1c1410]">{brandName}</span>
+                : <span className="font-headline text-3xl lg:text-4xl font-black tracking-tight text-[#111318]">{brandName}</span>
             ) : (
               <img src="/hawcus-logo.png" alt={brandName} className="h-11 lg:h-12 w-auto max-w-[260px] object-contain" />
             )}
@@ -124,14 +124,14 @@ export default function LoginPage() {
           <h2 className="font-headline text-[24px] lg:text-[28px] font-bold leading-[1.3] tracking-tight">
             Turn every lead into a conversation, and every conversation into a customer.
           </h2>
-          <p className="mt-5 text-[14px] lg:text-[15px] leading-relaxed text-white/80">
+          <p className="mt-5 text-[15px] lg:text-[16px] leading-relaxed text-white/80">
             {brandName} brings your leads, pipelines, follow-ups, and WhatsApp conversations into one
             workspace - so your team spends time closing deals, not chasing tabs.
           </p>
         </div>
 
         {/* Footer pinned to bottom */}
-        <p className="absolute bottom-8 left-10 lg:left-16 z-10 text-[12px] text-white/60">© 2026 {brandName}. All rights reserved.</p>
+        <p className="absolute bottom-8 left-10 lg:left-16 z-10 text-[13px] text-white/60">© 2026 {brandName}. All rights reserved.</p>
       </aside>
 
       {/* ── Right: login card ─────────────────────────────────────────────────── */}
@@ -158,15 +158,15 @@ export default function LoginPage() {
             {isCustomDomain ? (
               loaded && logoUrl
                 ? <img src={logoUrl} alt={tenantName ?? ''} className="h-12 max-w-[200px] object-contain drop-shadow" />
-                : <span className="text-2xl font-bold text-[#1c1410]">{brandName}</span>
+                : <span className="text-2xl font-bold text-[#111318]">{brandName}</span>
             ) : (
               <img src="/hawcus-logo.png" alt={brandName} className="w-40 h-auto object-contain drop-shadow" />
             )}
           </div>
 
           <div className="mb-7">
-            <h1 className="font-headline text-[26px] font-bold tracking-tight text-[#1c1410]">Welcome back</h1>
-            <p className="text-[#5c5245] mt-1.5 text-[14px] leading-relaxed">
+            <h1 className="font-headline text-[26px] font-bold tracking-tight text-[#111318]">Welcome back</h1>
+            <p className="text-[#4a4f57] mt-1.5 text-[15px] leading-relaxed">
               Sign in to your {brandName} account to continue.
             </p>
           </div>
@@ -174,7 +174,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] ml-1" htmlFor="email">
+              <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] ml-1" htmlFor="email">
                 Email Address
               </label>
               <div className="relative group">
@@ -188,7 +188,7 @@ export default function LoginPage() {
                   autoFocus
                   className="pr-11"
                 />
-                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[#7a6b5c] group-focus-within:text-primary transition-colors">
+                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[#6b7280] group-focus-within:text-primary transition-colors">
                   <Mail size={18} />
                 </div>
               </div>
@@ -197,10 +197,10 @@ export default function LoginPage() {
             {/* Password */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between ml-1">
-                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245]" htmlFor="password">
+                <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57]" htmlFor="password">
                   Password or PIN
                 </label>
-                <a href="/forgot-password" className="text-[11px] font-semibold text-primary hover:underline">Forgot password?</a>
+                <a href="/forgot-password" className="text-[12px] font-semibold text-primary hover:underline">Forgot password?</a>
               </div>
               <div className="relative group">
                 <Input
@@ -215,14 +215,14 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-4 flex items-center text-[#7a6b5c] hover:text-primary transition-colors"
+                  className="absolute inset-y-0 right-4 flex items-center text-[#6b7280] hover:text-primary transition-colors"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {/* Passwordless: email a one-time PIN to type above */}
               <button type="button" onClick={handleGetOtp} disabled={resendCooldown > 0}
-                className="text-[11px] font-semibold text-primary hover:underline disabled:text-[#b09e8d] disabled:no-underline disabled:cursor-not-allowed ml-1">
+                className="text-[12px] font-semibold text-primary hover:underline disabled:text-[#9ca3af] disabled:no-underline disabled:cursor-not-allowed ml-1">
                 {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Get OTP by email'}
               </button>
             </div>
@@ -230,7 +230,7 @@ export default function LoginPage() {
             {/* Error */}
             {error && (
               <div className="px-3 py-2.5 bg-[#ffdad6] rounded-xl">
-                <p className="text-sm text-[#ba1a1a] font-medium">{error}</p>
+                <p className="text-[15px] text-[#ba1a1a] font-medium">{error}</p>
               </div>
             )}
 
@@ -248,7 +248,7 @@ export default function LoginPage() {
 
           {/* Footer - hidden on custom domains (full white-label) */}
           {!isCustomDomain && (
-            <p className="mt-8 text-center text-[11px] text-[#b09e8d]">Powered by {PRODUCT_NAME} © 2026</p>
+            <p className="mt-8 text-center text-[12px] text-[#9ca3af]">Powered by {PRODUCT_NAME} © 2026</p>
           )}
         </div>
       </main>

@@ -481,20 +481,20 @@ export default function WABATemplateEditorPage() {
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden -mx-3 -my-4 md:-mx-6 md:-my-5">
 
       {/* ── Header ── */}
-      <header className="bg-white border-b border-orange-100 px-5 py-0 flex items-center justify-between shrink-0 h-14">
+      <header className="bg-white border-b border-[var(--hairline)] px-5 py-2 md:py-0 flex flex-wrap md:flex-nowrap items-center justify-between gap-2 shrink-0 min-h-[3.5rem] md:h-14">
         <div className="flex items-center gap-1.5 min-w-0">
           <button
             onClick={() => navigate('/automation/templates?tab=waba')}
-            className="flex items-center gap-1.5 text-[14px] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors group shrink-0"
+            className="flex items-center gap-1.5 text-[15px] text-[#6b7280] hover:text-[var(--brand-dark)] transition-colors group shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
             <span>Templates</span>
           </button>
-          <ChevronRight className="w-3.5 h-3.5 text-[#7a6b5c]/30 shrink-0" />
-          <span className="text-[14px] font-semibold text-[#1c1410] truncate">
+          <ChevronRight className="w-3.5 h-3.5 text-[#6b7280]/30 shrink-0" />
+          <span className="text-[15px] font-semibold text-[#111318] truncate">
             {isEdit ? 'Edit Template' : 'New Template'}
           </span>
-          <span className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[11px] font-medium text-blue-700 shrink-0">
+          <span className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[12px] font-medium text-blue-700 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
             WABA
           </span>
@@ -503,7 +503,7 @@ export default function WABATemplateEditorPage() {
           <Button
             variant="outline" size="sm"
             onClick={() => navigate('/automation/templates?tab=waba')}
-            className="h-8 text-[14px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
+            className="h-8 text-[15px] border-[var(--hairline)] text-[#6b7280] hover:bg-orange-50 hover:border-orange-300"
           >
             Cancel
           </Button>
@@ -516,14 +516,14 @@ export default function WABATemplateEditorPage() {
             return <>
               <Button
                 variant="outline" size="sm" onClick={() => handleSave(false)} disabled={saving}
-                className="h-8 text-[14px] border-orange-200 text-[#7a6b5c] hover:bg-orange-50 hover:border-orange-300"
+                className="h-8 text-[15px] border-[var(--hairline)] text-[#6b7280] hover:bg-orange-50 hover:border-orange-300"
               >
                 {saving && !savingToMeta ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1.5" />}
                 Save Locally
               </Button>
               <Button
                 size="sm" onClick={() => handleSave(true)} disabled={saving || onCooldown}
-                className="h-8 text-[14px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4 disabled:opacity-50"
+                className="h-8 text-[15px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4 disabled:opacity-50"
                 title={onCooldown ? 'Meta allows editing a template only once per 24 hours' : ''}
               >
                 {savingToMeta
@@ -536,7 +536,7 @@ export default function WABATemplateEditorPage() {
           })() : (
             <Button
               size="sm" onClick={() => handleSave(false)} disabled={saving}
-              className="h-8 text-[14px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
+              className="h-8 text-[15px] bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white border-0 shadow-sm px-4"
             >
               {saving
                 ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving...</>
@@ -556,54 +556,54 @@ export default function WABATemplateEditorPage() {
             {/* 1 - Template Details */}
             <section>
               <SectionLabel n={1} title="Template Details" />
-              <div className="bg-white rounded-2xl border border-orange-100 p-5 space-y-4">
+              <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">
+                  <label className="text-[15px] font-medium text-[#111318] mb-1.5 block">
                     Template Name <span className="text-red-400">*</span>
                   </label>
                   <Input
                     value={name} onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. welcome_lead"
                     className={cn(
-                      'border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7] font-mono text-sm',
+                      'border-[var(--hairline)] focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#ffffff] font-mono text-[15px]',
                       !nameValid && 'border-amber-400 focus:border-amber-400'
                     )}
                   />
                   {nameWarning ? (
-                    <p className="text-[11px] text-amber-600 mt-1">{nameWarning}</p>
+                    <p className="text-[12px] text-amber-600 mt-1">{nameWarning}</p>
                   ) : (
-                    <p className="text-[11px] text-[#7a6b5c] mt-1">Lowercase, underscores only. No spaces or special characters.</p>
+                    <p className="text-[12px] text-[#6b7280] mt-1">Lowercase, underscores only. No spaces or special characters.</p>
                   )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Category</label>
+                    <label className="text-[15px] font-medium text-[#111318] mb-1.5 block">Category</label>
                     <div className="relative">
                       <select
                         value={category} onChange={(e) => setCategory(e.target.value as WABACategory)}
-                        className="w-full border border-orange-100 rounded-lg px-3 py-2.5 text-sm bg-[#fffbf7] focus:border-orange-300 outline-none appearance-none pr-8"
+                        className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2.5 text-[15px] bg-[#ffffff] focus:border-orange-300 outline-none appearance-none pr-8"
                       >
                         {WABA_CATS.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
-                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a6b5c] pointer-events-none" />
+                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b7280] pointer-events-none" />
                     </div>
-                    <p className="text-[10px] text-[#7a6b5c] mt-1">
+                    <p className="text-[11px] text-[#6b7280] mt-1">
                       {category === 'UTILITY' && 'Order updates, reminders, alerts. Higher delivery priority.'}
                       {category === 'MARKETING' && 'Promotions, offers, newsletters. May be rate-limited by Meta.'}
                       {category === 'AUTHENTICATION' && 'OTP / verification codes only. Special button type.'}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Language</label>
+                    <label className="text-[15px] font-medium text-[#111318] mb-1.5 block">Language</label>
                     <div className="relative">
                       <select
                         value={language} onChange={(e) => setLanguage(e.target.value)}
-                        className="w-full border border-orange-100 rounded-lg px-3 py-2.5 text-sm bg-[#fffbf7] focus:border-orange-300 outline-none appearance-none pr-8"
+                        className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2.5 text-[15px] bg-[#ffffff] focus:border-orange-300 outline-none appearance-none pr-8"
                       >
                         {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.name} ({l.code})</option>)}
                       </select>
-                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a6b5c] pointer-events-none" />
+                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b7280] pointer-events-none" />
                     </div>
                   </div>
                 </div>
@@ -613,9 +613,9 @@ export default function WABATemplateEditorPage() {
             {/* 2 - Header */}
             <section>
               <SectionLabel n={2} title="Header" subtitle="optional" />
-              <div className="bg-white rounded-2xl border border-orange-100 p-5 space-y-4">
+              <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Header Type</label>
+                  <label className="text-[15px] font-medium text-[#111318] mb-1.5 block">Header Type</label>
                   <div className="relative">
                     <select
                       value={headerType}
@@ -631,7 +631,7 @@ export default function WABATemplateEditorPage() {
                           setFile(null);
                         }
                       }}
-                      className="w-full border border-orange-100 rounded-lg px-3 py-2.5 text-sm bg-[#fffbf7] focus:border-orange-300 outline-none appearance-none pr-8"
+                      className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2.5 text-[15px] bg-[#ffffff] focus:border-orange-300 outline-none appearance-none pr-8"
                     >
                       <option value="none">No Header</option>
                       <option value="text">Text</option>
@@ -639,7 +639,7 @@ export default function WABATemplateEditorPage() {
                       <option value="video">Video</option>
                       <option value="document">Document</option>
                     </select>
-                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a6b5c] pointer-events-none" />
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b7280] pointer-events-none" />
                   </div>
                 </div>
 
@@ -647,8 +647,8 @@ export default function WABATemplateEditorPage() {
                 {headerType === 'text' && (
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-sm font-medium text-[#1c1410]">Header Text</label>
-                      <span className={cn('text-[11px]', header.length > LIMITS.header ? 'text-red-500 font-medium' : 'text-[#7a6b5c]')}>
+                      <label className="text-[15px] font-medium text-[#111318]">Header Text</label>
+                      <span className={cn('text-[12px]', header.length > LIMITS.header ? 'text-red-500 font-medium' : 'text-[#6b7280]')}>
                         {header.length}/{LIMITS.header}
                       </span>
                     </div>
@@ -657,12 +657,12 @@ export default function WABATemplateEditorPage() {
                       maxLength={LIMITS.header}
                       placeholder="Bold header text displayed above body"
                       className={cn(
-                        'border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7]',
+                        'border-[var(--hairline)] focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#ffffff]',
                         header.length > LIMITS.header && 'border-red-400'
                       )}
                     />
                     {headerVars.length > 0 && (
-                      <p className="text-[11px] text-amber-600 mt-1.5">
+                      <p className="text-[12px] text-amber-600 mt-1.5">
                         Header variables detected: {headerVars.map((v) => `{{${v}}}`).join(', ')}
                       </p>
                     )}
@@ -672,26 +672,26 @@ export default function WABATemplateEditorPage() {
                 {/* Media header upload (image / video / document) */}
                 {(headerType === 'image' || headerType === 'video' || headerType === 'document') && (
                   <div>
-                    <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">
+                    <label className="text-[15px] font-medium text-[#111318] mb-1.5 block">
                       Upload {headerType === 'image' ? 'Image' : headerType === 'video' ? 'Video' : 'Document'}
                     </label>
                     {existingFile && !removeFile && !file && (
-                      <div className="flex items-center gap-2 text-sm text-[#7a6b5c] bg-orange-50 rounded-lg px-3 py-2 mb-2 border border-orange-100">
+                      <div className="flex items-center gap-2 text-[15px] text-[#6b7280] bg-orange-50 rounded-lg px-3 py-2 mb-2 border border-[var(--hairline)]">
                         <Paperclip className="w-4 h-4 shrink-0" />
                         <span className="flex-1 truncate">{existingFile.name}</span>
-                        <button onClick={() => setRemoveFile(true)} className="text-xs text-red-500 hover:underline shrink-0">Remove</button>
+                        <button onClick={() => setRemoveFile(true)} className="text-[13px] text-red-500 hover:underline shrink-0">Remove</button>
                       </div>
                     )}
                     {file && (
-                      <div className="flex items-center gap-2 text-sm text-[#7a6b5c] bg-orange-50 rounded-lg px-3 py-2 mb-2 border border-orange-200">
+                      <div className="flex items-center gap-2 text-[15px] text-[#6b7280] bg-orange-50 rounded-lg px-3 py-2 mb-2 border border-[var(--hairline)]">
                         <Paperclip className="w-4 h-4 shrink-0" />
                         <span className="flex-1 truncate">{file.name}</span>
-                        <button onClick={() => setFile(null)} className="text-xs text-red-500 hover:underline shrink-0">Clear</button>
+                        <button onClick={() => setFile(null)} className="text-[13px] text-red-500 hover:underline shrink-0">Clear</button>
                       </div>
                     )}
-                    <label className="flex items-center gap-1.5 text-sm px-3 py-2 border border-orange-100 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer w-fit">
-                      <Upload className="w-4 h-4 text-[#7a6b5c]" />
-                      <span className="text-[#7a6b5c]">{file ? 'Replace' : `Upload ${headerType}`}</span>
+                    <label className="flex items-center gap-1.5 text-[15px] px-3 py-2 border border-[var(--hairline)] rounded-lg hover:bg-orange-50 transition-colors cursor-pointer w-fit">
+                      <Upload className="w-4 h-4 text-[#6b7280]" />
+                      <span className="text-[#6b7280]">{file ? 'Replace' : `Upload ${headerType}`}</span>
                       <input
                         type="file" className="hidden"
                         accept={headerType === 'image' ? 'image/jpeg,image/png' : headerType === 'video' ? 'video/mp4' : '.pdf,.doc,.docx'}
@@ -706,7 +706,7 @@ export default function WABATemplateEditorPage() {
                         }}
                       />
                     </label>
-                    <p className="text-[10px] text-[#7a6b5c] mt-1.5">
+                    <p className="text-[11px] text-[#6b7280] mt-1.5">
                       {headerType === 'image' && 'Supported: JPEG, PNG. Max 5 MB.'}
                       {headerType === 'video' && 'Supported: MP4. Max 16 MB.'}
                       {headerType === 'document' && 'Supported: PDF, DOC, DOCX. Max 100 MB.'}
@@ -719,15 +719,15 @@ export default function WABATemplateEditorPage() {
             {/* 3 - Body */}
             <section>
               <SectionLabel n={3} title="Body" />
-              <div className="bg-white rounded-2xl border border-orange-100 overflow-hidden">
+              <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
                 {/* Formatting toolbar */}
-                <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-orange-50 bg-[#fffbf7]">
-                  <span className="text-[11px] font-medium text-[#7a6b5c] mr-1">Format:</span>
+                <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-[var(--hairline)] bg-[#ffffff]">
+                  <span className="text-[12px] font-medium text-[#6b7280] mr-1">Format:</span>
                   <FormatBtn label="B" title="Bold *text*" className="font-bold" />
                   <FormatBtn label="I" title="Italic _text_" className="italic" />
                   <FormatBtn label="S" title="Strikethrough ~text~" className="line-through" />
                   <div className="h-4 w-px bg-orange-200 mx-1" />
-                  <span className="ml-auto text-[11px] text-[#7a6b5c]">{body.length} / 1024</span>
+                  <span className="ml-auto text-[12px] text-[#6b7280]">{body.length} / 1024</span>
                 </div>
 
                 <div className="px-4 pt-4 pb-2">
@@ -736,20 +736,20 @@ export default function WABATemplateEditorPage() {
                     value={body} onChange={(e) => setBody(e.target.value)}
                     maxLength={1024} rows={7}
                     placeholder="Hi {{1}}, thanks for reaching out! Your appointment is on {{2}}."
-                    className="w-full text-[14px] text-[#1c1410] placeholder:text-[#7a6b5c]/40 bg-transparent outline-none resize-none leading-relaxed"
+                    className="w-full text-[15px] text-[#111318] placeholder:text-[#6b7280]/40 bg-transparent outline-none resize-none leading-relaxed"
                   />
                 </div>
 
-                <div className="px-4 pb-4 pt-2 border-t border-orange-50 flex items-center justify-between">
+                <div className="px-4 pb-4 pt-2 border-t border-[var(--hairline)] flex items-center justify-between">
                   <button
                     onClick={() => { setPickerOpen(true); setPickerSearch(''); setPickerTab('Standard'); }}
-                    className="flex items-center gap-1.5 text-[13px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
+                    className="flex items-center gap-1.5 text-[14px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
                   >
-                    <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[14px] leading-none">+</span>
+                    <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[15px] leading-none">+</span>
                     Insert Variable
-                    <span className="text-[10px] text-[#7a6b5c] font-normal ml-0.5">({allPickerFields.length} fields)</span>
+                    <span className="text-[11px] text-[#6b7280] font-normal ml-0.5">({allPickerFields.length} fields)</span>
                   </button>
-                  <p className="text-[11px] text-[#7a6b5c]">
+                  <p className="text-[12px] text-[#6b7280]">
                     or type {'{{1}}'}, {'{{2}}'} manually
                   </p>
                 </div>
@@ -758,11 +758,11 @@ export default function WABATemplateEditorPage() {
               {/* Body variable samples */}
               {bodyVars.length > 0 && (
                 <div className="mt-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
-                  <p className="text-xs font-semibold text-amber-800">Samples for body content</p>
+                  <p className="text-[13px] font-semibold text-amber-800">Samples for body content</p>
                   {bodyVars.map((v) => (
                     <div key={v} className="space-y-1.5" >
                       <div className="flex items-center gap-3">
-                        <span className="text-xs font-mono text-amber-700 bg-amber-100 px-2 py-1 rounded-lg shrink-0">{`{{${v}}}`}</span>
+                        <span className="text-[13px] font-mono text-amber-700 bg-amber-100 px-2 py-1 rounded-lg shrink-0">{`{{${v}}}`}</span>
                         <div className="relative flex-1">
                           <select
                             value={varMapping[v] ?? ''}
@@ -773,7 +773,7 @@ export default function WABATemplateEditorPage() {
                               const field = allPickerFields.find((f) => f.key === key);
                               if (field?.sample) setBodyExamples((prev) => ({ ...prev, [v]: field.sample }));
                             }}
-                            className="w-full border border-amber-200 rounded-lg px-3 py-2 text-xs bg-white focus:border-amber-400 outline-none appearance-none pr-8"
+                            className="w-full border border-amber-200 rounded-lg px-3 py-2 text-[13px] bg-white focus:border-amber-400 outline-none appearance-none pr-8"
                           >
                             <option value="">Select CRM field...</option>
                             <optgroup label="Standard">
@@ -796,12 +796,12 @@ export default function WABATemplateEditorPage() {
                           value={bodyExamples[v] ?? ''}
                           onChange={(e) => setBodyExamples((prev) => ({ ...prev, [v]: e.target.value }))}
                           placeholder={`Sample value for {{${v}}}`}
-                          className="flex-1 text-xs h-8 border-amber-200 bg-white focus:border-amber-400 focus:ring-1 focus:ring-amber-200"
+                          className="flex-1 text-[13px] h-8 border-amber-200 bg-white focus:border-amber-400 focus:ring-1 focus:ring-amber-200"
                         />
                       </div>
                     </div>
                   ))}
-                  <p className="text-[10px] text-amber-600">
+                  <p className="text-[11px] text-amber-600">
                     Select a CRM field for each variable. The sample value is sent to Meta for review.
                   </p>
                 </div>
@@ -811,10 +811,10 @@ export default function WABATemplateEditorPage() {
             {/* 4 - Footer */}
             <section>
               <SectionLabel n={4} title="Footer" subtitle="optional" />
-              <div className="bg-white rounded-2xl border border-orange-100 p-5">
+              <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm font-medium text-[#1c1410]">Footer Text</label>
-                  <span className={cn('text-[11px]', footer.length > LIMITS.footer ? 'text-red-500 font-medium' : 'text-[#7a6b5c]')}>
+                  <label className="text-[15px] font-medium text-[#111318]">Footer Text</label>
+                  <span className={cn('text-[12px]', footer.length > LIMITS.footer ? 'text-red-500 font-medium' : 'text-[#6b7280]')}>
                     {footer.length}/{LIMITS.footer}
                   </span>
                 </div>
@@ -823,7 +823,7 @@ export default function WABATemplateEditorPage() {
                   maxLength={LIMITS.footer}
                   placeholder="e.g. Reply STOP to unsubscribe"
                   className={cn(
-                    'border-orange-100 focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#fffbf7]',
+                    'border-[var(--hairline)] focus:border-orange-300 focus:ring-1 focus:ring-orange-200 bg-[#ffffff]',
                     footer.length > LIMITS.footer && 'border-red-400'
                   )}
                 />
@@ -833,28 +833,28 @@ export default function WABATemplateEditorPage() {
             {/* 5 - Buttons */}
             <section>
               <SectionLabel n={5} title="Buttons" subtitle="optional, max 3" />
-              <div className="bg-white rounded-2xl border border-orange-100 p-5 space-y-3">
+              <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 space-y-3">
                 {buttons.map((btn) => (
-                  <div key={btn.id} className="flex gap-2 items-center p-3 rounded-xl border border-orange-100 bg-[#fffbf7]">
+                  <div key={btn.id} className="flex flex-wrap gap-2 items-center p-3 rounded-xl border border-[var(--hairline)] bg-[#ffffff]">
                     <div className="relative shrink-0">
                       <select
-                        className="border border-orange-100 rounded-lg px-2 py-2 text-xs bg-white outline-none appearance-none pr-7"
+                        className="border border-[var(--hairline)] rounded-lg px-2 py-2 text-[13px] bg-white outline-none appearance-none pr-7"
                         value={btn.type} onChange={(e) => upd(btn.id, 'type', e.target.value)}
                       >
                         <option value="QUICK_REPLY">Quick Reply</option>
                         <option value="URL">URL</option>
                         <option value="PHONE_NUMBER">Phone</option>
                       </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#7a6b5c] pointer-events-none" />
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[#6b7280] pointer-events-none" />
                     </div>
                     <div className="flex-1 relative">
                       <Input
                         value={btn.label} onChange={(e) => upd(btn.id, 'label', e.target.value)}
                         maxLength={LIMITS.buttonLabel}
                         placeholder="Button label"
-                        className={cn('text-xs h-9 border-orange-100 bg-white pr-10', btn.label.length >= LIMITS.buttonLabel && 'border-red-300')}
+                        className={cn('text-[13px] h-9 border-[var(--hairline)] bg-white pr-10', btn.label.length >= LIMITS.buttonLabel && 'border-red-300')}
                       />
-                      <span className={cn('absolute right-2 top-1/2 -translate-y-1/2 text-[9px]', btn.label.length >= LIMITS.buttonLabel ? 'text-red-400' : 'text-[#7a6b5c]/50')}>
+                      <span className={cn('absolute right-2 top-1/2 -translate-y-1/2 text-[10px]', btn.label.length >= LIMITS.buttonLabel ? 'text-red-400' : 'text-[#6b7280]/50')}>
                         {btn.label.length}/{LIMITS.buttonLabel}
                       </span>
                     </div>
@@ -862,30 +862,30 @@ export default function WABATemplateEditorPage() {
                       <Input
                         value={btn.value} onChange={(e) => upd(btn.id, 'value', e.target.value)}
                         placeholder={btn.type === 'URL' ? 'https://...' : '+919876543210'}
-                        className="flex-1 text-xs h-9 border-orange-100 bg-white font-mono"
+                        className="flex-1 text-[13px] h-9 border-[var(--hairline)] bg-white font-mono"
                       />
                     )}
                     {btn.type === 'QUICK_REPLY' && (
                       <Input
                         value={btn.value} onChange={(e) => upd(btn.id, 'value', e.target.value)}
                         placeholder="payload (optional)"
-                        className="flex-1 text-xs h-9 border-orange-100 bg-white font-mono"
+                        className="flex-1 text-[13px] h-9 border-[var(--hairline)] bg-white font-mono"
                       />
                     )}
-                    <button onClick={() => del(btn.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-[#7a6b5c] hover:text-red-500 transition-colors">
+                    <button onClick={() => del(btn.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-[#6b7280] hover:text-red-500 transition-colors">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
                 <button
                   onClick={addBtn}
-                  className="flex items-center gap-1.5 text-[13px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
+                  className="flex items-center gap-1.5 text-[14px] font-medium text-orange-700 hover:text-orange-900 transition-colors"
                 >
-                  <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[14px] leading-none">+</span>
+                  <span className="w-5 h-5 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-[15px] leading-none">+</span>
                   Add Button
                 </button>
                 {buttons.length === 0 && (
-                  <p className="text-[11px] text-[#7a6b5c] py-2 text-center border border-dashed border-orange-200 rounded-lg">
+                  <p className="text-[12px] text-[#6b7280] py-2 text-center border border-dashed border-[var(--hairline)] rounded-lg">
                     No buttons added. Quick Reply buttons let users respond with one tap.
                   </p>
                 )}
@@ -894,15 +894,15 @@ export default function WABATemplateEditorPage() {
 
             {/* Submit to Meta checkbox */}
             {!isEdit && (
-              <div className="bg-white rounded-2xl border border-orange-100 p-5">
+              <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5">
                 <label className="flex items-center gap-3 cursor-pointer select-none">
                   <input
                     type="checkbox" checked={submitMeta} onChange={(e) => setSubmitMeta(e.target.checked)}
                     className="rounded border-orange-300 text-orange-600 focus:ring-orange-200 w-4 h-4"
                   />
                   <div>
-                    <p className="text-sm font-medium text-[#1c1410]">Submit to Meta for approval</p>
-                    <p className="text-[11px] text-[#7a6b5c] mt-0.5">Template will be sent to Meta for review. This usually takes a few minutes.</p>
+                    <p className="text-[15px] font-medium text-[#111318]">Submit to Meta for approval</p>
+                    <p className="text-[12px] text-[#6b7280] mt-0.5">Template will be sent to Meta for review. This usually takes a few minutes.</p>
                   </div>
                 </label>
               </div>
@@ -912,18 +912,18 @@ export default function WABATemplateEditorPage() {
             {isEdit && (
               <section>
                 <SectionLabel n={6} title="Test Send" subtitle="send to your phone" />
-                <div className="bg-white rounded-2xl border border-orange-100 p-5 space-y-3">
+                <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 space-y-3">
                   {!showTestPanel ? (
                     <button
                       onClick={() => setShowTestPanel(true)}
-                      className="flex items-center gap-2 text-sm text-orange-700 hover:text-orange-900 font-medium transition-colors"
+                      className="flex items-center gap-2 text-[15px] text-orange-700 hover:text-orange-900 font-medium transition-colors"
                     >
-                      <span className="w-6 h-6 rounded-lg bg-green-100 flex items-center justify-center text-green-600 text-xs">&#9654;</span>
+                      <span className="w-6 h-6 rounded-lg bg-green-100 flex items-center justify-center text-green-600 text-[13px]">&#9654;</span>
                       Send a test message to verify this template
                     </button>
                   ) : (
                     <>
-                      <p className="text-[11px] text-[#7a6b5c]">
+                      <p className="text-[12px] text-[#6b7280]">
                         Send this template to your phone with sample values. Template must be approved by Meta first.
                       </p>
                       <div className="flex items-center gap-2">
@@ -931,7 +931,7 @@ export default function WABATemplateEditorPage() {
                           value={testPhone}
                           onChange={(e) => setTestPhone(e.target.value)}
                           placeholder="Phone with country code, e.g. 919876543210"
-                          className="flex-1 text-sm h-10 border-orange-100 bg-[#fffbf7] font-mono"
+                          className="flex-1 text-[15px] h-10 border-[var(--hairline)] bg-[#ffffff] font-mono"
                         />
                         <Button
                           size="sm" onClick={handleTestSend} disabled={testSending}
@@ -951,28 +951,28 @@ export default function WABATemplateEditorPage() {
         </div>
 
         {/* RIGHT - Live Preview */}
-        <div className="w-[380px] shrink-0 border-l border-orange-100 bg-[#fff7f0] overflow-y-auto hidden lg:block">
+        <div className="w-[380px] shrink-0 border-l border-[var(--hairline)] bg-[#fff7f0] overflow-y-auto hidden lg:block">
           <div className="p-6 space-y-5">
-            <h2 className="text-[11px] font-bold text-[#92400e] uppercase tracking-widest">Live Preview</h2>
+            <h2 className="text-[12px] font-bold text-[#92400e] uppercase tracking-widest">Live Preview</h2>
 
             {/* WhatsApp mockup */}
-            <div className="rounded-2xl overflow-hidden shadow-md border border-black/[0.08]">
+            <div className="rounded-2xl overflow-hidden shadow-md border border-[var(--hairline)]">
               {/* WA Header bar */}
               <div className="bg-[#075e54] px-4 py-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-[#128c7e] border-2 border-white/20 flex items-center justify-center shrink-0">
-                  <span className="text-white text-xs font-bold">WA</span>
+                  <span className="text-white text-[13px] font-bold">WA</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-[14px] font-semibold leading-tight">Hawcus CRM</p>
-                  <p className="text-green-300 text-[10px]">online</p>
+                  <p className="text-white text-[15px] font-semibold leading-tight">Hawcus CRM</p>
+                  <p className="text-green-300 text-[11px]">online</p>
                 </div>
               </div>
 
               {/* Chat area */}
-              <div className="min-h-[260px] p-3 flex flex-col gap-2" style={{ backgroundColor: '#efeae2' }}>
+              <div className="min-h-[260px] p-3 flex flex-col gap-2" style={{ backgroundColor: '#eceef1' }}>
                 {!body.trim() && !header.trim() && headerType === 'none' ? (
                   <div className="flex-1 flex items-center justify-center py-10">
-                    <p className="text-[13px] text-[#9e9e9e] text-center leading-relaxed">
+                    <p className="text-[14px] text-[#9e9e9e] text-center leading-relaxed">
                       Start typing your message<br />to see the preview here
                     </p>
                   </div>
@@ -982,7 +982,7 @@ export default function WABATemplateEditorPage() {
                       {/* Header */}
                       {headerType === 'text' && header.trim() && (
                         <div className="px-3 pt-2.5 pb-0.5">
-                          <p className="text-[14px] font-bold text-gray-900">{header}</p>
+                          <p className="text-[15px] font-bold text-gray-900">{header}</p>
                         </div>
                       )}
                       {headerType === 'image' && (
@@ -992,7 +992,7 @@ export default function WABATemplateEditorPage() {
                           ) : (
                             <div className="text-center">
                               <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-1" />
-                              <p className="text-[10px] text-gray-400">Image header</p>
+                              <p className="text-[11px] text-gray-400">Image header</p>
                             </div>
                           )}
                         </div>
@@ -1001,40 +1001,40 @@ export default function WABATemplateEditorPage() {
                         <div className="bg-gray-800 flex items-center justify-center h-[140px]">
                           <div className="text-center">
                             <Film className="w-8 h-8 text-gray-400 mx-auto mb-1" />
-                            <p className="text-[10px] text-gray-400">{file ? file.name : 'Video header'}</p>
+                            <p className="text-[11px] text-gray-400">{file ? file.name : 'Video header'}</p>
                           </div>
                         </div>
                       )}
                       {headerType === 'document' && (
                         <div className="bg-gray-50 flex items-center gap-2 px-3 py-3 border-b border-gray-100">
                           <FileText className="w-6 h-6 text-red-400 shrink-0" />
-                          <span className="text-[11px] text-gray-600 truncate">{file ? file.name : 'Document'}</span>
+                          <span className="text-[12px] text-gray-600 truncate">{file ? file.name : 'Document'}</span>
                         </div>
                       )}
                       {/* Body */}
                       <div className="px-3 py-2">
                         <p
-                          className="text-[13px] text-gray-800 leading-relaxed"
+                          className="text-[14px] text-gray-800 leading-relaxed"
                           dangerouslySetInnerHTML={{ __html: renderPreview(body) || '&nbsp;' }}
                         />
                       </div>
                       {/* Footer */}
                       {footer.trim() && (
                         <div className="px-3 pb-1">
-                          <p className="text-[10px] text-gray-500">{footer}</p>
+                          <p className="text-[11px] text-gray-500">{footer}</p>
                         </div>
                       )}
                       {/* Timestamp */}
                       <div className="flex items-center justify-end gap-1 px-3 pb-2">
-                        <span className="text-[10px] text-gray-400">10:30 AM</span>
-                        <span className="text-[10px] text-blue-400">&#10003;&#10003;</span>
+                        <span className="text-[11px] text-gray-400">10:30 AM</span>
+                        <span className="text-[11px] text-blue-400">&#10003;&#10003;</span>
                       </div>
                       {/* Buttons */}
                       {buttons.filter((b) => b.label.trim()).length > 0 && (
                         <div className="border-t border-gray-100">
                           {buttons.filter((b) => b.label.trim()).map((btn) => (
                             <div key={btn.id} className="text-center py-2 border-b border-gray-50 last:border-0">
-                              <span className="text-[13px] font-medium text-[#00a5f4]">{btn.label}</span>
+                              <span className="text-[14px] font-medium text-[#00a5f4]">{btn.label}</span>
                             </div>
                           ))}
                         </div>
@@ -1046,31 +1046,31 @@ export default function WABATemplateEditorPage() {
 
               {/* WA input bar */}
               <div className="bg-[#f0f0f0] px-3 py-2 flex items-center gap-2">
-                <div className="flex-1 bg-white rounded-full px-3 py-1.5 text-[11px] text-gray-400">
+                <div className="flex-1 bg-white rounded-full px-3 py-1.5 text-[12px] text-gray-400">
                   Type a message
                 </div>
                 <div className="w-7 h-7 rounded-full bg-[#25d366] flex items-center justify-center shrink-0">
-                  <span className="text-white text-[10px] ml-0.5">&#9654;</span>
+                  <span className="text-white text-[11px] ml-0.5">&#9654;</span>
                 </div>
               </div>
             </div>
 
             {/* Variable legend */}
             {bodyVars.length > 0 && (
-              <div className="bg-white rounded-2xl border border-orange-100 p-4">
-                <h3 className="text-[10px] font-bold text-[#92400e] uppercase tracking-widest mb-3">Variable Mapping</h3>
+              <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-4">
+                <h3 className="text-[11px] font-bold text-[#92400e] uppercase tracking-widest mb-3">Variable Mapping</h3>
                 <div className="space-y-2">
                   {bodyVars.map((v) => {
                     const mappedKey = varMapping[v];
                     const mappedField = mappedKey ? allPickerFields.find((f) => f.key === mappedKey) : null;
                     return (
-                      <div key={v} className="flex items-center justify-between text-[11px] gap-2">
+                      <div key={v} className="flex items-center justify-between text-[12px] gap-2">
                         <span className="font-mono text-orange-600 shrink-0">{`{{${v}}}`}</span>
                         <div className="text-right min-w-0">
                           {mappedField && (
-                            <p className="text-[10px] text-orange-500 font-medium">{mappedField.label}</p>
+                            <p className="text-[11px] text-orange-500 font-medium">{mappedField.label}</p>
                           )}
-                          <p className="text-[#7a6b5c] truncate">{bodyExamples[v] || `[Sample ${v}]`}</p>
+                          <p className="text-[#6b7280] truncate">{bodyExamples[v] || `[Sample ${v}]`}</p>
                         </div>
                       </div>
                     );
@@ -1080,9 +1080,9 @@ export default function WABATemplateEditorPage() {
             )}
 
             {/* Meta template tips */}
-            <div className="bg-orange-50 rounded-2xl border border-orange-100 p-4">
-              <h3 className="text-[10px] font-bold text-[#92400e] uppercase tracking-widest mb-3">Meta Template Tips</h3>
-              <div className="space-y-2 text-[11px] text-[#7a6b5c] leading-relaxed">
+            <div className="bg-orange-50 rounded-2xl border border-[var(--hairline)] p-4">
+              <h3 className="text-[11px] font-bold text-[#92400e] uppercase tracking-widest mb-3">Meta Template Tips</h3>
+              <div className="space-y-2 text-[12px] text-[#6b7280] leading-relaxed">
                 <p>Use <code className="bg-orange-100 text-orange-800 px-1 rounded">{'{{1}}'}</code>, <code className="bg-orange-100 text-orange-800 px-1 rounded">{'{{2}}'}</code> for dynamic content.</p>
                 <p>Meta reviews templates before approval. Avoid promotional language in UTILITY templates.</p>
                 <p>Quick Reply buttons let users tap to respond. URL buttons open links.</p>
@@ -1101,34 +1101,34 @@ export default function WABATemplateEditorPage() {
         >
           <div className="bg-white rounded-2xl shadow-2xl w-[520px] max-w-full max-h-[80vh] flex flex-col overflow-hidden">
             {/* Modal header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-orange-100 shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)] shrink-0">
               <div>
-                <h3 className="text-[15px] font-semibold text-[#1c1410]">Insert Variable</h3>
-                <p className="text-[11px] text-[#7a6b5c] mt-0.5">
+                <h3 className="text-[16px] font-semibold text-[#111318]">Insert Variable</h3>
+                <p className="text-[12px] text-[#6b7280] mt-0.5">
                   Click a field to insert <code className="bg-orange-50 px-1 rounded text-orange-700">{`{{N}}`}</code> at cursor with auto-filled sample
                 </p>
               </div>
               <button
                 onClick={() => { setPickerOpen(false); setPickerSearch(''); }}
-                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-orange-50 text-[#7a6b5c] hover:text-[#1c1410] transition-colors"
+                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-orange-50 text-[#6b7280] hover:text-[#111318] transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Search */}
-            <div className="px-4 py-3 border-b border-orange-50 shrink-0">
-              <div className="flex items-center gap-2 bg-[#fffbf7] border border-orange-200 rounded-xl px-3 py-2">
-                <Search className="w-3.5 h-3.5 text-[#7a6b5c] shrink-0" />
+            <div className="px-4 py-3 border-b border-[var(--hairline)] shrink-0">
+              <div className="flex items-center gap-2 bg-[#ffffff] border border-[var(--hairline)] rounded-xl px-3 py-2">
+                <Search className="w-3.5 h-3.5 text-[#6b7280] shrink-0" />
                 <input
                   autoFocus
                   value={pickerSearch}
                   onChange={(e) => setPickerSearch(e.target.value)}
                   placeholder={`Search across ${allPickerFields.length} fields...`}
-                  className="flex-1 text-[13px] bg-transparent outline-none text-[#1c1410] placeholder:text-[#7a6b5c]/50"
+                  className="flex-1 text-[14px] bg-transparent outline-none text-[#111318] placeholder:text-[#6b7280]/50"
                 />
                 {pickerSearch && (
-                  <button onClick={() => setPickerSearch('')} className="text-[#7a6b5c] hover:text-[#1c1410]">
+                  <button onClick={() => setPickerSearch('')} className="text-[#6b7280] hover:text-[#111318]">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -1137,20 +1137,20 @@ export default function WABATemplateEditorPage() {
 
             {/* Tabs */}
             {!pickerSearch && (
-              <div className="flex border-b border-orange-100 px-4 shrink-0 bg-white">
+              <div className="flex border-b border-[var(--hairline)] px-4 shrink-0 bg-white overflow-x-auto">
                 {(['Standard', 'CRM', 'Custom', 'Values'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setPickerTab(tab)}
                     className={cn(
-                      'px-3 py-2.5 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap',
+                      'px-3 py-2.5 text-[14px] font-medium border-b-2 transition-colors whitespace-nowrap',
                       pickerTab === tab
                         ? 'border-[var(--brand)] text-[var(--brand)]'
-                        : 'border-transparent text-[#7a6b5c] hover:text-[#1c1410]'
+                        : 'border-transparent text-[#6b7280] hover:text-[#111318]'
                     )}
                   >
                     {tab}
-                    <span className="ml-1.5 text-[10px] font-normal opacity-60">
+                    <span className="ml-1.5 text-[11px] font-normal opacity-60">
                       ({pickerCategories[tab].length})
                     </span>
                   </button>
@@ -1165,30 +1165,30 @@ export default function WABATemplateEditorPage() {
                   <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mb-3">
                     <Search className="w-4 h-4 text-orange-300" />
                   </div>
-                  <p className="text-[14px] font-medium text-[#1c1410]">No fields found</p>
-                  <p className="text-[11px] text-[#7a6b5c] mt-1">Try a different search term</p>
+                  <p className="text-[15px] font-medium text-[#111318]">No fields found</p>
+                  <p className="text-[12px] text-[#6b7280] mt-1">Try a different search term</p>
                 </div>
               ) : (
                 pickerResults.map((group) => (
                   <div key={group.label}>
                     {pickerSearch && (
-                      <div className="px-4 py-2 bg-orange-50/60 border-b border-orange-50 sticky top-0">
-                        <span className="text-[10px] font-bold text-[#92400e] uppercase tracking-widest">{group.label}</span>
+                      <div className="px-4 py-2 bg-orange-50/60 border-b border-[var(--hairline)] sticky top-0">
+                        <span className="text-[11px] font-bold text-[#92400e] uppercase tracking-widest">{group.label}</span>
                       </div>
                     )}
                     {group.items.map((item) => (
                       <button
                         key={item.key}
                         onClick={() => insertPickerVar(item)}
-                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-orange-50 transition-colors border-b border-orange-50/80 last:border-0 text-left gap-4 group"
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-orange-50 transition-colors border-b border-[var(--hairline)] last:border-0 text-left gap-4 group"
                       >
                         <div className="min-w-0">
-                          <p className="text-[14px] font-medium text-[#1c1410] truncate">{item.label}</p>
+                          <p className="text-[15px] font-medium text-[#111318] truncate">{item.label}</p>
                           {item.sample && (
-                            <p className="text-[11px] text-[#7a6b5c] mt-0.5 truncate">e.g. {item.sample}</p>
+                            <p className="text-[12px] text-[#6b7280] mt-0.5 truncate">e.g. {item.sample}</p>
                           )}
                         </div>
-                        <span className="shrink-0 text-[11px] font-mono text-orange-700 bg-orange-50 border border-orange-200 px-2 py-1 rounded-lg group-hover:bg-orange-100 group-hover:border-orange-300 transition-colors">
+                        <span className="shrink-0 text-[12px] font-mono text-orange-700 bg-orange-50 border border-[var(--hairline)] px-2 py-1 rounded-lg group-hover:bg-orange-100 group-hover:border-orange-300 transition-colors">
                           {`{{N}}`} = {item.key}
                         </span>
                       </button>
@@ -1210,11 +1210,11 @@ function SectionLabel({ n, title, subtitle }: { n: number; title: string; subtit
   return (
     <div className="flex items-center gap-2 mb-3">
       <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-        <span className="text-[10px] font-bold text-orange-700">{n}</span>
+        <span className="text-[11px] font-bold text-orange-700">{n}</span>
       </div>
-      <h2 className="text-[11px] font-bold text-[#92400e] uppercase tracking-widest">
+      <h2 className="text-[12px] font-bold text-[#92400e] uppercase tracking-widest">
         {title}
-        {subtitle && <span className="text-[#7a6b5c] normal-case font-normal ml-1">· {subtitle}</span>}
+        {subtitle && <span className="text-[#6b7280] normal-case font-normal ml-1">· {subtitle}</span>}
       </h2>
     </div>
   );
@@ -1224,9 +1224,9 @@ function FormatBtn({ label, title, className }: { label: string; title: string; 
   return (
     <button
       title={title}
-      className="w-7 h-7 rounded-md hover:bg-orange-100 text-[#1c1410] transition-colors flex items-center justify-center"
+      className="w-7 h-7 rounded-md hover:bg-orange-100 text-[#111318] transition-colors flex items-center justify-center"
     >
-      <span className={cn('text-[14px]', className)}>{label}</span>
+      <span className={cn('text-[15px]', className)}>{label}</span>
     </button>
   );
 }

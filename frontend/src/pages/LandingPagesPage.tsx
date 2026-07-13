@@ -57,20 +57,20 @@ function PageModal({ initial, onClose, onSave }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl border border-black/5 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
-          <h3 className="font-headline font-bold text-[#1c1410]">{initial ? 'Edit Page' : 'New Landing Page'}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)]">
+          <h3 className="font-headline font-bold text-[#111318]">{initial ? 'Edit Page' : 'New Landing Page'}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface-2)] text-[#6b7280] hover:text-primary transition-colors active:scale-[0.98]">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="px-6 py-5 space-y-5">
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Page Title *</label>
+            <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-2">Page Title *</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Free Demo Booking" />
             {title && (
-              <p className="text-[11px] text-[#7a6b5c] mt-1.5 flex items-center gap-1">
+              <p className="text-[12px] text-[#6b7280] mt-1.5 flex items-center gap-1">
                 <Globe className="w-3 h-3" />
                 <span className="font-mono">{window.location.host}/p/{slug}</span>
               </p>
@@ -78,12 +78,12 @@ function PageModal({ initial, onClose, onSave }: {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-2">Start from template</label>
+            <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-2">Start from template</label>
             <div className="space-y-2">
               {TEMPLATES.map((t) => (
                 <button key={t} onClick={() => setTemplate(t)}
-                  className={cn('w-full flex items-center gap-3 p-3 rounded-xl border text-sm font-medium transition-all text-left',
-                    template === t ? 'border-primary/30 bg-primary/5 text-primary' : 'border-black/5 text-[#7a6b5c] hover:border-primary/20 hover:bg-[var(--accent-tint)] hover:text-primary')}>
+                  className={cn('w-full flex items-center gap-3 p-3 rounded-xl border text-[15px] font-medium transition-all text-left',
+                    template === t ? 'border-primary/30 bg-primary/5 text-primary' : 'border-[var(--hairline)] text-[#6b7280] hover:border-primary/20 hover:bg-[var(--accent-tint)] hover:text-primary')}>
                   <Layout className="w-4 h-4 shrink-0" />
                   {t}
                   {template === t && <Check className="w-4 h-4 ml-auto" />}
@@ -92,16 +92,16 @@ function PageModal({ initial, onClose, onSave }: {
             </div>
           </div>
 
-          <div className="flex items-center justify-between py-3 border-t border-black/5">
+          <div className="flex items-center justify-between py-3 border-t border-[var(--hairline)]">
             <div>
-              <p className="text-[14px] font-semibold text-[#1c1410]">Publish Immediately</p>
-              <p className="text-[11px] text-[#7a6b5c] mt-0.5">Make page live after saving</p>
+              <p className="text-[15px] font-semibold text-[#111318]">Publish Immediately</p>
+              <p className="text-[12px] text-[#6b7280] mt-0.5">Make page live after saving</p>
             </div>
             <Switch checked={status === 'published'} onCheckedChange={(v) => setStatus(v ? 'published' : 'draft')} />
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-black/5">
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-[var(--hairline)]">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave}>
             <Check className="w-4 h-4" /> {initial ? 'Save' : 'Create Page'}
@@ -185,8 +185,8 @@ export default function LandingPagesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="font-headline font-bold text-[#1c1410] text-[16px]">Landing Pages</h2>
-          <p className="text-[13px] text-[#7a6b5c] mt-0.5">
+          <h2 className="font-headline font-bold text-[#111318] text-[16px]">Landing Pages</h2>
+          <p className="text-[14px] text-[#6b7280] mt-0.5">
             {published} live · {pages.length} total · {totalViews.toLocaleString()} views · {totalLeads} leads
           </p>
         </div>
@@ -206,12 +206,12 @@ export default function LandingPagesPage() {
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       ) : pages.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-black/5 card-shadow px-8 py-16 text-center">
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow px-8 py-16 text-center">
           <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Layout className="w-7 h-7 text-primary" />
           </div>
-          <h3 className="font-headline font-bold text-[#1c1410] text-[15px] mb-1">No pages yet</h3>
-          <p className="text-[14px] text-[#7a6b5c] mb-5 max-w-xs mx-auto">
+          <h3 className="font-headline font-bold text-[#111318] text-[16px] mb-1">No pages yet</h3>
+          <p className="text-[15px] text-[#6b7280] mb-5 max-w-xs mx-auto">
             Create your first landing page and start capturing leads from any campaign.
           </p>
           <Button onClick={() => setShowModal(true)}><Plus className="w-4 h-4" /> Create your first page</Button>
@@ -221,7 +221,7 @@ export default function LandingPagesPage() {
           {pages.map((page) => {
             const conv = page.views > 0 ? ((page.leads / page.views) * 100).toFixed(1) : '0';
             return (
-              <div key={page.id} className="bg-white rounded-2xl border border-black/5 card-shadow overflow-hidden group hover:-translate-y-0.5 transition-all duration-200">
+              <div key={page.id} className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover overflow-hidden group hover:-translate-y-0.5 transition-all duration-200">
                 {/* Preview banner with gradient */}
                 <div
                   className="h-20 flex items-center justify-center cursor-pointer relative"
@@ -230,7 +230,7 @@ export default function LandingPagesPage() {
                 >
                   <Layout className="w-9 h-9 text-primary/25" />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-primary/5">
-                    <div className="flex items-center gap-1.5 text-primary text-[13px] font-semibold bg-white px-3 py-1.5 rounded-xl shadow-sm border border-primary/20">
+                    <div className="flex items-center gap-1.5 text-primary text-[14px] font-semibold bg-white px-3 py-1.5 rounded-xl shadow-sm border border-primary/20">
                       <Paintbrush className="w-3.5 h-3.5" /> Open Builder
                     </div>
                   </div>
@@ -240,11 +240,11 @@ export default function LandingPagesPage() {
                   {/* Title + badge */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <h3 className="font-headline font-bold text-[#1c1410] text-[15px] truncate">{page.title}</h3>
-                      <p className="text-[10px] text-[#7a6b5c] font-mono truncate mt-0.5">/{page.slug}</p>
+                      <h3 className="font-headline font-bold text-[#111318] text-[16px] truncate">{page.title}</h3>
+                      <p className="text-[11px] text-[#6b7280] font-mono truncate mt-0.5">/{page.slug}</p>
                     </div>
-                    <Badge className={cn('border-0 text-[10px] font-semibold shrink-0',
-                      page.status === 'published' ? 'bg-emerald-50 text-emerald-700' : 'bg-[var(--accent-tint)] text-[#7a6b5c]')}>
+                    <Badge className={cn('border-0 text-[11px] font-semibold shrink-0',
+                      page.status === 'published' ? 'bg-emerald-50 text-emerald-700' : 'bg-[var(--accent-tint)] text-[#6b7280]')}>
                       {page.status === 'published' ? 'Live' : 'Draft'}
                     </Badge>
                   </div>
@@ -256,9 +256,9 @@ export default function LandingPagesPage() {
                       { label: 'Leads', value: page.leads, icon: Users },
                       { label: 'Conv.', value: `${conv}%`, icon: null },
                     ].map(({ label, value, icon: Icon }) => (
-                      <div key={label} className="bg-[var(--app-bg)] rounded-xl p-2.5 text-center">
-                        <p className="font-headline text-[16px] font-bold text-[#1c1410] leading-none">{value}</p>
-                        <p className="text-[10px] text-[#7a6b5c] mt-0.5">{label}</p>
+                      <div key={label} className="bg-[var(--surface-2)] rounded-xl p-2.5 text-center">
+                        <p className="font-headline text-[16px] font-bold text-[#111318] leading-none">{value}</p>
+                        <p className="text-[11px] text-[#6b7280] mt-0.5">{label}</p>
                       </div>
                     ))}
                   </div>
@@ -267,23 +267,23 @@ export default function LandingPagesPage() {
                   <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-2">
                       <Switch checked={page.status === 'published'} onCheckedChange={() => toggleStatus(page.id)} />
-                      <span className="text-[11px] text-[#7a6b5c]">Live</span>
+                      <span className="text-[12px] text-[#6b7280]">Live</span>
                     </div>
                     <div className="flex gap-0.5">
                       <button onClick={() => navigate(`/lead-generation/landing-pages/builder?id=${page.id}`)}
-                        className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors" title="Edit in builder">
+                        className="p-1.5 rounded-lg hover:bg-[var(--surface-2)] text-[#6b7280] hover:text-primary transition-colors active:scale-[0.98]" title="Edit in builder">
                         <Paintbrush className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => { copyToClipboard(`${window.location.origin}/p/${page.slug}`); toast.success('URL copied'); }}
-                        className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors" title="Copy URL">
+                        className="p-1.5 rounded-lg hover:bg-[var(--surface-2)] text-[#6b7280] hover:text-primary transition-colors active:scale-[0.98]" title="Copy URL">
                         <Copy className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => setEditPage(page)}
-                        className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors" title="Edit details">
+                        className="p-1.5 rounded-lg hover:bg-[var(--surface-2)] text-[#6b7280] hover:text-primary transition-colors active:scale-[0.98]" title="Edit details">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => deletePage(page.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-[#7a6b5c] hover:text-red-500 transition-colors" title="Delete">
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-[#6b7280] hover:text-red-500 transition-colors active:scale-[0.98]" title="Delete">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -295,11 +295,11 @@ export default function LandingPagesPage() {
 
           {/* New page card */}
           <button onClick={() => setShowModal(true)}
-            className="group bg-white rounded-2xl border-2 border-dashed border-black/10 p-6 flex flex-col items-center justify-center gap-2 text-center hover:border-primary hover:bg-primary/5 transition-all duration-200 min-h-[200px]">
+            className="group bg-white rounded-2xl border border-dashed border-[var(--hairline)] p-6 flex flex-col items-center justify-center gap-2 text-center hover:border-primary hover:bg-primary/5 transition-all duration-200 min-h-[200px]">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <Plus className="w-5 h-5 text-primary" />
             </div>
-            <span className="text-[14px] font-semibold text-[#7a6b5c] group-hover:text-primary transition-colors">New Page</span>
+            <span className="text-[15px] font-semibold text-[#6b7280] group-hover:text-primary transition-colors">New Page</span>
           </button>
         </div>
       )}

@@ -6,44 +6,56 @@
 
 @layer base {
   :root {
-    /* ── Tenant-themeable brand variables (defaults = DigyGo orange) ──
+    /* ── Tenant-themeable brand variables (defaults = brand orange) ──
        These are overridden at runtime by brandingStore for white-label tenants.
-       Hardcoded hex usages across the app were swept to these vars. */
+       Brand stays the PRIMARY action color; the neutral system below is a cool,
+       modern grey scale (Finexy-style) rather than the old warm cream palette. */
     --brand: #ea580c;          /* primary brand (mid orange) */
     --brand-dark: #c2410c;     /* darker shade (text, borders) */
     --brand-light: #f97316;    /* lighter shade (gradient end) */
-    --accent-tint: #f5ede3;    /* warm hover/selected background */
-    --app-bg: #faf8f6;         /* app/page background */
+    --accent-tint: #eef1f4;    /* neutral hover/selected background (cool) */
+    --app-bg: #eceef1;         /* app canvas background (cool light grey) */
 
-    /* ── Core palette - warm orange brand ── */
-    --background: 30 25% 97%;          /* #faf8f6 warm off-white */
-    --foreground: 20 20% 10%;          /* #1c1410 warm near-black */
+    /* ── Neutral ink + surface scale (cool grey) ── */
+    --ink: #111318;            /* primary text (near-black, cool) */
+    --ink-2: #2b2f36;          /* secondary heading text */
+    --muted-ink: #6b7280;      /* muted / label text */
+    --muted-ink-2: #9ca3af;    /* fainter meta text */
+    --faint-ink: #c3c8cf;      /* placeholder / disabled */
+    --surface: #ffffff;        /* card surface */
+    --surface-2: #f4f5f7;      /* subtle inset surface */
+    --track: #eceef1;          /* progress / bar tracks */
+    --hairline: rgba(17, 19, 24, 0.08); /* card borders */
+
+    /* ── Core palette - cool neutral ── */
+    --background: 220 16% 96%;         /* #f2f3f5 cool off-white */
+    --foreground: 222 18% 11%;         /* #16181d cool near-black */
     --card: 0 0% 100%;                 /* #ffffff */
-    --card-foreground: 20 20% 10%;
+    --card-foreground: 222 18% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 20 20% 10%;
+    --popover-foreground: 222 18% 11%;
 
-    /* Primary = #c2410c → #ea580c → #f97316 orange gradient brand */
+    /* Primary = brand orange gradient (tenant-themeable, stays primary) */
     --primary: 21 90% 48%;             /* #ea580c orange-600 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 20% 93%;           /* warm beige #f0e8dc */
-    --secondary-foreground: 20 15% 28%;
+    --secondary: 220 16% 95%;          /* cool grey #eef0f2 */
+    --secondary-foreground: 222 14% 24%;
 
-    --muted: 28 22% 93%;               /* #f2ebe0 warm muted */
-    --muted-foreground: 24 12% 45%;    /* #7a6b5c warm grey */
+    --muted: 220 16% 95%;              /* cool muted */
+    --muted-foreground: 220 9% 46%;    /* #6b7280 cool grey */
 
-    --accent: 28 22% 93%;
-    --accent-foreground: 20 20% 10%;
+    --accent: 220 16% 95%;
+    --accent-foreground: 222 18% 11%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 15% 88%;              /* warm light border */
-    --input: 30 15% 88%;
+    --border: 220 14% 91%;             /* cool light border #e5e7eb */
+    --input: 220 14% 91%;
     --ring: 21 90% 48%;
-    --radius: 0.45rem;
+    --radius: 0.85rem;                 /* rounder cards + controls */
 
     /* Status colors */
     --success: 160 84% 39%;
@@ -53,14 +65,14 @@
     --warning-bg: 48 96% 89%;
     --warning-foreground: 28 80% 30%;
 
-    /* Sidebar - same warm background */
-    --sidebar-background: 30 25% 97%;
-    --sidebar-foreground: 20 20% 10%;
+    /* Sidebar - cool neutral */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 18% 11%;
     --sidebar-primary: 21 90% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 28 22% 93%;
-    --sidebar-accent-foreground: 20 20% 10%;
-    --sidebar-border: 30 15% 88%;
+    --sidebar-accent: 220 16% 95%;
+    --sidebar-accent-foreground: 222 18% 11%;
+    --sidebar-border: 220 14% 91%;
     --sidebar-ring: 21 90% 48%;
   }
 }
@@ -70,10 +82,19 @@
     @apply border-border;
     -webkit-tap-highlight-color: transparent;
   }
+  html, body, #root {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  /* Form controls inherit Inter (some browsers default them to system fonts) */
+  button, input, optgroup, select, textarea {
+    font-family: inherit;
   }
 }
 
@@ -85,7 +106,7 @@
 
   /* ── Blur surfaces ── */
   .ios-blur {
-    background: rgba(250, 248, 246, 0.95);
+    background: rgba(242, 243, 245, 0.95);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
   }
@@ -109,33 +130,41 @@
     display: none;
   }
 
-  /* ── Shadows ── */
+  /* ── Thin neutral scrollbar (opt-in) ── */
+  .thin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+  .thin-scroll::-webkit-scrollbar-thumb { background: rgba(17,19,24,0.16); border-radius: 999px; }
+  .thin-scroll::-webkit-scrollbar-track { background: transparent; }
+
+  /* ── Shadows (soft, neutral) ── */
   .card-shadow {
-    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 20px rgba(16, 24, 40, 0.05);
+  }
+  .card-shadow-sm {
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
   }
   .gradient-shadow {
-    box-shadow: 0 8px 24px rgba(234, 88, 12, 0.25);
+    box-shadow: 0 8px 24px rgba(234, 88, 12, 0.22);
   }
 
-  /* ── Card hover lift ── */
+  /* ── Card hover lift (neutral) ── */
   .card-hover {
     @apply transition-all duration-300;
   }
   .card-hover:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 28px rgba(234, 88, 12, 0.12);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.10);
   }
 
-  /* ── Button gradient (orange) ── */
+  /* ── Button gradient (brand, primary) ── */
   .btn-gradient {
     background: linear-gradient(135deg, #c2410c 0%, #ea580c 55%, #f97316 100%);
     @apply text-white font-semibold shadow-lg;
-    box-shadow: 0 8px 24px rgba(234, 88, 12, 0.28);
+    box-shadow: 0 8px 22px rgba(234, 88, 12, 0.26);
     transition: all 0.2s;
   }
   .btn-gradient:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(234, 88, 12, 0.36);
+    box-shadow: 0 12px 26px rgba(234, 88, 12, 0.34);
   }
   .btn-gradient:active {
     transform: scale(0.97);
@@ -143,7 +172,7 @@
 
   /* ── Section label ── */
   .section-label {
-    @apply text-[11px] font-bold uppercase tracking-widest text-primary opacity-70;
+    @apply text-[12px] font-bold uppercase tracking-widest text-primary opacity-70;
   }
 
   /* ── Safe area helpers ── */
@@ -152,5 +181,67 @@
   }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  /* ── Page-enter motion (applied per route in AppLayout) ── */
+  .page-enter {
+    animation: page-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes page-enter {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .page-enter,
+    .card-hover { animation: none !important; transition: none !important; }
+    .card-hover:hover { transform: none; }
+  }
+}
+
+@layer components {
+  /* ── Reusable card + control primitives (Finexy-style) ──
+     Pages can compose these instead of re-deriving surface styles. */
+  .ui-card {
+    @apply bg-white rounded-2xl border card-shadow;
+    border-color: var(--hairline);
+  }
+  .ui-card-hover {
+    @apply ui-card card-hover cursor-pointer;
+  }
+  .ui-pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13.5px] font-semibold transition-colors;
+  }
+  .ui-segment {
+    @apply inline-flex items-center gap-1 rounded-full bg-[var(--surface-2)] p-1;
+  }
+  .ui-segment-btn {
+    @apply rounded-full px-3.5 py-1.5 text-[14px] font-semibold text-[var(--muted-ink)] transition-all;
+  }
+  .ui-segment-btn[data-active='true'] {
+    @apply bg-primary text-white shadow-sm;
+  }
+  .ui-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[14px] font-semibold transition-all active:scale-[0.98];
+  }
+  .ui-btn-primary {
+    @apply ui-btn text-white;
+    background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%);
+    box-shadow: 0 6px 18px rgba(234, 88, 12, 0.24);
+  }
+  .ui-btn-dark {
+    @apply ui-btn bg-[var(--ink)] text-white hover:opacity-90;
+  }
+  .ui-btn-ghost {
+    @apply ui-btn bg-white border text-[var(--ink)] hover:bg-[var(--surface-2)];
+    border-color: var(--hairline);
+  }
+  .ui-input {
+    @apply h-10 w-full rounded-xl border bg-white px-3.5 text-[14px] text-[var(--ink)] outline-none transition-all placeholder:text-[var(--faint-ink)] focus:ring-2 focus:ring-primary/20 focus:border-primary/40;
+    border-color: var(--hairline);
+  }
+  .ui-stat-tile {
+    @apply bg-white rounded-2xl border card-shadow p-4;
+    border-color: var(--hairline);
   }
 }

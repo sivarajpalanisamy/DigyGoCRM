@@ -137,8 +137,8 @@ export default function WhatsAppSingleSendPage() {
           <MessageSquare className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h2 className="font-headline font-bold text-[17px] text-[#1c1410]">Send Custom Message</h2>
-          <p className="text-[13px] text-[#9e8e7e]">Compose and send a message directly to a contact</p>
+          <h2 className="font-headline font-bold text-[17px] text-[#111318]">Send Custom Message</h2>
+          <p className="text-[14px] text-[#8b929c]">Compose and send a message directly to a contact</p>
         </div>
       </div>
 
@@ -146,23 +146,23 @@ export default function WhatsAppSingleSendPage() {
         <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
           <QrCode className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-[14px] font-semibold text-amber-800">No active device</p>
-            <p className="text-[13px] text-amber-700">Connect a WhatsApp device first from the WhatsApp Devices tab.</p>
+            <p className="text-[15px] font-semibold text-amber-800">No active device</p>
+            <p className="text-[14px] text-amber-700">Connect a WhatsApp device first from the WhatsApp Devices tab.</p>
           </div>
         </div>
       )}
 
       {/* Form */}
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
         {/* Row 1: Device + Receiver */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5">
           {/* Device */}
           <div>
-            <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Smartphone className="w-4 h-4 text-amber-500" /> Select Device
             </label>
             <select
-              className="w-full border border-black/10 rounded-lg px-3 py-2.5 text-[14px] bg-white outline-none focus:border-[#128C7E] transition-colors"
+              className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2.5 text-[15px] bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-colors"
               value={deviceId}
               onChange={(e) => setDeviceId(e.target.value)}
             >
@@ -177,23 +177,23 @@ export default function WhatsAppSingleSendPage() {
 
           {/* Receiver */}
           <div ref={dropdownRef} className="relative">
-            <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <User className="w-4 h-4 text-emerald-500" /> Message To (Receiver)
             </label>
             {receiverPhone ? (
-              <div className="flex items-center gap-2 border border-black/10 rounded-lg px-3 py-2.5 bg-white">
+              <div className="flex items-center gap-2 border border-[var(--hairline)] rounded-xl px-3 py-2.5 bg-white">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold text-[#1c1410] truncate">{receiverName || receiverPhone}</p>
-                  {receiverName && <p className="text-[11px] text-[#9e8e7e]">{receiverPhone}</p>}
+                  <p className="text-[15px] font-semibold text-[#111318] truncate">{receiverName || receiverPhone}</p>
+                  {receiverName && <p className="text-[12px] text-[#8b929c]">{receiverPhone}</p>}
                 </div>
-                <button onClick={clearReceiver} className="text-[#9e8e7e] hover:text-red-500 p-0.5"><X className="w-3.5 h-3.5" /></button>
+                <button onClick={clearReceiver} className="text-[#8b929c] hover:text-red-500 p-0.5"><X className="w-3.5 h-3.5" /></button>
               </div>
             ) : (
               <>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9e8e7e]" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8b929c]" />
                   <input
-                    className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-black/10 rounded-lg outline-none focus:border-[#128C7E] transition-colors"
+                    className="w-full pl-9 pr-3 py-2.5 text-[15px] border border-[var(--hairline)] rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-colors"
                     placeholder="Search lead by name or enter phone number..."
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
@@ -207,24 +207,24 @@ export default function WhatsAppSingleSendPage() {
                       }
                     }}
                   />
-                  {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9e8e7e] animate-spin" />}
+                  {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8b929c] animate-spin" />}
                 </div>
                 {showDropdown && searchResults.length > 0 && (
-                  <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white rounded-xl border border-black/10 shadow-lg max-h-[200px] overflow-y-auto">
+                  <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white rounded-xl border border-[var(--hairline)] card-shadow max-h-[200px] overflow-y-auto">
                     {searchResults.map((c) => (
                       <button
                         key={c.id}
-                        className="w-full text-left px-4 py-2.5 hover:bg-[var(--accent-tint)] transition-colors border-b border-black/5 last:border-0"
+                        className="w-full text-left px-4 py-2.5 hover:bg-[var(--surface-2)] transition-colors border-b border-[var(--hairline)] last:border-0"
                         onClick={() => selectContact(c)}
                       >
-                        <p className="text-[14px] font-semibold text-[#1c1410]">{c.name}</p>
-                        <p className="text-[11px] text-[#9e8e7e]">{c.phone}</p>
+                        <p className="text-[15px] font-semibold text-[#111318]">{c.name}</p>
+                        <p className="text-[12px] text-[#8b929c]">{c.phone}</p>
                       </button>
                     ))}
                   </div>
                 )}
                 {searchQuery.length >= 2 && searchResults.length === 0 && !searching && (
-                  <p className="text-[11px] text-[#9e8e7e] mt-1">No leads found. Press Enter to use as phone number.</p>
+                  <p className="text-[12px] text-[#8b929c] mt-1">No leads found. Press Enter to use as phone number.</p>
                 )}
               </>
             )}
@@ -233,11 +233,11 @@ export default function WhatsAppSingleSendPage() {
 
         {/* Template loader */}
         <div className="px-5 pb-4">
-          <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+          <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider mb-1.5 flex items-center gap-1">
             <ClipboardList className="w-4 h-4 text-blue-500" /> Load from Template
           </label>
           <select
-            className="w-full max-w-md border border-black/10 rounded-lg px-3 py-2.5 text-[14px] bg-white outline-none focus:border-[#128C7E] transition-colors"
+            className="w-full max-w-md border border-[var(--hairline)] rounded-xl px-3 py-2.5 text-[15px] bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-colors"
             value={templateId}
             onChange={(e) => loadTemplate(e.target.value)}
           >
@@ -255,15 +255,15 @@ export default function WhatsAppSingleSendPage() {
           const isImage = tpl.file_type?.startsWith('image/');
           return (
             <div className="px-5 pb-4">
-              <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <Paperclip className="w-4 h-4 text-purple-500" /> Attachment
               </label>
-              <div className="flex items-center gap-3 border border-black/10 rounded-lg p-3 bg-[#faf8f6]">
+              <div className="flex items-center gap-3 border border-[var(--hairline)] rounded-xl p-3 bg-[var(--surface-2)]">
                 {isImage ? (
                   <img
                     src={`/api/wa-personal-templates/${tpl.id}/file`}
                     alt={tpl.file_name ?? 'attachment'}
-                    className="w-20 h-20 object-cover rounded-lg border border-black/10"
+                    className="w-20 h-20 object-cover rounded-xl border border-[var(--hairline)]"
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
@@ -271,8 +271,8 @@ export default function WhatsAppSingleSendPage() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold text-[#1c1410] truncate">{tpl.file_name}</p>
-                  <p className="text-[11px] text-[#9e8e7e]">Will be sent with the message</p>
+                  <p className="text-[15px] font-semibold text-[#111318] truncate">{tpl.file_name}</p>
+                  <p className="text-[12px] text-[#8b929c]">Will be sent with the message</p>
                 </div>
               </div>
             </div>
@@ -281,25 +281,25 @@ export default function WhatsAppSingleSendPage() {
 
         {/* Message area */}
         <div className="px-5 pb-5">
-          <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-1.5 flex items-center gap-1">
+          <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider mb-1.5 flex items-center gap-1">
             <Pencil className="w-4 h-4 text-orange-500" /> Message
           </label>
-          <div className="border border-black/10 rounded-xl overflow-hidden focus-within:border-[#128C7E] transition-colors">
+          <div className="border border-[var(--hairline)] rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40 transition-colors">
             <textarea
-              className="w-full px-4 py-3 text-[14px] min-h-[180px] resize-y outline-none bg-[#faf8f6]"
+              className="w-full px-4 py-3 text-[15px] min-h-[180px] resize-y outline-none bg-[var(--surface-2)]"
               placeholder="Type your message here..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
           </div>
-          <p className="text-[11px] text-[#9e8e7e] mt-1.5">
+          <p className="text-[12px] text-[#8b929c] mt-1.5">
             {message.length} characters - Use *bold*, _italic_, ~strikethrough~ for WhatsApp formatting
           </p>
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-black/5 bg-[var(--app-bg)] flex items-center justify-between">
-          <div className="text-[11px] text-[#9e8e7e]">
+        <div className="px-5 py-4 border-t border-[var(--hairline)] bg-[var(--surface-2)] flex flex-wrap items-center justify-between gap-3">
+          <div className="text-[12px] text-[#8b929c]">
             {selectedDevice ? (
               <span>Sending from <strong>{selectedDevice.session_name}</strong>{selectedDevice.phone_number ? ` (${selectedDevice.phone_number})` : ''}</span>
             ) : (
@@ -310,7 +310,7 @@ export default function WhatsAppSingleSendPage() {
             onClick={sendMessage}
             disabled={sending || !message.trim() || !receiverPhone || !deviceId}
             className={cn(
-              'flex items-center gap-2 text-[14px] font-bold text-white px-6 py-2.5 rounded-lg transition-all',
+              'flex items-center gap-2 text-[15px] font-bold text-white px-6 py-2.5 rounded-xl transition-all active:scale-[0.98]',
               sent
                 ? 'bg-emerald-500'
                 : sending || !message.trim() || !receiverPhone || !deviceId

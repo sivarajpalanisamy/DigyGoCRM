@@ -11,6 +11,7 @@ import { confirmDialog } from '@/lib/confirm';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { DatePicker } from '@/components/ui/date-picker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -173,19 +174,19 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
       : '@'
     : 'admin';
 
-  const inp = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white';
+  const inp = 'w-full px-3 py-2 rounded-xl border border-[var(--hairline)] text-[15px] text-[#111318] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20 bg-white transition';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto border border-[var(--hairline)]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)]">
           <div>
-            <h3 className="font-bold text-[#1c1410] flex items-center gap-2">
+            <h3 className="font-bold text-[#111318] flex items-center gap-2">
               <Globe className="w-4 h-4 text-primary" /> Custom Domain
             </h3>
-            <p className="text-[11px] text-[#7a6b5c] mt-0.5">{tenant.name}</p>
+            <p className="text-[12px] text-[#6b7280] mt-0.5">{tenant.name}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-[var(--surface-2)] transition"><X className="w-4 h-4" /></button>
         </div>
 
         {loading ? (
@@ -197,14 +198,14 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
 
             {/* Status badge */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#7a6b5c]">Status:</span>
-              {status === 'none' && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">No domain set</span>}
-              {status === 'dns_pending' && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⏳ DNS Pending</span>}
-              {status === 'verifying' && <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 animate-pulse"><Loader2 className="w-3 h-3 animate-spin" /> Verifying SSL...</span>}
-              {status === 'ssl_active' && <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 className="w-3 h-3" /> Active</span>}
-              {status === 'failed' && <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700"><XCircle className="w-3 h-3" /> Failed</span>}
+              <span className="text-[13px] font-semibold text-[#6b7280]">Status:</span>
+              {status === 'none' && <span className="text-[13px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">No domain set</span>}
+              {status === 'dns_pending' && <span className="text-[13px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⏳ DNS Pending</span>}
+              {status === 'verifying' && <span className="inline-flex items-center gap-1 text-[13px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 animate-pulse"><Loader2 className="w-3 h-3 animate-spin" /> Verifying SSL...</span>}
+              {status === 'ssl_active' && <span className="inline-flex items-center gap-1 text-[13px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 className="w-3 h-3" /> Active</span>}
+              {status === 'failed' && <span className="inline-flex items-center gap-1 text-[13px] px-2 py-0.5 rounded-full bg-red-100 text-red-700"><XCircle className="w-3 h-3" /> Failed</span>}
               {info?.domain_verified_at && status === 'ssl_active' && (
-                <span className="text-[10px] text-[#b09e8d]">since {new Date(info.domain_verified_at).toLocaleDateString()}</span>
+                <span className="text-[11px] text-[#9ca3af]">since {new Date(info.domain_verified_at).toLocaleDateString()}</span>
               )}
             </div>
 
@@ -212,7 +213,7 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
             {status === 'failed' && info?.domain_error && (
               <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
                 <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-red-700 font-mono break-all">{info.domain_error}</p>
+                <p className="text-[12px] text-red-700 font-mono break-all">{info.domain_error}</p>
               </div>
             )}
 
@@ -220,7 +221,7 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
             {(info?.domain_cert_attempts ?? 0) >= 3 && status !== 'ssl_active' && (
               <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-amber-700">
+                <p className="text-[12px] text-amber-700">
                   {info?.domain_cert_attempts}/4 verification attempts used this week.
                   Let's Encrypt permanently blocks after 5 failures.
                   {attemptsLeft === 0 && ' Limit reached - try again next Monday.'}
@@ -230,7 +231,7 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
 
             {/* Domain input */}
             <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Custom Domain</label>
+              <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Custom Domain</label>
               <div className="flex gap-2">
                 <input
                   value={domainInput}
@@ -239,7 +240,7 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
                   className={`${inp} flex-1`}
                 />
                 <button onClick={handleSetDomain} disabled={saving || !domainInput.trim()}
-                  className="px-3 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0">
+                  className="px-3 py-2 rounded-xl text-[15px] font-semibold text-white bg-primary hover:bg-primary/90 active:scale-[0.98] transition disabled:opacity-50 shrink-0">
                   {saving ? '…' : 'Save'}
                 </button>
               </div>
@@ -247,10 +248,10 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
 
             {/* DNS instructions */}
             {(status === 'dns_pending' || status === 'failed') && info?.custom_domain && (
-              <div className="p-3 bg-[#faf8f6] rounded-lg border border-[#e8ddd4] space-y-2">
-                <p className="text-xs font-semibold text-[#1c1410]">DNS Setup Instructions</p>
-                <p className="text-[11px] text-[#7a6b5c]">Add this record in your domain's DNS settings:</p>
-                <div className="grid grid-cols-3 gap-1 text-[11px] font-mono bg-white rounded-lg border border-gray-100 p-2">
+              <div className="p-3 bg-[var(--surface-2)] rounded-xl border border-[var(--hairline)] space-y-2">
+                <p className="text-[13px] font-semibold text-[#111318]">DNS Setup Instructions</p>
+                <p className="text-[12px] text-[#6b7280]">Add this record in your domain's DNS settings:</p>
+                <div className="grid grid-cols-3 gap-1 text-[12px] font-mono bg-white rounded-xl border border-[var(--hairline)] p-2">
                   <span className="text-gray-400">Type</span>
                   <span className="text-gray-400">Name</span>
                   <span className="text-gray-400">Value</span>
@@ -259,7 +260,7 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
                   <span className="font-bold">{CNAME_TARGET}</span>
                 </div>
                 <button onClick={() => { navigator.clipboard.writeText(CNAME_TARGET); toast.success('Copied!'); }}
-                  className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80">
+                  className="flex items-center gap-1 text-[12px] text-primary hover:text-primary/80">
                   <Copy className="w-3 h-3" /> Copy value
                 </button>
               </div>
@@ -270,7 +271,7 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
               <button
                 onClick={handleVerify}
                 disabled={verifying || attemptsLeft === 0}
-                className="w-full h-10 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full h-10 rounded-xl text-[15px] font-semibold text-white bg-primary hover:bg-primary/90 active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {verifying ? (
                   <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Checking DNS & provisioning SSL...</>
@@ -281,38 +282,38 @@ function DomainModal({ tenant, onClose }: { tenant: Tenant; onClose: () => void 
             {/* Remove domain button */}
             {info?.custom_domain && status !== 'none' && (
               <button onClick={handleRemove} disabled={removing}
-                className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 transition-colors">
+                className="flex items-center gap-1.5 text-[13px] text-red-500 hover:text-red-700 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" />
                 {removing ? 'Removing...' : 'Remove domain'}
               </button>
             )}
 
             {/* Branding section */}
-            <div className="border-t border-gray-100 pt-4 space-y-3">
-              <p className="text-xs font-bold text-[#1c1410]">White-Label Branding</p>
+            <div className="border-t border-[var(--hairline)] pt-4 space-y-3">
+              <p className="text-[13px] font-bold text-[#111318]">White-Label Branding</p>
               <div>
-                <label className="text-xs font-semibold text-[#7a6b5c] mb-1 block">Logo URL <span className="font-normal">(hosted image URL)</span></label>
+                <label className="text-[13px] font-semibold text-[#6b7280] mb-1 block">Logo URL <span className="font-normal">(hosted image URL)</span></label>
                 <input value={logoInput} onChange={(e) => setLogoInput(e.target.value)}
                   placeholder="https://cdn.yourcompany.com/logo.png" className={inp} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-[#7a6b5c] mb-1 block">Brand Color</label>
+                  <label className="text-[13px] font-semibold text-[#6b7280] mb-1 block">Brand Color</label>
                   <div className="flex gap-2 items-center">
                     <input type="color" value={colorInput} onChange={(e) => setColorInput(e.target.value)}
-                      className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
+                      className="w-9 h-9 rounded-xl border border-[var(--hairline)] cursor-pointer p-0.5" />
                     <input value={colorInput} onChange={(e) => setColorInput(e.target.value)}
                       placeholder="#c2410c" className={`${inp} flex-1`} />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-[#7a6b5c] mb-1 block">Reply-To Email</label>
+                  <label className="text-[13px] font-semibold text-[#6b7280] mb-1 block">Reply-To Email</label>
                   <input value={replyToInput} onChange={(e) => setReplyToInput(e.target.value)}
                     placeholder="info@yourcompany.com" className={inp} />
                 </div>
               </div>
               <button onClick={handleSaveBranding} disabled={saving}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-60">
+                className="px-4 py-2 rounded-xl text-[15px] font-semibold text-white bg-primary hover:bg-primary/90 active:scale-[0.98] transition disabled:opacity-60">
                 {saving ? 'Saving…' : 'Save Branding'}
               </button>
             </div>
@@ -379,62 +380,62 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
     }
   };
 
-  const inp = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white';
+  const inp = 'w-full px-3 py-2 rounded-xl border border-[var(--hairline)] text-[15px] text-[#111318] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20 bg-white transition';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-[var(--hairline)]">
         {/* Header (fixed) */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[var(--hairline)] shrink-0">
           <div>
-            <h3 className="font-bold text-[#1c1410]">Edit Business</h3>
-            <p className="text-[11px] text-[#7a6b5c] mt-0.5">{tenant.name}</p>
+            <h3 className="font-bold text-[#111318]">Edit Business</h3>
+            <p className="text-[12px] text-[#6b7280] mt-0.5">{tenant.name}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-[var(--surface-2)] transition"><X className="w-4 h-4" /></button>
         </div>
 
         {/* Body - horizontal 2-column grid, scrolls if it overflows */}
         <div className="px-4 sm:px-6 py-5 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
           {/* ── Business ── */}
-          <div className="sm:col-span-2 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Business</div>
+          <div className="sm:col-span-2 text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Business</div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Business Name</label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Business Name</label>
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inp} />
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Phone</label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Phone</label>
             <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inp} />
           </div>
 
           {/* ── Account Owner (login) ── */}
-          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Account Owner (login)</div>
+          <div className="sm:col-span-2 mt-1 pt-4 border-t border-[var(--hairline)] text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Account Owner (login)</div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Owner Name</label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Owner Name</label>
             <input value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} className={inp} />
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Owner Email <span className="font-normal text-[#7a6b5c]">(login)</span></label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Owner Email <span className="font-normal text-[#6b7280]">(login)</span></label>
             <input type="email" value={form.owner_email} onChange={(e) => setForm({ ...form, owner_email: e.target.value })} className={inp} />
           </div>
-          <p className="sm:col-span-2 -mt-1.5 text-[10px] text-[#b09e8d]">Changing the owner email changes how they sign in - both the old and new addresses are notified.</p>
+          <p className="sm:col-span-2 -mt-1.5 text-[11px] text-[#9ca3af]">Changing the owner email changes how they sign in - both the old and new addresses are notified.</p>
 
           {/* ── Subscription ── */}
-          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Subscription</span>
+          <div className="sm:col-span-2 mt-1 pt-4 border-t border-[var(--hairline)] flex items-center justify-between">
+            <span className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Subscription</span>
             <button type="button" onClick={handleRenew} disabled={renewing}
-              className="px-3 py-1.5 rounded-lg text-[13px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-60">
+              className="px-3 py-1.5 rounded-xl text-[14px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition disabled:opacity-60">
               {renewing ? 'Renewing…' : `Renew +1 ${form.billing_cycle === 'yearly' ? 'year' : 'month'}`}
             </button>
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Plan</label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Plan</label>
             <select value={form.billing_cycle} onChange={(e) => setForm({ ...form, billing_cycle: e.target.value })} className={inp}>
               <option value="monthly">Monthly</option>
               <option value="yearly">Yearly</option>
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Status</label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Status</label>
             <select value={form.subscription_status} onChange={(e) => setForm({ ...form, subscription_status: e.target.value })} className={inp}>
               <option value="active">Active</option>
               <option value="expired">Expired</option>
@@ -443,18 +444,18 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Expires At <span className="font-normal text-[#7a6b5c]">(blank = never)</span></label>
-            <input type="date" value={form.subscription_expires_at} onChange={(e) => setForm({ ...form, subscription_expires_at: e.target.value })} className={inp} />
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Expires At <span className="font-normal text-[#6b7280]">(blank = never)</span></label>
+            <DatePicker value={form.subscription_expires_at} onChange={(v) => setForm({ ...form, subscription_expires_at: v })} placeholder="Never" className="w-full" />
           </div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Price (₹ / period)</label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Price (₹ / period)</label>
             <input type="number" value={form.plan_price} onChange={(e) => setForm({ ...form, plan_price: e.target.value })} className={inp} placeholder="e.g. 1499" />
           </div>
           <div className="sm:col-span-2">
-            <label className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-black/10 bg-[var(--app-bg)] cursor-pointer">
+            <label className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-[var(--hairline)] bg-[var(--surface-2)] cursor-pointer">
               <span>
-                <span className="text-xs font-semibold text-[#1c1410] block">Superfone</span>
-                <span className="text-[11px] text-[#7a6b5c]">Enable the Superfone integration for this account</span>
+                <span className="text-[13px] font-semibold text-[#111318] block">Superfone</span>
+                <span className="text-[12px] text-[#6b7280]">Enable the Superfone integration for this account</span>
               </span>
               <input type="checkbox" className="w-5 h-5 accent-primary"
                 checked={form.superfone_enabled}
@@ -463,40 +464,40 @@ function EditTenantModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
           </div>
 
           {/* User License */}
-          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">User License</div>
+          <div className="sm:col-span-2 mt-1 pt-4 border-t border-[var(--hairline)] text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">User License</div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Max Users <span className="font-normal text-[#7a6b5c]">(including owner)</span></label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Max Users <span className="font-normal text-[#6b7280]">(including owner)</span></label>
             <input type="number" min="1" value={form.max_users} onChange={(e) => setForm({ ...form, max_users: e.target.value })} className={inp} placeholder="5" />
           </div>
           <div className="flex items-end pb-1">
-            <p className="text-[11px] text-[#7a6b5c]">
+            <p className="text-[12px] text-[#6b7280]">
               Currently {tenant.user_count} active user{tenant.user_count !== 1 ? 's' : ''} of {form.max_users} allowed
             </p>
           </div>
 
           {/* Email Credits */}
-          <div className="sm:col-span-2 mt-1 pt-4 border-t border-gray-100 text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Email Credits</div>
+          <div className="sm:col-span-2 mt-1 pt-4 border-t border-[var(--hairline)] text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Email Credits</div>
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Credits <span className="font-normal text-[#7a6b5c]">(-1 = Unlimited)</span></label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Credits <span className="font-normal text-[#6b7280]">(-1 = Unlimited)</span></label>
             <input type="number" value={form.email_credits} onChange={(e) => setForm({ ...form, email_credits: e.target.value })} className={inp} placeholder="-1" />
           </div>
           <div className="flex items-end pb-1">
-            <p className="text-[11px] text-[#7a6b5c]">
+            <p className="text-[12px] text-[#6b7280]">
               {form.email_credits === '-1' ? 'Unlimited emails' : Number(form.email_credits) === 0 ? 'No credits - sending blocked' : `${form.email_credits} emails remaining`}
             </p>
           </div>
 
           <div className="sm:col-span-2">
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Address</label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Address</label>
             <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inp} />
           </div>
         </div>
 
         {/* Footer (fixed) */}
-        <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-4 border-t border-gray-100 shrink-0">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
+        <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-4 border-t border-[var(--hairline)] shrink-0">
+          <button onClick={onClose} className="px-4 py-2 rounded-xl text-[15px] text-[#111318] bg-white border border-[var(--hairline)] hover:bg-[var(--surface-2)] transition">Cancel</button>
           <button onClick={handleSave} disabled={saving}
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-60">
+            className="px-4 py-2 rounded-xl text-[15px] font-semibold text-white bg-primary hover:bg-primary/90 active:scale-[0.98] transition disabled:opacity-60">
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
@@ -534,24 +535,24 @@ function RowMenu({ tenant, onEdit, onRefresh }: { tenant: Tenant; onEdit: () => 
   return (
     <div className="relative" ref={ref}>
       <button onClick={() => setOpen((v) => !v)}
-        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+        className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-[var(--surface-2)] text-gray-400 hover:text-gray-600 transition">
         <MoreVertical className="w-4 h-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-9 bg-white border border-gray-100 rounded-xl shadow-xl z-50 w-44 py-1">
+        <div className="absolute right-0 top-9 bg-white border border-[var(--hairline)] rounded-xl card-shadow z-50 w-44 py-1">
           <button onClick={() => { setOpen(false); onEdit(); }}
-            className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 text-[#1c1410]">
+            className="w-full text-left px-3 py-2 text-[15px] flex items-center gap-2 hover:bg-[var(--surface-2)] text-[#111318]">
             <Pencil className="w-3.5 h-3.5 text-gray-400" /> Edit Details
           </button>
           <button onClick={() => {
             setOpen(false);
             window.location.href = `mailto:${tenant.admin_email ?? tenant.email}`;
-          }} className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 text-[#1c1410]">
+          }} className="w-full text-left px-3 py-2 text-[15px] flex items-center gap-2 hover:bg-[var(--surface-2)] text-[#111318]">
             <Mail className="w-3.5 h-3.5 text-gray-400" /> Send Email
           </button>
-          <div className="border-t border-gray-100 my-1" />
+          <div className="border-t border-[var(--hairline)] my-1" />
           <button onClick={handleToggleActive}
-            className={cn('w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors',
+            className={cn('w-full text-left px-3 py-2 text-[15px] flex items-center gap-2 transition-colors',
               tenant.is_active ? 'hover:bg-red-50 text-red-600' : 'hover:bg-green-50 text-green-700')}>
             {tenant.is_active ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
             {tenant.is_active ? 'Suspend Account' : 'Restore Account'}
@@ -638,40 +639,37 @@ export default function SuperAdminPage() {
           { label: 'Total Users', value: totalUsers, icon: Users, color: 'text-purple-500', bg: 'bg-purple-50' },
           { label: 'Total Leads', value: totalLeads, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
         ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl px-5 py-4 border border-black/5 flex items-center gap-4"
-            style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+          <div key={s.label} className="bg-white rounded-2xl px-5 py-4 border border-[var(--hairline)] card-shadow card-hover flex items-center gap-4">
             <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', s.bg)}>
               <s.icon className={cn('w-5 h-5', s.color)} />
             </div>
             <div>
-              <p className="text-[11px] text-[#7a6b5c]">{s.label}</p>
-              <p className="font-headline text-[24px] font-bold text-[#1c1410] leading-tight">{s.value}</p>
+              <p className="text-[12px] text-[#6b7280]">{s.label}</p>
+              <p className="font-headline text-[24px] font-bold text-[#111318] leading-tight">{s.value}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Main panel */}
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden"
-        style={{ boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] overflow-hidden card-shadow">
 
         {/* Tabs + Create button */}
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 pt-4 pb-0">
           <div className="flex gap-2">
             <button onClick={() => setShowDeleted(false)}
-              className={cn('px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[14px] font-semibold transition-all',
-                !showDeleted ? 'bg-primary text-white' : 'bg-transparent text-[#7a6b5c] hover:bg-gray-100')}>
+              className={cn('px-3 sm:px-4 py-1.5 rounded-full text-[14px] sm:text-[15px] font-semibold transition',
+                !showDeleted ? 'bg-primary text-white' : 'bg-[var(--surface-2)] text-[#6b7280] hover:text-[#111318]')}>
               All Accounts
             </button>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={fetchTenants} disabled={loading}
-              className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:text-primary transition-colors">
+              className="p-2 rounded-xl border border-[var(--hairline)] bg-white text-gray-500 hover:bg-[var(--surface-2)] hover:text-primary transition">
               <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
             </button>
             <button onClick={() => navigate('/admin/create')}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-white text-[14px] font-bold transition-all hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg,#c2410c 0%,#ea580c 55%,#f97316 100%)', boxShadow: '0 4px 14px rgba(234,88,12,.28)' }}>
+              className="btn-gradient flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-white text-[15px] font-bold active:scale-[0.98] transition hover:opacity-90">
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">CREATE WHITE LABEL</span>
               <span className="sm:hidden">CREATE</span>
@@ -680,20 +678,20 @@ export default function SuperAdminPage() {
         </div>
 
         {/* Sub-header */}
-        <div className="px-4 sm:px-5 pt-4 pb-2 border-b border-gray-100">
+        <div className="px-4 sm:px-5 pt-4 pb-2 border-b border-[var(--hairline)]">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-1 h-4 rounded-full bg-primary" />
-            <h2 className="font-headline font-bold text-[#1c1410] text-[15px]">Business Accounts</h2>
+            <h2 className="font-headline font-bold text-[#111318] text-[16px]">Business Accounts</h2>
           </div>
-          <p className="text-[13px] text-[#7a6b5c]">You have total <span className="font-semibold text-[#1c1410]">{filtered.length}</span></p>
+          <p className="text-[14px] text-[#6b7280]">You have total <span className="font-semibold text-[#111318]">{filtered.length}</span></p>
         </div>
 
         {/* Filters */}
-        <div className="px-4 sm:px-5 py-3 border-b border-gray-100 flex flex-wrap items-center gap-2">
+        <div className="px-4 sm:px-5 py-3 border-b border-[var(--hairline)] flex flex-wrap items-center gap-2">
           {/* Plan filter */}
           <div className="relative">
             <select value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)}
-              className="pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 text-[13px] text-[#1c1410] outline-none bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors">
+              className="pl-3 pr-7 py-1.5 rounded-xl border border-[var(--hairline)] text-[14px] text-[#111318] outline-none bg-white appearance-none cursor-pointer hover:bg-[var(--surface-2)] focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition">
               <option value="">Plan</option>
               <option value="monthly">Monthly</option>
               <option value="yearly">Yearly</option>
@@ -703,7 +701,7 @@ export default function SuperAdminPage() {
           {/* Subscription filter */}
           <div className="relative">
             <select value={filterSub} onChange={(e) => setFilterSub(e.target.value)}
-              className="pl-3 pr-7 py-1.5 rounded-lg border border-gray-200 text-[13px] text-[#1c1410] outline-none bg-white appearance-none cursor-pointer hover:border-gray-300 transition-colors">
+              className="pl-3 pr-7 py-1.5 rounded-xl border border-[var(--hairline)] text-[14px] text-[#111318] outline-none bg-white appearance-none cursor-pointer hover:bg-[var(--surface-2)] focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition">
               <option value="">Status</option>
               <option value="_active">Active Accounts</option>
               <option value="_suspended">Suspended Accounts</option>
@@ -716,15 +714,15 @@ export default function SuperAdminPage() {
           </div>
           {(filterPlan || filterSub || search) && (
             <button onClick={() => { setFilterPlan(''); setFilterSub(''); setSearch(''); }}
-              className="text-[11px] text-primary font-medium hover:underline">
+              className="text-[12px] text-primary font-medium hover:underline">
               Clear
             </button>
           )}
           {/* Search */}
-          <div className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 bg-white ml-auto w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 border border-[var(--hairline)] rounded-xl px-3 py-1.5 bg-white ml-auto w-full sm:w-auto focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40 transition">
             <input value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search accounts…"
-              className="text-[13px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300 flex-1 sm:w-44" />
+              className="text-[14px] text-[#111318] outline-none bg-transparent placeholder:text-gray-300 flex-1 sm:w-44" />
             <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
           </div>
         </div>
@@ -737,20 +735,19 @@ export default function SuperAdminPage() {
         ) : filtered.length === 0 ? (
           <div className="py-20 flex flex-col items-center gap-3">
             <Building2 className="w-10 h-10 text-gray-200" />
-            <p className="text-sm font-semibold text-gray-400">
+            <p className="text-[15px] font-semibold text-gray-400">
               {search || filterPlan || filterSub ? 'No accounts match your filters' : 'No accounts yet'}
             </p>
             {!search && !filterPlan && !filterSub && (
               <button onClick={() => navigate('/admin/create')}
-                className="mt-1 flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-bold text-white"
-                style={{ background: 'linear-gradient(135deg,#c2410c 0%,#ea580c 100%)' }}>
+                className="btn-gradient mt-1 flex items-center gap-2 px-4 py-2 rounded-xl text-[15px] font-bold text-white active:scale-[0.98] transition">
                 <Plus className="w-4 h-4" /> Create Account
               </button>
             )}
           </div>
         ) : (
           <>
-          <div className="sm:hidden divide-y divide-gray-50">
+          <div className="sm:hidden divide-y divide-[var(--hairline)]">
             {filtered.map((t, idx) => {
               const st = subState(t);
               const tone = st.tone === 'green' ? 'text-green-700' : st.tone === 'amber' ? 'text-amber-600' : 'text-red-500';
@@ -758,17 +755,17 @@ export default function SuperAdminPage() {
                 <div key={t.id} className="px-4 py-4 space-y-3">
                   {/* Top row: avatar + name + actions */}
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center text-[11px] font-bold text-gray-400 shrink-0">
+                    <div className="w-10 h-10 rounded-lg border-2 border-dashed border-[var(--hairline)] bg-gray-50 flex items-center justify-center text-[12px] font-bold text-gray-400 shrink-0">
                       {t.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="font-semibold text-[#1c1410] text-[15px] truncate">{t.name}</p>
-                        {!t.is_active && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase tracking-wide shrink-0">Suspended</span>}
+                        <p className="font-semibold text-[#111318] text-[16px] truncate">{t.name}</p>
+                        {!t.is_active && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase tracking-wide shrink-0">Suspended</span>}
                       </div>
-                      <p className="text-[11px] text-[#7a6b5c] truncate">{t.admin_name ?? '-'} · {t.admin_email ?? t.email}</p>
+                      <p className="text-[12px] text-[#6b7280] truncate">{t.admin_name ?? '-'} · {t.admin_email ?? t.email}</p>
                     </div>
-                    <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0', CYCLE_BADGE[cycleOf(t)])}>
+                    <span className={cn('text-[11px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0', CYCLE_BADGE[cycleOf(t)])}>
                       {CYCLE_LABEL[cycleOf(t)]}
                     </span>
                   </div>
@@ -778,14 +775,14 @@ export default function SuperAdminPage() {
                       {st.tone === 'green'
                         ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
                         : <XCircle className={cn('w-3.5 h-3.5 shrink-0', st.tone === 'amber' ? 'text-amber-500' : 'text-red-400')} />}
-                      <span className={cn('text-[13px] font-semibold', tone)}>{st.label}</span>
-                      <span className="text-[11px] text-[#7a6b5c]">
+                      <span className={cn('text-[14px] font-semibold', tone)}>{st.label}</span>
+                      <span className="text-[12px] text-[#6b7280]">
                         · {t.subscription_expires_at ? format(new Date(t.subscription_expires_at), 'MMM dd, yyyy') : 'No expiry'}
                       </span>
                     </div>
                   </div>
                   {/* Info row */}
-                  <p className="text-[11px] text-[#7a6b5c]">
+                  <p className="text-[12px] text-[#6b7280]">
                     {t.last_login_at
                       ? `Last login: ${format(new Date(t.last_login_at), 'MMM dd hh:mm aa')}`
                       : 'Never logged in'}
@@ -795,20 +792,20 @@ export default function SuperAdminPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => handleImpersonate(t)} disabled={impersonatingId === t.id || !t.is_active}
-                      className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all',
-                        t.is_active ? 'border-gray-200 text-primary hover:bg-primary/5' : 'border-gray-100 text-gray-300 cursor-not-allowed')}>
+                      className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all',
+                        t.is_active ? 'border-[var(--hairline)] text-primary hover:bg-primary/5' : 'border-gray-100 text-gray-300 cursor-not-allowed')}>
                       {impersonatingId === t.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <LogIn className="w-3 h-3" />}
                       Login
                     </button>
                     <button onClick={() => setEditTenant(t)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-gray-200 text-[#7a6b5c] hover:bg-gray-50 transition-all">
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-[var(--hairline)] text-[#6b7280] hover:bg-gray-50 transition-all">
                       <Pencil className="w-3 h-3" /> Edit
                     </button>
                     <button onClick={() => setDomainTenant(t)}
-                      className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all',
+                      className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all',
                         t.domain_status === 'ssl_active'
                           ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
-                          : 'border-gray-200 text-[#7a6b5c] hover:bg-gray-50')}>
+                          : 'border-[var(--hairline)] text-[#6b7280] hover:bg-gray-50')}>
                       <Globe className="w-3 h-3" /> Domain
                     </button>
                     <div className="ml-auto">
@@ -822,33 +819,33 @@ export default function SuperAdminPage() {
 
           {/* ── Desktop table layout ── */}
           <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full min-w-[900px] text-[14px]">
+            <table className="w-full min-w-[900px] text-[15px]">
               <thead>
-                <tr className="border-b border-gray-100">
+                <tr className="border-b border-[var(--hairline)]">
                   {['#', 'Business Name', 'Active Subscription', 'Owner Details', 'Info', ''].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] whitespace-nowrap bg-[#faf8f6]">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] whitespace-nowrap bg-[var(--surface-2)]">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-[var(--hairline)]">
                 {filtered.map((t, idx) => (
-                  <tr key={t.id} className="hover:bg-[#fafaf9] transition-colors group">
+                  <tr key={t.id} className="hover:bg-[var(--surface-2)] transition-colors group">
                     {/* # */}
-                    <td className="px-4 py-4 text-[#7a6b5c] text-[13px] w-10">{idx + 1}</td>
+                    <td className="px-4 py-4 text-[#6b7280] text-[14px] w-10">{idx + 1}</td>
 
                     {/* Business Name */}
                     <td className="px-4 py-4 min-w-[160px]">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center text-[11px] font-bold text-gray-400 shrink-0">
+                        <div className="w-10 h-10 rounded-lg border-2 border-dashed border-[var(--hairline)] bg-gray-50 flex items-center justify-center text-[12px] font-bold text-gray-400 shrink-0">
                           {t.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className="font-semibold text-[#1c1410] truncate">{t.name}</p>
-                            {!t.is_active && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase tracking-wide shrink-0">Suspended</span>}
+                            <p className="font-semibold text-[#111318] truncate">{t.name}</p>
+                            {!t.is_active && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 uppercase tracking-wide shrink-0">Suspended</span>}
                           </div>
-                          {t.phone && <p className="text-[11px] text-[#7a6b5c]">{t.phone}</p>}
-                          <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide', CYCLE_BADGE[cycleOf(t)])}>
+                          {t.phone && <p className="text-[12px] text-[#6b7280]">{t.phone}</p>}
+                          <span className={cn('text-[11px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide', CYCLE_BADGE[cycleOf(t)])}>
                             {CYCLE_LABEL[cycleOf(t)]}
                           </span>
                         </div>
@@ -867,9 +864,9 @@ export default function SuperAdminPage() {
                               {st.tone === 'green'
                                 ? <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
                                 : <XCircle className={cn('w-4 h-4 shrink-0', st.tone === 'amber' ? 'text-amber-500' : 'text-red-400')} />}
-                              <span className={cn('text-[13px] font-semibold', tone)}>{st.label}</span>
+                              <span className={cn('text-[14px] font-semibold', tone)}>{st.label}</span>
                             </div>
-                            <p className="text-[11px] text-[#7a6b5c] pl-5">
+                            <p className="text-[12px] text-[#6b7280] pl-5">
                               {t.billing_cycle ? (t.billing_cycle === 'yearly' ? 'Yearly · ' : 'Monthly · ') : ''}
                               {t.subscription_expires_at ? format(new Date(t.subscription_expires_at), 'MMM dd, yyyy') : 'No expiry'}
                             </p>
@@ -881,29 +878,29 @@ export default function SuperAdminPage() {
                     {/* Owner Details */}
                     <td className="px-4 py-4 min-w-[180px]">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-500 shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-[12px] font-bold text-gray-500 shrink-0">
                           {(t.admin_name ?? t.name).slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-[#1c1410] text-[14px] truncate">{t.admin_name ?? '-'}</p>
-                          <p className="text-[11px] text-[#7a6b5c] truncate">{t.admin_email ?? t.email}</p>
-                          {t.phone && <p className="text-[11px] text-[#7a6b5c]">{t.phone}</p>}
+                          <p className="font-semibold text-[#111318] text-[15px] truncate">{t.admin_name ?? '-'}</p>
+                          <p className="text-[12px] text-[#6b7280] truncate">{t.admin_email ?? t.email}</p>
+                          {t.phone && <p className="text-[12px] text-[#6b7280]">{t.phone}</p>}
                         </div>
                       </div>
                     </td>
 
                     {/* Info */}
                     <td className="px-4 py-4 min-w-[160px]">
-                      <p className="text-[11px] text-[#7a6b5c] mb-1">
+                      <p className="text-[12px] text-[#6b7280] mb-1">
                         {t.last_login_at
                           ? `Last Login: ${format(new Date(t.last_login_at), 'MMM dd, yyyy hh:mm aa')}`
                           : 'Never logged in'}
                       </p>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full', CYCLE_BADGE[cycleOf(t)])}>
+                        <span className={cn('text-[11px] font-bold px-2 py-0.5 rounded-full', CYCLE_BADGE[cycleOf(t)])}>
                           {CYCLE_LABEL[cycleOf(t)]}
                         </span>
-                        <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full',
+                        <span className={cn('text-[11px] font-bold px-2 py-0.5 rounded-full',
                           t.user_count >= (t.max_users ?? 5) ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600')}>
                           {t.user_count}/{t.max_users ?? 5} users
                         </span>
@@ -916,23 +913,23 @@ export default function SuperAdminPage() {
                         <button onClick={() => handleImpersonate(t)} disabled={impersonatingId === t.id || !t.is_active} title="Login as User"
                           className={cn('w-8 h-8 flex items-center justify-center rounded-lg border transition-all',
                             t.is_active
-                              ? 'border-gray-200 hover:border-primary hover:bg-primary/5 text-gray-400 hover:text-primary'
+                              ? 'border-[var(--hairline)] hover:border-primary hover:bg-primary/5 text-gray-400 hover:text-primary'
                               : 'border-gray-100 text-gray-200 cursor-not-allowed')}>
                           {impersonatingId === t.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <LogIn className="w-3.5 h-3.5" />}
                         </button>
                         <button onClick={() => setEditTenant(t)} title="Edit"
-                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:border-primary/50 hover:bg-primary/5 text-gray-400 hover:text-primary transition-all">
+                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--hairline)] hover:border-primary/50 hover:bg-primary/5 text-gray-400 hover:text-primary transition-all">
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button onClick={() => setDomainTenant(t)} title="Custom Domain"
                           className={cn('w-8 h-8 flex items-center justify-center rounded-lg border transition-all',
                             t.domain_status === 'ssl_active'
                               ? 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300'
-                              : 'border-gray-200 hover:border-primary/50 hover:bg-primary/5 text-gray-400 hover:text-primary')}>
+                              : 'border-[var(--hairline)] hover:border-primary/50 hover:bg-primary/5 text-gray-400 hover:text-primary')}>
                           <Globe className="w-3.5 h-3.5" />
                         </button>
                         <button onClick={() => window.location.href = `mailto:${t.admin_email ?? t.email}`} title="Email"
-                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:border-red-300 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all">
+                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--hairline)] hover:border-red-300 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all">
                           <Mail className="w-3.5 h-3.5" />
                         </button>
                         <RowMenu tenant={t} onEdit={() => setEditTenant(t)} onRefresh={fetchTenants} />
@@ -948,10 +945,10 @@ export default function SuperAdminPage() {
 
         {/* Footer count */}
         {!loading && filtered.length > 0 && (
-          <div className="px-4 sm:px-5 py-3 border-t border-gray-50 bg-[#faf8f6]">
-            <p className="text-[11px] text-[#7a6b5c]">
-              Showing <span className="font-semibold text-[#1c1410]">{filtered.length}</span> of{' '}
-              <span className="font-semibold text-[#1c1410]">{tenants.length}</span> accounts
+          <div className="px-4 sm:px-5 py-3 border-t border-[var(--hairline)] bg-[var(--surface-2)]">
+            <p className="text-[12px] text-[#6b7280]">
+              Showing <span className="font-semibold text-[#111318]">{filtered.length}</span> of{' '}
+              <span className="font-semibold text-[#111318]">{tenants.length}</span> accounts
             </p>
           </div>
         )}

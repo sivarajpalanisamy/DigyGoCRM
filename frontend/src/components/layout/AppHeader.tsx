@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Bell, X, LogOut, Settings, User, Unplug, UserPlus, UserCheck, ArrowRight, ArrowLeft, Clock, MessageCircle, CalendarCheck, Zap, Info, ChevronDown, Search } from 'lucide-react';
+import { Bell, X, LogOut, Settings, User, Unplug, UserPlus, UserCheck, ArrowRight, ArrowLeft, Clock, MessageCircle, CalendarCheck, Workflow, Info, ChevronDown, Search, HelpCircle, LifeBuoy, Send, Menu } from 'lucide-react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
@@ -114,7 +114,7 @@ const NOTIF_META: Record<NotifType, { icon: React.ReactNode; bg: string; text: s
   follow_up_due: { icon: <Clock size={15} />,         bg: 'bg-amber-100',        text: 'text-amber-600' },
   new_message:   { icon: <MessageCircle size={15} />, bg: 'bg-emerald-500/10',   text: 'text-emerald-600' },
   appointment:   { icon: <CalendarCheck size={15} />, bg: 'bg-teal-100',         text: 'text-teal-600' },
-  automation:    { icon: <Zap size={15} />,           bg: 'bg-violet-100',       text: 'text-violet-600' },
+  automation:    { icon: <Workflow size={15} />,      bg: 'bg-violet-100',       text: 'text-violet-600' },
   info:          { icon: <Info size={15} />,          bg: 'bg-gray-100',         text: 'text-gray-500' },
 };
 
@@ -128,6 +128,28 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpSubject, setHelpSubject] = useState('');
+  const [helpMessage, setHelpMessage] = useState('');
+  const [helpSending, setHelpSending] = useState(false);
+
+  const submitTicket = async () => {
+    const subject = helpSubject.trim();
+    const message = helpMessage.trim();
+    if (!subject || !message) { toast.error('Please add a subject and describe your issue'); return; }
+    setHelpSending(true);
+    try {
+      await api.post('/api/support/ticket', { subject, message });
+      toast.success('Ticket raised - our team will get back to you by email');
+      setShowHelp(false);
+      setHelpSubject('');
+      setHelpMessage('');
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not raise your ticket. Please try again.');
+    } finally {
+      setHelpSending(false);
+    }
+  };
   // Context-aware search: the current page registers its config; we render one input.
   const searchConfig = useHeaderSearchStore((s) => s.config);
   const searchQuery = useHeaderSearchStore((s) => s.query);
@@ -206,31 +228,45 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
   };
 
   return (
-    <header className="bg-white border-b-2 border-black/10 sticky top-0 z-30 shrink-0" style={{ boxShadow: '0 2px 8px -4px rgba(20,15,10,0.06)' }}>
-      <div className="relative h-14 md:h-16 flex items-center px-4 md:px-6 gap-3 md:gap-5">
+    <header className="bg-transparent shrink-0">
+      <div className="relative h-12 md:h-[52px] flex items-center px-4 md:px-6 gap-3 md:gap-4">
+
+        {/* Mobile: hamburger opens the full-nav sidebar drawer */}
+        <button
+          onClick={onMenuClick}
+          aria-label="Open menu"
+          className="md:hidden p-2 -ml-1 rounded-lg text-[#6b7280] hover:bg-[var(--surface-2)] transition-colors shrink-0"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
 
         {/* Mobile: logo mark */}
         <div className="md:hidden flex items-center gap-2 shrink-0">
           {branded && logoUrl ? (
             <img src={logoUrl} alt={tenantName ?? ''} className="h-7 max-w-[100px] object-contain" />
           ) : branded && tenantName ? (
-            <span className="font-headline text-[15px] font-bold text-[#1c1410] truncate max-w-[120px]">{tenantName}</span>
+            <span className="font-headline text-[16px] font-bold text-[#111318] truncate max-w-[120px]">{tenantName}</span>
           ) : (
             <>
               <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
                 <img src="/favicon.png" alt="Hawcus" className="w-full h-full object-contain" />
               </div>
-              <span className="font-headline text-[15px] font-bold text-[#1c1410] truncate max-w-[110px]">{companyName}</span>
+              <span className="font-headline text-[16px] font-bold text-[#111318] truncate max-w-[110px]">{companyName}</span>
             </>
           )}
         </div>
+
+        {/* Desktop: company name - sits just after the rail's favicon (brand lockup across the boundary) */}
+        <span className="hidden md:block font-headline font-bold text-[15px] text-[#111318] truncate max-w-[200px] shrink-0">
+          {(branded && tenantName) ? tenantName : companyName}
+        </span>
 
         {/* Super admin logo removed - sidebar already shows the logo */}
 
         {/* Context-aware search (mobile) - full-width overlay toggled by the icon */}
         {searchConfig && mobileSearchOpen && (
           <div className="md:hidden absolute inset-0 z-40 bg-white flex items-center gap-2 px-4">
-            <Search className="w-4 h-4 text-[#b09e8d] shrink-0" />
+            <Search className="w-4 h-4 text-[#9ca3af] shrink-0" />
             <input
               autoFocus
               autoComplete="off"
@@ -245,9 +281,9 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                 else if (e.key === 'Enter' && searchConfig.onSubmit) { searchConfig.onSubmit(searchQuery); setMobileSearchOpen(false); }
               }}
               placeholder={searchConfig.placeholder}
-              className="flex-1 h-9 text-[14px] bg-transparent outline-none placeholder:text-[#b09e8d]"
+              className="flex-1 h-9 text-[15px] bg-transparent outline-none placeholder:text-[#9ca3af]"
             />
-            <button onClick={() => { setSearchQuery(''); setMobileSearchOpen(false); }} className="p-1.5 rounded-lg text-[#7a6b5c] hover:bg-[var(--accent-tint)] transition-colors">
+            <button onClick={() => { setSearchQuery(''); setMobileSearchOpen(false); }} className="p-1.5 rounded-lg text-[#6b7280] hover:bg-[var(--accent-tint)] transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -256,28 +292,25 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
         {/* Tab nav - desktop only in full, scrollable on mobile */}
         <div className="flex-1 flex items-center overflow-x-auto scrollbar-hide">
           {subNav ? (
-            <nav className="flex items-center h-14 md:h-16">
+            <nav className="flex items-center gap-1 rounded-full bg-[var(--surface-2)] p-1">
               {subNav.map((item) => {
                 if (isDropdown(item)) {
                   const childActive = item.children.some((c) => isTabActive(c.path));
                   const isOpen = openDropdown === item.label;
                   return (
-                    <div key={item.label} className="relative h-full flex items-center">
+                    <div key={item.label} className="relative flex items-center">
                       <button
                         ref={(el) => { dropdownBtnRefs.current[item.label] = el; }}
                         onClick={() => isOpen ? setOpenDropdown(null) : openNav(item.label)}
                         className={cn(
-                          'relative flex items-center gap-1 h-full px-3 md:px-4 text-[12px] md:text-[13.5px] font-medium whitespace-nowrap transition-colors duration-150 select-none',
+                          'relative flex items-center gap-1 rounded-full px-3 md:px-4 py-1.5 text-[13px] md:text-[14px] font-semibold whitespace-nowrap transition-all duration-150 select-none',
                           childActive
-                            ? 'text-primary font-semibold'
-                            : 'text-[#7a6b5c] hover:text-[#1c1410]'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-[#6b7280] hover:text-[#111318]'
                         )}
                       >
                         {item.label}
                         <ChevronDown className={cn('w-3 h-3 transition-transform', isOpen && 'rotate-180')} />
-                        {childActive && (
-                          <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-primary" />
-                        )}
                       </button>
                       {isOpen && (
                         <>
@@ -292,10 +325,10 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                                 to={child.path}
                                 onClick={() => setOpenDropdown(null)}
                                 className={cn(
-                                  'block px-4 py-2 text-[13px] font-medium transition-colors whitespace-nowrap',
+                                  'block px-4 py-2 text-[14px] font-medium transition-colors whitespace-nowrap',
                                   isTabActive(child.path)
                                     ? 'text-primary bg-[var(--accent-tint)] font-semibold'
-                                    : 'text-[#3a2e26] hover:bg-[var(--app-bg)]'
+                                    : 'text-[#2b2f36] hover:bg-[var(--app-bg)]'
                                 )}
                               >
                                 {child.label}
@@ -312,16 +345,13 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                     key={item.path}
                     to={item.path}
                     className={cn(
-                      'relative flex items-center h-full px-3 md:px-4 text-[12px] md:text-[13.5px] font-medium whitespace-nowrap transition-colors duration-150 select-none',
+                      'relative flex items-center rounded-full px-3 md:px-4 py-1.5 text-[13px] md:text-[14px] font-semibold whitespace-nowrap transition-all duration-150 select-none',
                       isTabActive(item.path)
-                        ? 'text-primary font-semibold'
-                        : 'text-[#7a6b5c] hover:text-[#1c1410]'
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-[#6b7280] hover:text-[#111318]'
                     )}
                   >
                     {item.label}
-                    {isTabActive(item.path) && (
-                      <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-primary" />
-                    )}
                   </Link>
                 );
               })}
@@ -335,7 +365,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             <button
               onClick={handleDisconnect}
               disabled={disconnecting}
-              className="ml-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
+              className="ml-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50 whitespace-nowrap shrink-0"
             >
               <Unplug className="w-3.5 h-3.5" />
               {disconnecting ? 'Disconnecting…' : pageDisconnect.label}
@@ -351,7 +381,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             <button
               onClick={async () => { await exitImpersonation(); navigate('/admin'); }}
               title="Exit impersonation - back to Super Admin"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-semibold text-white shrink-0 hover:-translate-y-px transition-transform"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-semibold text-white shrink-0 hover:-translate-y-px transition-transform"
               style={{ background: 'linear-gradient(90deg, var(--brand-dark), var(--brand))' }}
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -361,8 +391,8 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
 
           {/* Context-aware search (desktop) - to the left of the notification bell */}
           {searchConfig && (
-            <div className="hidden md:flex items-center relative w-56 lg:w-72 shrink-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" />
+            <div className="hidden md:flex items-center relative w-52 lg:w-72 shrink-0">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af] pointer-events-none" />
               <input
                 autoComplete="off"
                 autoCorrect="off"
@@ -376,10 +406,10 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                   else if (e.key === 'Enter' && searchConfig.onSubmit) { searchConfig.onSubmit(searchQuery); }
                 }}
                 placeholder={searchConfig.placeholder}
-                className="w-full h-10 pl-9 pr-8 text-[13px] font-medium text-black bg-white border border-black rounded-xl outline-none focus:ring-2 focus:ring-black/15 placeholder:text-black/60 transition-all"
+                className="w-full h-10 pl-10 pr-9 text-[14px] font-medium text-[#111318] bg-white border border-[var(--hairline)] rounded-full outline-none shadow-[0_1px_3px_rgba(16,24,40,0.06)] focus:ring-2 focus:ring-primary/20 focus:border-primary/40 placeholder:text-[#9ca3af] transition-all"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full hover:bg-black/5 flex items-center justify-center text-[#b09e8d]">
+                <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full hover:bg-black/5 flex items-center justify-center text-[#9ca3af]">
                   <X className="w-3 h-3" />
                 </button>
               )}
@@ -390,7 +420,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           {searchConfig && (
             <button
               onClick={() => setMobileSearchOpen(true)}
-              className="md:hidden p-2 rounded-xl text-[#7a6b5c] hover:text-primary hover:bg-[var(--accent-tint)] transition-colors"
+              className="md:hidden p-2 rounded-full text-[#6b7280] hover:text-primary hover:bg-[var(--surface-2)] transition-colors"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -401,13 +431,13 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             <button
               onClick={() => { setShowNotifs(!showNotifs); setOpenDropdown(null); }}
               className={cn(
-                'relative p-2 rounded-xl text-[#7a6b5c] hover:text-primary hover:bg-[var(--accent-tint)] transition-colors',
-                showNotifs && 'text-primary bg-[var(--accent-tint)]'
+                'relative h-10 w-10 flex items-center justify-center rounded-full bg-white border border-[var(--hairline)] shadow-[0_1px_3px_rgba(16,24,40,0.06)] text-[#6b7280] hover:text-primary hover:bg-[var(--surface-2)] transition-colors',
+                showNotifs && 'text-primary bg-[var(--surface-2)]'
               )}
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-[19px] h-[19px]" />
               {badgeCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1 leading-none">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1 leading-none">
                   {badgeCount > 9 ? '9+' : badgeCount}
                 </span>
               )}
@@ -422,19 +452,19 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                   {/* Header */}
                   <div className="px-5 pt-4 pb-3 border-b border-black/5 shrink-0">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-[14px] font-bold text-[#1c1410]">Notifications</p>
+                      <p className="text-[15px] font-bold text-[#111318]">Notifications</p>
                       <div className="flex items-center gap-2">
                         {(unreadAlerts > 0 || notifications.some((n) => !n.read)) && (
-                          <button onClick={() => markAllNotificationsRead()} className="text-[10px] font-bold text-primary hover:underline">
+                          <button onClick={() => markAllNotificationsRead()} className="text-[11px] font-bold text-primary hover:underline">
                             Mark all read
                           </button>
                         )}
                         {notifications.length > 0 && (
-                          <button onClick={() => clearAllNotifications()} className="text-[10px] font-bold text-[#7a6b5c] hover:underline">
+                          <button onClick={() => clearAllNotifications()} className="text-[11px] font-bold text-[#6b7280] hover:underline">
                             Clear all
                           </button>
                         )}
-                        <button onClick={() => setShowNotifs(false)} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors">
+                        <button onClick={() => setShowNotifs(false)} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors">
                           <X size={14} />
                         </button>
                       </div>
@@ -448,17 +478,17 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                             key={tab}
                             onClick={() => setNotifTab(tab)}
                             className={cn(
-                              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors',
+                              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-colors',
                               notifTab === tab
                                 ? 'bg-[var(--accent-tint)] text-primary'
-                                : 'text-[#7a6b5c] hover:bg-[var(--app-bg)]'
+                                : 'text-[#6b7280] hover:bg-[var(--app-bg)]'
                             )}
                           >
                             {tab === 'alerts' ? 'Alerts' : 'Activity'}
                             {count > 0 && (
                               <span className={cn(
-                                'min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center px-1',
-                                notifTab === tab ? 'bg-primary text-white' : 'bg-black/8 text-[#7a6b5c]'
+                                'min-w-[18px] h-[18px] rounded-full text-[11px] font-bold flex items-center justify-center px-1',
+                                notifTab === tab ? 'bg-primary text-white' : 'bg-black/8 text-[#6b7280]'
                               )}>
                                 {count}
                               </span>
@@ -470,19 +500,19 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                   </div>
 
                   {/* List */}
-                  <div className="overflow-y-auto divide-y divide-black/5 flex-1">
+                  <div className="max-h-[340px] overflow-y-auto thin-scroll divide-y divide-black/5 flex-1">
                     {(() => {
                       const list = notifTab === 'alerts' ? alertNotifs : activityNotifs;
                       if (list.length === 0) {
                         return (
                           <div className="flex flex-col items-center justify-center py-10 gap-2">
                             <div className="w-10 h-10 rounded-2xl bg-[var(--accent-tint)] flex items-center justify-center">
-                              <Bell size={20} className="text-[#c4b09e]" />
+                              <Bell size={20} className="text-[#c3c8cf]" />
                             </div>
-                            <p className="text-[13px] font-semibold text-[#8a7c6e]">
+                            <p className="text-[14px] font-semibold text-[#6b7280]">
                               {notifTab === 'alerts' ? 'No alerts' : 'No activity'}
                             </p>
-                            <p className="text-[11px] text-[#a09080]">
+                            <p className="text-[12px] text-[#8b929c]">
                               {notifTab === 'alerts' ? 'Assignments, follow-ups and messages appear here' : 'New leads and stage changes appear here'}
                             </p>
                           </div>
@@ -513,13 +543,13 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                               }}
                               className="flex-1 min-w-0 text-left"
                             >
-                              <p className={cn('text-[13px] leading-snug line-clamp-1', unread ? 'font-semibold text-[#1c1410]' : 'font-medium text-[#3a2e26]')}>
+                              <p className={cn('text-[14px] leading-snug line-clamp-1', unread ? 'font-semibold text-[#111318]' : 'font-medium text-[#2b2f36]')}>
                                 {n.title}
                               </p>
                               {n.body && (
-                                <p className="text-[11.5px] text-[#8a7c6e] mt-0.5 leading-snug line-clamp-1">{n.body}</p>
+                                <p className="text-[12.5px] text-[#6b7280] mt-0.5 leading-snug line-clamp-1">{n.body}</p>
                               )}
-                              <p className="text-[10.5px] text-[#a09080] mt-1">
+                              <p className="text-[11.5px] text-[#8b929c] mt-1">
                                 {formatDistanceToNow(new Date(n.time), { addSuffix: true })}
                               </p>
                             </button>
@@ -529,7 +559,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                               {unread && <div className="w-2 h-2 rounded-full bg-primary" />}
                               <button
                                 onClick={(e) => { e.stopPropagation(); removeNotification(n.id); }}
-                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded-md hover:bg-black/8 text-[#a09080] transition-all"
+                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded-md hover:bg-black/8 text-[#8b929c] transition-all"
                                 title="Dismiss"
                               >
                                 <X size={12} />
@@ -546,6 +576,15 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             )}
           </div>
 
+          {/* Help / Raise a ticket - sits after the notification bell */}
+          <button
+            onClick={() => { setShowHelp(true); setShowNotifs(false); setShowProfile(false); setOpenDropdown(null); }}
+            title="Help & Support"
+            className="h-10 w-10 flex items-center justify-center rounded-full bg-white border border-[var(--hairline)] shadow-[0_1px_3px_rgba(16,24,40,0.06)] text-[#6b7280] hover:text-primary hover:bg-[var(--surface-2)] transition-colors"
+          >
+            <HelpCircle className="w-[19px] h-[19px]" />
+          </button>
+
           {/* Divider */}
           <div className="w-px h-6 bg-black/8" />
 
@@ -553,14 +592,14 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           <div className="relative">
             <button
               onClick={() => { setShowProfile((v) => !v); setShowNotifs(false); setOpenDropdown(null); }}
-              className="flex items-center gap-2.5 h-10 rounded-xl border border-black/15 pl-3.5 pr-2 hover:bg-[var(--accent-tint)] transition-colors"
+              className="flex items-center gap-2 h-10 rounded-full bg-white border border-[var(--hairline)] shadow-[0_1px_3px_rgba(16,24,40,0.06)] pl-3.5 pr-2 hover:bg-[var(--surface-2)] transition-colors"
             >
               <div className="hidden sm:block text-right">
-                <p className="text-[13px] font-semibold text-[#1c1410] leading-tight">{currentUser?.name ?? 'User'}</p>
-                <p className="text-[11px] text-[#7a6b5c] leading-tight mt-0.5">{roleLabel}</p>
+                <p className="text-[13px] font-semibold text-[#111318] leading-tight">{currentUser?.name ?? 'User'}</p>
+                <p className="text-[11px] text-[#6b7280] leading-tight mt-0.5">{roleLabel}</p>
               </div>
               <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold ring-2 ring-primary/20 hover:ring-primary/40 transition-all shrink-0"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[12.5px] font-bold ring-2 ring-primary/20 hover:ring-primary/40 transition-all shrink-0"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
               >
                 {initials}
@@ -571,19 +610,19 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             {showProfile && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowProfile(false)} />
-                <div className="absolute right-0 top-12 z-50 w-56 bg-white rounded-2xl border border-black/5 overflow-hidden"
+                <div className="absolute right-0 top-11 z-50 w-56 bg-white rounded-2xl border border-black/5 max-h-[70vh] overflow-y-auto thin-scroll"
                   style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.14)' }}>
 
                   {/* User info */}
                   <div className="px-4 py-3.5 border-b border-black/5">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-[13px] font-bold shrink-0"
                         style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
                         {initials}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[13px] font-bold text-[#1c1410] truncate">{currentUser?.name}</p>
-                        <p className="text-[11px] text-[#7a6b5c] truncate">{currentUser?.email}</p>
+                        <p className="text-[14px] font-bold text-[#111318] truncate">{currentUser?.name}</p>
+                        <p className="text-[12px] text-[#6b7280] truncate">{currentUser?.email}</p>
                       </div>
                     </div>
                   </div>
@@ -591,18 +630,18 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
                   {/* Menu items */}
                   <div className="py-1.5">
                     <Link to="/settings/company" onClick={() => setShowProfile(false)}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[var(--app-bg)] transition-colors">
-                      <User className="w-4 h-4 text-[#7a6b5c]" /> Profile
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#111318] hover:bg-[var(--app-bg)] transition-colors">
+                      <User className="w-4 h-4 text-[#6b7280]" /> Profile
                     </Link>
                     <Link to="/settings" onClick={() => setShowProfile(false)}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#1c1410] hover:bg-[var(--app-bg)] transition-colors">
-                      <Settings className="w-4 h-4 text-[#7a6b5c]" /> Settings
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-[#111318] hover:bg-[var(--app-bg)] transition-colors">
+                      <Settings className="w-4 h-4 text-[#6b7280]" /> Settings
                     </Link>
                   </div>
 
                   <div className="border-t border-black/5 py-1.5">
                     <button onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-500 hover:bg-red-50 transition-colors font-medium">
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-red-500 hover:bg-red-50 transition-colors font-medium">
                       <LogOut className="w-4 h-4" /> Log out
                     </button>
                   </div>
@@ -612,6 +651,83 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           </div>
         </div>
       </div>
+
+      {/* ── Help / Raise a ticket modal ── */}
+      {showHelp && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => !helpSending && setShowHelp(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-2xl shadow-[0_24px_70px_rgba(16,24,40,0.24)] overflow-hidden animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start gap-3 px-5 pt-5 pb-4 border-b border-[var(--hairline)]">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <LifeBuoy className="w-5 h-5 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-headline font-bold text-[16px] text-[#111318] leading-tight">Help &amp; Support</h3>
+                <p className="text-[12.5px] text-[#6b7280] mt-0.5">Describe your issue and we'll get back to you by email.</p>
+              </div>
+              <button
+                onClick={() => setShowHelp(false)}
+                disabled={helpSending}
+                className="p-1.5 rounded-lg text-[#6b7280] hover:bg-[var(--surface-2)] transition-colors disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-4 space-y-3.5">
+              <div>
+                <label className="block text-[12.5px] font-semibold text-[#111318] mb-1.5">Subject</label>
+                <input
+                  autoFocus
+                  value={helpSubject}
+                  onChange={(e) => setHelpSubject(e.target.value)}
+                  maxLength={200}
+                  placeholder="Brief summary of the issue"
+                  className="w-full h-10 px-3 text-[14px] text-[#111318] bg-white border border-[var(--hairline)] rounded-lg outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 placeholder:text-[#9ca3af] transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[12.5px] font-semibold text-[#111318] mb-1.5">Describe your issue</label>
+                <textarea
+                  value={helpMessage}
+                  onChange={(e) => setHelpMessage(e.target.value)}
+                  maxLength={5000}
+                  rows={5}
+                  placeholder="Tell us what's happening, what you expected, and any steps to reproduce it."
+                  className="w-full px-3 py-2.5 text-[14px] text-[#111318] bg-white border border-[var(--hairline)] rounded-lg outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 placeholder:text-[#9ca3af] transition-all resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[var(--hairline)] bg-[var(--surface-2)]/50">
+              <button
+                onClick={() => setShowHelp(false)}
+                disabled={helpSending}
+                className="px-4 h-10 rounded-lg text-[14px] font-semibold text-[#6b7280] hover:bg-[var(--surface-2)] transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitTicket}
+                disabled={helpSending || !helpSubject.trim() || !helpMessage.trim()}
+                className="inline-flex items-center gap-2 px-4 h-10 rounded-lg text-[14px] font-bold text-white transition-all hover:-translate-y-px disabled:opacity-50 disabled:hover:translate-y-0"
+                style={{ background: 'linear-gradient(90deg, var(--brand-dark), var(--brand))' }}
+              >
+                <Send className="w-4 h-4" />
+                {helpSending ? 'Sending…' : 'Raise Ticket'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

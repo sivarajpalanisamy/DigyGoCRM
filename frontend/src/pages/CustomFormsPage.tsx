@@ -64,19 +64,19 @@ function SubmissionRow({ sub }: { sub: Submission }) {
     data['Phone'] ?? data['phone'] ?? data[keys.find((k) => /phone/i.test(k)) ?? ''] ?? '-';
 
   return (
-    <div className="border-b border-black/5 last:border-0">
+    <div className="border-b border-[var(--hairline)] last:border-0">
       {/* Summary row */}
       <div className="flex items-center gap-3 px-5 py-3.5 hover:bg-[var(--app-bg)] transition-colors">
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-[13px] font-bold text-primary uppercase">
+        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-[14px] font-bold text-primary uppercase">
           {(name as string).charAt(0) || '?'}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-semibold text-[#1c1410] truncate">{name as string}</p>
-          <p className="text-[11px] text-[#7a6b5c]">{phone}</p>
+          <p className="text-[15px] font-semibold text-[#111318] truncate">{name as string}</p>
+          <p className="text-[12px] text-[#6b7280]">{phone}</p>
         </div>
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="p-1.5 rounded-lg hover:bg-primary/10 text-[#b09e8d] hover:text-primary transition-colors shrink-0"
+          className="p-1.5 rounded-lg hover:bg-primary/10 text-[#9ca3af] hover:text-primary transition-colors shrink-0"
         >
           {expanded
             ? <ChevronUp className="w-3.5 h-3.5" />
@@ -89,8 +89,8 @@ function SubmissionRow({ sub }: { sub: Submission }) {
         <div className="px-5 pb-4 pt-1 space-y-2 bg-[var(--app-bg)]">
           {keys.map((k) => (
             <div key={k} className="flex items-start gap-2">
-              <span className="text-[11px] font-semibold text-[#7a6b5c] w-28 shrink-0 pt-0.5">{k}</span>
-              <span className="text-[13px] text-[#1c1410] break-all flex-1">{data[k] || '-'}</span>
+              <span className="text-[12px] font-semibold text-[#6b7280] w-28 shrink-0 pt-0.5">{k}</span>
+              <span className="text-[14px] text-[#111318] break-all flex-1">{data[k] || '-'}</span>
             </div>
           ))}
         </div>
@@ -204,7 +204,7 @@ export default function CustomFormsPage() {
 
   const generateHTMLSnippet = (form: CustomForm): string => {
     const bg      = form.form_bg_color  ?? '#ffffff';
-    const text    = form.form_text_color ?? '#1c1410';
+    const text    = form.form_text_color ?? '#111318';
     const btn     = form.btn_color       ?? '#ea580c';
     const btnTxt  = form.btn_text_color  ?? '#ffffff';
     const uid     = `dgf_${form.slug.replace(/-/g, '_')}`;
@@ -318,8 +318,8 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="font-headline font-bold text-[#1c1410] text-[16px]">Custom Forms</h2>
-          <p className="text-[13px] text-[#7a6b5c] mt-0.5">
+          <h2 className="font-headline font-bold text-[#111318] text-[16px]">Custom Forms</h2>
+          <p className="text-[14px] text-[#6b7280] mt-0.5">
             {forms.length} forms · {totalSubmissions.toLocaleString()} submissions
           </p>
         </div>
@@ -331,16 +331,16 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
       </div>
 
       {loading && (
-        <div className="text-center py-16 text-[#7a6b5c] text-[14px]">Loading forms…</div>
+        <div className="text-center py-16 text-[#6b7280] text-[15px]">Loading forms…</div>
       )}
 
       {!loading && forms.length === 0 && (
-        <div className="bg-white rounded-2xl border border-black/5 card-shadow px-8 py-16 text-center">
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow px-8 py-16 text-center">
           <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <FileText className="w-7 h-7 text-primary" />
           </div>
-          <h3 className="font-headline font-bold text-[#1c1410] text-[15px] mb-1">No forms yet</h3>
-          <p className="text-[14px] text-[#7a6b5c] mb-5 max-w-xs mx-auto">
+          <h3 className="font-headline font-bold text-[#111318] text-[16px] mb-1">No forms yet</h3>
+          <p className="text-[15px] text-[#6b7280] mb-5 max-w-xs mx-auto">
             Create your first form and start capturing leads from your website or landing pages.
           </p>
           {canManageForms && (
@@ -356,7 +356,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
           {forms.map((form) => (
             <div
               key={form.id}
-              className="group bg-white rounded-2xl border border-black/5 card-shadow flex flex-col hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+              className="group bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover flex flex-col hover:-translate-y-0.5 transition-all duration-200"
             >
               {/* Card body - opens submissions panel */}
               <div
@@ -369,39 +369,39 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                       <FileText className="w-4 h-4 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-semibold text-[#1c1410] text-[15px] truncate group-hover:text-primary transition-colors">
+                      <h4 className="font-semibold text-[#111318] text-[16px] truncate group-hover:text-primary transition-colors">
                         {form.name}
                       </h4>
-                      <p className="text-[11px] text-[#7a6b5c] mt-0.5 truncate">
+                      <p className="text-[12px] text-[#6b7280] mt-0.5 truncate">
                         {form.pipeline_name
                           ? `${form.pipeline_name}${form.stage_name ? ` → ${form.stage_name}` : ''}`
                           : 'No pipeline'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 bg-[var(--app-bg)] border border-black/5 rounded-lg px-2 py-1 shrink-0">
-                    <Users className="w-3 h-3 text-[#7a6b5c]" />
-                    <span className="text-[13px] font-bold text-[#1c1410]">
+                  <div className="flex items-center gap-1 bg-[var(--surface-2)] border border-[var(--hairline)] rounded-full px-2 py-1 shrink-0">
+                    <Users className="w-3 h-3 text-[#6b7280]" />
+                    <span className="text-[14px] font-bold text-[#111318]">
                       {(form.submission_count ?? 0).toLocaleString()}
                     </span>
                   </div>
                 </div>
-                <p className="text-[11px] text-[#7a6b5c] leading-relaxed line-clamp-2">
+                <p className="text-[12px] text-[#6b7280] leading-relaxed line-clamp-2">
                   {form.slug ? getShareLink(form) : ''}
                 </p>
               </div>
 
               {/* Action bar */}
-              <div className="flex items-center gap-1 px-4 py-3 border-t border-black/5">
+              <div className="flex items-center gap-1 px-4 py-3 border-t border-[var(--hairline)]">
                 <button
                   onClick={(e) => copyFormLink(e, form)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 transition-colors"
                 >
                   <Link className="w-3 h-3" /> {copiedFormId === form.id ? 'Copied' : 'Copy Link'}
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setEmbedFormId(form.id); }}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-teal-50 text-teal-600 border border-teal-200 hover:bg-teal-100 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-semibold bg-teal-50 text-teal-600 border border-teal-200 hover:bg-teal-100 transition-colors"
                 >
                   <Code2 className="w-3 h-3" /> Embed
                 </button>
@@ -409,21 +409,21 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                 {canManageForms && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setCloneTarget(form); }}
-                    className="p-1.5 rounded-lg text-[#7a6b5c] border border-black/8 hover:bg-[var(--accent-tint)] hover:text-primary transition-colors"
+                    className="p-1.5 rounded-lg text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--accent-tint)] hover:text-primary transition-colors"
                     title="Clone"
                   ><Copy className="w-3.5 h-3.5" /></button>
                 )}
                 {canManageForms && (
                   <button
                     onClick={(e) => { e.stopPropagation(); navigate(`/lead-generation/custom-forms/${form.id}`); }}
-                    className="p-1.5 rounded-lg text-[#7a6b5c] border border-black/8 hover:bg-[var(--accent-tint)] hover:text-primary transition-colors"
+                    className="p-1.5 rounded-lg text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--accent-tint)] hover:text-primary transition-colors"
                     title="Edit"
                   ><Pencil className="w-3.5 h-3.5" /></button>
                 )}
                 {canDeleteForms && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setDeleteTarget(form); }}
-                    className="p-1.5 rounded-lg text-[#7a6b5c] border border-black/8 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
+                    className="p-1.5 rounded-lg text-[#6b7280] border border-[var(--hairline)] hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
                     title="Delete"
                   ><Trash2 className="w-3.5 h-3.5" /></button>
                 )}
@@ -435,12 +435,12 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
           {canManageForms && (
             <button
               onClick={() => navigate('/lead-generation/custom-forms/new')}
-              className="group bg-white rounded-2xl border-2 border-dashed border-black/10 p-5 flex flex-col items-center justify-center gap-2 text-center hover:border-primary hover:bg-primary/5 transition-all duration-200 min-h-[140px]"
+              className="group bg-white rounded-2xl border border-dashed border-[var(--hairline)] p-5 flex flex-col items-center justify-center gap-2 text-center hover:border-primary hover:bg-primary/5 transition-all duration-200 min-h-[140px]"
             >
               <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                 <Plus className="w-4 h-4 text-primary" />
               </div>
-              <span className="text-[14px] font-semibold text-[#7a6b5c] group-hover:text-primary transition-colors">New Form</span>
+              <span className="text-[15px] font-semibold text-[#6b7280] group-hover:text-primary transition-colors">New Form</span>
             </button>
           )}
         </div>
@@ -458,36 +458,36 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="shrink-0 px-5 py-4 border-b border-black/5 flex items-center gap-3">
+            <div className="shrink-0 px-5 py-4 border-b border-[var(--hairline)] flex items-center gap-3">
               <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                 <FileText className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-headline font-bold text-[#1c1410] text-[15px] truncate">{panelForm.name}</h3>
-                <p className="text-[11px] text-[#7a6b5c]">
+                <h3 className="font-headline font-bold text-[#111318] text-[16px] truncate">{panelForm.name}</h3>
+                <p className="text-[12px] text-[#6b7280]">
                   {submissions.length} submission{submissions.length !== 1 ? 's' : ''}
                 </p>
               </div>
               <button
                 onClick={() => navigate(`/lead-generation/custom-forms/${panelForm.id}`)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--accent-tint)] text-primary hover:bg-primary/20 transition-colors shrink-0"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[var(--accent-tint)] text-primary hover:bg-primary/20 transition-colors shrink-0"
               >
                 <Pencil className="w-3 h-3" /> Edit Form
               </button>
-              <button onClick={closePanel} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors shrink-0">
+              <button onClick={closePanel} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-primary transition-colors shrink-0">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Stats bar */}
-            <div className="shrink-0 px-5 py-3 bg-[var(--app-bg)] border-b border-black/5 flex items-center gap-4">
+            <div className="shrink-0 px-5 py-3 bg-[var(--app-bg)] border-b border-[var(--hairline)] flex items-center gap-4">
               <div className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-[#7a6b5c]" />
-                <span className="text-[13px] font-semibold text-[#1c1410]">{panelForm.submission_count} total</span>
+                <Users className="w-3.5 h-3.5 text-[#6b7280]" />
+                <span className="text-[14px] font-semibold text-[#111318]">{panelForm.submission_count} total</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-[#7a6b5c]" />
-                <span className="text-[13px] text-[#7a6b5c]">
+                <Calendar className="w-3.5 h-3.5 text-[#6b7280]" />
+                <span className="text-[14px] text-[#6b7280]">
                   {panelForm.pipeline_name
                     ? `${panelForm.pipeline_name}${panelForm.stage_name ? ` → ${panelForm.stage_name}` : ''}`
                     : 'No pipeline'}
@@ -498,7 +498,7 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
             {/* Submissions list */}
             <div className="flex-1 overflow-y-auto">
               {subLoading && (
-                <div className="py-16 text-center text-[14px] text-[#7a6b5c]">Loading submissions…</div>
+                <div className="py-16 text-center text-[15px] text-[#6b7280]">Loading submissions…</div>
               )}
 
               {!subLoading && submissions.length === 0 && (
@@ -506,13 +506,13 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                   <div className="w-12 h-12 bg-[var(--accent-tint)] rounded-2xl flex items-center justify-center mx-auto mb-3">
                     <Users className="w-6 h-6 text-primary" />
                   </div>
-                  <p className="text-[15px] font-semibold text-[#1c1410] mb-1">No submissions yet</p>
-                  <p className="text-[13px] text-[#7a6b5c]">
+                  <p className="text-[16px] font-semibold text-[#111318] mb-1">No submissions yet</p>
+                  <p className="text-[14px] text-[#6b7280]">
                     Share the form link to start collecting responses.
                   </p>
                   <button
                     onClick={() => { copyToClipboard(getShareLink(panelForm)); toast.success('Link copied!'); }}
-                    className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold bg-primary text-white mx-auto hover:bg-primary/90 transition-colors"
+                    className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[14px] font-semibold bg-primary text-white mx-auto hover:bg-primary/90 transition-colors"
                   >
                     <Copy className="w-3.5 h-3.5" /> Copy Form Link
                   </button>
@@ -530,10 +530,10 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
 
             {/* Footer */}
             {!subLoading && submissions.length > 0 && (
-              <div className="shrink-0 px-5 py-3 border-t border-black/5 bg-[var(--app-bg)]">
+              <div className="shrink-0 px-5 py-3 border-t border-[var(--hairline)] bg-[var(--app-bg)]">
                 <button
                   onClick={() => { copyToClipboard(getShareLink(panelForm)); toast.success('Link copied!'); }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-semibold border border-black/8 text-[#7a6b5c] hover:bg-white hover:text-primary transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-semibold border border-[var(--hairline)] text-[#6b7280] hover:bg-white hover:text-primary transition-colors"
                 >
                   <Link className="w-3.5 h-3.5" /> Copy Form Link
                 </button>
@@ -546,24 +546,24 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
       {/* Share Link Modal */}
       {shareLinkForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-2xl border border-black/5 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
+          <div className="bg-white rounded-2xl border border-[var(--hairline)] w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)]">
               <div>
-                <h3 className="font-headline font-bold text-[#1c1410]">Share "{shareLinkForm.name}"</h3>
-                <p className="text-[11px] text-[#7a6b5c] mt-0.5">Public link to this form</p>
+                <h3 className="font-headline font-bold text-[#111318]">Share "{shareLinkForm.name}"</h3>
+                <p className="text-[12px] text-[#6b7280] mt-0.5">Public link to this form</p>
               </div>
-              <button onClick={() => setShareLinkFormId(null)} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors">
+              <button onClick={() => setShareLinkFormId(null)} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-primary transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
                 <Link className="w-4 h-4 text-amber-500 shrink-0" />
-                <p className="text-[13px] text-amber-700 font-medium flex-1 break-all">{getShareLink(shareLinkForm)}</p>
+                <p className="text-[14px] text-amber-700 font-medium flex-1 break-all">{getShareLink(shareLinkForm)}</p>
               </div>
-              <p className="text-[13px] text-[#7a6b5c]">Share this link via email, WhatsApp, or social media.</p>
+              <p className="text-[14px] text-[#6b7280]">Share this link via email, WhatsApp, or social media.</p>
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-black/5">
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[var(--hairline)]">
               <Button variant="outline" onClick={() => setShareLinkFormId(null)}>Close</Button>
               <Button onClick={() => { copyToClipboard(getShareLink(shareLinkForm)); toast.success('Link copied!'); }}>
                 <Copy className="w-4 h-4" /> Copy Link
@@ -576,17 +576,17 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
       {/* Delete Confirm Modal */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl border border-black/5 w-full max-w-sm shadow-2xl">
+          <div className="bg-white rounded-2xl border border-[var(--hairline)] w-full max-w-sm shadow-2xl">
             <div className="px-6 pt-6 pb-2 text-center">
               <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
-              <h3 className="font-headline font-bold text-[#1c1410] text-[16px]">Delete this form?</h3>
-              <p className="text-[14px] text-[#7a6b5c] mt-2">
-                <span className="font-semibold text-[#1c1410]">"{deleteTarget.name}"</span> will be permanently deleted.
+              <h3 className="font-headline font-bold text-[#111318] text-[16px]">Delete this form?</h3>
+              <p className="text-[15px] text-[#6b7280] mt-2">
+                <span className="font-semibold text-[#111318]">"{deleteTarget.name}"</span> will be permanently deleted.
               </p>
               {(deleteTarget.submission_count ?? 0) > 0 && (
-                <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mt-3">
+                <p className="text-[12px] text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mt-3">
                   This form has <span className="font-bold">{deleteTarget.submission_count} submission{deleteTarget.submission_count !== 1 ? 's' : ''}</span> - it will be deactivated instead of deleted.
                 </p>
               )}
@@ -594,14 +594,14 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
             <div className="flex gap-2 px-6 py-5">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/8 hover:bg-[var(--app-bg)] transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--surface-2)] transition active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition active:scale-[0.98]"
               >
                 {deleting ? 'Deleting…' : 'Yes, Delete'}
               </button>
@@ -613,30 +613,30 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
       {/* Clone Confirm Modal */}
       {cloneTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl border border-black/5 w-full max-w-sm shadow-2xl">
+          <div className="bg-white rounded-2xl border border-[var(--hairline)] w-full max-w-sm shadow-2xl">
             <div className="px-6 pt-6 pb-2 text-center">
               <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Copy className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="font-headline font-bold text-[#1c1410] text-[16px]">Clone this form?</h3>
-              <p className="text-[14px] text-[#7a6b5c] mt-2">
-                A copy of <span className="font-semibold text-[#1c1410]">"{cloneTarget.name}"</span> will be created with all fields and settings intact.
+              <h3 className="font-headline font-bold text-[#111318] text-[16px]">Clone this form?</h3>
+              <p className="text-[15px] text-[#6b7280] mt-2">
+                A copy of <span className="font-semibold text-[#111318]">"{cloneTarget.name}"</span> will be created with all fields and settings intact.
               </p>
-              <p className="text-[11px] text-[#b09e8d] mt-1.5">
-                It will be named <span className="font-medium text-[#7a6b5c]">"{cloneTarget.name} (Copy)"</span>
+              <p className="text-[12px] text-[#9ca3af] mt-1.5">
+                It will be named <span className="font-medium text-[#6b7280]">"{cloneTarget.name} (Copy)"</span>
               </p>
             </div>
             <div className="flex gap-2 px-6 py-5">
               <button
                 onClick={() => setCloneTarget(null)}
-                className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/8 hover:bg-[var(--app-bg)] transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--surface-2)] transition active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleClone}
                 disabled={cloning}
-                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 transition active:scale-[0.98]"
               >
                 {cloning ? 'Cloning…' : 'Yes, Clone it'}
               </button>
@@ -648,16 +648,16 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
       {/* Embed Code Modal */}
       {embedForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-2xl border border-black/5 w-full max-w-xl shadow-2xl">
+          <div className="bg-white rounded-2xl border border-[var(--hairline)] w-full max-w-xl shadow-2xl">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)]">
               <div>
-                <h3 className="font-headline font-bold text-[#1c1410]">Embed "{embedForm.name}"</h3>
-                <p className="text-[11px] text-[#7a6b5c] mt-0.5">Copy and paste into your website</p>
+                <h3 className="font-headline font-bold text-[#111318]">Embed "{embedForm.name}"</h3>
+                <p className="text-[12px] text-[#6b7280] mt-0.5">Copy and paste into your website</p>
               </div>
               <button
                 onClick={() => { setEmbedFormId(null); setEmbedTab('iframe'); }}
-                className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors"
+                className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-primary transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -669,10 +669,10 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
                 <button
                   key={tab}
                   onClick={() => setEmbedTab(tab)}
-                  className={`px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-colors ${
+                  className={`px-4 py-1.5 rounded-full text-[14px] font-semibold transition active:scale-[0.98] ${
                     embedTab === tab
                       ? 'bg-primary text-white'
-                      : 'bg-[var(--app-bg)] text-[#7a6b5c] hover:bg-[var(--accent-tint)]'
+                      : 'bg-[var(--surface-2)] text-[#6b7280] hover:text-[#111318]'
                   }`}
                 >
                   {tab === 'iframe' ? 'iFrame' : 'HTML Code'}
@@ -684,44 +684,44 @@ if(${redir})setTimeout(function(){location.href=${redir};},2000);
             <div className="px-6 py-4 space-y-3">
               {embedTab === 'iframe' ? (
                 <>
-                  <p className="text-[13px] text-[#7a6b5c]">
+                  <p className="text-[14px] text-[#6b7280]">
                     Paste this wherever you want the form to appear. Works in any CMS (WordPress, Webflow, Wix, etc.).
                   </p>
                   <div className="relative">
-                    <pre className="bg-[var(--app-bg)] rounded-xl p-4 text-xs font-mono text-[#1c1410] overflow-x-auto border border-black/5 whitespace-pre-wrap break-all">
+                    <pre className="bg-[var(--surface-2)] rounded-xl p-4 text-[13px] font-mono text-[#111318] overflow-x-auto border border-[var(--hairline)] whitespace-pre-wrap break-all">
                       {getIframeCode(embedForm)}
                     </pre>
                     <button
                       onClick={() => { copyToClipboard(getIframeCode(embedForm)); toast.success('iFrame code copied'); }}
-                      className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white border border-black/5 hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors"
+                      className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white border border-[var(--hairline)] hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-primary transition-colors"
                     ><Copy className="w-3.5 h-3.5" /></button>
                   </div>
-                  <p className="text-[11px] text-[#b09e8d]">
+                  <p className="text-[12px] text-[#9ca3af]">
                     Always shows the latest version of your form - no re-embedding needed after edits.
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-[13px] text-[#7a6b5c]">
+                  <p className="text-[14px] text-[#6b7280]">
                     Paste anywhere on your page - no external JS required. Fields, colors and styles match your form exactly.
                   </p>
                   <div className="relative">
-                    <pre className="bg-[var(--app-bg)] rounded-xl p-4 text-xs font-mono text-[#1c1410] overflow-x-auto border border-black/5 max-h-64 whitespace-pre-wrap break-all">
+                    <pre className="bg-[var(--surface-2)] rounded-xl p-4 text-[13px] font-mono text-[#111318] overflow-x-auto border border-[var(--hairline)] max-h-64 whitespace-pre-wrap break-all">
                       {generateHTMLSnippet(embedForm)}
                     </pre>
                     <button
                       onClick={() => { copyToClipboard(generateHTMLSnippet(embedForm)); toast.success('HTML code copied'); }}
-                      className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white border border-black/5 hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors"
+                      className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white border border-[var(--hairline)] hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-primary transition-colors"
                     ><Copy className="w-3.5 h-3.5" /></button>
                   </div>
-                  <p className="text-[11px] text-[#b09e8d]">
+                  <p className="text-[12px] text-[#9ca3af]">
                     Fields are baked into the code. Re-copy after editing your form to get updated code.
                   </p>
                 </>
               )}
             </div>
 
-            <div className="flex justify-end px-6 py-4 border-t border-black/5">
+            <div className="flex justify-end px-6 py-4 border-t border-[var(--hairline)]">
               <Button onClick={() => { setEmbedFormId(null); setEmbedTab('iframe'); }}>Done</Button>
             </div>
           </div>

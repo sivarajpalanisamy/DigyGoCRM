@@ -11,6 +11,7 @@ import { useHeaderSearch } from '@/store/headerSearchStore';
 import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { api } from '@/lib/api';
 import { ExportModal } from '@/components/ui/ExportModal';
+import { DatePicker } from '@/components/ui/date-picker';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -36,9 +37,9 @@ function getSourceColor(source: string) {
   if (s.startsWith('form:') || s === 'Custom Form')          return 'bg-purple-50 text-purple-600 border border-purple-200';
   if (s === 'meta_form')    return 'bg-blue-50 text-blue-600 border border-blue-200';
   if (s === 'whatsapp' || s === 'WhatsApp') return 'bg-green-50 text-green-600 border border-green-200';
-  if (s === 'Manual')       return 'bg-gray-100 text-gray-600 border border-gray-200';
+  if (s === 'Manual')       return 'bg-gray-100 text-gray-600 border border-[var(--hairline)]';
   if (s === 'Landing Page') return 'bg-amber-50 text-amber-600 border border-amber-200';
-  return 'bg-gray-100 text-gray-600 border border-gray-200';
+  return 'bg-gray-100 text-gray-600 border border-[var(--hairline)]';
 }
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -47,7 +48,7 @@ const SOURCE_COLORS: Record<string, string> = {
   'WhatsApp':         'bg-green-50 text-green-600 border border-green-200',
   'whatsapp':         'bg-green-50 text-green-600 border border-green-200',
   'Custom Form':      'bg-purple-50 text-purple-600 border border-purple-200',
-  'Manual':           'bg-gray-100 text-gray-600 border border-gray-200',
+  'Manual':           'bg-gray-100 text-gray-600 border border-[var(--hairline)]',
   'Landing Page':     'bg-amber-50 text-amber-600 border border-amber-200',
   'calendar_booking': 'bg-teal-50 text-teal-600 border border-teal-200',
 };
@@ -135,16 +136,16 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
     }
   };
 
-  const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-[14px] text-[#1c1410] placeholder-gray-300 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all bg-white';
-  const labelCls = 'block text-[13px] font-medium text-[#555] mb-1.5';
+  const inputCls = 'w-full border border-[var(--hairline)] rounded-lg px-3 py-2.5 text-[15px] text-[#111318] placeholder-gray-300 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all bg-white';
+  const labelCls = 'block text-[14px] font-medium text-[#555] mb-1.5';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
-          <h2 className="font-bold text-[17px] text-[#1c1410]">+ Edit Contact</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)] shrink-0">
+          <h2 className="font-bold text-[17px] text-[#111318]">+ Edit Contact</h2>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors">
             <X className="w-4 h-4 text-gray-400" />
           </button>
@@ -157,7 +158,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
             <button
               type="button"
               onClick={() => setActiveTab('opportunity')}
-              className="px-5 py-2 rounded-lg text-[14px] font-bold text-white transition-all"
+              className="px-5 py-2 rounded-lg text-[15px] font-bold text-white transition-all"
               style={{
                 background: activeTab === 'opportunity'
                   ? 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)'
@@ -170,7 +171,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
             <button
               type="button"
               onClick={() => setActiveTab('additional')}
-              className="px-5 py-2 rounded-lg text-[14px] font-bold transition-all"
+              className="px-5 py-2 rounded-lg text-[15px] font-bold transition-all"
               style={{
                 background: activeTab === 'additional'
                   ? 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)'
@@ -183,7 +184,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
             <button
               type="button"
               onClick={() => setActiveTab('journey')}
-              className="px-5 py-2 rounded-lg text-[14px] font-bold transition-all flex items-center gap-1.5"
+              className="px-5 py-2 rounded-lg text-[15px] font-bold transition-all flex items-center gap-1.5"
               style={{
                 background: activeTab === 'journey'
                   ? 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)'
@@ -199,9 +200,9 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
           {/* ── Opportunity tab ── */}
           {activeTab === 'opportunity' && (
             <>
-              <h3 className="font-bold text-[15px] text-[#1c1410]">Contact Info</h3>
+              <h3 className="font-bold text-[16px] text-[#111318]">Contact Info</h3>
 
-              <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
                 <div>
                   <label className={labelCls}>Opportunity Name <span className="text-red-500">*</span></label>
                   <input
@@ -235,15 +236,15 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
 
                 <div>
                   <label className={labelCls}>Phone</label>
-                  <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-                    <span className="px-3 py-2.5 text-[13px] font-semibold text-[#555] bg-gray-50 border-r border-gray-200 shrink-0 whitespace-nowrap">
+                  <div className="flex items-center border border-[var(--hairline)] rounded-lg overflow-hidden focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+                    <span className="px-3 py-2.5 text-[14px] font-semibold text-[#555] bg-gray-50 border-r border-[var(--hairline)] shrink-0 whitespace-nowrap">
                       IN +91
                     </span>
                     <input
                       value={form.phone.replace(/^\+?91/, '')}
                       onChange={(e) => setForm((f) => ({ ...f, phone: '+91' + e.target.value.replace(/\D/g, '') }))}
                       placeholder="81234 56789"
-                      className="flex-1 px-3 py-2.5 text-[14px] text-[#1c1410] placeholder-gray-300 outline-none bg-white"
+                      className="flex-1 px-3 py-2.5 text-[15px] text-[#111318] placeholder-gray-300 outline-none bg-white"
                     />
                   </div>
                 </div>
@@ -294,7 +295,7 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                   <input
                     readOnly
                     value={format(new Date(lead.createdAt), 'dd-MM-yyyy HH:mm')}
-                    className={cn(inputCls, 'bg-gray-50 cursor-default text-[#7a6b5c]')}
+                    className={cn(inputCls, 'bg-gray-50 cursor-default text-[#6b7280]')}
                   />
                 </div>
               </div>
@@ -310,21 +311,21 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                 </div>
               ) : fields.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-                  <div className="w-12 h-12 bg-[var(--app-bg)] rounded-2xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-[var(--surface-2)] rounded-2xl flex items-center justify-center">
                     <FileText className="w-5 h-5 text-gray-300" />
                   </div>
-                  <p className="text-[14px] font-semibold text-[#1c1410]">No additional fields</p>
-                  <p className="text-[13px] text-[#b09e8d]">No custom field data recorded for this contact.</p>
+                  <p className="text-[15px] font-semibold text-[#111318]">No additional fields</p>
+                  <p className="text-[14px] text-[#9ca3af]">No custom field data recorded for this contact.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
                   {fields.map((f, i) => (
                     <div key={i}>
                       <label className={labelCls}>{f.field_name}</label>
                       <input
                         readOnly
                         value={f.value || '-'}
-                        className={cn(inputCls, 'bg-gray-50 cursor-default text-[#7a6b5c]')}
+                        className={cn(inputCls, 'bg-gray-50 cursor-default text-[#6b7280]')}
                       />
                     </div>
                   ))}
@@ -342,52 +343,52 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                 </div>
               ) : !journey || (journey.enquiries.length === 0 && journey.leads.length === 0) ? (
                 <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-                  <div className="w-12 h-12 bg-[var(--app-bg)] rounded-2xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-[var(--surface-2)] rounded-2xl flex items-center justify-center">
                     <History className="w-5 h-5 text-gray-300" />
                   </div>
-                  <p className="text-[14px] font-semibold text-[#1c1410]">No journey data</p>
-                  <p className="text-[13px] text-[#b09e8d]">No enquiry history recorded for this contact yet.</p>
+                  <p className="text-[15px] font-semibold text-[#111318]">No journey data</p>
+                  <p className="text-[14px] text-[#9ca3af]">No enquiry history recorded for this contact yet.</p>
                 </div>
               ) : (
                 <div className="space-y-5">
                   {/* Summary */}
-                  <div className="flex items-center gap-4 p-3 bg-[var(--app-bg,#faf8f6)] rounded-xl">
+                  <div className="flex items-center gap-4 p-3 bg-[var(--app-bg,#f4f5f7)] rounded-xl">
                     <div className="text-center">
-                      <p className="text-[18px] font-bold text-[#1c1410]">{journey.enquiries.length}</p>
-                      <p className="text-[11px] text-[#7a6b5c]">Enquiries</p>
+                      <p className="text-[18px] font-bold text-[#111318]">{journey.enquiries.length}</p>
+                      <p className="text-[12px] text-[#6b7280]">Enquiries</p>
                     </div>
                     <div className="w-px h-8 bg-gray-200" />
                     <div className="text-center">
-                      <p className="text-[18px] font-bold text-[#1c1410]">{journey.leads.length}</p>
-                      <p className="text-[11px] text-[#7a6b5c]">Pipelines</p>
+                      <p className="text-[18px] font-bold text-[#111318]">{journey.leads.length}</p>
+                      <p className="text-[12px] text-[#6b7280]">Pipelines</p>
                     </div>
                     <div className="w-px h-8 bg-gray-200" />
                     <div className="text-center">
-                      <p className="text-[18px] font-bold text-[#1c1410]">
+                      <p className="text-[18px] font-bold text-[#111318]">
                         {journey.enquiries.length > 0
                           ? format(new Date(journey.enquiries[journey.enquiries.length - 1].created_at), 'dd MMM yyyy')
                           : '-'}
                       </p>
-                      <p className="text-[11px] text-[#7a6b5c]">First seen</p>
+                      <p className="text-[12px] text-[#6b7280]">First seen</p>
                     </div>
                   </div>
 
                   {/* Active leads across pipelines */}
                   {journey.leads.length > 0 && (
                     <div>
-                      <h4 className="text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2">Active Leads</h4>
+                      <h4 className="text-[14px] font-semibold text-[#6b7280] uppercase tracking-wide mb-2">Active Leads</h4>
                       <div className="space-y-2">
                         {journey.leads.map((l: any) => (
-                          <div key={l.id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl">
+                          <div key={l.id} className="flex items-center justify-between p-3 bg-white border border-[var(--hairline)] rounded-xl">
                             <div>
-                              <p className="text-[14px] font-semibold text-[#1c1410]">{l.pipeline_name || 'No pipeline'}</p>
-                              <p className="text-[11px] text-[#7a6b5c]">
+                              <p className="text-[15px] font-semibold text-[#111318]">{l.pipeline_name || 'No pipeline'}</p>
+                              <p className="text-[12px] text-[#6b7280]">
                                 Stage: {l.stage_name || '-'}
                                 {l.assigned_name ? ` · Assigned: ${l.assigned_name}` : ''}
                                 {l.lead_quality ? ` · ${l.lead_quality}` : ''}
                               </p>
                             </div>
-                            <span className="text-[11px] text-[#b09e8d]">{format(new Date(l.created_at), 'dd MMM yyyy')}</span>
+                            <span className="text-[12px] text-[#9ca3af]">{format(new Date(l.created_at), 'dd MMM yyyy')}</span>
                           </div>
                         ))}
                       </div>
@@ -397,24 +398,24 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                   {/* Enquiry timeline */}
                   {journey.enquiries.length > 0 && (
                     <div>
-                      <h4 className="text-[13px] font-semibold text-[#7a6b5c] uppercase tracking-wide mb-2">Enquiry Timeline</h4>
-                      <div className="relative pl-4 border-l-2 border-gray-200 space-y-4">
+                      <h4 className="text-[14px] font-semibold text-[#6b7280] uppercase tracking-wide mb-2">Enquiry Timeline</h4>
+                      <div className="relative pl-4 border-l-2 border-[var(--hairline)] space-y-4">
                         {journey.enquiries.map((e: any) => (
                           <div key={e.id} className="relative">
                             <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 border-white"
                               style={{ backgroundColor: e.is_duplicate ? '#f59e0b' : 'var(--brand, #c2410c)' }} />
-                            <div className="p-3 bg-white border border-gray-100 rounded-xl">
+                            <div className="p-3 bg-white border border-[var(--hairline)] rounded-xl">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[14px] font-semibold text-[#1c1410]">
+                                <span className="text-[15px] font-semibold text-[#111318]">
                                   {e.form_name || e.form_type}
                                 </span>
-                                <span className="text-[11px] text-[#b09e8d]">
+                                <span className="text-[12px] text-[#9ca3af]">
                                   {format(new Date(e.created_at), 'dd MMM yyyy, hh:mm a')}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className={cn(
-                                  'px-2 py-0.5 rounded-full text-[10px] font-medium',
+                                  'px-2 py-0.5 rounded-full text-[11px] font-medium',
                                   e.form_type === 'meta_form' ? 'bg-blue-50 text-blue-600' :
                                   e.form_type === 'custom_form' ? 'bg-purple-50 text-purple-600' :
                                   e.form_type === 'landing_page' ? 'bg-amber-50 text-amber-600' :
@@ -426,12 +427,12 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
                                    e.form_type}
                                 </span>
                                 {e.pipeline_name && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600">
+                                  <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-600">
                                     {e.pipeline_name}{e.stage_name ? ` → ${e.stage_name}` : ''}
                                   </span>
                                 )}
                                 {e.is_duplicate && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-600">
+                                  <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-600">
                                     Re-enquiry
                                   </span>
                                 )}
@@ -449,21 +450,21 @@ function ContactDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between shrink-0">
-          <p className="text-[11px] text-[#7a6b5c]">
+        <div className="px-6 py-4 border-t border-[var(--hairline)] flex items-center justify-between shrink-0">
+          <p className="text-[12px] text-[#6b7280]">
             Created On: {format(new Date(lead.createdAt), 'dd/MM/yyyy hh:mm aa').toUpperCase()}
           </p>
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-6 py-2 rounded-lg text-[14px] font-bold text-white bg-red-400 hover:bg-red-500 transition-colors"
+              className="px-6 py-2 rounded-lg text-[15px] font-bold text-white bg-red-400 hover:bg-red-500 transition-colors"
             >
               CANCEL
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-6 py-2 rounded-lg text-[14px] font-bold text-white transition-colors disabled:opacity-60"
+              className="px-6 py-2 rounded-lg text-[15px] font-bold text-white transition-colors disabled:opacity-60"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%)' }}
             >
               {saving ? 'SAVING…' : 'SAVE'}
@@ -504,32 +505,32 @@ function WorkflowTriggerModal({ leadIds, workflows, onClose, onSuccess }: {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/5">
-          <h3 className="font-bold text-[17px] text-[#1c1410]">Trigger Workflow</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-4 h-4 text-[#7a6b5c]" /></button>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--hairline)]">
+          <h3 className="font-bold text-[17px] text-[#111318]">Trigger Workflow</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="w-4 h-4 text-[#6b7280]" /></button>
         </div>
         <div className="px-6 py-5 space-y-3">
-          <label className="text-[14px] font-semibold text-[#1c1410] block">Select Active Workflow</label>
+          <label className="text-[15px] font-semibold text-[#111318] block">Select Active Workflow</label>
           <div className="relative">
-            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white appearance-none pr-10">
+            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full border border-[var(--hairline)] rounded-xl px-4 py-2.5 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white appearance-none pr-10">
               <option value="">- Choose a workflow -</option>
               {activeWorkflows.map((wf) => <option key={wf.id} value={wf.id}>{wf.name}</option>)}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
           {activeWorkflows.length === 0 && (
-            <p className="text-[13px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+            <p className="text-[14px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
               No active workflows found. Set a workflow to Active in Automation first.
             </p>
           )}
-          <p className="text-[13px] text-blue-500 flex items-start gap-1.5 pt-1">
+          <p className="text-[14px] text-blue-500 flex items-start gap-1.5 pt-1">
             <Settings className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             {leadIds.length} contact{leadIds.length !== 1 ? 's' : ''} selected - all will be pushed through the chosen workflow.
           </p>
         </div>
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-200 text-[14px] font-bold text-gray-600 hover:bg-gray-300 transition-colors uppercase tracking-wide">Close</button>
-          <button onClick={send} disabled={sending || !selected} className="px-6 py-2 rounded-lg bg-green-500 text-[14px] font-bold text-white hover:bg-green-600 disabled:opacity-50 transition-colors uppercase tracking-wide">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--hairline)]">
+          <button onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-200 text-[15px] font-bold text-gray-600 hover:bg-gray-300 transition-colors uppercase tracking-wide">Close</button>
+          <button onClick={send} disabled={sending || !selected} className="px-6 py-2 rounded-lg bg-green-500 text-[15px] font-bold text-white hover:bg-green-600 disabled:opacity-50 transition-colors uppercase tracking-wide">
             {sending ? 'Sending…' : 'Send'}
           </button>
         </div>
@@ -732,7 +733,7 @@ export default function ContactsPage() {
     setDeleteTargetId(null);
   };
 
-  const selectCls = 'appearance-none pl-3 pr-8 py-2 bg-white border border-black/10 rounded-xl text-[14px] font-medium text-[#1c1410] outline-none hover:border-primary/40 focus:border-primary/40 cursor-pointer';
+  const selectCls = 'appearance-none pl-3 pr-8 py-2 bg-white border border-[var(--hairline)] rounded-xl text-[15px] font-medium text-[#111318] outline-none hover:border-primary/40 focus:border-primary/40 cursor-pointer';
 
   return (
     <>
@@ -750,19 +751,19 @@ export default function ContactsPage() {
                 <s.icon className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-[13px] opacity-80">{s.label}</p>
+                <p className="text-[14px] opacity-80">{s.label}</p>
                 <h3 className="font-headline text-[22px] font-bold tracking-tight leading-tight">{s.value}</h3>
               </div>
             </div>
           ) : (
             <div key={s.label}
-              className="bg-white rounded-2xl px-5 py-4 card-shadow border border-black/5 flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300">
+              className="bg-white rounded-2xl px-5 py-4 card-shadow border border-[var(--hairline)] flex items-center gap-4 hover:-translate-y-0.5 transition-all duration-300">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                 <s.icon className={cn('w-5 h-5', s.color)} />
               </div>
               <div>
-                <p className="text-[13px] text-[#7a6b5c]">{s.label}</p>
-                <h3 className="font-headline text-[22px] font-bold text-[#1c1410] tracking-tight leading-tight">{s.value}</h3>
+                <p className="text-[14px] text-[#6b7280]">{s.label}</p>
+                <h3 className="font-headline text-[22px] font-bold text-[#111318] tracking-tight leading-tight">{s.value}</h3>
               </div>
             </div>
           );
@@ -774,11 +775,11 @@ export default function ContactsPage() {
         {/* Search moved to the navbar (context-aware header search). */}
 
         {/* Type pills */}
-        <div className="flex items-center bg-white rounded-xl border border-black/10 p-1 gap-0.5" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <div className="flex items-center bg-[var(--surface-2)] rounded-full p-1 gap-0.5">
           {TYPE_OPTIONS.map((t) => (
             <button key={t} onClick={() => setTypeFilter(t)}
-              className={cn('px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-colors',
-                typeFilter === t ? 'bg-primary text-white shadow-sm' : 'text-[#7a6b5c] hover:text-[#1c1410]'
+              className={cn('px-3.5 py-1.5 rounded-full text-[14px] font-semibold active:scale-[0.98] transition',
+                typeFilter === t ? 'bg-primary text-white shadow-sm' : 'text-[#6b7280] hover:text-[#111318]'
               )}>
               {t}
             </button>
@@ -788,15 +789,15 @@ export default function ContactsPage() {
         {/* Filter toggle */}
         <button
           onClick={() => setShowFilters((v) => !v)}
-          className={cn('flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-[14px] font-medium transition-all',
-            showFilters || activeFiltersCount > 0 ? 'border-primary/40 bg-orange-50 text-primary' : 'border-black/10 bg-white text-[#7a6b5c] hover:border-primary/30 hover:text-primary'
+          className={cn('flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-[15px] font-medium transition-all',
+            showFilters || activeFiltersCount > 0 ? 'border-primary/40 bg-orange-50 text-primary' : 'border-[var(--hairline)] bg-white text-[#6b7280] hover:border-primary/30 hover:text-primary'
           )}
           style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
         >
           <Filter className="w-3.5 h-3.5" />
           Filters
           {activeFiltersCount > 0 && (
-            <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">{activeFiltersCount}</span>
+            <span className="w-5 h-5 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center">{activeFiltersCount}</span>
           )}
         </button>
 
@@ -804,7 +805,7 @@ export default function ContactsPage() {
         {canExport && (
           <button
             onClick={() => setShowExportModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-black/10 bg-white text-[14px] font-medium text-[#7a6b5c] hover:border-primary/30 hover:text-primary transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-[var(--hairline)] bg-white text-[15px] font-medium text-[#6b7280] hover:border-primary/30 hover:text-primary transition-all"
             style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           >
             <Download className="w-3.5 h-3.5" /> Export
@@ -819,13 +820,13 @@ export default function ContactsPage() {
             <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className={selectCls} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
               {allSources.map((s) => <option key={s} value={s}>{s === 'All' ? 'All Sources' : getSourceLabel({ source: s })}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9a8a7a] pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8b929c] pointer-events-none" />
           </div>
           <div className="relative">
             <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} className={selectCls} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
               {allTags.map((t) => <option key={t} value={t}>{t === 'All' ? 'All Tags' : t}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9a8a7a] pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8b929c] pointer-events-none" />
           </div>
           <div className="relative">
             <select value={pipelineFilter} onChange={(e) => { setPipelineFilter(e.target.value); setStageFilter('All'); }} className={selectCls} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
@@ -833,7 +834,7 @@ export default function ContactsPage() {
               <option value="__none__">No Pipeline</option>
               {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9a8a7a] pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8b929c] pointer-events-none" />
           </div>
           {pipelineFilter !== 'All' && pipelineFilter !== '__none__' && (() => {
             const stages = pipelines.find((p) => p.id === pipelineFilter)?.stages ?? [];
@@ -843,7 +844,7 @@ export default function ContactsPage() {
                   <option value="All">All Stages</option>
                   {stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9a8a7a] pointer-events-none" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8b929c] pointer-events-none" />
               </div>
             ) : null;
           })()}
@@ -851,23 +852,19 @@ export default function ContactsPage() {
             <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as typeof dateFilter)} className={selectCls} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
               {DATE_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9a8a7a] pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8b929c] pointer-events-none" />
           </div>
           {dateFilter === 'Custom range' && (
             <div className="flex items-center gap-1.5">
-              <input type="date" value={customFrom} max={customTo || undefined}
-                onChange={(e) => setCustomFrom(e.target.value)}
-                className="h-8 px-2 text-[13px] rounded-lg border border-black/10 bg-white text-[#1c1410] outline-none focus:border-primary/40"
-                style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} title="From date" />
-              <span className="text-[13px] text-[#9a8a7a]">→</span>
-              <input type="date" value={customTo} min={customFrom || undefined}
-                onChange={(e) => setCustomTo(e.target.value)}
-                className="h-8 px-2 text-[13px] rounded-lg border border-black/10 bg-white text-[#1c1410] outline-none focus:border-primary/40"
-                style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} title="To date" />
+              <DatePicker value={customFrom} max={customTo || undefined}
+                onChange={setCustomFrom} placeholder="From date" />
+              <span className="text-[14px] text-[#8b929c]">→</span>
+              <DatePicker value={customTo} min={customFrom || undefined}
+                onChange={setCustomTo} placeholder="To date" />
             </div>
           )}
           {activeFiltersCount > 0 && (
-            <button onClick={clearFilters} className="text-[13px] text-red-500 font-semibold hover:underline">Clear all</button>
+            <button onClick={clearFilters} className="text-[14px] text-red-500 font-semibold hover:underline">Clear all</button>
           )}
         </div>
       )}
@@ -876,49 +873,49 @@ export default function ContactsPage() {
       {selected.length > 0 && (
         <div
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 animate-fade-in"
-          style={{ background: 'linear-gradient(to right, #faf0e8, #fff)', boxShadow: '0 2px 8px rgba(234,88,12,0.08)' }}
+          style={{ background: 'linear-gradient(to right, #f1f3f5, #fff)', boxShadow: '0 2px 8px rgba(234,88,12,0.08)' }}
         >
           <div className="flex items-center gap-2 pr-3 border-r border-primary/20">
-            <div className="w-6 h-6 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center">{selected.length}</div>
-            <span className="text-[13px] font-semibold text-[#1c1410]">selected</span>
+            <div className="w-6 h-6 rounded-full bg-primary text-white text-[12px] font-bold flex items-center justify-center">{selected.length}</div>
+            <span className="text-[14px] font-semibold text-[#111318]">selected</span>
           </div>
-          <button onClick={() => setShowWorkflow(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-primary hover:bg-primary/10 transition-colors">
+          <button onClick={() => setShowWorkflow(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-semibold text-primary hover:bg-primary/10 transition-colors">
             <Zap className="w-3.5 h-3.5" /> Trigger Workflow
           </button>
           {canDeleteContact && (
-            <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-red-500 hover:bg-red-50 transition-colors">
+            <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-semibold text-red-500 hover:bg-red-50 transition-colors">
               <Trash2 className="w-3.5 h-3.5" /> Delete
             </button>
           )}
           <div className="flex-1" />
-          <button onClick={() => setSelected([])} className="p-1.5 rounded-lg hover:bg-white transition-colors text-[#7a6b5c]">
+          <button onClick={() => setSelected([])} className="p-1.5 rounded-lg hover:bg-white transition-colors text-[#6b7280]">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
         {/* Result count */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-black/[0.04]">
-          <p className="text-[13px] text-[#7a6b5c]">
-            Showing <span className="font-semibold text-[#1c1410]">{filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}</span> of {filtered.length}{filtered.length !== totalContacts ? ` (filtered from ${totalContacts})` : ''} contacts
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--hairline)]">
+          <p className="text-[14px] text-[#6b7280]">
+            Showing <span className="font-semibold text-[#111318]">{filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}</span> of {filtered.length}{filtered.length !== totalContacts ? ` (filtered from ${totalContacts})` : ''} contacts
           </p>
           {totalPages > 1 && (
             <div className="flex items-center gap-2">
               <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1}
-                className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Prev</button>
-              <span className="text-[13px] text-[#7a6b5c]">Page {safePage} / {totalPages}</span>
+                className="px-3 py-1.5 rounded-lg border border-[var(--hairline)] text-[14px] font-medium text-[#111318] disabled:opacity-40 hover:border-primary/40 transition-colors">Prev</button>
+              <span className="text-[14px] text-[#6b7280]">Page {safePage} / {totalPages}</span>
               <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}
-                className="px-3 py-1.5 rounded-lg border border-black/10 text-[13px] font-medium text-[#1c1410] disabled:opacity-40 hover:border-primary/40 transition-colors">Next</button>
+                className="px-3 py-1.5 rounded-lg border border-[var(--hairline)] text-[14px] font-medium text-[#111318] disabled:opacity-40 hover:border-primary/40 transition-colors">Next</button>
             </div>
           )}
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-[14px]">
+          <table className="w-full min-w-[900px] text-[15px]">
             <thead>
-              <tr className="border-b border-black/5 bg-[var(--app-bg)]">
+              <tr className="border-b border-[var(--hairline)] bg-[var(--surface-2)]">
                 <th className="w-10 px-4 py-3">
                   <input type="checkbox"
                     checked={filtered.length > 0 && selected.length === filtered.length}
@@ -927,22 +924,22 @@ export default function ContactsPage() {
                   />
                 </th>
                 {['Contact', 'Source', 'Pipeline', 'Tags', 'Type', 'Created', 'Last Activity', ''].map((col) => (
-                  <th key={col} className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] whitespace-nowrap">
+                  <th key={col} className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] whitespace-nowrap">
                     {col}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/[0.04]">
+            <tbody className="divide-y divide-[var(--hairline)]">
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={9} className="py-16 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-12 h-12 rounded-2xl bg-[var(--accent-tint)] flex items-center justify-center">
-                        <Users className="w-6 h-6 text-[#c4b09e]" />
+                        <Users className="w-6 h-6 text-[#c3c8cf]" />
                       </div>
-                      <p className="text-[14px] font-semibold text-[#1c1410]">No contacts found</p>
-                      <p className="text-[13px] text-[#7a6b5c]">Try adjusting your search or filters.</p>
+                      <p className="text-[15px] font-semibold text-[#111318]">No contacts found</p>
+                      <p className="text-[14px] text-[#6b7280]">Try adjusting your search or filters.</p>
                     </div>
                   </td>
                 </tr>
@@ -951,7 +948,7 @@ export default function ContactsPage() {
                 const isSelected = selected.includes(lead.id);
                 const isCustomer = lead.stage === 'Closed Won';
                 return (
-                  <tr key={lead.id} className={cn('hover:bg-[var(--app-bg)] transition-colors', isSelected && 'bg-primary/[0.03]')}>
+                  <tr key={lead.id} className={cn('hover:bg-[var(--surface-2)] transition-colors', isSelected && 'bg-primary/[0.03]')}>
 
                     <td className="px-4 py-3.5">
                       <input type="checkbox" checked={isSelected} onChange={() => toggleOne(lead.id)} className="w-4 h-4 accent-primary" />
@@ -960,14 +957,14 @@ export default function ContactsPage() {
                     {/* Contact - name + email + phone stacked */}
                     <td className="px-4 py-3.5 min-w-[240px]">
                       <div className="flex items-center gap-3 cursor-pointer" onClick={() => setSelectedContactId(lead.id)}>
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[12px] font-bold text-primary shrink-0">
                           {lead.firstName[0]}{lead.lastName[0]}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-[14px] text-[#1c1410] truncate hover:text-primary transition-colors">{lead.firstName} {lead.lastName}</p>
+                          <p className="font-semibold text-[15px] text-[#111318] truncate hover:text-primary transition-colors">{lead.firstName} {lead.lastName}</p>
                           <div className="flex items-center gap-3 mt-0.5">
-                            {lead.email && <span className="text-[11px] text-[#7a6b5c] truncate max-w-[160px]">{lead.email}</span>}
-                            <a href={`tel:${lead.phone}`} className="text-[11px] text-[#7a6b5c] hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{lead.phone}</a>
+                            {lead.email && <span className="text-[12px] text-[#6b7280] truncate max-w-[160px]">{lead.email}</span>}
+                            <a href={`tel:${lead.phone}`} className="text-[12px] text-[#6b7280] hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{lead.phone}</a>
                           </div>
                         </div>
                       </div>
@@ -975,14 +972,14 @@ export default function ContactsPage() {
 
                     {/* Source */}
                     <td className="px-4 py-3.5">
-                      <span className={cn('text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap', getSourceColor(lead.source))}>
+                      <span className={cn('text-[12px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap', getSourceColor(lead.source))}>
                         {getSourceLabel(lead)}
                       </span>
                     </td>
 
                     {/* Pipeline */}
                     <td className="px-4 py-3.5">
-                      <span className="text-[13px] font-medium text-[#1c1410]">
+                      <span className="text-[14px] font-medium text-[#111318]">
                         {pipelines.find((p) => p.id === lead.pipelineId)?.name ?? '-'}
                       </span>
                     </td>
@@ -991,20 +988,20 @@ export default function ContactsPage() {
                     <td className="px-4 py-3.5">
                       <div className="flex flex-wrap gap-1">
                         {lead.tags.length === 0
-                          ? <span className="text-[#c4b09e] text-[11px]">-</span>
+                          ? <span className="text-[#c3c8cf] text-[12px]">-</span>
                           : lead.tags.slice(0, 2).map((tag) => (
-                              <span key={tag} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{tag}</span>
+                              <span key={tag} className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{tag}</span>
                             ))
                         }
-                        {lead.tags.length > 2 && <span className="text-[10px] text-[#7a6b5c]">+{lead.tags.length - 2}</span>}
+                        {lead.tags.length > 2 && <span className="text-[11px] text-[#6b7280]">+{lead.tags.length - 2}</span>}
                       </div>
                     </td>
 
                     {/* Type */}
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <span className={cn(
-                        'text-[11px] font-semibold px-2 py-0.5 rounded-full',
-                        isCustomer ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-[#7a6b5c]'
+                        'text-[12px] font-semibold px-2 py-0.5 rounded-full',
+                        isCustomer ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-[#6b7280]'
                       )}>
                         {isCustomer ? 'Customer' : 'Lead'}
                       </span>
@@ -1012,14 +1009,14 @@ export default function ContactsPage() {
 
                     {/* Created */}
                     <td className="px-4 py-3.5 whitespace-nowrap">
-                      <p className="text-[13px] text-[#1c1410]">{format(new Date(lead.createdAt), 'dd MMM yyyy')}</p>
-                      <p className="text-[11px] text-[#b09e8d]">{format(new Date(lead.createdAt), 'h:mm a')}</p>
+                      <p className="text-[14px] text-[#111318]">{format(new Date(lead.createdAt), 'dd MMM yyyy')}</p>
+                      <p className="text-[12px] text-[#9ca3af]">{format(new Date(lead.createdAt), 'h:mm a')}</p>
                     </td>
 
                     {/* Last Activity */}
                     <td className="px-4 py-3.5 whitespace-nowrap">
-                      <p className="text-[13px] text-[#7a6b5c]">{format(new Date(lead.lastActivity), 'dd MMM yyyy')}</p>
-                      <p className="text-[11px] text-[#b09e8d]">{format(new Date(lead.lastActivity), 'h:mm a')}</p>
+                      <p className="text-[14px] text-[#6b7280]">{format(new Date(lead.lastActivity), 'dd MMM yyyy')}</p>
+                      <p className="text-[12px] text-[#9ca3af]">{format(new Date(lead.lastActivity), 'h:mm a')}</p>
                     </td>
 
                     {/* Actions */}
@@ -1027,7 +1024,7 @@ export default function ContactsPage() {
                       <div className="relative">
                         <button
                           onClick={() => setOpenMenu(openMenu === lead.id ? null : lead.id)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-primary transition-colors"
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:bg-[var(--accent-tint)] hover:text-primary transition-colors"
                         >
                           <MoreVertical className="w-4 h-4" />
                         </button>
@@ -1035,19 +1032,19 @@ export default function ContactsPage() {
                         {openMenu === lead.id && (
                           <>
                             <div className="fixed inset-0 z-30" onClick={() => setOpenMenu(null)} />
-                            <div className="absolute right-0 top-9 z-40 bg-white rounded-xl border border-black/5 shadow-xl w-44 py-1 overflow-hidden">
+                            <div className="absolute right-0 top-9 z-40 bg-white rounded-xl border border-[var(--hairline)] shadow-xl w-44 py-1 overflow-hidden">
                               <button
                                 onClick={() => { toast.info('Opening conversation…'); setOpenMenu(null); }}
-                                className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors"
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-[#111318] hover:bg-[#f1f3f5] transition-colors"
                               >
-                                <MessageCircle className="w-3.5 h-3.5 text-[#7a6b5c]" /> Message
+                                <MessageCircle className="w-3.5 h-3.5 text-[#6b7280]" /> Message
                               </button>
                               {canEditContact && (
                                 <button
                                   onClick={() => { toast.info('Edit coming soon'); setOpenMenu(null); }}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors"
+                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-[#111318] hover:bg-[#f1f3f5] transition-colors"
                                 >
-                                  <Pencil className="w-3.5 h-3.5 text-[#7a6b5c]" /> Edit
+                                  <Pencil className="w-3.5 h-3.5 text-[#6b7280]" /> Edit
                                 </button>
                               )}
                               {canEditContact && (
@@ -1064,18 +1061,18 @@ export default function ContactsPage() {
                                     } catch { toast.error('Failed to update contact'); }
                                     setOpenMenu(null);
                                   }}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-[#1c1410] hover:bg-[#faf0e8] transition-colors"
+                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-[#111318] hover:bg-[#f1f3f5] transition-colors"
                                 >
-                                  <ArrowRightLeft className="w-3.5 h-3.5 text-[#7a6b5c]" />
+                                  <ArrowRightLeft className="w-3.5 h-3.5 text-[#6b7280]" />
                                   {isCustomer ? 'Convert to Lead' : 'Convert to Customer'}
                                 </button>
                               )}
                               {canDeleteContact && (
                                 <>
-                                  <div className="border-t border-black/5 my-1" />
+                                  <div className="border-t border-[var(--hairline)] my-1" />
                                   <button
                                     onClick={() => { setDeleteTargetId(lead.id); setOpenMenu(null); }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-500 hover:bg-red-50 transition-colors"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[14px] text-red-500 hover:bg-red-50 transition-colors"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" /> Delete
                                   </button>
@@ -1168,7 +1165,7 @@ export default function ContactsPage() {
       return lead ? (
         <ConfirmDeleteModal
           title="Delete Contact?"
-          message={<><span className="font-semibold text-[#1c1410]">{lead.firstName} {lead.lastName}</span> will be permanently removed from the CRM. This cannot be undone.</>}
+          message={<><span className="font-semibold text-[#111318]">{lead.firstName} {lead.lastName}</span> will be permanently removed from the CRM. This cannot be undone.</>}
           confirmLabel="Yes, Delete"
           onConfirm={() => deleteSingle(deleteTargetId)}
           onClose={() => setDeleteTargetId(null)}

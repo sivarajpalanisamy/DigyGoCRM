@@ -15,6 +15,7 @@ import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { cn, copyToClipboard } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { ElementType } from 'react';
+import { DatePicker } from '@/components/ui/date-picker';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Types
@@ -125,7 +126,7 @@ const slugify = (s: string): string => {
   return 'field_' + Math.abs(h).toString(36).slice(0, 8);
 };
 
-const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
+const inputCls = 'w-full border border-[var(--hairline)] rounded-xl px-3 py-2 text-[15px] text-[#111318] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition bg-white';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Modal: Standard Field (Create / Edit)
@@ -145,14 +146,14 @@ function FieldSelector({ value, onChange }: { value: DataType; onChange: (t: Dat
             key={d.label}
             onClick={() => onChange(d.label)}
             className={cn(
-              'flex flex-col items-center justify-center gap-1 py-2.5 px-1.5 rounded-lg border transition-all',
+              'flex flex-col items-center justify-center gap-1 py-2.5 px-1.5 rounded-xl border transition-all active:scale-[0.98]',
               active
                 ? 'border-primary bg-primary/5 text-primary'
-                : 'border-black/[0.06] hover:border-primary/40 hover:bg-primary/5 text-[#7a6b5c] hover:text-primary'
+                : 'border-[var(--hairline)] hover:border-primary/40 hover:bg-primary/5 text-[#6b7280] hover:text-primary'
             )}
           >
             <d.Icon className="w-4 h-4" />
-            <span className="text-[11px] font-semibold leading-tight text-center">{d.label}</span>
+            <span className="text-[12px] font-semibold leading-tight text-center">{d.label}</span>
           </button>
         );
       })}
@@ -196,7 +197,7 @@ function OptionBuilder({ options, onChange }: {
 
   return (
     <div>
-      <label className="text-[13px] font-semibold text-[#7a6b5c] mb-2 block">Options</label>
+      <label className="text-[14px] font-semibold text-[#6b7280] mb-2 block">Options</label>
       <div className="space-y-1.5">
         {options.map((o, idx) => (
           <div key={idx} className="flex items-center gap-2">
@@ -210,7 +211,7 @@ function OptionBuilder({ options, onChange }: {
             <button
               onClick={() => removeOption(idx)}
               disabled={options.length <= 1}
-              className="w-9 h-9 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#c4b09e] hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+              className="w-9 h-9 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#c3c8cf] hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -218,7 +219,7 @@ function OptionBuilder({ options, onChange }: {
         ))}
         <button
           onClick={addOption}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-semibold text-primary hover:bg-primary/5 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" /> Add option
         </button>
@@ -243,11 +244,11 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
   // Fallback placeholders when no options yet
   const previewOptions = displayOptions.length > 0 ? displayOptions : [{ name: 'Option 1', value: '1' }, { name: 'Option 2', value: '2' }];
   const ph = placeholder || typeInfo.hint;
-  const pvInput = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] bg-white';
+  const pvInput = 'w-full border border-[var(--hairline)] rounded-xl px-3 py-2 text-[15px] text-[#111318] bg-white';
 
   return (
-    <div className="bg-white rounded-xl border border-black/[0.06] p-4">
-      <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">
+    <div className="bg-white rounded-2xl border border-[var(--hairline)] p-4">
+      <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">
         {name || 'Field name'}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
@@ -259,7 +260,7 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
       {type === 'Number' && <input type="number" className={pvInput} placeholder={ph || '0'} disabled />}
       {type === 'Phone' && <input className={pvInput} placeholder={ph || '+91 98765 43210'} disabled />}
       {type === 'Monetary' && <input type="number" className={pvInput} placeholder={ph || '₹ 0'} disabled />}
-      {type === 'Date' && <input type="date" className={pvInput} disabled />}
+      {type === 'Date' && <DatePicker value="" onChange={() => {}} placeholder={ph || 'Select date'} disabled className="w-full" />}
 
       {type === 'Dropdown' && (
         <select className={pvInput} disabled>
@@ -271,10 +272,10 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
       {type === 'Multi-select' && (
         <div className="flex flex-wrap gap-1.5 min-h-[40px] items-center">
           {previewOptions.map((o, i) => (
-            <span key={i} className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold border',
+            <span key={i} className={cn('px-2.5 py-1 rounded-full text-[12px] font-semibold border',
               displayOptions.length === 0
-                ? 'border-dashed border-[#c4b09e] text-[#c4b09e]'
-                : 'border-black/10 bg-white text-[#7a6b5c]'
+                ? 'border-dashed border-[#c3c8cf] text-[#c3c8cf]'
+                : 'border-[var(--hairline)] bg-white text-[#6b7280]'
             )}>{o.name}</span>
           ))}
         </div>
@@ -285,7 +286,7 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
           {previewOptions.map((o, i) => (
             <label key={i} className="flex items-center gap-2">
               <input type="radio" name="preview-radio" disabled className="w-4 h-4 accent-primary" />
-              <span className={cn('text-[14px]', displayOptions.length === 0 ? 'text-[#c4b09e] italic' : 'text-[#1c1410]')}>{o.name}</span>
+              <span className={cn('text-[15px]', displayOptions.length === 0 ? 'text-[#c3c8cf] italic' : 'text-[#111318]')}>{o.name}</span>
             </label>
           ))}
         </div>
@@ -296,7 +297,7 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
           {previewOptions.map((o, i) => (
             <label key={i} className="flex items-center gap-2">
               <input type="checkbox" disabled className="w-4 h-4 accent-primary" />
-              <span className={cn('text-[14px]', displayOptions.length === 0 ? 'text-[#c4b09e] italic' : 'text-[#1c1410]')}>{o.name}</span>
+              <span className={cn('text-[15px]', displayOptions.length === 0 ? 'text-[#c3c8cf] italic' : 'text-[#111318]')}>{o.name}</span>
             </label>
           ))}
         </div>
@@ -305,7 +306,7 @@ function PreviewRenderer({ name, type, placeholder, required, options }: {
       {type === 'Checkbox' && (
         <label className="flex items-center gap-2">
           <input type="checkbox" className="w-4 h-4 accent-primary" disabled />
-          <span className="text-[14px] text-[#1c1410]">Yes</span>
+          <span className="text-[15px] text-[#111318]">Yes</span>
         </label>
       )}
     </div>
@@ -355,21 +356,21 @@ function StandardFieldModal({ field, onClose, onSave }: {
       )}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-black/5">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--hairline)]">
           <div className="flex items-center gap-2.5">
             {step === 'detail' && !field && (
-              <button onClick={() => setStep('pick')} className="p-1 rounded-lg hover:bg-gray-100 text-[#7a6b5c]">
+              <button onClick={() => setStep('pick')} className="p-1 rounded-lg hover:bg-gray-100 text-[#6b7280]">
                 <ArrowLeft className="w-3.5 h-3.5" />
               </button>
             )}
             <div>
-              <h3 className="font-bold text-[#1c1410] text-[15px] leading-tight">
+              <h3 className="font-bold text-[#111318] text-[16px] leading-tight">
                 {field ? 'Edit Field' : step === 'pick' ? 'Choose field type' : `New Custom Field - ${type}`}
               </h3>
-              {step === 'pick' && <p className="text-[11px] text-[#7a6b5c] mt-0.5">Pick a data type that fits what you want to capture</p>}
+              {step === 'pick' && <p className="text-[12px] text-[#6b7280] mt-0.5">Pick a data type that fits what you want to capture</p>}
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-3.5 h-3.5" /></button>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-[#6b7280]"><X className="w-3.5 h-3.5" /></button>
         </div>
 
         {/* ── Step 1: Type picker (FieldSelector component) ── */}
@@ -383,12 +384,12 @@ function StandardFieldModal({ field, onClose, onSave }: {
         {step === 'detail' && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             <div>
-              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Name <span className="text-red-400">*</span></label>
+              <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">Name <span className="text-red-400">*</span></label>
               <input autoFocus className={inputCls} placeholder="e.g. Company Size" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
             <div>
-              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Placeholder <span className="text-[#b09e8d] font-normal">(optional)</span></label>
+              <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">Placeholder <span className="text-[#9ca3af] font-normal">(optional)</span></label>
               <input className={inputCls} placeholder="Hint shown inside the empty field" value={placeholder} onChange={(e) => setPlaceholder(e.target.value)} />
             </div>
 
@@ -398,16 +399,16 @@ function StandardFieldModal({ field, onClose, onSave }: {
 
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} className="w-4 h-4 accent-primary" />
-              <span className="text-[14px] text-[#1c1410]">Mark as required</span>
+              <span className="text-[15px] text-[#111318]">Mark as required</span>
             </label>
           </div>
         )}
 
         {/* Footer */}
         {step === 'detail' && (
-          <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-            <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
+          <div className="flex gap-2 px-6 py-4 border-t border-[var(--hairline)]">
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors">Cancel</button>
+            <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[15px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
               {field ? 'Save Changes' : 'Create Field'}
             </button>
           </div>
@@ -464,23 +465,23 @@ function AdditionalFieldModal({ pipelineId, field, onClose, onSave }: {
       )}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-black/5">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--hairline)]">
           <div className="flex items-center gap-2.5">
             {step === 'detail' && !field && (
-              <button onClick={() => setStep('pick')} className="p-1 rounded-lg hover:bg-gray-100 text-[#7a6b5c]">
+              <button onClick={() => setStep('pick')} className="p-1 rounded-lg hover:bg-gray-100 text-[#6b7280]">
                 <ArrowLeft className="w-3.5 h-3.5" />
               </button>
             )}
             <div>
-              <h3 className="font-bold text-[#1c1410] text-[15px] leading-tight">
+              <h3 className="font-bold text-[#111318] text-[16px] leading-tight">
                 {field ? 'Edit Question' : step === 'pick' ? 'Choose answer type' : `New Question - ${type}`}
               </h3>
-              <p className="text-[11px] text-[#7a6b5c] mt-0.5">
+              <p className="text-[12px] text-[#6b7280] mt-0.5">
                 {step === 'pick' ? 'Pick a data type that fits the answer you want' : 'Staff fills this while talking to the lead'}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-3.5 h-3.5" /></button>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-[#6b7280]"><X className="w-3.5 h-3.5" /></button>
         </div>
 
         {/* Step 1: Grouped type picker (reusing FieldSelector) */}
@@ -494,7 +495,7 @@ function AdditionalFieldModal({ pipelineId, field, onClose, onSave }: {
         {step === 'detail' && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             <div>
-              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Question <span className="text-red-400">*</span></label>
+              <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">Question <span className="text-red-400">*</span></label>
               <input autoFocus className={inputCls} placeholder="e.g. What is their budget range?" value={question} onChange={(e) => setQuestion(e.target.value)} />
             </div>
 
@@ -504,16 +505,16 @@ function AdditionalFieldModal({ pipelineId, field, onClose, onSave }: {
 
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} className="w-4 h-4 accent-primary" />
-              <span className="text-[14px] text-[#1c1410]">Required before moving to next stage</span>
+              <span className="text-[15px] text-[#111318]">Required before moving to next stage</span>
             </label>
           </div>
         )}
 
         {/* Footer */}
         {step === 'detail' && (
-          <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-            <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
+          <div className="flex gap-2 px-6 py-4 border-t border-[var(--hairline)]">
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors">Cancel</button>
+            <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[15px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
               {field ? 'Save Changes' : 'Add Question'}
             </button>
           </div>
@@ -547,37 +548,37 @@ function ValueModal({ value, onClose, onSave }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col">
 
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/5">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--hairline)]">
           <div>
-            <h3 className="font-bold text-[#1c1410] text-[17px]">{value ? 'Edit Value' : 'New Value'}</h3>
-            <p className="text-[13px] text-[#7a6b5c] mt-0.5">Use these as shortcuts in messages and templates</p>
+            <h3 className="font-bold text-[#111318] text-[17px]">{value ? 'Edit Value' : 'New Value'}</h3>
+            <p className="text-[14px] text-[#6b7280] mt-0.5">Use these as shortcuts in messages and templates</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#6b7280]"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Name <span className="text-red-400">*</span></label>
+            <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">Name <span className="text-red-400">*</span></label>
             <input autoFocus className={inputCls} placeholder="e.g. Google Meet link" value={name} onChange={(e) => setName(e.target.value)} />
-            {slug && <p className="text-[11px] text-[#b09e8d] mt-1.5">Unique key: <code className="bg-muted px-1.5 rounded text-primary font-semibold">{`{%${slug}%}`}</code></p>}
+            {slug && <p className="text-[12px] text-[#9ca3af] mt-1.5">Unique key: <code className="bg-muted px-1.5 rounded text-primary font-semibold">{`{%${slug}%}`}</code></p>}
           </div>
 
           <div>
-            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">Replace with <span className="text-red-400">*</span></label>
+            <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">Replace with <span className="text-red-400">*</span></label>
             <textarea
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white resize-none"
+              className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white resize-none"
               rows={3}
               placeholder="https://meet.google.com/xyz-abc-def"
               value={replaceWith}
               onChange={(e) => setReplaceWith(e.target.value)}
             />
-            <p className="text-[11px] text-[#b09e8d] mt-1.5">This text will replace the unique key when sending</p>
+            <p className="text-[12px] text-[#9ca3af] mt-1.5">This text will replace the unique key when sending</p>
           </div>
         </div>
 
-        <div className="flex gap-2 px-6 py-4 border-t border-black/5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors">Cancel</button>
-          <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
+        <div className="flex gap-2 px-6 py-4 border-t border-[var(--hairline)]">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors">Cancel</button>
+          <button onClick={handleSave} className="flex-1 py-2.5 rounded-lg text-[15px] font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
             {value ? 'Save' : 'Create Value'}
           </button>
         </div>
@@ -737,7 +738,7 @@ export default function FieldsPage() {
             else if (tab === 'tags') setTagCreating(true);
             else setValueModal({ open: true });
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
           style={shadowStyle}
         >
           <Plus className="w-4 h-4" />
@@ -751,12 +752,12 @@ export default function FieldsPage() {
       {/* Pipeline dropdown only on Additional tab */}
       {tab === 'additional' && (
         <div className="flex items-center pb-4">
-          <div className="flex items-center gap-2 bg-white border border-black/10 rounded-xl px-3 py-2" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-            <span className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wide">Pipeline</span>
+          <div className="flex items-center gap-2 bg-white border border-[var(--hairline)] rounded-xl px-3 py-2" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <span className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wide">Pipeline</span>
             <select
               value={selectedPipeline}
               onChange={(e) => setSelectedPipeline(e.target.value)}
-              className="text-[14px] font-semibold text-[#1c1410] outline-none bg-transparent cursor-pointer"
+              className="text-[15px] font-semibold text-[#111318] outline-none bg-transparent cursor-pointer"
             >
               <option value="all">All Pipelines</option>
               {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -778,10 +779,10 @@ export default function FieldsPage() {
                   key={g}
                   onClick={() => setActiveGroup(g)}
                   className={cn(
-                    'px-3.5 py-1.5 rounded-full text-[13px] font-semibold border transition-colors',
+                    'px-3.5 py-1.5 rounded-full text-[14px] font-semibold border transition-colors',
                     active
                       ? 'bg-primary text-white border-primary shadow-sm'
-                      : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/30 hover:text-primary'
+                      : 'bg-white text-[#6b7280] border-[var(--hairline)] hover:border-primary/30 hover:text-primary'
                   )}
                 >
                   {g}
@@ -794,27 +795,27 @@ export default function FieldsPage() {
 
           {/* System groups (Contact/Company/Calendar) */}
           {activeGroup !== 'Custom' && (
-            <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
               {/* Column headers */}
-              <div className="grid gap-3 px-4 py-2.5 border-b border-black/[0.06] bg-[var(--app-bg)] grid-cols-[1fr_1.3fr_80px]">
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider">Name</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider">Custom Value</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider text-right">Copy</span>
+              <div className="grid gap-3 px-4 py-2.5 border-b border-[var(--hairline)] bg-[var(--surface-2)] grid-cols-[1fr_1.3fr_80px]">
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Name</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Custom Value</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider text-right">Copy</span>
               </div>
 
               {filteredStandard.system.filter((f) => f.group === activeGroup).map((f) => {
                 const d = dataTypeInfo(f.type);
                 return (
-                  <div key={f.id} className="grid gap-3 px-4 py-2.5 border-b border-black/[0.04] last:border-b-0 items-center hover:bg-[var(--app-bg)] transition-colors grid-cols-[1fr_1.3fr_80px]">
+                  <div key={f.id} className="grid gap-3 px-4 py-2.5 border-b border-[var(--hairline)] last:border-b-0 items-center hover:bg-[var(--surface-2)] transition-colors grid-cols-[1fr_1.3fr_80px]">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-6 h-6 rounded-md bg-[var(--app-bg)] flex items-center justify-center text-[#7a6b5c] shrink-0">
+                      <div className="w-6 h-6 rounded-md bg-[var(--surface-2)] flex items-center justify-center text-[#6b7280] shrink-0">
                         <d.Icon className="w-3 h-3" />
                       </div>
-                      <p className="text-[14px] text-[#1c1410] font-medium truncate">{f.name}</p>
+                      <p className="text-[15px] text-[#111318] font-medium truncate">{f.name}</p>
                     </div>
-                    <code className="text-[11px] font-mono text-[#7a6b5c] bg-[var(--app-bg)] px-2 py-1 rounded truncate inline-block">{`{%${f.slug}%}`}</code>
+                    <code className="text-[12px] font-mono text-[#6b7280] bg-[var(--surface-2)] px-2 py-1 rounded truncate inline-block">{`{%${f.slug}%}`}</code>
                     <div className="flex items-center justify-end">
-                      <button onClick={() => copyToken(f.slug)} title="Copy unique key" className="w-7 h-7 rounded-lg hover:bg-[#faf0e8] flex items-center justify-center text-[#7a6b5c] hover:text-primary transition-colors">
+                      <button onClick={() => copyToken(f.slug)} title="Copy unique key" className="w-7 h-7 rounded-lg hover:bg-[#f1f3f5] flex items-center justify-center text-[#6b7280] hover:text-primary transition-colors">
                         <Copy className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -824,7 +825,7 @@ export default function FieldsPage() {
 
               {filteredStandard.system.filter((f) => f.group === activeGroup).length === 0 && (
                 <div className="py-10 text-center">
-                  <p className="text-[14px] text-[#b09e8d]">No fields in {activeGroup}</p>
+                  <p className="text-[15px] text-[#9ca3af]">No fields in {activeGroup}</p>
                 </div>
               )}
             </div>
@@ -832,19 +833,19 @@ export default function FieldsPage() {
 
           {/* Custom group */}
           {activeGroup === 'Custom' && (
-            <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
-              <div className="grid grid-cols-[1fr_1.3fr_90px_130px] gap-3 px-4 py-2.5 border-b border-black/[0.06] bg-[var(--app-bg)]">
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider">Field Name</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider">Unique Key</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider">Status</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider text-right">Actions</span>
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+              <div className="grid grid-cols-[1fr_1.3fr_90px_130px] gap-3 px-4 py-2.5 border-b border-[var(--hairline)] bg-[var(--surface-2)]">
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Field Name</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Unique Key</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Status</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider text-right">Actions</span>
               </div>
 
               {filteredStandard.custom.length === 0 ? (
                 <div className="py-12 text-center">
-                  <Plus className="w-6 h-6 mx-auto text-[#c4b09e] mb-2" />
-                  <p className="text-[14px] text-[#7a6b5c] mb-3">No custom fields yet</p>
-                  <button onClick={() => setStdModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[13px] font-bold text-white" style={shadowStyle}>
+                  <Plus className="w-6 h-6 mx-auto text-[#c3c8cf] mb-2" />
+                  <p className="text-[15px] text-[#6b7280] mb-3">No custom fields yet</p>
+                  <button onClick={() => setStdModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[14px] font-bold text-white" style={shadowStyle}>
                     + Create first field
                   </button>
                 </div>
@@ -852,17 +853,17 @@ export default function FieldsPage() {
                 filteredStandard.custom.map((f) => {
                   const d = dataTypeInfo(f.type);
                   return (
-                    <div key={f.id} className="group grid grid-cols-[1fr_1.3fr_90px_130px] gap-3 px-4 py-2.5 border-b border-black/[0.04] last:border-b-0 items-center hover:bg-[var(--app-bg)] transition-colors">
+                    <div key={f.id} className="group grid grid-cols-[1fr_1.3fr_90px_130px] gap-3 px-4 py-2.5 border-b border-[var(--hairline)] last:border-b-0 items-center hover:bg-[var(--surface-2)] transition-colors">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
                           <d.Icon className="w-3 h-3" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[14px] font-medium text-[#1c1410] truncate">{f.name}</p>
-                          <p className="text-[10px] text-[#b09e8d]">{f.type}{f.options && f.options.length > 0 ? ` · ${f.options.length} options` : ''}</p>
+                          <p className="text-[15px] font-medium text-[#111318] truncate">{f.name}</p>
+                          <p className="text-[11px] text-[#9ca3af]">{f.type}{f.options && f.options.length > 0 ? ` · ${f.options.length} options` : ''}</p>
                         </div>
                       </div>
-                      <code className="text-[11px] font-mono text-[#7a6b5c] bg-[var(--app-bg)] px-2 py-1 rounded truncate inline-block">{`{%${f.slug}%}`}</code>
+                      <code className="text-[12px] font-mono text-[#6b7280] bg-[var(--surface-2)] px-2 py-1 rounded truncate inline-block">{`{%${f.slug}%}`}</code>
                       <button
                         onClick={async () => {
                           const next = !(f.is_active !== false);
@@ -882,13 +883,13 @@ export default function FieldsPage() {
                         )} />
                       </button>
                       <div className="flex items-center gap-1 justify-end">
-                        <button onClick={() => setStdModal({ open: true, editing: f })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#7a6b5c] hover:text-primary transition-colors">
+                        <button onClick={() => setStdModal({ open: true, editing: f })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#6b7280] hover:text-primary transition-colors">
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => copyToken(f.slug)} title="Copy unique key" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#7a6b5c] hover:text-primary transition-colors">
+                        <button onClick={() => copyToken(f.slug)} title="Copy unique key" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#6b7280] hover:text-primary transition-colors">
                           <Copy className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => setDeleteConfirm({ type: 'custom', id: f.id, name: f.name })} title="Delete" className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#7a6b5c] hover:text-red-500 transition-colors">
+                        <button onClick={() => setDeleteConfirm({ type: 'custom', id: f.id, name: f.name })} title="Delete" className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#6b7280] hover:text-red-500 transition-colors">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -905,44 +906,44 @@ export default function FieldsPage() {
       {tab === 'additional' && (
         <div>
           {filteredPipelineQuestions.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-dashed border-black/10 py-12 text-center">
-              <Plus className="w-7 h-7 mx-auto text-[#c4b09e] mb-2" />
-              <p className="text-[15px] font-semibold text-[#1c1410]">No questions for this pipeline yet</p>
-              <p className="text-[13px] text-[#7a6b5c] mt-1 mb-3">Add questions staff should ask leads in this stage.</p>
-              <button onClick={() => setAddModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[13px] font-bold text-white" style={shadowStyle}>
+            <div className="bg-white rounded-2xl border border-dashed border-[var(--hairline)] py-12 text-center">
+              <Plus className="w-7 h-7 mx-auto text-[#c3c8cf] mb-2" />
+              <p className="text-[16px] font-semibold text-[#111318]">No questions for this pipeline yet</p>
+              <p className="text-[14px] text-[#6b7280] mt-1 mb-3">Add questions staff should ask leads in this stage.</p>
+              <button onClick={() => setAddModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[14px] font-bold text-white" style={shadowStyle}>
                 + Add first question
               </button>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
               {filteredPipelineQuestions.map((f, idx) => {
                 const d = dataTypeInfo(f.type);
                 return (
-                  <div key={f.id} className="group flex items-center gap-3 px-4 py-3.5 border-b border-black/[0.04] last:border-b-0 hover:bg-[var(--app-bg)] transition-colors">
-                    <GripVertical className="w-4 h-4 text-[#c4b09e] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 cursor-grab" />
-                    <span className="text-[11px] font-bold text-[#b09e8d] w-5 shrink-0">Q{idx + 1}</span>
+                  <div key={f.id} className="group flex items-center gap-3 px-4 py-3.5 border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--surface-2)] transition-colors">
+                    <GripVertical className="w-4 h-4 text-[#c3c8cf] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 cursor-grab" />
+                    <span className="text-[12px] font-bold text-[#9ca3af] w-5 shrink-0">Q{idx + 1}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold text-[#1c1410] flex items-center gap-2">
+                      <p className="text-[15px] font-semibold text-[#111318] flex items-center gap-2">
                         {f.question}{f.required && <span className="text-red-500">*</span>}
                         {f.pipelineId === 'all' && selectedPipeline !== 'all' && (
-                          <span className="text-[9px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-wider">All Pipelines</span>
+                          <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-wider">All Pipelines</span>
                         )}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="inline-flex items-center gap-1 text-[10px] text-[#7a6b5c] bg-[var(--app-bg)] px-1.5 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-[#6b7280] bg-[var(--surface-2)] px-1.5 py-0.5 rounded">
                           <d.Icon className="w-2.5 h-2.5" /> {f.type}
                         </span>
-                        {f.options && f.options.length > 0 && <span className="text-[10px] text-[#b09e8d]">{f.options.length} options</span>}
-                        <button onClick={() => copyToken(`custom.${f.slug}`)} className="text-[10px] font-mono text-[#b09e8d] hover:text-primary transition-colors">
+                        {f.options && f.options.length > 0 && <span className="text-[11px] text-[#9ca3af]">{f.options.length} options</span>}
+                        <button onClick={() => copyToken(`custom.${f.slug}`)} className="text-[11px] font-mono text-[#9ca3af] hover:text-primary transition-colors">
                           {`{%custom.${f.slug}%}`}
                         </button>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <button onClick={() => setAddModal({ open: true, editing: f })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#7a6b5c] hover:text-primary transition-colors">
+                      <button onClick={() => setAddModal({ open: true, editing: f })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#6b7280] hover:text-primary transition-colors">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => setDeleteConfirm({ type: 'question', id: f.id, name: f.question })} title="Delete" className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#7a6b5c] hover:text-red-500 transition-colors">
+                      <button onClick={() => setDeleteConfirm({ type: 'question', id: f.id, name: f.question })} title="Delete" className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#6b7280] hover:text-red-500 transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -972,7 +973,7 @@ export default function FieldsPage() {
                     toast.success(`Copied ${copied.length} questions from ${other.name}`);
                   }).catch(() => toast.error('Failed to copy questions'));
                 }}
-                className="text-[13px] text-primary font-semibold hover:underline flex items-center gap-1 mx-auto"
+                className="text-[14px] text-primary font-semibold hover:underline flex items-center gap-1 mx-auto"
               >
                 <Copy className="w-3 h-3" /> Copy questions from another pipeline
               </button>
@@ -985,38 +986,38 @@ export default function FieldsPage() {
       {tab === 'values' && (
         <div>
           {filteredValues.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-dashed border-black/10 py-12 text-center">
-              <Plus className="w-7 h-7 mx-auto text-[#c4b09e] mb-2" />
-              <p className="text-[15px] font-semibold text-[#1c1410]">No values yet</p>
-              <p className="text-[13px] text-[#7a6b5c] mt-1 mb-3">Create shortcuts for things you type often.</p>
-              <button onClick={() => setValueModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[13px] font-bold text-white" style={shadowStyle}>
+            <div className="bg-white rounded-2xl border border-dashed border-[var(--hairline)] py-12 text-center">
+              <Plus className="w-7 h-7 mx-auto text-[#c3c8cf] mb-2" />
+              <p className="text-[16px] font-semibold text-[#111318]">No values yet</p>
+              <p className="text-[14px] text-[#6b7280] mt-1 mb-3">Create shortcuts for things you type often.</p>
+              <button onClick={() => setValueModal({ open: true })} className="px-4 py-1.5 rounded-lg text-[14px] font-bold text-white" style={shadowStyle}>
                 + Create first value
               </button>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
               {/* Table header */}
-              <div className="hidden sm:grid grid-cols-[1fr_200px_1fr_100px] gap-3 px-4 py-2.5 border-b border-black/[0.04] bg-[var(--app-bg)]">
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider">Name</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider">Unique Key</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider">Replaces with</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider text-right">Actions</span>
+              <div className="hidden sm:grid grid-cols-[1fr_200px_1fr_100px] gap-3 px-4 py-2.5 border-b border-[var(--hairline)] bg-[var(--surface-2)]">
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Name</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Unique Key</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Replaces with</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider text-right">Actions</span>
               </div>
 
               {filteredValues.map((v) => {
                 const token = slugify(v.name);
                 return (
-                <div key={v.id} className="group grid grid-cols-1 sm:grid-cols-[1fr_200px_1fr_100px] gap-3 px-4 py-3 border-b border-black/[0.04] last:border-b-0 hover:bg-[var(--app-bg)] transition-colors items-center">
-                  <p className="text-[14px] text-[#1c1410] font-medium truncate">{v.name}</p>
+                <div key={v.id} className="group grid grid-cols-1 sm:grid-cols-[1fr_200px_1fr_100px] gap-3 px-4 py-3 border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--surface-2)] transition-colors items-center">
+                  <p className="text-[15px] text-[#111318] font-medium truncate">{v.name}</p>
                   <button onClick={() => copyToken(token)} className="text-left">
-                    <code className="text-[11px] font-mono text-primary bg-primary/10 hover:bg-primary/15 px-2 py-1 rounded inline-block transition-colors">{`{%${token}%}`}</code>
+                    <code className="text-[12px] font-mono text-primary bg-primary/10 hover:bg-primary/15 px-2 py-1 rounded inline-block transition-colors">{`{%${token}%}`}</code>
                   </button>
-                  <p className="text-[13px] text-[#7a6b5c] truncate">{v.replaceWith}</p>
+                  <p className="text-[14px] text-[#6b7280] truncate">{v.replaceWith}</p>
                   <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setValueModal({ open: true, editing: v })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#7a6b5c] hover:text-primary transition-colors">
+                    <button onClick={() => setValueModal({ open: true, editing: v })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#6b7280] hover:text-primary transition-colors">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => setDeleteConfirm({ type: 'value', id: v.id, name: v.name })} title="Delete" className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#7a6b5c] hover:text-red-500 transition-colors">
+                    <button onClick={() => setDeleteConfirm({ type: 'value', id: v.id, name: v.name })} title="Delete" className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#6b7280] hover:text-red-500 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -1032,35 +1033,35 @@ export default function FieldsPage() {
       {tab === 'tags' && (
         <div>
           {storeTags.length === 0 && !tagCreating ? (
-            <div className="bg-white rounded-2xl border border-dashed border-black/10 py-12 text-center">
-              <Tag className="w-7 h-7 mx-auto text-[#c4b09e] mb-2" />
-              <p className="text-[15px] font-semibold text-[#1c1410]">No tags yet</p>
-              <p className="text-[13px] text-[#7a6b5c] mt-1 mb-3">Create tags to organize and categorize your leads.</p>
+            <div className="bg-white rounded-2xl border border-dashed border-[var(--hairline)] py-12 text-center">
+              <Tag className="w-7 h-7 mx-auto text-[#c3c8cf] mb-2" />
+              <p className="text-[16px] font-semibold text-[#111318]">No tags yet</p>
+              <p className="text-[14px] text-[#6b7280] mt-1 mb-3">Create tags to organize and categorize your leads.</p>
               {canManageTags && (
-                <button onClick={() => setTagCreating(true)} className="px-4 py-1.5 rounded-lg text-[13px] font-bold text-white" style={shadowStyle}>
+                <button onClick={() => setTagCreating(true)} className="px-4 py-1.5 rounded-lg text-[14px] font-bold text-white" style={shadowStyle}>
                   + Create first tag
                 </button>
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
               {/* Table header */}
-              <div className="hidden sm:grid grid-cols-[auto_1fr_120px_120px_100px] gap-3 px-4 py-2.5 border-b border-black/[0.04] bg-[var(--app-bg)]">
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider w-8">Color</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider">Tag Name</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider text-center">Leads</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider text-center">Created</span>
-                <span className="text-[10px] font-bold text-[#7a6b5c] uppercase tracking-wider text-right">Actions</span>
+              <div className="hidden sm:grid grid-cols-[auto_1fr_120px_120px_100px] gap-3 px-4 py-2.5 border-b border-[var(--hairline)] bg-[var(--surface-2)]">
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider w-8">Color</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider">Tag Name</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider text-center">Leads</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider text-center">Created</span>
+                <span className="text-[11px] font-bold text-[#6b7280] uppercase tracking-wider text-right">Actions</span>
               </div>
 
               {/* New tag inline row */}
               {tagCreating && (
-                <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_120px_120px_100px] gap-3 px-4 py-3 border-b border-black/[0.04] bg-amber-50/40 items-center">
+                <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_120px_120px_100px] gap-3 px-4 py-3 border-b border-[var(--hairline)] bg-amber-50/40 items-center">
                   <input
                     type="color"
                     value={tagNewColor}
                     onChange={(e) => setTagNewColor(e.target.value)}
-                    className="w-8 h-8 rounded-lg border border-black/10 cursor-pointer p-0.5"
+                    className="w-8 h-8 rounded-lg border border-[var(--hairline)] cursor-pointer p-0.5"
                   />
                   <input
                     autoFocus
@@ -1084,7 +1085,7 @@ export default function FieldsPage() {
                       }
                     }}
                     placeholder="Tag name..."
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                    className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white"
                   />
                   <span />
                   <span />
@@ -1107,7 +1108,7 @@ export default function FieldsPage() {
                     ><Check className="w-3.5 h-3.5" /></button>
                     <button
                       onClick={() => { setTagCreating(false); setTagNewName(''); setTagNewColor('#94a3b8'); }}
-                      className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#7a6b5c] hover:text-red-500 transition-colors"
+                      className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#6b7280] hover:text-red-500 transition-colors"
                       title="Cancel"
                     ><X className="w-3.5 h-3.5" /></button>
                   </div>
@@ -1118,14 +1119,14 @@ export default function FieldsPage() {
               {(search ? storeTags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase())) : storeTags).map((t) => {
                 const isEditing = tagEdit?.id === t.id;
                 return (
-                  <div key={t.id} className="group grid grid-cols-1 sm:grid-cols-[auto_1fr_120px_120px_100px] gap-3 px-4 py-3 border-b border-black/[0.04] last:border-b-0 hover:bg-[var(--app-bg)] transition-colors items-center">
+                  <div key={t.id} className="group grid grid-cols-1 sm:grid-cols-[auto_1fr_120px_120px_100px] gap-3 px-4 py-3 border-b border-[var(--hairline)] last:border-b-0 hover:bg-[var(--surface-2)] transition-colors items-center">
                     {isEditing ? (
                       <>
                         <input
                           type="color"
                           value={tagEdit!.color}
                           onChange={(e) => setTagEdit({ ...tagEdit!, color: e.target.value })}
-                          className="w-8 h-8 rounded-lg border border-black/10 cursor-pointer p-0.5"
+                          className="w-8 h-8 rounded-lg border border-[var(--hairline)] cursor-pointer p-0.5"
                         />
                         <input
                           autoFocus
@@ -1143,9 +1144,9 @@ export default function FieldsPage() {
                               finally { setTagSaving(false); }
                             } else if (e.key === 'Escape') { setTagEdit(null); }
                           }}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white"
+                          className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white"
                         />
-                        <span className="text-[14px] text-[#7a6b5c] text-center">{t.count}</span>
+                        <span className="text-[15px] text-[#6b7280] text-center">{t.count}</span>
                         <span />
                         <div className="flex items-center gap-1 justify-end">
                           <button
@@ -1162,28 +1163,28 @@ export default function FieldsPage() {
                             }}
                             className="w-7 h-7 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary disabled:opacity-40 transition-colors"
                           ><Check className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => setTagEdit(null)} className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#7a6b5c] hover:text-red-500 transition-colors">
+                          <button onClick={() => setTagEdit(null)} className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#6b7280] hover:text-red-500 transition-colors">
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </>
                     ) : (
                       <>
-                        <div className="w-8 h-8 rounded-lg border border-black/10 shrink-0" style={{ backgroundColor: t.color ?? '#94a3b8' }} />
+                        <div className="w-8 h-8 rounded-lg border border-[var(--hairline)] shrink-0" style={{ backgroundColor: t.color ?? '#94a3b8' }} />
                         <div className="flex items-center gap-2">
-                          <span className="text-[14px] text-[#1c1410] font-medium">{t.name}</span>
+                          <span className="text-[15px] text-[#111318] font-medium">{t.name}</span>
                         </div>
-                        <span className="text-[14px] text-[#7a6b5c] text-center">{t.count}</span>
-                        <span className="text-[13px] text-[#b09e8d] text-center">-</span>
+                        <span className="text-[15px] text-[#6b7280] text-center">{t.count}</span>
+                        <span className="text-[14px] text-[#9ca3af] text-center">-</span>
                         {canManageTags && (
                           <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => setTagEdit({ id: t.id, name: t.name, color: t.color })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#7a6b5c] hover:text-primary transition-colors">
+                            <button onClick={() => setTagEdit({ id: t.id, name: t.name, color: t.color })} title="Edit" className="w-7 h-7 rounded-lg hover:bg-white flex items-center justify-center text-[#6b7280] hover:text-primary transition-colors">
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => setDeleteConfirm({ type: 'tag' as any, id: t.id, name: t.name })}
                               title="Delete"
-                              className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#7a6b5c] hover:text-red-500 transition-colors"
+                              className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#6b7280] hover:text-red-500 transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1330,23 +1331,23 @@ export default function FieldsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
             <div className="px-6 pt-6 pb-4">
-              <h3 className="text-[15px] font-bold text-[#1c1410] mb-2">Delete Field</h3>
-              <p className="text-[14px] text-[#7a6b5c]">
-                Are you sure you want to delete <span className="font-semibold text-[#1c1410]">"{deleteConfirm.name}"</span>? This cannot be undone.
+              <h3 className="text-[16px] font-bold text-[#111318] mb-2">Delete Field</h3>
+              <p className="text-[15px] text-[#6b7280]">
+                Are you sure you want to delete <span className="font-semibold text-[#111318]">"{deleteConfirm.name}"</span>? This cannot be undone.
               </p>
             </div>
             <div className="flex gap-2 px-6 py-4">
               <button
                 onClick={() => setDeleteConfirm(null)}
                 disabled={deleting}
-                className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] bg-[#f0ebe5] hover:bg-[#e8ddd4] transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] bg-[#eef1f4] hover:bg-[#e5e7eb] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirmed}
                 disabled={deleting}
-                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-60 transition-colors"
               >
                 {deleting ? 'Deleting…' : 'Yes, Delete'}
               </button>

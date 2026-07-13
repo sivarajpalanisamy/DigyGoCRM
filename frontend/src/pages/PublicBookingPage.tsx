@@ -129,20 +129,20 @@ function StepBar({ step }: { step: 0 | 1 | 2 }) {
               <div className={cn(
                 'w-7 h-7 rounded-full flex items-center justify-center transition-all',
                 done    ? 'bg-green-500' :
-                active  ? 'text-white' : 'bg-[#f0ebe5]'
+                active  ? 'text-white' : 'bg-[#eef1f4]'
               )} style={active ? gradStyle : {}}>
                 {done
                   ? <CheckCircle2 className="w-4 h-4 text-white" />
-                  : <Icon className={cn('w-3.5 h-3.5', pending ? 'text-[#b09e8d]' : 'text-white')} />
+                  : <Icon className={cn('w-3.5 h-3.5', pending ? 'text-[#9ca3af]' : 'text-white')} />
                 }
               </div>
-              <span className={cn('text-[13px] font-semibold hidden sm:block',
+              <span className={cn('text-[14px] font-semibold hidden sm:block',
                 active  ? 'text-[var(--brand-dark)]' :
-                done    ? 'text-green-600'  : 'text-[#b09e8d]'
+                done    ? 'text-green-600'  : 'text-[#9ca3af]'
               )}>{label}</span>
             </div>
             {i < 2 && (
-              <div className={cn('flex-1 h-[2px] mx-2', done ? 'bg-green-300' : 'bg-[#ede5de]')} />
+              <div className={cn('flex-1 h-[2px] mx-2', done ? 'bg-green-300' : 'bg-[#eceef1]')} />
             )}
           </React.Fragment>
         );
@@ -255,8 +255,8 @@ export default function PublicBookingPage() {
       <div className="w-16 h-16 rounded-2xl bg-[var(--accent-tint)] flex items-center justify-center">
         <CalendarDays className="w-8 h-8 text-[var(--brand-dark)]" />
       </div>
-      <h2 className="text-[20px] font-extrabold text-[#1c1410]">Calendar not found</h2>
-      <p className="text-[15px] text-[#7a6b5c] text-center max-w-xs">
+      <h2 className="text-[20px] font-extrabold text-[#111318]">Calendar not found</h2>
+      <p className="text-[16px] text-[#6b7280] text-center max-w-xs">
         This booking link may be inactive or the URL is incorrect.
       </p>
     </div>
@@ -267,26 +267,25 @@ export default function PublicBookingPage() {
   // ── Confirmation screen ────────────────────────────────────────────────────
   if (confirmed) return (
     <div className="min-h-screen bg-[var(--app-bg)] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-black/5 p-10 max-w-md w-full text-center"
-        style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.10)' }}>
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-10 max-w-md w-full text-center">
         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-5">
           <CheckCircle2 className="w-8 h-8 text-green-500" />
         </div>
-        <h2 className="text-[22px] font-extrabold text-[#1c1410] mb-1">You're booked!</h2>
-        <p className="text-[14px] text-[#7a6b5c] mb-7">
+        <h2 className="text-[22px] font-extrabold text-[#111318] mb-1">You're booked!</h2>
+        <p className="text-[15px] text-[#6b7280] mb-7">
           A confirmation has been recorded. See you soon!
         </p>
         <div className="bg-[var(--app-bg)] rounded-2xl p-5 text-left space-y-3 mb-6">
-          <div className="flex items-center gap-3 text-[14px] text-[#1c1410]">
+          <div className="flex items-center gap-3 text-[15px] text-[#111318]">
             <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
               <CalendarDays className="w-4 h-4 text-[var(--brand-dark)]" />
             </div>
             <div>
               <p className="font-bold">{selDate ? format(selDate, 'EEEE, MMMM d, yyyy') : ''}</p>
-              <p className="text-[13px] text-[#7a6b5c]">{selTime ? fmt12(selTime) : ''} · {et.duration} min</p>
+              <p className="text-[14px] text-[#6b7280]">{selTime ? fmt12(selTime) : ''} · {et.duration} min</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-[14px] text-[#1c1410]">
+          <div className="flex items-center gap-3 text-[15px] text-[#111318]">
             <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
               <TypeIcon className="w-4 h-4 text-[var(--brand-dark)]" />
             </div>
@@ -294,7 +293,7 @@ export default function PublicBookingPage() {
           </div>
           {et.meeting_link && (
             <a href={et.meeting_link} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-3 text-[14px] text-blue-500 hover:text-blue-600 transition-colors">
+              className="flex items-center gap-3 text-[15px] text-blue-500 hover:text-blue-600 transition-colors">
               <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
                 <Video className="w-4 h-4" />
               </div>
@@ -303,7 +302,7 @@ export default function PublicBookingPage() {
           )}
         </div>
         {redirectUrl && (
-          <p className="text-[13px] text-[#9c8f84]">Redirecting you shortly…</p>
+          <p className="text-[14px] text-[#6b7280]">Redirecting you shortly…</p>
         )}
       </div>
     </div>
@@ -311,7 +310,7 @@ export default function PublicBookingPage() {
 
   // ── Main booking page ──────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fdf9f7] via-white to-[var(--app-bg)]">
+    <div className="min-h-screen bg-gradient-to-br from-[#fcfcfd] via-white to-[var(--app-bg)]">
 
       {/* Top bar */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-black/[0.06] sticky top-0 z-20"
@@ -320,7 +319,7 @@ export default function PublicBookingPage() {
           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0" style={gradStyle}>
             <CalendarDays className="w-4 h-4" />
           </div>
-          <span className="text-[15px] font-bold text-[#1c1410]">Book an Appointment</span>
+          <span className="text-[16px] font-bold text-[#111318]">Book an Appointment</span>
         </div>
       </header>
 
@@ -329,7 +328,7 @@ export default function PublicBookingPage() {
 
           {/* ── Left: Event Info ──────────────────────────────────────────── */}
           <div className="md:sticky md:top-20">
-            <div className="bg-white rounded-2xl overflow-hidden border border-black/[0.06]"
+            <div className="bg-white rounded-2xl overflow-hidden border border-[var(--hairline)]"
               style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.07)' }}>
 
               {/* Gradient header */}
@@ -346,7 +345,7 @@ export default function PublicBookingPage() {
               {/* Info body */}
               <div className="px-6 py-5 space-y-5">
                 {et.description && (
-                  <p className="text-[14px] text-[#7a6b5c] leading-relaxed"
+                  <p className="text-[15px] text-[#6b7280] leading-relaxed"
                     style={{ display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {et.description}
                   </p>
@@ -357,35 +356,35 @@ export default function PublicBookingPage() {
                     <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
                       <Clock className="w-4 h-4 text-[var(--brand-dark)]" />
                     </div>
-                    <span className="text-[14px] text-[#5c5245] font-medium">{et.duration} minutes</span>
+                    <span className="text-[15px] text-[#4a4f57] font-medium">{et.duration} minutes</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
                       <TypeIcon className="w-4 h-4 text-[var(--brand-dark)]" />
                     </div>
-                    <span className="text-[14px] text-[#5c5245] font-medium">{et.meeting_type}</span>
+                    <span className="text-[15px] text-[#4a4f57] font-medium">{et.meeting_type}</span>
                   </div>
                   {et.meeting_link && (
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
                         <Video className="w-4 h-4 text-[var(--brand-dark)]" />
                       </div>
-                      <span className="text-[14px] text-[#5c5245] font-medium">Meeting link provided</span>
+                      <span className="text-[15px] text-[#4a4f57] font-medium">Meeting link provided</span>
                     </div>
                   )}
                 </div>
 
                 {/* Selected slot summary - appears dynamically */}
                 {selDate && selTime && (
-                  <div className="pt-4 border-t border-[#f0ebe5]">
-                    <p className="text-[10px] font-extrabold text-[var(--brand-dark)] uppercase tracking-widest mb-2.5">
+                  <div className="pt-4 border-t border-[#eef1f4]">
+                    <p className="text-[11px] font-extrabold text-[var(--brand-dark)] uppercase tracking-widest mb-2.5">
                       Your Selection
                     </p>
                     <div className="rounded-xl border border-orange-200 bg-orange-50 p-3.5 space-y-1">
-                      <p className="text-[14px] font-bold text-[#1c1410]">
+                      <p className="text-[15px] font-bold text-[#111318]">
                         {format(selDate, 'EEEE, MMMM d, yyyy')}
                       </p>
-                      <p className="text-[13px] text-[#7a6b5c]">
+                      <p className="text-[14px] text-[#6b7280]">
                         {fmt12(selTime)} · {et.duration} min
                       </p>
                     </div>
@@ -402,26 +401,26 @@ export default function PublicBookingPage() {
             <StepBar step={step} />
 
             {/* Calendar + slots - side-by-side inside one card */}
-            <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden"
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] overflow-hidden"
               style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.07)' }}>
               <div className="flex flex-col sm:flex-row">
 
                 {/* ── Calendar (left) ── */}
                 <div className={cn(
                   'flex-1 min-w-0 px-5 pt-5 pb-4 transition-all duration-300',
-                  selDate && 'sm:border-r border-[#f0ebe5]'
+                  selDate && 'sm:border-r border-[#eef1f4]'
                 )}>
                   {/* Month nav */}
                   <div className="flex items-center justify-between mb-4">
                     <button onClick={() => setCalMonth((m) => subMonths(m, 1))}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors">
+                      className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors">
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <p className="text-[15px] font-extrabold text-[#1c1410]">
+                    <p className="text-[16px] font-extrabold text-[#111318]">
                       {format(calMonth, 'MMMM yyyy')}
                     </p>
                     <button onClick={() => setCalMonth((m) => addMonths(m, 1))}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors">
+                      className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors">
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -429,7 +428,7 @@ export default function PublicBookingPage() {
                   {/* Day headers */}
                   <div className="grid grid-cols-7 mb-1">
                     {['Su','Mo','Tu','We','Th','Fr','Sa'].map((d) => (
-                      <div key={d} className="text-center text-[10px] font-bold text-[#c4b09e] py-1 tracking-wide">{d}</div>
+                      <div key={d} className="text-center text-[11px] font-bold text-[#c3c8cf] py-1 tracking-wide">{d}</div>
                     ))}
                   </div>
 
@@ -446,16 +445,16 @@ export default function PublicBookingPage() {
                             disabled={!hasSlots}
                             onClick={() => { setSelDate(day); setSelTime(null); }}
                             className={cn(
-                              'w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold transition-all duration-150',
+                              'w-8 h-8 rounded-full flex items-center justify-center text-[14px] font-semibold transition-all duration-150',
                               isSel
                                 ? 'text-white scale-110 shadow-md'
                                 : todayDay && hasSlots
                                   ? 'ring-2 ring-primary/40 text-[var(--brand-dark)] font-bold hover:scale-105'
                                   : hasSlots
-                                    ? 'text-[#1c1410] hover:bg-[var(--accent-tint)] hover:scale-105 cursor-pointer'
+                                    ? 'text-[#111318] hover:bg-[var(--accent-tint)] hover:scale-105 cursor-pointer'
                                     : inMonth
-                                      ? 'text-[#d4c4b8] cursor-not-allowed'
-                                      : 'text-[#ede5de] cursor-default',
+                                      ? 'text-[#e5e7eb] cursor-not-allowed'
+                                      : 'text-[#eceef1] cursor-default',
                             )}
                             style={isSel ? gradShadow : {}}>
                             {format(day, 'd')}
@@ -471,13 +470,13 @@ export default function PublicBookingPage() {
 
                 {/* ── Slots panel (right) - slides in when date is picked ── */}
                 {selDate && (
-                  <div className="w-full sm:w-52 shrink-0 flex flex-col border-t sm:border-t-0 border-[#f0ebe5]">
+                  <div className="w-full sm:w-52 shrink-0 flex flex-col border-t sm:border-t-0 border-[#eef1f4]">
                     {/* Slots header */}
-                    <div className="px-4 pt-4 pb-3 border-b border-[#f0ebe5]">
-                      <p className="text-[14px] font-extrabold text-[#1c1410] leading-tight">
+                    <div className="px-4 pt-4 pb-3 border-b border-[#eef1f4]">
+                      <p className="text-[15px] font-extrabold text-[#111318] leading-tight">
                         {format(selDate, 'EEE, MMM d')}
                       </p>
-                      <p className="text-[11px] text-[#9e8e7e] mt-0.5">
+                      <p className="text-[12px] text-[#8b929c] mt-0.5">
                         {slotsLoading
                           ? 'Loading…'
                           : availableSlots.length > 0
@@ -495,20 +494,20 @@ export default function PublicBookingPage() {
                         </div>
                       ) : availableSlots.length === 0 ? (
                         <div className="text-center py-6">
-                          <Clock className="w-7 h-7 text-[#c4b09e] mx-auto mb-2" />
-                          <p className="text-[13px] text-[#7a6b5c] font-medium">
+                          <Clock className="w-7 h-7 text-[#c3c8cf] mx-auto mb-2" />
+                          <p className="text-[14px] text-[#6b7280] font-medium">
                             {rawSlots.length > 0 ? 'All times are booked' : 'No slots available'}
                           </p>
-                          <p className="text-[11px] text-[#b09e8d] mt-0.5">Try another date</p>
+                          <p className="text-[12px] text-[#9ca3af] mt-0.5">Try another date</p>
                         </div>
                       ) : (
                         availableSlots.map((t) => (
                           <button key={t} onClick={() => setSelTime(t)}
                             className={cn(
-                              'w-full py-2.5 rounded-xl text-[14px] font-semibold border transition-all duration-150',
+                              'w-full py-2.5 rounded-xl text-[15px] font-semibold border transition-all duration-150',
                               selTime === t
                                 ? 'text-white border-transparent shadow-sm scale-[1.02]'
-                                : 'text-[#1c1410] border-gray-200 hover:border-orange-300 hover:bg-orange-50 bg-white'
+                                : 'text-[#111318] border-[var(--hairline)] hover:border-orange-300 hover:bg-orange-50 bg-white'
                             )}
                             style={selTime === t ? gradShadow : {}}>
                             {fmt12(t)}
@@ -518,10 +517,10 @@ export default function PublicBookingPage() {
                     </div>
 
                     {/* Change date link */}
-                    <div className="px-3 pb-3 pt-2 border-t border-[#f0ebe5]">
+                    <div className="px-3 pb-3 pt-2 border-t border-[#eef1f4]">
                       <button
                         onClick={() => { setSelDate(null); setSelTime(null); }}
-                        className="w-full flex items-center justify-center gap-1.5 text-[11px] text-[#9e8e7e] hover:text-[var(--brand-dark)] transition-colors font-medium py-1.5">
+                        className="w-full flex items-center justify-center gap-1.5 text-[12px] text-[#8b929c] hover:text-[var(--brand-dark)] transition-colors font-medium py-1.5">
                         <ArrowLeft className="w-3 h-3" /> Change date
                       </button>
                     </div>
@@ -533,20 +532,20 @@ export default function PublicBookingPage() {
 
             {/* ── Details form - appears once slot is selected ── */}
             {selDate && selTime && (
-              <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden"
+              <div className="bg-white rounded-2xl border border-[var(--hairline)] overflow-hidden"
                 style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.07)' }}>
 
                 {/* Form header */}
                 <div className="px-6 pt-5 pb-4 border-b border-[var(--accent-tint)] flex items-center justify-between">
                   <div>
-                    <p className="text-[15px] font-extrabold text-[#1c1410]">Your details</p>
-                    <p className="text-[13px] text-[#9e8e7e] mt-0.5">
+                    <p className="text-[16px] font-extrabold text-[#111318]">Your details</p>
+                    <p className="text-[14px] text-[#8b929c] mt-0.5">
                       {format(selDate, 'EEE, MMM d')} at {fmt12(selTime)}
                     </p>
                   </div>
                   <button
                     onClick={() => setSelTime(null)}
-                    className="flex items-center gap-1.5 text-[13px] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors font-medium">
+                    className="flex items-center gap-1.5 text-[14px] text-[#6b7280] hover:text-[var(--brand-dark)] transition-colors font-medium">
                     <ArrowLeft className="w-3.5 h-3.5" /> Change time
                   </button>
                 </div>
@@ -562,18 +561,18 @@ export default function PublicBookingPage() {
                     const placeholder = f.placeholder || `Enter your ${f.label.toLowerCase()}`;
                     return (
                       <div key={f.id}>
-                        <label className="text-[11px] font-bold text-[#5c5245] uppercase tracking-wider block mb-1.5">
+                        <label className="text-[12px] font-bold text-[#4a4f57] uppercase tracking-wider block mb-1.5">
                           {f.label}{f.required && <span className="text-red-500 ml-0.5">*</span>}
                         </label>
                         <div className="relative">
-                          {!isArea && <FieldIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#b09e8d]" />}
+                          {!isArea && <FieldIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af]" />}
                           {isArea ? (
                             <textarea
                               value={formData[f.id] ?? ''}
                               onChange={(e) => setFormData((p) => ({ ...p, [f.id]: e.target.value }))}
                               placeholder={placeholder}
                               rows={3}
-                              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-[14px] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all resize-none"
+                              className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2.5 text-[15px] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all resize-none"
                             />
                           ) : (
                             <input
@@ -581,7 +580,7 @@ export default function PublicBookingPage() {
                               value={formData[f.id] ?? ''}
                               onChange={(e) => setFormData((p) => ({ ...p, [f.id]: e.target.value }))}
                               placeholder={placeholder}
-                              className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-[14px] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
+                              className="w-full border border-[var(--hairline)] rounded-xl pl-9 pr-3 py-2.5 text-[15px] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
                             />
                           )}
                         </div>
@@ -591,14 +590,14 @@ export default function PublicBookingPage() {
 
                   {/* Error */}
                   {formError && (
-                    <p className="text-[13px] text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                    <p className="text-[14px] text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
                       {formError}
                     </p>
                   )}
 
                   {/* Submit */}
                   <button onClick={handleSubmit} disabled={submitting}
-                    className="w-full py-3 rounded-xl text-[15px] font-bold text-white disabled:opacity-60 transition-all hover:-translate-y-0.5 mt-2"
+                    className="w-full py-3 rounded-xl text-[16px] font-bold text-white disabled:opacity-60 transition-all hover:-translate-y-0.5 mt-2"
                     style={gradShadow}>
                     {submitting ? (
                       <span className="flex items-center justify-center gap-2">

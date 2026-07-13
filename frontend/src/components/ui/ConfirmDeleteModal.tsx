@@ -43,13 +43,13 @@ export function ConfirmDeleteModal({
           <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-5 h-5 text-red-500" />
           </div>
-          <h3 className="text-[15px] font-bold text-[#1c1410]">{title}</h3>
+          <h3 className="text-[16px] font-bold text-[#111318]">{title}</h3>
         </div>
 
-        <p className="text-[14px] text-[#7a6b5c] mb-4">{message}</p>
+        <p className="text-[15px] text-[#6b7280] mb-4">{message}</p>
 
         <div className="mb-5">
-          <p className="text-[13px] font-semibold text-[#1c1410] mb-1.5">
+          <p className="text-[14px] font-semibold text-[#111318] mb-1.5">
             Type <span className="font-mono bg-red-50 text-red-600 px-1.5 py-0.5 rounded">{confirmWord}</span> to confirm
           </p>
           <input
@@ -59,7 +59,7 @@ export function ConfirmDeleteModal({
             onChange={(e) => setTyped(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && matched) handleConfirm(); }}
             placeholder={confirmWord}
-            className="w-full border border-black/10 rounded-lg px-3 py-2.5 text-[14px] outline-none focus:border-red-400 transition-colors font-mono tracking-wider"
+            className="w-full border border-black/10 rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-red-400 transition-colors font-mono tracking-wider"
             disabled={loading}
             autoComplete="off"
             spellCheck={false}
@@ -70,14 +70,14 @@ export function ConfirmDeleteModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 py-2.5 rounded-xl border border-black/10 text-[14px] font-semibold text-[#7a6b5c] hover:bg-[var(--app-bg)] transition-colors disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-xl border border-black/10 text-[15px] font-semibold text-[#6b7280] hover:bg-[var(--app-bg)] transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={!matched || loading}
-            className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-[14px] font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed enabled:hover:bg-red-600"
+            className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-[15px] font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed enabled:hover:bg-red-600"
           >
             {loading ? 'Deleting...' : confirmLabel}
           </button>

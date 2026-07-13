@@ -29,15 +29,15 @@ const TIMEZONES = ['Asia/Kolkata (IST +5:30)', 'Asia/Dubai (GST +4:00)', 'Europe
 const CURRENCIES = ['INR - Indian Rupee (₹)', 'USD - US Dollar ($)', 'EUR - Euro (€)', 'GBP - British Pound (£)', 'AED - UAE Dirham (د.إ)'];
 const DATE_FORMATS = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'];
 
-const labelCls = 'block text-[11px] font-bold uppercase tracking-[0.08em] text-[#7a6b5c] mb-1.5';
-const inputCls = 'w-full bg-[#f5f0eb] border border-black/8 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:ring-2 focus:ring-primary/20 transition-shadow resize-none';
+const labelCls = 'block text-[12px] font-bold uppercase tracking-[0.08em] text-[#6b7280] mb-1.5';
+const inputCls = 'w-full bg-[var(--surface-2)] border border-[var(--hairline)] rounded-xl px-4 py-2.5 text-[15px] text-[#111318] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition resize-none';
 
 function Field({ label, icon: Icon, children }: { label: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
     <div>
       <label className={labelCls}>
         <span className="inline-flex items-center gap-1.5">
-          <Icon className="w-3 h-3 text-[#9e8e7e]" />
+          <Icon className="w-3 h-3 text-[#8b929c]" />
           {label}
         </span>
       </label>
@@ -60,7 +60,7 @@ function SelectField({ label, icon: Icon, value, onChange, options }: {
         >
           {options.map((o) => <option key={o}>{o}</option>)}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9e8e7e] pointer-events-none" />
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8b929c] pointer-events-none" />
       </div>
     </Field>
   );
@@ -216,7 +216,7 @@ export default function CompanyDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-48 text-[#9e8e7e] text-sm">
+      <div className="flex items-center justify-center h-48 text-[#8b929c] text-[15px]">
         <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Loading…
       </div>
     );
@@ -230,17 +230,17 @@ export default function CompanyDetailsPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => navigate('/settings')}
-            className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-[#1c1410] transition-colors"
+            className="p-1.5 rounded-xl hover:bg-[var(--surface-2)] text-[#6b7280] hover:text-[#111318] transition active:scale-[0.98]"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <h2 className="font-headline font-bold text-[17px] text-[#1c1410]">Company Details</h2>
+          <h2 className="font-headline font-bold text-[17px] text-[#111318]">Company Details</h2>
         </div>
         <SaveButton saving={saving} onClick={handleSave} />
       </div>
 
       {/* Profile card - clean, no orange banner */}
-      <div className="bg-white rounded-2xl border border-black/5 p-5 flex items-center gap-5">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 flex items-center gap-5">
 
         {/* Logo upload */}
         <div className="shrink-0">
@@ -253,51 +253,51 @@ export default function CompanyDetailsPage() {
           />
           <button
             onClick={() => logoInputRef.current?.click()}
-            className="relative w-20 h-20 rounded-2xl overflow-hidden group border-2 border-dashed border-black/10 hover:border-primary/40 transition-colors bg-[var(--app-bg)] flex items-center justify-center"
+            className="relative w-20 h-20 rounded-2xl overflow-hidden group border border-dashed border-[var(--hairline)] hover:border-primary/40 transition-colors bg-[var(--surface-2)] flex items-center justify-center"
             title="Upload company logo"
           >
             {logoPreview
               ? <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
               : (
-                <span className="text-[22px] font-bold text-[#c4b09e] select-none">
+                <span className="text-[22px] font-bold text-[#c3c8cf] select-none">
                   {initials}
                 </span>
               )
             }
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
               <Camera className="w-5 h-5 text-white" />
-              <span className="text-[10px] text-white font-semibold">Upload</span>
+              <span className="text-[11px] text-white font-semibold">Upload</span>
             </div>
           </button>
-          <p className="text-[10px] text-[#b09e8d] text-center mt-1.5">Max 2 MB</p>
+          <p className="text-[11px] text-[#9ca3af] text-center mt-1.5">Max 2 MB</p>
         </div>
 
         {/* Company info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-headline font-bold text-[18px] text-[#1c1410] truncate leading-tight">
+          <h3 className="font-headline font-bold text-[18px] text-[#111318] truncate leading-tight">
             {form.name || 'Your Company'}
           </h3>
           {ownerName && (
-            <p className="text-[14px] text-[#7a6b5c] mt-0.5 truncate">{ownerName}</p>
+            <p className="text-[15px] text-[#6b7280] mt-0.5 truncate">{ownerName}</p>
           )}
           <div className="flex flex-wrap items-center gap-2 mt-2.5">
             {plan && (
-              <span className="bg-primary/10 text-primary text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize">
+              <span className="bg-primary/10 text-primary text-[12px] font-bold px-2.5 py-0.5 rounded-full capitalize">
                 {plan} Plan
               </span>
             )}
             {memberSince && (
-              <span className="text-[11px] text-[#b09e8d]">Member since {memberSince}</span>
+              <span className="text-[12px] text-[#9ca3af]">Member since {memberSince}</span>
             )}
           </div>
         </div>
       </div>
 
       {/* Business Information */}
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
-        <div className="px-5 py-4 border-b border-black/5">
-          <h3 className="font-headline font-semibold text-[15px] text-[#1c1410]">Business Information</h3>
-          <p className="text-[11px] text-[#9e8e7e] mt-0.5">Your company profile and contact details</p>
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--hairline)]">
+          <h3 className="font-headline font-semibold text-[16px] text-[#111318]">Business Information</h3>
+          <p className="text-[12px] text-[#8b929c] mt-0.5">Your company profile and contact details</p>
         </div>
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Workspace Name *" icon={Building2}>
@@ -305,7 +305,7 @@ export default function CompanyDetailsPage() {
               value={form.name}
               onChange={(e) => update('name', e.target.value)}
               placeholder="Your Company Name"
-              className="text-[14px]"
+              className="text-[15px]"
             />
           </Field>
           <Field label="Legal Name" icon={Briefcase}>
@@ -313,7 +313,7 @@ export default function CompanyDetailsPage() {
               value={form.legalName}
               onChange={(e) => update('legalName', e.target.value)}
               placeholder="Legal entity name"
-              className="text-[14px]"
+              className="text-[15px]"
             />
           </Field>
           <Field label="Website" icon={Globe}>
@@ -322,7 +322,7 @@ export default function CompanyDetailsPage() {
               onChange={(e) => update('website', e.target.value)}
               placeholder="https://yourcompany.com"
               type="url"
-              className="text-[14px]"
+              className="text-[15px]"
             />
           </Field>
           <Field label="Industry" icon={Briefcase}>
@@ -330,7 +330,7 @@ export default function CompanyDetailsPage() {
               value={form.industry}
               onChange={(e) => update('industry', e.target.value)}
               placeholder="e.g. Technology, Retail"
-              className="text-[14px]"
+              className="text-[15px]"
             />
           </Field>
           <Field label="Phone" icon={Phone}>
@@ -339,7 +339,7 @@ export default function CompanyDetailsPage() {
               onChange={(e) => update('phone', e.target.value)}
               placeholder="+91 98765 43210"
               type="tel"
-              className="text-[14px]"
+              className="text-[15px]"
             />
           </Field>
           <Field label="Business Address" icon={MapPin}>
@@ -355,10 +355,10 @@ export default function CompanyDetailsPage() {
       </div>
 
       {/* Localization */}
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
-        <div className="px-5 py-4 border-b border-black/5">
-          <h3 className="font-headline font-semibold text-[15px] text-[#1c1410]">Localization</h3>
-          <p className="text-[11px] text-[#9e8e7e] mt-0.5">Regional settings for dates, currency and time</p>
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--hairline)]">
+          <h3 className="font-headline font-semibold text-[16px] text-[#111318]">Localization</h3>
+          <p className="text-[12px] text-[#8b929c] mt-0.5">Regional settings for dates, currency and time</p>
         </div>
         <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SelectField label="Timezone" icon={Clock} value={form.timezone} onChange={(v) => update('timezone', v)} options={TIMEZONES} />
@@ -368,16 +368,16 @@ export default function CompanyDetailsPage() {
       </div>
 
       {/* Call Dispositions */}
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
-        <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--hairline)] flex items-center justify-between">
           <div>
-            <h3 className="font-headline font-semibold text-[15px] text-[#1c1410] flex items-center gap-2">
-              <PhoneCall className="w-4 h-4 text-[#9e8e7e]" /> Call Outcomes
+            <h3 className="font-headline font-semibold text-[16px] text-[#111318] flex items-center gap-2">
+              <PhoneCall className="w-4 h-4 text-[#8b929c]" /> Call Outcomes
             </h3>
-            <p className="text-[11px] text-[#9e8e7e] mt-0.5">Configure the outcome options shown after a call</p>
+            <p className="text-[12px] text-[#8b929c] mt-0.5">Configure the outcome options shown after a call</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={addDisposition} className="text-[13px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1">
+            <button onClick={addDisposition} className="text-[14px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1">
               <Plus className="w-3.5 h-3.5" /> Add
             </button>
             <Button onClick={saveDispositions} disabled={savingDisp} size="sm" variant="outline">
@@ -394,9 +394,9 @@ export default function CompanyDetailsPage() {
               onDragStart={() => handleDragStart(i)}
               onDragOver={(e) => handleDragOver(e, i)}
               onDragEnd={() => setDragIdx(null)}
-              className="flex items-center gap-3 bg-[#faf8f6] rounded-xl px-3 py-2.5 border border-black/5 group"
+              className="flex flex-wrap items-center gap-3 bg-[var(--surface-2)] rounded-xl px-3 py-2.5 border border-[var(--hairline)] group"
             >
-              <GripVertical className="w-3.5 h-3.5 text-[#c4b09e] cursor-grab shrink-0" />
+              <GripVertical className="w-3.5 h-3.5 text-[#c3c8cf] cursor-grab shrink-0" />
 
               {/* Emoji picker */}
               <div className="relative shrink-0">
@@ -407,7 +407,7 @@ export default function CompanyDetailsPage() {
                   }}>
                   {d.icon}
                 </button>
-                <div className="hidden absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-black/10 p-2 grid grid-cols-5 gap-1 z-50">
+                <div className="hidden absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-[var(--hairline)] p-2 grid grid-cols-5 gap-1 z-50">
                   {EMOJI_OPTIONS.map((em) => (
                     <button key={em} className="w-8 h-8 text-lg hover:bg-gray-100 rounded-lg" onClick={(e) => {
                       updateDisp(i, { icon: em });
@@ -422,7 +422,7 @@ export default function CompanyDetailsPage() {
                 value={d.label}
                 onChange={(e) => updateDisp(i, { label: e.target.value })}
                 placeholder="Outcome label"
-                className="flex-1 min-w-0 bg-transparent text-[14px] text-[#1c1410] outline-none placeholder:text-gray-300"
+                className="flex-1 min-w-0 bg-transparent text-[15px] text-[#111318] outline-none placeholder:text-gray-300"
               />
 
               {/* Color picker */}
@@ -439,7 +439,7 @@ export default function CompanyDetailsPage() {
               <select
                 value={d.lead_quality ?? ''}
                 onChange={(e) => updateDisp(i, { lead_quality: e.target.value || null })}
-                className="text-[11px] bg-white border border-gray-200 rounded-lg px-2 py-1 text-[#7a6b5c] outline-none shrink-0"
+                className="text-[12px] bg-white border border-gray-200 rounded-lg px-2 py-1 text-[#6b7280] outline-none shrink-0"
                 title="Auto-set lead quality on this outcome"
               >
                 <option value="">No quality change</option>
@@ -456,7 +456,7 @@ export default function CompanyDetailsPage() {
             </div>
           ))}
           {dispositions.length === 0 && (
-            <p className="text-[13px] text-[#9e8e7e] text-center py-4">No outcomes configured. Click "Add" to create one.</p>
+            <p className="text-[14px] text-[#8b929c] text-center py-4">No outcomes configured. Click "Add" to create one.</p>
           )}
         </div>
       </div>
@@ -470,16 +470,16 @@ export default function CompanyDetailsPage() {
       {isSuperAdmin && (
         <button
           onClick={() => navigate('/admin')}
-          className="w-full bg-white rounded-2xl border border-black/5 p-4 flex items-center gap-3 hover:bg-[var(--app-bg)] transition-colors text-left group"
+          className="w-full bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover p-4 flex items-center gap-3 hover:bg-[var(--surface-2)] transition text-left group active:scale-[0.99]"
         >
-          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-4 h-4 text-primary" />
           </div>
           <div className="flex-1">
-            <p className="text-[14px] font-semibold text-[#1c1410]">Business Accounts</p>
-            <p className="text-[11px] text-[#9e8e7e]">Manage all CRM accounts under Hawcus</p>
+            <p className="text-[15px] font-semibold text-[#111318]">Business Accounts</p>
+            <p className="text-[12px] text-[#8b929c]">Manage all CRM accounts under Hawcus</p>
           </div>
-          <ChevronRight className="w-4 h-4 text-[#c4b09e] group-hover:text-primary transition-colors shrink-0" />
+          <ChevronRight className="w-4 h-4 text-[#c3c8cf] group-hover:text-primary transition-colors shrink-0" />
         </button>
       )}
 

@@ -265,25 +265,25 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
   };
 
   const iCls = (err?: string) =>
-    cn('w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none transition-all placeholder:text-[#b09e8d]',
-      err ? 'border-red-400 ring-2 ring-red-100' : 'border-[#e8ddd4] focus:border-primary focus:ring-2 focus:ring-primary/10');
+    cn('w-full rounded-xl border bg-white px-3 py-2 text-[15px] outline-none transition-all placeholder:text-[#9ca3af]',
+      err ? 'border-red-400 ring-2 ring-red-100' : 'border-[#e5e7eb] focus:border-primary focus:ring-2 focus:ring-primary/10');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-[#f9f5f0] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#f4f5f7] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-white border-b border-[#ede6dd]">
+        <div className="flex items-center justify-between px-5 py-3.5 bg-white border-b border-[var(--hairline)]">
           <div>
-            <h3 className="font-headline font-bold text-[#1c1410] text-base">
+            <h3 className="font-headline font-bold text-[#111318] text-base">
               {isEdit ? 'Edit Staff Member' : 'Add Staff Member'}
             </h3>
-            <p className="text-[11px] text-[#7a6b5c]">
+            <p className="text-[12px] text-[#6b7280]">
               {isEdit ? 'Update details or change access password' : 'Staff will log in using email + password below'}
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] transition-colors">
-            <X className="w-4 h-4 text-[#7a6b5c]" />
+            <X className="w-4 h-4 text-[#6b7280]" />
           </button>
         </div>
 
@@ -291,66 +291,66 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
           {/* Name row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">First Name <span className="text-red-500">*</span></label>
+              <label className="text-[13px] font-semibold text-[#111318] mb-1 block">First Name <span className="text-red-500">*</span></label>
               <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="e.g. Ranjith" className={iCls(errors.firstName)} />
-              {errors.firstName && <p className="text-[10px] text-red-500 mt-0.5">{errors.firstName}</p>}
+              {errors.firstName && <p className="text-[11px] text-red-500 mt-0.5">{errors.firstName}</p>}
             </div>
             <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Last Name <span className="text-red-500">*</span></label>
+              <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Last Name <span className="text-red-500">*</span></label>
               <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="e.g. Kumar" className={iCls(errors.lastName)} />
-              {errors.lastName && <p className="text-[10px] text-red-500 mt-0.5">{errors.lastName}</p>}
+              {errors.lastName && <p className="text-[11px] text-red-500 mt-0.5">{errors.lastName}</p>}
             </div>
           </div>
 
           {/* Email + Phone row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Email <span className="text-red-500">*</span></label>
+              <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Email <span className="text-red-500">*</span></label>
               <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="ranjith@company.com" className={iCls(errors.email)} />
-              {errors.email && <p className="text-[10px] text-red-500 mt-0.5">{errors.email}</p>}
+              {errors.email && <p className="text-[11px] text-red-500 mt-0.5">{errors.email}</p>}
             </div>
             <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Phone</label>
+              <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Phone</label>
               <div className={cn('flex items-center rounded-xl border bg-white overflow-hidden transition-all',
-                'border-[#e8ddd4] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10')}>
+                'border-[#e5e7eb] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10')}>
                 <div className="relative">
                   <button type="button" onClick={() => setShowCountryDrop(!showCountryDrop)}
-                    className="flex items-center gap-1 px-2 py-2 border-r border-[#e8ddd4] hover:bg-[var(--accent-tint)] text-xs text-[#7a6b5c]">
+                    className="flex items-center gap-1 px-2 py-2 border-r border-[#e5e7eb] hover:bg-[var(--accent-tint)] text-[13px] text-[#6b7280]">
                     <span>{countryCode.flag}</span>
                     <ChevronDown className="w-3 h-3" />
                   </button>
                   {showCountryDrop && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowCountryDrop(false)} />
-                      <div className="absolute top-full left-0 mt-1 bg-white border border-[#e8ddd4] rounded-xl shadow-xl z-50 py-1 w-32">
+                      <div className="absolute top-full left-0 mt-1 bg-white border border-[#e5e7eb] rounded-xl shadow-xl z-50 py-1 w-32">
                         {COUNTRY_CODES.map((c) => (
                           <button key={c.country} type="button" onClick={() => { setCountryCode(c); setShowCountryDrop(false); }}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-[var(--accent-tint)]">
-                            <span>{c.flag}</span><span className="text-[#7a6b5c]">{c.code}</span>
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[13px] hover:bg-[var(--accent-tint)]">
+                            <span>{c.flag}</span><span className="text-[#6b7280]">{c.code}</span>
                           </button>
                         ))}
                       </div>
                     </>
                   )}
                 </div>
-                <span className="pl-1.5 text-xs text-[#7a6b5c] select-none">{countryCode.code}</span>
+                <span className="pl-1.5 text-[13px] text-[#6b7280] select-none">{countryCode.code}</span>
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="98765 43210"
-                  className="flex-1 px-1.5 py-2 text-sm outline-none bg-transparent placeholder:text-[#b09e8d]" />
+                  className="flex-1 px-1.5 py-2 text-[15px] outline-none bg-transparent placeholder:text-[#9ca3af]" />
               </div>
             </div>
           </div>
 
           {/* Staff ID */}
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Staff ID <span className="text-[#b09e8d] font-normal">(optional - your company reference ID)</span></label>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Staff ID <span className="text-[#9ca3af] font-normal">(optional - your company reference ID)</span></label>
             <input value={staffId} onChange={(e) => setStaffId(e.target.value)} placeholder="e.g. EMP-001" className={iCls()} />
           </div>
 
           {/* Password + Profile Image */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">
-                {isEdit ? 'New Password' : 'Password'} {!isEdit && <span className="text-[#b09e8d] font-normal">(optional)</span>}
+              <label className="text-[13px] font-semibold text-[#111318] mb-1 block">
+                {isEdit ? 'New Password' : 'Password'} {!isEdit && <span className="text-[#9ca3af] font-normal">(optional)</span>}
               </label>
               <div className="relative">
                 <input value={password} onChange={(e) => setPassword(e.target.value)}
@@ -358,40 +358,40 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
                   placeholder={isEdit ? 'Leave blank to keep current' : 'Leave blank to send invite'}
                   className={cn(iCls(errors.password), 'pr-9')} />
                 <button type="button" onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#b09e8d] hover:text-[#7a6b5c] transition-colors">
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#6b7280] transition-colors">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               {errors.password
-                ? <p className="text-[10px] text-red-500 mt-0.5">{errors.password}</p>
-                : <p className="text-[10px] text-[#7a6b5c] mt-0.5">{isEdit ? 'Only fill to change access' : 'Blank = email them an invite to set their own'}</p>}
+                ? <p className="text-[11px] text-red-500 mt-0.5">{errors.password}</p>
+                : <p className="text-[11px] text-[#6b7280] mt-0.5">{isEdit ? 'Only fill to change access' : 'Blank = email them an invite to set their own'}</p>}
             </div>
             {!isEdit && (
               <div>
-                <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Access Level</label>
+                <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Access Level</label>
                 <div className="flex gap-2">
                   {([true, false] as const).map((fa) => (
                     <button key={String(fa)} type="button" onClick={() => setFullAccess(fa)}
                       className={cn(
-                        'flex-1 py-2 rounded-xl text-xs font-semibold border transition-all',
+                        'flex-1 py-2 rounded-xl text-[13px] font-semibold border transition-all',
                         fullAccess === fa
                           ? 'border-primary bg-primary text-white'
-                          : 'border-[#e8ddd4] bg-white text-[#7a6b5c] hover:border-primary/40',
+                          : 'border-[#e5e7eb] bg-white text-[#6b7280] hover:border-primary/40',
                       )}>
                       {fa ? 'Full Access' : 'Custom'}
                     </button>
                   ))}
                 </div>
-                <p className="text-[10px] text-[#7a6b5c] mt-1">
+                <p className="text-[11px] text-[#6b7280] mt-1">
                   {fullAccess ? 'All permissions granted - can be customised later' : 'Basic read-only defaults - edit permissions after adding'}
                 </p>
               </div>
             )}
             <div>
-              <label className="text-xs font-semibold text-[#1c1410] mb-1 block">Profile Image</label>
+              <label className="text-[13px] font-semibold text-[#111318] mb-1 block">Profile Image</label>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
               <button type="button" onClick={() => fileRef.current?.click()}
-                className="w-full h-[38px] rounded-xl border-2 border-dashed border-[#e8ddd4] bg-white hover:border-primary/50 hover:bg-[var(--accent-tint)] transition-all flex items-center justify-center gap-1.5 text-xs text-[#7a6b5c]">
+                className="w-full h-[38px] rounded-xl border-2 border-dashed border-[#e5e7eb] bg-white hover:border-primary/50 hover:bg-[var(--accent-tint)] transition-all flex items-center justify-center gap-1.5 text-[13px] text-[#6b7280]">
                 {avatarUrl
                   ? <img src={avatarUrl} className="w-6 h-6 rounded-full object-cover" />
                   : <><Upload className="w-3.5 h-3.5" /> Upload photo</>}
@@ -401,8 +401,8 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
 
           {/* Login PIN (2FA) */}
           <div>
-            <label className="text-xs font-semibold text-[#1c1410] mb-1 block">
-              Login PIN <span className="text-[#b09e8d] font-normal">(optional - used at login when 2FA is on)</span>
+            <label className="text-[13px] font-semibold text-[#111318] mb-1 block">
+              Login PIN <span className="text-[#9ca3af] font-normal">(optional - used at login when 2FA is on)</span>
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -415,33 +415,33 @@ function StaffModal({ initial, onClose, onSave }: StaffModalProps) {
               />
               <button type="button"
                 onClick={() => { setLoginPin(String(Math.floor(1000 + Math.random() * 9000))); setClearPin(false); }}
-                className="px-3 py-2 rounded-xl text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors whitespace-nowrap">
+                className="px-3 py-2 rounded-xl text-[13px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors whitespace-nowrap">
                 Generate
               </button>
               {isEdit && initial?.has_login_pin && (
                 <button type="button"
                   onClick={() => { setLoginPin(''); setClearPin(true); }}
-                  className="px-3 py-2 rounded-xl text-xs font-semibold text-red-500 bg-red-50 hover:bg-red-100 transition-colors whitespace-nowrap">
+                  className="px-3 py-2 rounded-xl text-[13px] font-semibold text-red-500 bg-red-50 hover:bg-red-100 transition-colors whitespace-nowrap">
                   Remove
                 </button>
               )}
             </div>
             {errors.loginPin
-              ? <p className="text-[10px] text-red-500 mt-0.5">{errors.loginPin}</p>
-              : <p className="text-[10px] text-[#7a6b5c] mt-0.5">
+              ? <p className="text-[11px] text-red-500 mt-0.5">{errors.loginPin}</p>
+              : <p className="text-[11px] text-[#6b7280] mt-0.5">
                   {clearPin ? 'PIN will be removed on save.' : 'Share this PIN with the staff member. They can also get a one-time PIN by email at login.'}
                 </p>}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-3.5 bg-white border-t border-[#ede6dd]">
+        <div className="flex items-center justify-end gap-2 px-5 py-3.5 bg-white border-t border-[var(--hairline)]">
           <button type="button" onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-semibold text-[#7a6b5c] bg-[#f0ebe5] hover:bg-[#e8ddd4] transition-colors uppercase tracking-wide">
+            className="px-5 py-2 rounded-xl text-[13px] font-semibold text-[#6b7280] bg-[#eef1f4] hover:bg-[#e5e7eb] transition-colors uppercase tracking-wide">
             Cancel
           </button>
           <button type="button" onClick={handleSave}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-white bg-primary hover:bg-primary/90 transition-colors uppercase tracking-wide">
+            className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 transition-colors uppercase tracking-wide">
             <User className="w-3.5 h-3.5" />
             {isEdit ? 'Save Changes' : 'Add'}
           </button>
@@ -457,12 +457,12 @@ function DeactivateDialog({ member, onClose, onConfirm }: { member: StaffMember;
   const isActive = member.status === 'active';
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-card rounded-2xl border border-black/5 w-full max-w-sm shadow-2xl p-6">
+      <div className="bg-card rounded-2xl border border-[var(--hairline)] w-full max-w-sm shadow-2xl p-6">
         <div className={cn('w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4', isActive ? 'bg-red-100' : 'bg-green-100')}>
           {isActive ? <UserMinus className="w-5 h-5 text-destructive" /> : <UserCheck className="w-5 h-5 text-success" />}
         </div>
-        <h3 className="font-headline font-bold text-[#1c1410] text-center mb-2">{isActive ? 'Deactivate' : 'Reactivate'} {member.name}?</h3>
-        <p className="text-[14px] text-[#7a6b5c] text-center mb-6">
+        <h3 className="font-headline font-bold text-[#111318] text-center mb-2">{isActive ? 'Deactivate' : 'Reactivate'} {member.name}?</h3>
+        <p className="text-[15px] text-[#6b7280] text-center mb-6">
           {isActive
             ? 'This member will lose access to the CRM immediately. Their data and lead assignments will be preserved.'
             : 'This member will regain access to the CRM with their previous role and permissions.'}
@@ -485,23 +485,23 @@ function DeleteConfirmModal({ member, onClose, onConfirm }: { member: StaffMembe
   const confirmed = typed.trim().toLowerCase() === member.name.trim().toLowerCase();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-card rounded-2xl border border-black/5 w-full max-w-sm shadow-2xl p-6">
+      <div className="bg-card rounded-2xl border border-[var(--hairline)] w-full max-w-sm shadow-2xl p-6">
         <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
           <Trash2 className="w-5 h-5 text-red-600" />
         </div>
-        <h3 className="font-headline font-bold text-[#1c1410] text-center mb-1">Delete {member.name}?</h3>
-        <p className="text-[14px] text-[#7a6b5c] text-center mb-5">
+        <h3 className="font-headline font-bold text-[#111318] text-center mb-1">Delete {member.name}?</h3>
+        <p className="text-[15px] text-[#6b7280] text-center mb-5">
           This will permanently remove their account and revoke all access. Their assigned leads will become unassigned. This cannot be undone.
         </p>
         <div className="mb-5">
-          <p className="text-[13px] text-[#7a6b5c] mb-1.5">
-            Type <span className="font-semibold text-[#1c1410]">{member.name}</span> to confirm
+          <p className="text-[14px] text-[#6b7280] mb-1.5">
+            Type <span className="font-semibold text-[#111318]">{member.name}</span> to confirm
           </p>
           <Input
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             placeholder={member.name}
-            className="text-sm"
+            className="text-[15px]"
             autoFocus
           />
         </div>
@@ -593,24 +593,24 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-[#f9f5f0] rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-[#f4f5f7] rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-white border-b border-[#ede6dd] shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 bg-white border-b border-[var(--hairline)] shrink-0">
           <div className="flex items-center gap-3">
             <div className={cn(
-              'w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0',
+              'w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-bold shrink-0',
               member.status === 'active' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
             )}>
               {member.avatar}
             </div>
             <div>
-              <h3 className="font-headline font-bold text-[#1c1410] text-[15px] leading-tight">{member.name}</h3>
-              <p className="text-[11px] text-[#7a6b5c]">{member.email} · Permissions</p>
+              <h3 className="font-headline font-bold text-[#111318] text-[16px] leading-tight">{member.name}</h3>
+              <p className="text-[12px] text-[#6b7280]">{member.email} · Permissions</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] transition-colors">
-            <X className="w-4 h-4 text-[#7a6b5c]" />
+            <X className="w-4 h-4 text-[#6b7280]" />
           </button>
         </div>
 
@@ -621,11 +621,11 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
               <div className="animate-spin w-6 h-6 rounded-full border-2 border-primary border-t-transparent" />
             </div>
           ) : (
-            <div className="bg-white m-4 rounded-2xl border border-[#ede8e2] divide-y divide-[#f2ede8] overflow-hidden">
+            <div className="bg-white m-4 rounded-2xl border border-[var(--hairline)] divide-y divide-[#f1f3f5] overflow-hidden">
 
               {/* Access Type Toggle */}
               <div className="p-5">
-                <label className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-widest block mb-2.5">Access Type</label>
+                <label className="text-[12px] font-bold text-[#6b7280] uppercase tracking-widest block mb-2.5">Access Type</label>
                 <div className="flex gap-2">
                   {(['full', 'custom'] as const).map((type) => (
                     <button
@@ -638,17 +638,17 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                         else { setAccessType('custom'); }
                       }}
                       className={cn(
-                        'flex-1 py-2 rounded-xl text-xs font-semibold border transition-all',
+                        'flex-1 py-2 rounded-xl text-[13px] font-semibold border transition-all',
                         accessType === type
                           ? 'border-primary bg-primary text-white'
-                          : 'border-[#e8ddd4] bg-white text-[#7a6b5c] hover:border-primary/40 hover:bg-[#fdf5f0]',
+                          : 'border-[#e5e7eb] bg-white text-[#6b7280] hover:border-primary/40 hover:bg-[#f7f8fa]',
                       )}
                     >
                       {type === 'full' ? 'Full Access' : 'Custom'}
                     </button>
                   ))}
                 </div>
-                <p className="text-[10px] text-[#7a6b5c] mt-1.5">
+                <p className="text-[11px] text-[#6b7280] mt-1.5">
                   {accessType === 'full'
                     ? 'All permissions enabled - switch to Custom to restrict specific access.'
                     : 'Configure individual permissions below, then click Save.'}
@@ -663,13 +663,13 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                     'flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all select-none',
                     permissions[ONLY_ASSIGNED_KEY]
                       ? 'bg-orange-50 border-orange-200'
-                      : 'bg-[var(--app-bg)] border-[#e8ddd4] hover:border-orange-200 hover:bg-orange-50/40',
+                      : 'bg-[var(--app-bg)] border-[#e5e7eb] hover:border-orange-200 hover:bg-orange-50/40',
                   )}
                 >
                   <PermCheckbox checked={permissions[ONLY_ASSIGNED_KEY] ?? false} onChange={() => togglePerm(ONLY_ASSIGNED_KEY)} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-[#1c1410]">Only Assigned Leads</p>
-                    <p className="text-[11px] text-[#7a6b5c] mt-0.5 leading-relaxed">
+                    <p className="text-[15px] font-semibold text-[#111318]">Only Assigned Leads</p>
+                    <p className="text-[12px] text-[#6b7280] mt-0.5 leading-relaxed">
                       Staff can only view leads assigned to them - applies to Pipeline, Contacts &amp; Automation
                     </p>
                   </div>
@@ -679,8 +679,8 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                   <button type="button" onClick={() => togglePerm(MASK_PHONE_KEY)}
                     className="flex items-center gap-2.5 cursor-pointer select-none group">
                     <PermCheckbox checked={permissions[MASK_PHONE_KEY] ?? false} onChange={() => togglePerm(MASK_PHONE_KEY)} />
-                    <span className="text-[14px] text-[#1c1410] group-hover:text-primary transition-colors">Phone Number Masking</span>
-                    <span className="text-[11px] text-[#b09e8d]">- last digits hidden</span>
+                    <span className="text-[15px] text-[#111318] group-hover:text-primary transition-colors">Phone Number Masking</span>
+                    <span className="text-[12px] text-[#9ca3af]">- last digits hidden</span>
                   </button>
                   <button type="button"
                     onClick={() => {
@@ -697,7 +697,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                         setPermissions(Object.fromEntries(getAllPermKeys().map((k) => [k, !all])));
                       }}
                     />
-                    <span className="text-[14px] font-semibold text-[#1c1410] group-hover:text-primary transition-colors">Select All</span>
+                    <span className="text-[15px] font-semibold text-[#111318] group-hover:text-primary transition-colors">Select All</span>
                   </button>
                 </div>
               </div>
@@ -714,11 +714,11 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                 return (
                   <div key={group.label} className="px-5 py-4">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-widest">{group.label}</h4>
+                      <h4 className="text-[12px] font-bold text-[#6b7280] uppercase tracking-widest">{group.label}</h4>
                       <button type="button" onClick={toggleAll}
                         className="flex items-center gap-2 cursor-pointer select-none group">
                         <PermCheckbox checked={allEnabled} onChange={toggleAll} />
-                        <span className="text-[11px] text-[#7a6b5c] group-hover:text-primary transition-colors">All</span>
+                        <span className="text-[12px] text-[#6b7280] group-hover:text-primary transition-colors">All</span>
                       </button>
                     </div>
 
@@ -728,7 +728,7 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                           <button key={item.key} type="button" onClick={() => togglePerm(item.key)}
                             className="flex items-center gap-2.5 cursor-pointer select-none group text-left">
                             <PermCheckbox checked={permissions[item.key] ?? false} onChange={() => togglePerm(item.key)} />
-                            <span className="text-[14px] text-[#2c1f14] group-hover:text-primary transition-colors">{item.label}</span>
+                            <span className="text-[15px] text-[#111318] group-hover:text-primary transition-colors">{item.label}</span>
                           </button>
                         ))}
                       </div>
@@ -737,40 +737,40 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
                     {group.type === 'crud' && (
                       <div className="overflow-x-auto -mx-1 px-1">
                         <div style={{ minWidth: 420 }}>
-                          <div className="grid rounded-lg bg-[#f7f3ef] px-3 py-2 mb-1"
+                          <div className="grid rounded-lg bg-[#f4f5f7] px-3 py-2 mb-1"
                             style={{ gridTemplateColumns: '1fr 80px 80px 80px 80px' }}>
                             <div />
                             {group.columns.map((col) => (
-                              <div key={col} className="text-center text-[10px] font-bold text-[#9c8f84] uppercase tracking-widest">{col}</div>
+                              <div key={col} className="text-center text-[11px] font-bold text-[#6b7280] uppercase tracking-widest">{col}</div>
                             ))}
                           </div>
                           {group.rows.map((row, i) => (
                             <div key={row.label}
-                              className={cn('grid items-center px-3 py-2.5 rounded-lg transition-colors hover:bg-[var(--app-bg)]', i % 2 === 1 && 'bg-[#fdfcfb]')}
+                              className={cn('grid items-center px-3 py-2.5 rounded-lg transition-colors hover:bg-[var(--app-bg)]', i % 2 === 1 && 'bg-[#fcfcfd]')}
                               style={{ gridTemplateColumns: '1fr 80px 80px 80px 80px' }}>
-                              <span className="text-[14px] font-medium text-[#1c1410]">{row.label}</span>
+                              <span className="text-[15px] font-medium text-[#111318]">{row.label}</span>
                               {row.keys.map((key, j) => (
                                 <div key={j} className="flex justify-center">
                                   {key
                                     ? <PermCheckbox checked={permissions[key] ?? false} onChange={() => togglePerm(key)} />
-                                    : <span className="text-[#ddd4cc] text-sm leading-none">-</span>
+                                    : <span className="text-[#e5e7eb] text-[15px] leading-none">-</span>
                                   }
                                 </div>
                               ))}
                             </div>
                           ))}
                           {(group.simpleRows ?? []).length > 0 && (
-                            <div className="mt-1 pt-2 border-t border-[#f0ebe5] space-y-0.5">
+                            <div className="mt-1 pt-2 border-t border-[#eef1f4] space-y-0.5">
                               {group.simpleRows!.map((row, i) => (
                                 <div key={row.label}
-                                  className={cn('flex items-center px-3 py-2.5 rounded-lg transition-colors hover:bg-[var(--app-bg)]', i % 2 === 1 && 'bg-[#fdfcfb]')}>
-                                  <span className="text-[14px] font-medium text-[#1c1410] flex-1">{row.label}</span>
+                                  className={cn('flex items-center px-3 py-2.5 rounded-lg transition-colors hover:bg-[var(--app-bg)]', i % 2 === 1 && 'bg-[#fcfcfd]')}>
+                                  <span className="text-[15px] font-medium text-[#111318] flex-1">{row.label}</span>
                                   <div className="flex items-center gap-6">
                                     {row.keys.map(({ key, label }) => (
                                       <button key={key} type="button" onClick={() => togglePerm(key)}
                                         className="flex items-center gap-2 cursor-pointer select-none group">
                                         <PermCheckbox checked={permissions[key] ?? false} onChange={() => togglePerm(key)} />
-                                        <span className="text-[13px] text-[#7a6b5c] group-hover:text-primary transition-colors">{label}</span>
+                                        <span className="text-[14px] text-[#6b7280] group-hover:text-primary transition-colors">{label}</span>
                                       </button>
                                     ))}
                                   </div>
@@ -789,20 +789,20 @@ function PermissionsModal({ member, onClose }: { member: StaffMember; onClose: (
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-3.5 bg-white border-t border-[#ede6dd] shrink-0">
+        <div className="flex items-center justify-end gap-2 px-5 py-3.5 bg-white border-t border-[var(--hairline)] shrink-0">
           <button type="button" onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-semibold text-[#7a6b5c] bg-[#f0ebe5] hover:bg-[#e8ddd4] transition-colors uppercase tracking-wide">
+            className="px-5 py-2 rounded-xl text-[13px] font-semibold text-[#6b7280] bg-[#eef1f4] hover:bg-[#e5e7eb] transition-colors uppercase tracking-wide">
             Cancel
           </button>
           {accessType === 'custom' ? (
             <button type="button" onClick={handleSave} disabled={saving || loading}
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-colors uppercase tracking-wide">
+              className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-colors uppercase tracking-wide">
               <Check className="w-3.5 h-3.5" />
               {saving ? 'Saving…' : 'Save Permissions'}
             </button>
           ) : (
             <button type="button" onClick={onClose}
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-white bg-primary hover:bg-primary/90 transition-colors uppercase tracking-wide">
+              className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 transition-colors uppercase tracking-wide">
               <Check className="w-3.5 h-3.5" />
               Done
             </button>
@@ -840,7 +840,7 @@ function PermCheckbox({ checked, onChange }: { checked: boolean; onChange: () =>
       onClick={(e) => { e.stopPropagation(); onChange(); }}
       className={cn(
         'w-[17px] h-[17px] rounded border-[1.5px] inline-flex items-center justify-center transition-all shrink-0 cursor-pointer',
-        checked ? 'bg-[var(--brand-dark)] border-[var(--brand-dark)]' : 'border-[#c9bdb6] bg-white hover:border-[var(--brand-dark)]',
+        checked ? 'bg-[var(--brand-dark)] border-[var(--brand-dark)]' : 'border-[#c3c8cf] bg-white hover:border-[var(--brand-dark)]',
       )}
     >
       {checked && <Check className="w-[9px] h-[9px] text-white" strokeWidth={3.5} />}
@@ -972,8 +972,8 @@ export default function StaffPage() {
           {/* Header */}
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h3 className="font-headline text-[17px] font-bold text-[#1c1410]">Team Members</h3>
-              <p className="text-[13px] text-[#7a6b5c] mt-0.5">
+              <h3 className="font-headline text-[17px] font-bold text-[#111318]">Team Members</h3>
+              <p className="text-[14px] text-[#6b7280] mt-0.5">
                 {staff.filter((s) => s.status === 'active').length} active
                 {staff.filter((s) => s.status === 'inactive').length > 0 && ` · ${staff.filter((s) => s.status === 'inactive').length} inactive`}
                 {maxUsers != null && ` · ${staff.filter((s) => s.status === 'active').length + 1}/${maxUsers} license used`}
@@ -992,12 +992,12 @@ export default function StaffPage() {
 
           {/* Staff list */}
           {staff.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-[#ede8e2] flex flex-col items-center justify-center py-20 gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--accent-tint)] flex items-center justify-center">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow flex flex-col items-center justify-center py-20 gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--surface-2)] flex items-center justify-center">
                 <User className="w-6 h-6 text-[var(--brand-dark)]" />
               </div>
-              <p className="text-[15px] font-bold text-[#1c1410]">No team members yet</p>
-              <p className="text-[13px] text-[#7a6b5c]">Add your first staff member to get started</p>
+              <p className="text-[16px] font-bold text-[#111318]">No team members yet</p>
+              <p className="text-[14px] text-[#6b7280]">Add your first staff member to get started</p>
               {canManageStaff && (
                 <Button className="btn-hover mt-1" onClick={() => setShowInviteModal(true)}>
                   <Plus className="w-4 h-4 mr-1" /> New Staff
@@ -1005,13 +1005,13 @@ export default function StaffPage() {
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-black/5 card-shadow divide-y divide-black/5">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow divide-y divide-[var(--hairline)]">
               {staff.map((s) => (
-                <div key={s.id} className="flex items-center gap-4 px-5 py-4 hover:bg-[var(--app-bg)] transition-colors">
+                <div key={s.id} className="flex items-center gap-4 px-5 py-4 hover:bg-[var(--surface-2)] transition-colors">
 
                   {/* Avatar */}
                   <div className={cn(
-                    'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0',
+                    'w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-bold shrink-0',
                     s.status === 'active' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
                   )}>
                     {s.avatar}
@@ -1020,31 +1020,31 @@ export default function StaffPage() {
                   {/* Name + email + status */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className={cn('text-sm font-semibold', s.status === 'inactive' ? 'text-muted-foreground' : 'text-[#1c1410]')}>
+                      <p className={cn('text-[15px] font-semibold', s.status === 'inactive' ? 'text-muted-foreground' : 'text-[#111318]')}>
                         {s.name}
                       </p>
                       <span className={cn(
-                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold',
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold',
                         s.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500',
                       )}>
                         <span className={cn('w-1.5 h-1.5 rounded-full', s.status === 'active' ? 'bg-green-500' : 'bg-gray-400')} />
                         {s.status === 'active' ? 'Active' : s.status === 'pending' ? 'Pending' : 'Inactive'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#7a6b5c] truncate mt-0.5">{s.email}</p>
+                    <p className="text-[12px] text-[#6b7280] truncate mt-0.5">{s.email}</p>
                   </div>
 
                   {/* Stats */}
                   <div className="hidden md:flex items-center gap-6 shrink-0">
                     <div className="text-center w-14">
-                      <p className="text-sm font-semibold text-[#1c1410]">{s.leadsAssigned}</p>
-                      <p className="text-[10px] text-[#7a6b5c] mt-0.5">Leads</p>
+                      <p className="text-[15px] font-semibold text-[#111318]">{s.leadsAssigned}</p>
+                      <p className="text-[11px] text-[#6b7280] mt-0.5">Leads</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[13px] font-medium text-[#1c1410] whitespace-nowrap">
+                      <p className="text-[14px] font-medium text-[#111318] whitespace-nowrap">
                         {formatDistanceToNow(new Date(s.lastActive), { addSuffix: true })}
                       </p>
-                      <p className="text-[10px] text-[#7a6b5c] mt-0.5">Last Active</p>
+                      <p className="text-[11px] text-[#6b7280] mt-0.5">Last Active</p>
                     </div>
                   </div>
 
@@ -1053,14 +1053,14 @@ export default function StaffPage() {
                     <div className="flex items-center gap-1 shrink-0 ml-2">
                       <button
                         onClick={() => setEditMember(s)}
-                        className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors"
+                        className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-[var(--brand-dark)] transition-colors"
                         title="Edit member"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setPermsMember(s)}
-                        className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-[var(--brand-dark)] transition-colors"
+                        className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-[var(--brand-dark)] transition-colors"
                         title="Edit permissions"
                       >
                         <ShieldCheck className="w-4 h-4" />
@@ -1068,7 +1068,7 @@ export default function StaffPage() {
                       <div className="relative">
                         <button
                           onClick={() => setOpenMenuId(openMenuId === s.id ? null : s.id)}
-                          className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-foreground transition-colors"
+                          className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-foreground transition-colors"
                           title="More actions"
                         >
                           <MoreHorizontal className="w-4 h-4" />
@@ -1076,7 +1076,7 @@ export default function StaffPage() {
                         {openMenuId === s.id && (
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
-                            <div className="absolute right-0 top-10 bg-white border border-black/8 rounded-xl shadow-lg z-50 w-44 py-1 overflow-hidden">
+                            <div className="absolute right-0 top-10 bg-white border border-[var(--hairline)] rounded-xl shadow-lg z-50 w-44 py-1 overflow-hidden">
                               {s.status === 'pending' && (
                                 <button
                                   onClick={() => {
@@ -1085,16 +1085,16 @@ export default function StaffPage() {
                                       .catch(() => toast.error('Failed to resend invite'));
                                     setOpenMenuId(null);
                                   }}
-                                  className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-[var(--app-bg)] transition-colors text-[#1c1410]"
+                                  className="w-full text-left px-3 py-2.5 text-[15px] flex items-center gap-2.5 hover:bg-[var(--app-bg)] transition-colors text-[#111318]"
                                 >
-                                  <Mail className="w-4 h-4 text-[#7a6b5c]" />
+                                  <Mail className="w-4 h-4 text-[#6b7280]" />
                                   Resend Invite
                                 </button>
                               )}
                               <button
                                 onClick={() => { setDeactivateMember(s); setOpenMenuId(null); }}
                                 className={cn(
-                                  'w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 transition-colors',
+                                  'w-full text-left px-3 py-2.5 text-[15px] flex items-center gap-2.5 transition-colors',
                                   s.status === 'active' ? 'hover:bg-red-50 text-red-600' : 'hover:bg-green-50 text-green-700',
                                 )}
                               >
@@ -1103,10 +1103,10 @@ export default function StaffPage() {
                                   : <UserCheck className="w-4 h-4" />}
                                 {s.status === 'active' ? 'Deactivate' : 'Reactivate'}
                               </button>
-                              <div className="border-t border-black/5 my-1" />
+                              <div className="border-t border-[var(--hairline)] my-1" />
                               <button
                                 onClick={() => { setDeleteMember(s); setOpenMenuId(null); }}
-                                className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-red-50 text-red-600 transition-colors"
+                                className="w-full text-left px-3 py-2.5 text-[15px] flex items-center gap-2.5 hover:bg-red-50 text-red-600 transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
                                 Delete
@@ -1128,41 +1128,41 @@ export default function StaffPage() {
       {tab === 'roles' && (
         <div className="space-y-5">
           <div>
-            <h3 className="font-headline text-[17px] font-bold text-[#1c1410]">Roles &amp; Permissions</h3>
-            <p className="text-[13px] text-[#7a6b5c] mt-0.5">Click a staff member to edit their individual access</p>
+            <h3 className="font-headline text-[17px] font-bold text-[#111318]">Roles &amp; Permissions</h3>
+            <p className="text-[14px] text-[#6b7280] mt-0.5">Click a staff member to edit their individual access</p>
           </div>
 
           {staff.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-[#ede8e2] flex flex-col items-center justify-center py-20 gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--accent-tint)] flex items-center justify-center">
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow flex flex-col items-center justify-center py-20 gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--surface-2)] flex items-center justify-center">
                 <ShieldCheck className="w-6 h-6 text-[var(--brand-dark)]" />
               </div>
-              <p className="text-[15px] font-bold text-[#1c1410]">No staff yet</p>
-              <p className="text-[13px] text-[#7a6b5c]">Add team members first to configure their permissions</p>
+              <p className="text-[16px] font-bold text-[#111318]">No staff yet</p>
+              <p className="text-[14px] text-[#6b7280]">Add team members first to configure their permissions</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {staff.map((s) => (
                 <div key={s.id}
-                  className="bg-white rounded-2xl border border-[#ede8e2] p-5 flex items-center gap-4 hover:border-primary/30 hover:shadow-sm transition-all group">
+                  className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover p-5 flex items-center gap-4 hover:border-primary/30 transition-all group">
                   <div className={cn(
-                    'w-11 h-11 rounded-full flex items-center justify-center text-[14px] font-bold shrink-0',
+                    'w-11 h-11 rounded-full flex items-center justify-center text-[15px] font-bold shrink-0',
                     s.status === 'active' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
                   )}>
                     {s.avatar}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-[#1c1410] truncate">{s.name}</p>
-                    <p className="text-[11px] text-[#7a6b5c] truncate">{s.email}</p>
+                    <p className="text-[15px] font-semibold text-[#111318] truncate">{s.name}</p>
+                    <p className="text-[12px] text-[#6b7280] truncate">{s.email}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className={cn('w-1.5 h-1.5 rounded-full', s.status === 'active' ? 'bg-green-500' : 'bg-gray-300')} />
-                      <span className="text-[10px] text-[#9c8f84] capitalize">{s.status}</span>
+                      <span className="text-[11px] text-[#6b7280] capitalize">{s.status}</span>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setPermsMember(s)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold text-[var(--brand-dark)] bg-orange-50 border border-orange-100 hover:bg-orange-100 transition-colors shrink-0 group-hover:border-primary/40"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-[var(--brand-dark)] bg-orange-50 border border-orange-100 hover:bg-orange-100 transition shrink-0 group-hover:border-primary/40 active:scale-[0.98]"
                   >
                     <ShieldCheck className="w-3.5 h-3.5" />
                     Permissions
@@ -1176,13 +1176,13 @@ export default function StaffPage() {
 
       {/* Performance Tab */}
       {tab === 'performance' && (
-        <div className="bg-white rounded-2xl border border-black/5 card-shadow overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-black/5 bg-[var(--app-bg)]">
+                <tr className="border-b border-[var(--hairline)] bg-[var(--surface-2)]">
                   {['Name', 'Leads Handled', 'Converted', 'Conv. Rate', 'Avg Response', 'Conversations', 'Follow-ups'].map((h) => (
-                    <th key={h} className="text-left text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] px-4 py-3 whitespace-nowrap">{h}</th>
+                    <th key={h} className="text-left text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] px-4 py-3 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1190,21 +1190,21 @@ export default function StaffPage() {
                 {perfData.map((p) => {
                   const convRate = Math.round((p.converted / p.leadsHandled) * 100);
                   return (
-                    <tr key={p.id} className="border-b border-black/5 last:border-0 hover:bg-[var(--app-bg)] transition-colors">
-                      <td className="px-4 py-3 text-sm font-medium text-foreground">{p.name}</td>
-                      <td className="px-4 py-3 text-sm text-foreground">{p.leadsHandled}</td>
-                      <td className="px-4 py-3 text-sm text-foreground">{p.converted}</td>
+                    <tr key={p.id} className="border-b border-[var(--hairline)] last:border-0 hover:bg-[var(--surface-2)] transition-colors">
+                      <td className="px-4 py-3 text-[15px] font-medium text-foreground">{p.name}</td>
+                      <td className="px-4 py-3 text-[15px] text-foreground">{p.leadsHandled}</td>
+                      <td className="px-4 py-3 text-[15px] text-foreground">{p.converted}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden w-16">
                             <div className="h-full bg-primary rounded-full" style={{ width: `${convRate}%` }} />
                           </div>
-                          <span className="text-[11px] text-[#7a6b5c]">{convRate}%</span>
+                          <span className="text-[12px] text-[#6b7280]">{convRate}%</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-[14px] text-[#7a6b5c]">{p.avgResponse} min</td>
-                      <td className="px-4 py-3 text-sm text-foreground">{p.conversations}</td>
-                      <td className="px-4 py-3 text-sm text-foreground">{p.followUps}</td>
+                      <td className="px-4 py-3 text-[15px] text-[#6b7280]">{p.avgResponse} min</td>
+                      <td className="px-4 py-3 text-[15px] text-foreground">{p.conversations}</td>
+                      <td className="px-4 py-3 text-[15px] text-foreground">{p.followUps}</td>
                     </tr>
                   );
                 })}

@@ -14,6 +14,7 @@ import { confirmDialog } from '@/lib/confirm';
 import { format } from 'date-fns';
 import { Lead } from '@/data/mockData';
 import { LeadDetailPanel } from './LeadsPage';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const gradStyle   = { background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' };
 const shadowStyle = { ...gradStyle, boxShadow: '0 4px 14px rgba(234,88,12,0.28)' };
@@ -349,9 +350,9 @@ export default function ContactGroupPage() {
   if (!canRead) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <Layers className="w-12 h-12 text-[#c4b09e] mb-3" />
-        <p className="text-[15px] font-semibold text-[#1c1410]">No access</p>
-        <p className="text-[14px] text-[#7a6b5c] mt-1">You don't have permission to view contact groups.</p>
+        <Layers className="w-12 h-12 text-[#c3c8cf] mb-3" />
+        <p className="text-[16px] font-semibold text-[#111318]">No access</p>
+        <p className="text-[15px] text-[#6b7280] mt-1">You don't have permission to view contact groups.</p>
       </div>
     );
   }
@@ -371,12 +372,12 @@ export default function ContactGroupPage() {
             <div key={s.label} className="rounded-2xl px-5 py-4 flex items-center gap-4 text-white"
               style={{ ...gradStyle, boxShadow: '0 6px 24px rgba(234,88,12,0.25)' }}>
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0"><s.icon className="w-5 h-5 text-white" /></div>
-              <div><p className="text-[13px] opacity-80">{s.label}</p><h3 className="font-headline text-[22px] font-bold tracking-tight leading-tight">{s.value}</h3></div>
+              <div><p className="text-[14px] opacity-80">{s.label}</p><h3 className="font-headline text-[22px] font-bold tracking-tight leading-tight">{s.value}</h3></div>
             </div>
           ) : (
-            <div key={s.label} className="bg-white rounded-2xl px-5 py-4 border border-black/5 flex items-center gap-4" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div key={s.label} className="bg-white rounded-2xl px-5 py-4 border border-[var(--hairline)] card-shadow flex items-center gap-4">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0"><s.icon className={cn('w-5 h-5', s.color)} /></div>
-              <div><p className="text-[13px] text-[#7a6b5c]">{s.label}</p><h3 className="font-headline text-[22px] font-bold text-[#1c1410] tracking-tight leading-tight">{s.value}</h3></div>
+              <div><p className="text-[14px] text-[#6b7280]">{s.label}</p><h3 className="font-headline text-[22px] font-bold text-[#111318] tracking-tight leading-tight">{s.value}</h3></div>
             </div>
           )
         ))}
@@ -385,16 +386,16 @@ export default function ContactGroupPage() {
       {/* Toolbar */}
       <div className="flex items-center gap-2.5 flex-wrap">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search groups..."
-            className="w-full pl-9 pr-10 py-2.5 text-[14px] bg-white border border-black/10 rounded-full outline-none focus:border-primary/40 placeholder:text-gray-400 transition-all"
+            className="w-full pl-9 pr-10 py-2.5 text-[15px] bg-white border border-[var(--hairline)] rounded-full outline-none focus:border-primary/40 placeholder:text-gray-400 transition-all"
             style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }} />
-          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full hover:bg-black/5 flex items-center justify-center text-[#b09e8d]"><X className="w-3 h-3" /></button>}
+          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full hover:bg-black/5 flex items-center justify-center text-[#9ca3af]"><X className="w-3 h-3" /></button>}
         </div>
         <div className="flex-1" />
         {canManage && (
           <button onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
             style={shadowStyle}>
             <Plus className="w-4 h-4" /> New Group
           </button>
@@ -409,18 +410,18 @@ export default function ContactGroupPage() {
           {loading ? (
             <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary/40" /></div>
           ) : filtered.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-black/5 py-16 text-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <Layers className="w-10 h-10 mx-auto text-[#c4b09e] mb-3" />
-              <p className="text-[15px] font-semibold text-[#1c1410]">{search ? 'No groups match' : 'No groups yet'}</p>
-              <p className="text-[13px] text-[#7a6b5c] mt-1">{search ? 'Try a different search.' : 'Create your first group to get started.'}</p>
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow py-16 text-center">
+              <Layers className="w-10 h-10 mx-auto text-[#c3c8cf] mb-3" />
+              <p className="text-[16px] font-semibold text-[#111318]">{search ? 'No groups match' : 'No groups yet'}</p>
+              <p className="text-[14px] text-[#6b7280] mt-1">{search ? 'Try a different search.' : 'Create your first group to get started.'}</p>
             </div>
           ) : filtered.map((g) => {
             const isActive = selectedGroupId === g.id;
             return (
               <div key={g.id} onClick={() => setSelectedGroupId(g.id)}
-                className={cn('bg-white rounded-2xl border p-4 cursor-pointer transition-all hover:shadow-sm',
-                  isActive ? 'border-primary/40 shadow-sm ring-1 ring-primary/20' : 'border-black/[0.06] hover:border-black/10'
-                )} style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                className={cn('bg-white rounded-2xl border p-4 cursor-pointer card-shadow transition-all hover:shadow-md active:scale-[0.99]',
+                  isActive ? 'border-primary/40 shadow-sm ring-1 ring-primary/20' : 'border-[var(--hairline)] hover:border-black/10'
+                )}>
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: g.color + '18' }}>
                     <Layers className="w-4 h-4" style={{ color: g.color }} />
@@ -429,34 +430,34 @@ export default function ContactGroupPage() {
                     {editingId === g.id ? (
                       <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                         <input autoFocus value={editName} onChange={(e) => setEditName(e.target.value)}
-                          className="w-full text-[14px] font-semibold border border-primary/30 rounded-lg px-2.5 py-1.5 outline-none focus:border-primary/50" />
+                          className="w-full text-[15px] font-semibold border border-primary/30 rounded-lg px-2.5 py-1.5 outline-none focus:border-primary/50" />
                         <input value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Description"
-                          className="w-full text-[13px] text-[#7a6b5c] border border-black/10 rounded-lg px-2.5 py-1.5 outline-none focus:border-primary/30" />
+                          className="w-full text-[14px] text-[#6b7280] border border-[var(--hairline)] rounded-lg px-2.5 py-1.5 outline-none focus:border-primary/30" />
                         <div className="flex gap-1.5 flex-wrap">
                           {GROUP_COLORS.map((c) => (
                             <button key={c} onClick={() => setEditColor(c)}
-                              className={cn('w-5 h-5 rounded-full transition-all', editColor === c ? 'ring-2 ring-offset-1 ring-[#1c1410] scale-110' : 'hover:scale-110')}
+                              className={cn('w-5 h-5 rounded-full transition-all', editColor === c ? 'ring-2 ring-offset-1 ring-[#111318] scale-110' : 'hover:scale-110')}
                               style={{ backgroundColor: c }} />
                           ))}
                         </div>
                         <div className="flex gap-1.5">
-                          <button onClick={() => saveEdit(g.id)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-white bg-primary hover:bg-primary/90"><Check className="w-3 h-3" /> Save</button>
-                          <button onClick={() => setEditingId(null)} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-[#7a6b5c] hover:bg-[var(--accent-tint)]">Cancel</button>
+                          <button onClick={() => saveEdit(g.id)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12px] font-bold text-white bg-primary hover:bg-primary/90"><Check className="w-3 h-3" /> Save</button>
+                          <button onClick={() => setEditingId(null)} className="px-2.5 py-1 rounded-lg text-[12px] font-semibold text-[#6b7280] hover:bg-[var(--accent-tint)]">Cancel</button>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <p className="text-[14px] font-bold text-[#1c1410] truncate">{g.name}</p>
-                        <p className="text-[11px] text-[#7a6b5c] mt-0.5 line-clamp-1">{g.description || 'No description'}</p>
+                        <p className="text-[15px] font-bold text-[#111318] truncate">{g.name}</p>
+                        <p className="text-[12px] text-[#6b7280] mt-0.5 line-clamp-1">{g.description || 'No description'}</p>
                       </>
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="text-center">
-                      <p className="font-headline text-[16px] font-bold text-[#1c1410] leading-tight">{g.member_count}</p>
-                      <p className="text-[9px] text-[#7a6b5c] uppercase tracking-wider">members</p>
+                      <p className="font-headline text-[16px] font-bold text-[#111318] leading-tight">{g.member_count}</p>
+                      <p className="text-[10px] text-[#6b7280] uppercase tracking-wider">members</p>
                     </div>
-                    <ChevronRight className={cn('w-4 h-4 transition-colors', isActive ? 'text-primary' : 'text-[#c4b09e]')} />
+                    <ChevronRight className={cn('w-4 h-4 transition-colors', isActive ? 'text-primary' : 'text-[#c3c8cf]')} />
                   </div>
                 </div>
               </div>
@@ -465,26 +466,26 @@ export default function ContactGroupPage() {
         </div>
 
         {/* Detail panel */}
-        <div className="bg-white rounded-2xl border border-black/[0.06] overflow-hidden flex flex-col" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden flex flex-col">
           {!selectedGroup ? (
             <div className="flex flex-col items-center justify-center py-24 text-center px-6">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                 <Users className="w-7 h-7 text-primary/50" />
               </div>
-              <p className="text-[15px] font-semibold text-[#1c1410] mb-1">Select a group</p>
-              <p className="text-[13px] text-[#7a6b5c] max-w-xs">Click a group on the left to view and manage its members.</p>
+              <p className="text-[16px] font-semibold text-[#111318] mb-1">Select a group</p>
+              <p className="text-[14px] text-[#6b7280] max-w-xs">Click a group on the left to view and manage its members.</p>
             </div>
           ) : (
             <>
               {/* Panel header */}
-              <div className="px-6 py-5 border-b border-black/[0.04] flex items-center justify-between gap-4 shrink-0">
+              <div className="px-6 py-5 border-b border-[var(--hairline)] flex items-center justify-between gap-4 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: selectedGroup.color + '18' }}>
                     <Layers className="w-5 h-5" style={{ color: selectedGroup.color }} />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-headline font-bold text-[16px] text-[#1c1410] truncate">{selectedGroup.name}</h3>
-                    <p className="text-[13px] text-[#7a6b5c] mt-0.5">
+                    <h3 className="font-headline font-bold text-[16px] text-[#111318] truncate">{selectedGroup.name}</h3>
+                    <p className="text-[14px] text-[#6b7280] mt-0.5">
                       {selectedGroup.member_count} members · Created {format(new Date(selectedGroup.created_at), 'dd MMM yyyy')}
                     </p>
                   </div>
@@ -492,26 +493,26 @@ export default function ContactGroupPage() {
                 {canManage && (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button onClick={() => startEdit(selectedGroup)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-primary transition-colors">
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b7280] hover:bg-[var(--accent-tint)] hover:text-primary transition-colors">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={handleExportCSV} disabled={members.length === 0}
                       title="Export CSV"
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[#7a6b5c] hover:bg-[var(--accent-tint)] hover:text-primary transition-colors disabled:opacity-40">
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b7280] hover:bg-[var(--accent-tint)] hover:text-primary transition-colors disabled:opacity-40">
                       <Download className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => setShowBroadcast(true)} disabled={selectedGroup.member_count === 0}
                       title="Broadcast to group"
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-40"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-40"
                       style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#6d28d9 100%)', boxShadow: '0 4px 14px rgba(109,40,217,0.28)' }}>
                       <Megaphone className="w-3.5 h-3.5" /> Broadcast
                     </button>
                     <button onClick={() => setShowAddMembers(true)}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-bold text-white transition-all hover:-translate-y-0.5" style={shadowStyle}>
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5" style={shadowStyle}>
                       <UserPlus className="w-3.5 h-3.5" /> Add
                     </button>
                     <button onClick={() => deleteGroup(selectedGroup.id)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[#c4b09e] hover:bg-red-50 hover:text-red-500 transition-colors">
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[#c3c8cf] hover:bg-red-50 hover:text-red-500 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -520,14 +521,14 @@ export default function ContactGroupPage() {
 
               {/* Members search bar */}
               {members.length > 0 && (
-                <div className="px-6 py-3 border-b border-black/[0.04] shrink-0">
+                <div className="px-6 py-3 border-b border-[var(--hairline)] shrink-0">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
                     <input value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)}
                       placeholder="Search members by name, email, phone..."
-                      className="w-full pl-9 pr-9 py-2 text-[14px] bg-[var(--app-bg)] border border-black/[0.06] rounded-xl outline-none focus:border-primary/30 placeholder:text-gray-400" />
+                      className="w-full pl-9 pr-9 py-2 text-[15px] bg-[var(--surface-2)] border border-[var(--hairline)] rounded-xl outline-none focus:border-primary/30 placeholder:text-gray-400" />
                     {memberSearch && (
-                      <button onClick={() => setMemberSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b09e8d] hover:text-[#7a6b5c]">
+                      <button onClick={() => setMemberSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#6b7280]">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     )}
@@ -538,12 +539,12 @@ export default function ContactGroupPage() {
               {/* Bulk action bar */}
               {selectedMembers.size > 0 && canManage && (
                 <div className="px-6 py-2.5 bg-primary/5 border-b border-primary/10 flex items-center gap-3 shrink-0">
-                  <span className="text-[13px] font-semibold text-primary">{selectedMembers.size} selected</span>
+                  <span className="text-[14px] font-semibold text-primary">{selectedMembers.size} selected</span>
                   <div className="flex-1" />
                   <button onClick={() => setSelectedMembers(new Set())}
-                    className="text-[13px] text-[#7a6b5c] hover:text-[#1c1410] transition-colors">Clear</button>
+                    className="text-[14px] text-[#6b7280] hover:text-[#111318] transition-colors">Clear</button>
                   <button onClick={handleBulkRemove} disabled={bulkRemoving}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60">
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60">
                     {bulkRemoving ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserMinus className="w-3 h-3" />}
                     Remove {selectedMembers.size}
                   </button>
@@ -556,28 +557,28 @@ export default function ContactGroupPage() {
               ) : members.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center px-6">
                   <div className="w-12 h-12 rounded-2xl bg-[var(--accent-tint)] flex items-center justify-center mb-3">
-                    <UserPlus className="w-6 h-6 text-[#c4b09e]" />
+                    <UserPlus className="w-6 h-6 text-[#c3c8cf]" />
                   </div>
-                  <p className="text-[14px] font-semibold text-[#1c1410] mb-1">Empty group</p>
-                  <p className="text-[13px] text-[#7a6b5c] mb-4">Add contacts manually or via automation.</p>
+                  <p className="text-[15px] font-semibold text-[#111318] mb-1">Empty group</p>
+                  <p className="text-[14px] text-[#6b7280] mb-4">Add contacts manually or via automation.</p>
                   {canManage && (
                     <button onClick={() => setShowAddMembers(true)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold text-white" style={shadowStyle}>
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-[14px] font-bold text-white" style={shadowStyle}>
                       <UserPlus className="w-3.5 h-3.5" /> Add Members
                     </button>
                   )}
                 </div>
               ) : filteredMembers.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-                  <Search className="w-8 h-8 text-[#c4b09e] mb-2" />
-                  <p className="text-[14px] font-semibold text-[#1c1410]">No members match</p>
-                  <p className="text-[13px] text-[#7a6b5c] mt-0.5">Try a different search term.</p>
+                  <Search className="w-8 h-8 text-[#c3c8cf] mb-2" />
+                  <p className="text-[15px] font-semibold text-[#111318]">No members match</p>
+                  <p className="text-[14px] text-[#6b7280] mt-0.5">Try a different search term.</p>
                 </div>
               ) : (
                 <div className="flex-1 overflow-y-auto">
                   {/* Select-all header row */}
                   {canManage && (
-                    <div className="flex items-center gap-3 px-6 py-2.5 border-b border-black/[0.04] bg-[var(--app-bg)]">
+                    <div className="flex items-center gap-3 px-6 py-2.5 border-b border-[var(--hairline)] bg-[var(--surface-2)]">
                       <input type="checkbox" checked={allFilteredSelected}
                         onChange={() => {
                           if (allFilteredSelected) {
@@ -595,17 +596,17 @@ export default function ContactGroupPage() {
                           }
                         }}
                         className="w-4 h-4 accent-primary cursor-pointer" />
-                      <span className="text-[11px] text-[#7a6b5c] font-semibold">
+                      <span className="text-[12px] text-[#6b7280] font-semibold">
                         {allFilteredSelected ? 'Deselect all' : `Select all ${filteredMembers.length}`}
                       </span>
                     </div>
                   )}
-                  <div className="divide-y divide-black/[0.04]">
+                  <div className="divide-y divide-[var(--hairline)]">
                     {filteredMembers.map((m) => {
                       const checked = selectedMembers.has(m.lead_id);
                       return (
                         <div key={m.id}
-                          className="flex items-center gap-3 px-6 py-3.5 hover:bg-[var(--app-bg)] transition-colors cursor-pointer"
+                          className="flex items-center gap-3 px-6 py-3.5 hover:bg-[var(--surface-2)] transition-colors cursor-pointer"
                           onClick={() => handleMemberClick(m)}>
                           {canManage && (
                             <input type="checkbox" checked={checked}
@@ -617,21 +618,21 @@ export default function ContactGroupPage() {
                               })}
                               className="w-4 h-4 accent-primary cursor-pointer shrink-0" />
                           )}
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[12px] font-bold text-primary shrink-0">
                             {((m.lead_name || '?')[0] ?? '?').toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[14px] font-semibold text-[#1c1410] truncate">{m.lead_name}</p>
-                            <p className="text-[11px] text-[#7a6b5c] truncate">{m.email || m.phone}</p>
+                            <p className="text-[15px] font-semibold text-[#111318] truncate">{m.lead_name}</p>
+                            <p className="text-[12px] text-[#6b7280] truncate">{m.email || m.phone}</p>
                           </div>
                           <div className="hidden sm:flex flex-col items-end gap-0.5 shrink-0">
-                            {m.pipeline_name && <span className="text-[10px] text-[#7a6b5c] bg-[var(--app-bg)] px-2 py-0.5 rounded-full">{m.pipeline_name}</span>}
-                            {m.stage_name    && <span className="text-[10px] text-primary/70 bg-primary/5 px-2 py-0.5 rounded-full">{m.stage_name}</span>}
+                            {m.pipeline_name && <span className="text-[11px] text-[#6b7280] bg-[var(--surface-2)] px-2 py-0.5 rounded-full">{m.pipeline_name}</span>}
+                            {m.stage_name    && <span className="text-[11px] text-primary/70 bg-primary/5 px-2 py-0.5 rounded-full">{m.stage_name}</span>}
                           </div>
-                          <span className="text-[10px] text-[#9e8c7c] hidden md:block capitalize">{m.added_by}</span>
+                          <span className="text-[11px] text-[#6b7280] hidden md:block capitalize">{m.added_by}</span>
                           {canManage && (
                             <button onClick={(e) => { e.stopPropagation(); removeMember(selectedGroup.id, m.lead_id); }}
-                              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#c4b09e] hover:bg-red-50 hover:text-red-500 transition-colors shrink-0">
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#c3c8cf] hover:bg-red-50 hover:text-red-500 transition-colors shrink-0">
                               <UserMinus className="w-3.5 h-3.5" />
                             </button>
                           )}
@@ -650,42 +651,42 @@ export default function ContactGroupPage() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)]">
               <div>
-                <h3 className="font-headline font-bold text-[16px] text-[#1c1410]">
+                <h3 className="font-headline font-bold text-[16px] text-[#111318]">
                   {createStep === 1 ? 'Create Group' : 'Add Members'}
                 </h3>
-                <p className="text-[11px] text-[#7a6b5c] mt-0.5">Step {createStep} of 2 - {createStep === 1 ? 'Name & details' : 'Optional: add contacts now'}</p>
+                <p className="text-[12px] text-[#6b7280] mt-0.5">Step {createStep} of 2 - {createStep === 1 ? 'Name & details' : 'Optional: add contacts now'}</p>
               </div>
-              <button onClick={resetCreate} className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+              <button onClick={resetCreate} className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280]"><X className="w-4 h-4" /></button>
             </div>
 
             {createStep === 1 ? (
               <div className="p-6 space-y-5">
                 <div>
-                  <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Group Name <span className="text-red-500">*</span></label>
+                  <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Group Name <span className="text-red-500">*</span></label>
                   <input autoFocus value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="e.g. Batch 1, VIP Clients..."
-                    className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 placeholder:text-gray-400" />
+                    className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 placeholder:text-gray-400" />
                 </div>
                 <div>
-                  <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Description</label>
+                  <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Description</label>
                   <input value={createDesc} onChange={(e) => setCreateDesc(e.target.value)} placeholder="What is this group for?"
-                    className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 placeholder:text-gray-400" />
+                    className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 placeholder:text-gray-400" />
                 </div>
                 <div>
-                  <label className="text-[13px] font-semibold text-[#1c1410] mb-2 block">Color</label>
+                  <label className="text-[14px] font-semibold text-[#111318] mb-2 block">Color</label>
                   <div className="flex gap-2 flex-wrap">
                     {GROUP_COLORS.map((c) => (
                       <button key={c} onClick={() => setCreateColor(c)}
-                        className={cn('w-8 h-8 rounded-full transition-all', createColor === c ? 'ring-2 ring-offset-2 ring-[#1c1410] scale-110' : 'hover:scale-110')}
+                        className={cn('w-8 h-8 rounded-full transition-all', createColor === c ? 'ring-2 ring-offset-2 ring-[#111318] scale-110' : 'hover:scale-110')}
                         style={{ backgroundColor: c }} />
                     ))}
                   </div>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button onClick={resetCreate} className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--accent-tint)]">Cancel</button>
+                  <button onClick={resetCreate} className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--accent-tint)]">Cancel</button>
                   <button onClick={() => { if (!createName.trim()) { toast.error('Name is required'); return; } setCreateStep(2); }}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5" style={shadowStyle}>
+                    className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5" style={shadowStyle}>
                     Next
                   </button>
                 </div>
@@ -694,25 +695,25 @@ export default function ContactGroupPage() {
               <div className="flex flex-col" style={{ maxHeight: '75vh' }}>
                 {/* Group name chip */}
                 <div className="px-6 pt-4 pb-0 shrink-0">
-                  <div className="flex items-center gap-2 p-3 bg-[var(--app-bg)] rounded-xl border border-black/[0.04] mb-3">
+                  <div className="flex items-center gap-2 p-3 bg-[var(--surface-2)] rounded-xl border border-[var(--hairline)] mb-3">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: createColor + '18' }}>
                       <Layers className="w-3.5 h-3.5" style={{ color: createColor }} />
                     </div>
-                    <span className="text-[14px] font-bold text-[#1c1410]">{createName}</span>
+                    <span className="text-[15px] font-bold text-[#111318]">{createName}</span>
                     {createTab === 'search' && createSelected.length > 0 && (
-                      <span className="ml-auto text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{createSelected.length} selected</span>
+                      <span className="ml-auto text-[12px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{createSelected.length} selected</span>
                     )}
                     {createTab === 'filter' && cfPreviewCount !== null && (
-                      <span className="ml-auto text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{cfPreviewCount} leads</span>
+                      <span className="ml-auto text-[12px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{cfPreviewCount} leads</span>
                     )}
                   </div>
                 </div>
                 {/* Tabs */}
-                <div className="flex border-b border-black/5 shrink-0 px-6">
+                <div className="flex border-b border-[var(--hairline)] shrink-0 px-6">
                   {(['search', 'filter'] as const).map((t) => (
                     <button key={t} onClick={() => setCreateTab(t)}
-                      className={cn('flex-1 py-2.5 text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors',
-                        createTab === t ? 'text-primary border-b-2 border-primary' : 'text-[#7a6b5c] hover:text-[#1c1410]'
+                      className={cn('flex-1 py-2.5 text-[14px] font-semibold flex items-center justify-center gap-1.5 transition-colors',
+                        createTab === t ? 'text-primary border-b-2 border-primary' : 'text-[#6b7280] hover:text-[#111318]'
                       )}>
                       {t === 'search' ? <><Search className="w-3.5 h-3.5" /> Search & Select</> : <><Filter className="w-3.5 h-3.5" /> From Pipeline / Filter</>}
                     </button>
@@ -723,31 +724,31 @@ export default function ContactGroupPage() {
                 {createTab === 'search' && (<>
                   <div className="px-6 pt-3 pb-2 shrink-0">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
                       <input value={createSearch} onChange={(e) => setCreateSearch(e.target.value)} placeholder="Search contacts..."
-                        className="w-full pl-9 pr-4 py-2.5 text-[14px] bg-white border border-black/10 rounded-xl outline-none focus:border-primary/40 placeholder:text-gray-400" />
+                        className="w-full pl-9 pr-4 py-2.5 text-[15px] bg-white border border-[var(--hairline)] rounded-xl outline-none focus:border-primary/40 placeholder:text-gray-400" />
                     </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto divide-y divide-black/[0.04] px-2">
+                  <div className="flex-1 overflow-y-auto divide-y divide-[var(--hairline)] px-2">
                     {filteredCreateLeads.map((l) => {
                       const checked = createSelected.includes(l.id);
                       return (
-                        <label key={l.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--app-bg)] cursor-pointer rounded-xl transition-colors">
+                        <label key={l.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] cursor-pointer rounded-xl transition-colors">
                           <input type="checkbox" checked={checked}
                             onChange={() => setCreateSelected((p) => checked ? p.filter((x) => x !== l.id) : [...p, l.id])}
                             className="w-4 h-4 accent-primary" />
-                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
                             {l.firstName[0]}{l.lastName[0]}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[14px] font-semibold text-[#1c1410] truncate">{l.firstName} {l.lastName}</p>
-                            <p className="text-[11px] text-[#7a6b5c] truncate">{l.email || l.phone}</p>
+                            <p className="text-[15px] font-semibold text-[#111318] truncate">{l.firstName} {l.lastName}</p>
+                            <p className="text-[12px] text-[#6b7280] truncate">{l.email || l.phone}</p>
                           </div>
-                          <span className="text-[10px] text-[#7a6b5c] bg-[var(--app-bg)] px-2 py-0.5 rounded-full">{l.source}</span>
+                          <span className="text-[11px] text-[#6b7280] bg-[var(--surface-2)] px-2 py-0.5 rounded-full">{l.source}</span>
                         </label>
                       );
                     })}
-                    {filteredCreateLeads.length === 0 && <p className="text-center py-8 text-[14px] text-[#7a6b5c]">No contacts found.</p>}
+                    {filteredCreateLeads.length === 0 && <p className="text-center py-8 text-[15px] text-[#6b7280]">No contacts found.</p>}
                   </div>
                 </>)}
 
@@ -755,18 +756,18 @@ export default function ContactGroupPage() {
                 {createTab === 'filter' && (
                   <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     <div>
-                      <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Pipeline</label>
+                      <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Pipeline</label>
                       <select value={cfPipelineId} onChange={(e) => { setCfPipelineId(e.target.value); setCfStageId(''); setCfPreviewCount(null); }}
-                        className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white">
+                        className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 bg-white">
                         <option value="">Any pipeline</option>
                         {pipelines.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Stage</label>
+                      <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Stage</label>
                       <select value={cfStageId} onChange={(e) => { setCfStageId(e.target.value); setCfPreviewCount(null); }}
                         disabled={!cfPipelineId}
-                        className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white disabled:opacity-50">
+                        className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 bg-white disabled:opacity-50">
                         <option value="">Any stage</option>
                         {(pipelines.find((p: any) => p.id === cfPipelineId)?.stages ?? []).map((s: any) => (
                           <option key={s.id} value={s.id}>{s.name}</option>
@@ -774,45 +775,45 @@ export default function ContactGroupPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Tags</label>
+                      <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Tags</label>
                       <div className="flex flex-wrap gap-1.5">
                         {allTags.map((t: any) => { const tag = typeof t === 'string' ? t : t.name; return (
                           <button key={tag} onClick={() => { setCfTags((p) => p.includes(tag) ? p.filter((x) => x !== tag) : [...p, tag]); setCfPreviewCount(null); }}
-                            className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors',
-                              cfTags.includes(tag) ? 'bg-primary text-white border-primary' : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/30'
+                            className={cn('px-2.5 py-1 rounded-full text-[12px] font-semibold border transition-colors',
+                              cfTags.includes(tag) ? 'bg-primary text-white border-primary' : 'bg-white text-[#6b7280] border-[var(--hairline)] hover:border-primary/30'
                             )}>{tag}</button>
                         ); })}
-                        {allTags.length === 0 && <p className="text-[13px] text-[#7a6b5c]">No tags available</p>}
+                        {allTags.length === 0 && <p className="text-[14px] text-[#6b7280]">No tags available</p>}
                       </div>
                     </div>
                     <div>
-                      <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Source</label>
+                      <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Source</label>
                       <select value={cfSource} onChange={(e) => { setCfSource(e.target.value); setCfPreviewCount(null); }}
-                        className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white">
+                        className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 bg-white">
                         <option value="">Any source</option>
                         {SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Created From</label>
-                        <input type="date" value={cfDateFrom} onChange={(e) => { setCfDateFrom(e.target.value); setCfPreviewCount(null); }}
-                          className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40" />
+                        <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Created From</label>
+                        <DatePicker value={cfDateFrom} onChange={(v) => { setCfDateFrom(v); setCfPreviewCount(null); }}
+                          placeholder="Created from" className="w-full" />
                       </div>
                       <div>
-                        <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Created To</label>
-                        <input type="date" value={cfDateTo} onChange={(e) => { setCfDateTo(e.target.value); setCfPreviewCount(null); }}
-                          className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40" />
+                        <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Created To</label>
+                        <DatePicker value={cfDateTo} onChange={(v) => { setCfDateTo(v); setCfPreviewCount(null); }}
+                          placeholder="Created to" className="w-full" />
                       </div>
                     </div>
                     {cfPreviewCount !== null && (
                       <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-xl border border-primary/20">
                         <Users className="w-4 h-4 text-primary shrink-0" />
-                        <p className="text-[14px] font-semibold text-primary">{cfPreviewCount} lead(s) match your filter</p>
+                        <p className="text-[15px] font-semibold text-primary">{cfPreviewCount} lead(s) match your filter</p>
                       </div>
                     )}
                     <button onClick={handleCreateFilterPreview} disabled={cfPreviewing}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--accent-tint)] disabled:opacity-60 transition-colors">
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--accent-tint)] disabled:opacity-60 transition-colors">
                       {cfPreviewing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Filter className="w-3.5 h-3.5" />}
                       Preview Count
                     </button>
@@ -820,10 +821,10 @@ export default function ContactGroupPage() {
                 )}
 
                 {/* Footer */}
-                <div className="px-6 py-4 border-t border-black/5 flex gap-3 shrink-0">
-                  <button onClick={() => setCreateStep(1)} className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--accent-tint)]">Back</button>
+                <div className="px-6 py-4 border-t border-[var(--hairline)] flex gap-3 shrink-0">
+                  <button onClick={() => setCreateStep(1)} className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--accent-tint)]">Back</button>
                   <button onClick={handleCreate} disabled={creating}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60" style={shadowStyle}>
+                    className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60" style={shadowStyle}>
                     {creating ? 'Creating...'
                       : createTab === 'search' && createSelected.length > 0 ? `Create with ${createSelected.length} member(s)`
                       : createTab === 'filter' && cfPreviewCount !== null ? `Create with ${cfPreviewCount} lead(s)`
@@ -969,20 +970,20 @@ function AddMembersModal({ groupId, groupName, existingLeadIds, leads, pipelines
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col" style={{ maxHeight: '80vh' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)] shrink-0">
           <div>
-            <h3 className="font-headline font-bold text-[15px] text-[#1c1410]">Add to "{groupName}"</h3>
-            {tab === 'search' && selected.length > 0 && <p className="text-[11px] text-primary font-semibold mt-0.5">{selected.length} selected</p>}
+            <h3 className="font-headline font-bold text-[16px] text-[#111318]">Add to "{groupName}"</h3>
+            {tab === 'search' && selected.length > 0 && <p className="text-[12px] text-primary font-semibold mt-0.5">{selected.length} selected</p>}
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280]"><X className="w-4 h-4" /></button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-black/5 shrink-0">
+        <div className="flex border-b border-[var(--hairline)] shrink-0">
           {(['search', 'filter'] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)}
-              className={cn('flex-1 py-2.5 text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors',
-                tab === t ? 'text-primary border-b-2 border-primary' : 'text-[#7a6b5c] hover:text-[#1c1410]'
+              className={cn('flex-1 py-2.5 text-[14px] font-semibold flex items-center justify-center gap-1.5 transition-colors',
+                tab === t ? 'text-primary border-b-2 border-primary' : 'text-[#6b7280] hover:text-[#111318]'
               )}>
               {t === 'search' ? <><Search className="w-3.5 h-3.5" /> Search & Select</> : <><Filter className="w-3.5 h-3.5" /> From Filter</>}
             </button>
@@ -993,34 +994,34 @@ function AddMembersModal({ groupId, groupName, existingLeadIds, leads, pipelines
         {tab === 'search' && (<>
           <div className="px-6 pt-3 pb-2 shrink-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#b09e8d]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
               <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, email, phone..."
-                className="w-full pl-9 pr-4 py-2.5 text-[14px] bg-white border border-black/10 rounded-xl outline-none focus:border-primary/40 placeholder:text-gray-400" />
+                className="w-full pl-9 pr-4 py-2.5 text-[15px] bg-white border border-[var(--hairline)] rounded-xl outline-none focus:border-primary/40 placeholder:text-gray-400" />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-black/[0.04] px-2">
+          <div className="flex-1 overflow-y-auto divide-y divide-[var(--hairline)] px-2">
             {filteredLeads.map((l) => {
               const checked = selected.includes(l.id);
               return (
-                <label key={l.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--app-bg)] cursor-pointer rounded-xl transition-colors">
+                <label key={l.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] cursor-pointer rounded-xl transition-colors">
                   <input type="checkbox" checked={checked} onChange={() => toggle(l.id)} className="w-4 h-4 accent-primary" />
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
                     {l.firstName[0]}{l.lastName[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-[#1c1410] truncate">{l.firstName} {l.lastName}</p>
-                    <p className="text-[11px] text-[#7a6b5c] truncate">{l.email || l.phone}</p>
+                    <p className="text-[15px] font-semibold text-[#111318] truncate">{l.firstName} {l.lastName}</p>
+                    <p className="text-[12px] text-[#6b7280] truncate">{l.email || l.phone}</p>
                   </div>
-                  <span className="text-[10px] text-[#7a6b5c] bg-[var(--app-bg)] px-2 py-0.5 rounded-full">{l.source}</span>
+                  <span className="text-[11px] text-[#6b7280] bg-[var(--surface-2)] px-2 py-0.5 rounded-full">{l.source}</span>
                 </label>
               );
             })}
-            {filteredLeads.length === 0 && <p className="text-center py-8 text-[14px] text-[#7a6b5c]">No contacts available to add.</p>}
+            {filteredLeads.length === 0 && <p className="text-center py-8 text-[15px] text-[#6b7280]">No contacts available to add.</p>}
           </div>
-          <div className="px-6 py-4 border-t border-black/5 flex gap-3 shrink-0">
-            <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--accent-tint)]">Cancel</button>
+          <div className="px-6 py-4 border-t border-[var(--hairline)] flex gap-3 shrink-0">
+            <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--accent-tint)]">Cancel</button>
             <button onClick={handleAddManual} disabled={selected.length === 0 || saving}
-              className={cn('flex-1 px-4 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all', selected.length > 0 && !saving ? 'hover:-translate-y-0.5' : 'opacity-50 cursor-not-allowed')}
+              className={cn('flex-1 px-4 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all', selected.length > 0 && !saving ? 'hover:-translate-y-0.5' : 'opacity-50 cursor-not-allowed')}
               style={shadowStyle}>
               {saving ? 'Adding...' : `Add ${selected.length > 0 ? `${selected.length} Member(s)` : 'Members'}`}
             </button>
@@ -1032,72 +1033,72 @@ function AddMembersModal({ groupId, groupName, existingLeadIds, leads, pipelines
           <div className="flex flex-col flex-1 overflow-hidden">
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Pipeline</label>
+                <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Pipeline</label>
                 <select value={pipelineId} onChange={(e) => { setPipelineId(e.target.value); setStageId(''); setPreviewCount(null); }}
-                  className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white">
+                  className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 bg-white">
                   <option value="">Any pipeline</option>
                   {pipelines.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Stage</label>
+                <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Stage</label>
                 <select value={stageId} onChange={(e) => { setStageId(e.target.value); setPreviewCount(null); }}
                   disabled={!pipelineId}
-                  className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white disabled:opacity-50">
+                  className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 bg-white disabled:opacity-50">
                   <option value="">Any stage</option>
                   {availableStages.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Tags</label>
+                <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Tags</label>
                 <div className="flex flex-wrap gap-1.5">
                   {tagNames.map((tag: string) => (
                     <button key={tag} onClick={() => { setSelectedTags((p) => p.includes(tag) ? p.filter((x) => x !== tag) : [...p, tag]); setPreviewCount(null); }}
-                      className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors',
-                        selectedTags.includes(tag) ? 'bg-primary text-white border-primary' : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/30'
+                      className={cn('px-2.5 py-1 rounded-full text-[12px] font-semibold border transition-colors',
+                        selectedTags.includes(tag) ? 'bg-primary text-white border-primary' : 'bg-white text-[#6b7280] border-[var(--hairline)] hover:border-primary/30'
                       )}>
                       {tag}
                     </button>
                   ))}
-                  {tagNames.length === 0 && <p className="text-[13px] text-[#7a6b5c]">No tags available</p>}
+                  {tagNames.length === 0 && <p className="text-[14px] text-[#6b7280]">No tags available</p>}
                 </div>
               </div>
               <div>
-                <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Source</label>
+                <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Source</label>
                 <select value={source} onChange={(e) => { setSource(e.target.value); setPreviewCount(null); }}
-                  className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white">
+                  className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 bg-white">
                   <option value="">Any source</option>
                   {SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Created From</label>
-                  <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPreviewCount(null); }}
-                    className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40" />
+                  <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Created From</label>
+                  <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); setPreviewCount(null); }}
+                    placeholder="Created from" className="w-full" />
                 </div>
                 <div>
-                  <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Created To</label>
-                  <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPreviewCount(null); }}
-                    className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40" />
+                  <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Created To</label>
+                  <DatePicker value={dateTo} onChange={(v) => { setDateTo(v); setPreviewCount(null); }}
+                    placeholder="Created to" className="w-full" />
                 </div>
               </div>
               {previewCount !== null && (
                 <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-xl border border-primary/20">
                   <Users className="w-4 h-4 text-primary shrink-0" />
-                  <p className="text-[14px] font-semibold text-primary">{previewCount} lead(s) match your filter</p>
+                  <p className="text-[15px] font-semibold text-primary">{previewCount} lead(s) match your filter</p>
                 </div>
               )}
             </div>
 
-            <div className="px-6 py-4 border-t border-black/5 flex gap-3 shrink-0">
+            <div className="px-6 py-4 border-t border-[var(--hairline)] flex gap-3 shrink-0">
               <button onClick={handlePreview} disabled={previewing}
-                className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--accent-tint)] disabled:opacity-60 flex items-center justify-center gap-2">
+                className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--accent-tint)] disabled:opacity-60 flex items-center justify-center gap-2">
                 {previewing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Filter className="w-3.5 h-3.5" />}
                 Preview Count
               </button>
               <button onClick={handleAddFilter} disabled={saving}
-                className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60" style={shadowStyle}>
+                className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60" style={shadowStyle}>
                 {saving ? 'Adding...' : previewCount !== null ? `Add ${previewCount} Lead(s)` : 'Add All Matches'}
               </button>
             </div>
@@ -1157,61 +1158,61 @@ function BroadcastModal({ groupId, groupName, memberCount, onClose }: {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col" style={{ maxHeight: '85vh' }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)] shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0"
               style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#6d28d9 100%)' }}>
               <Megaphone className="w-4.5 h-4.5 w-[18px] h-[18px]" />
             </div>
             <div>
-              <h3 className="font-headline font-bold text-[15px] text-[#1c1410]">Broadcast to "{groupName}"</h3>
-              <p className="text-[11px] text-[#7a6b5c] mt-0.5">{memberCount} member{memberCount !== 1 ? 's' : ''} in this group</p>
+              <h3 className="font-headline font-bold text-[16px] text-[#111318]">Broadcast to "{groupName}"</h3>
+              <p className="text-[12px] text-[#6b7280] mt-0.5">{memberCount} member{memberCount !== 1 ? 's' : ''} in this group</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280]"><X className="w-4 h-4" /></button>
         </div>
 
         {/* Result screen */}
         {result ? (
           <div className="flex-1 flex flex-col p-6 gap-4">
-            <p className="text-[15px] font-bold text-[#1c1410] text-center">Broadcast Complete</p>
+            <p className="text-[16px] font-bold text-[#111318] text-center">Broadcast Complete</p>
             <div className="grid grid-cols-3 gap-3">
               <div className="flex flex-col items-center gap-1.5 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                 <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                 <span className="font-headline text-[22px] font-bold text-emerald-600">{result.sent}</span>
-                <span className="text-[11px] text-emerald-600 font-semibold">Sent</span>
+                <span className="text-[12px] text-emerald-600 font-semibold">Sent</span>
               </div>
               <div className="flex flex-col items-center gap-1.5 p-4 bg-red-50 rounded-2xl border border-red-100">
                 <AlertCircle className="w-6 h-6 text-red-500" />
                 <span className="font-headline text-[22px] font-bold text-red-600">{result.failed}</span>
-                <span className="text-[11px] text-red-600 font-semibold">Failed</span>
+                <span className="text-[12px] text-red-600 font-semibold">Failed</span>
               </div>
               <div className="flex flex-col items-center gap-1.5 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                 <SkipForward className="w-6 h-6 text-gray-400" />
                 <span className="font-headline text-[22px] font-bold text-gray-500">{result.skipped}</span>
-                <span className="text-[11px] text-gray-500 font-semibold">Skipped</span>
+                <span className="text-[12px] text-gray-500 font-semibold">Skipped</span>
               </div>
             </div>
             {result.skipped > 0 && (
-              <p className="text-[11px] text-[#7a6b5c] text-center">
+              <p className="text-[12px] text-[#6b7280] text-center">
                 {result.skipped} member{result.skipped !== 1 ? 's' : ''} skipped - no {tab === 'whatsapp' ? 'phone number' : 'email address'} on record
               </p>
             )}
             {result.errors.length > 0 && (
               <div className="bg-red-50 rounded-xl border border-red-100 p-3 max-h-28 overflow-y-auto">
-                <p className="text-[11px] font-bold text-red-600 mb-1.5">Errors:</p>
+                <p className="text-[12px] font-bold text-red-600 mb-1.5">Errors:</p>
                 {result.errors.map((e, i) => (
-                  <p key={i} className="text-[11px] text-red-500 leading-relaxed">{e}</p>
+                  <p key={i} className="text-[12px] text-red-500 leading-relaxed">{e}</p>
                 ))}
               </div>
             )}
             <div className="flex gap-3 mt-auto">
               <button onClick={() => setResult(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--accent-tint)]">
+                className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--accent-tint)]">
                 Send Again
               </button>
               <button onClick={onClose}
-                className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-bold text-white"
+                className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-bold text-white"
                 style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#6d28d9 100%)' }}>
                 Done
               </button>
@@ -1220,11 +1221,11 @@ function BroadcastModal({ groupId, groupName, memberCount, onClose }: {
         ) : (
           <>
             {/* Channel tabs */}
-            <div className="flex border-b border-black/5 shrink-0">
+            <div className="flex border-b border-[var(--hairline)] shrink-0">
               {(['whatsapp', 'email'] as const).map((t) => (
                 <button key={t} onClick={() => setTab(t)}
-                  className={cn('flex-1 py-2.5 text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors',
-                    tab === t ? 'text-primary border-b-2 border-primary' : 'text-[#7a6b5c] hover:text-[#1c1410]'
+                  className={cn('flex-1 py-2.5 text-[14px] font-semibold flex items-center justify-center gap-1.5 transition-colors',
+                    tab === t ? 'text-primary border-b-2 border-primary' : 'text-[#6b7280] hover:text-[#111318]'
                   )}>
                   {t === 'whatsapp'
                     ? <><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</>
@@ -1237,12 +1238,12 @@ function BroadcastModal({ groupId, groupName, memberCount, onClose }: {
               {/* Template quick-fill */}
               {templates.length > 0 && (
                 <div>
-                  <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Use a template</label>
+                  <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Use a template</label>
                   <select onChange={(e) => {
                     const t = templates.find((x) => x.id === e.target.value);
                     if (t) setMessage(t.body);
                   }} defaultValue=""
-                    className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 bg-white">
+                    className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 bg-white">
                     <option value="">- pick a template -</option>
                     {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
@@ -1252,29 +1253,29 @@ function BroadcastModal({ groupId, groupName, memberCount, onClose }: {
               {/* Email subject */}
               {tab === 'email' && (
                 <div>
-                  <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">Subject <span className="text-red-500">*</span></label>
+                  <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">Subject <span className="text-red-500">*</span></label>
                   <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="e.g. Special offer for you"
-                    className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 placeholder:text-gray-400" />
+                    className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 placeholder:text-gray-400" />
                 </div>
               )}
 
               {/* Message */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[13px] font-semibold text-[#1c1410]">Message <span className="text-red-500">*</span></label>
-                  <span className="text-[11px] text-[#7a6b5c]">{message.length} chars</span>
+                  <label className="text-[14px] font-semibold text-[#111318]">Message <span className="text-red-500">*</span></label>
+                  <span className="text-[12px] text-[#6b7280]">{message.length} chars</span>
                 </div>
                 <textarea value={message} onChange={(e) => setMessage(e.target.value)}
                   placeholder={tab === 'whatsapp'
                     ? 'Hi {first_name}, we have an exciting offer for you...'
                     : 'Dear {full_name},\n\nWe have an update for you...'}
                   rows={6}
-                  className="w-full border border-black/10 rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-primary/40 placeholder:text-gray-400 resize-none" />
-                <p className="text-[11px] text-[#7a6b5c] mt-1">
-                  Variables: <code className="bg-gray-100 px-1 rounded text-[10px]">{'{first_name}'}</code>{' '}
-                  <code className="bg-gray-100 px-1 rounded text-[10px]">{'{full_name}'}</code>{' '}
-                  <code className="bg-gray-100 px-1 rounded text-[10px]">{'{phone}'}</code>{' '}
-                  <code className="bg-gray-100 px-1 rounded text-[10px]">{'{email}'}</code>
+                  className="w-full border border-[var(--hairline)] rounded-xl px-3.5 py-2.5 text-[15px] outline-none focus:border-primary/40 placeholder:text-gray-400 resize-none" />
+                <p className="text-[12px] text-[#6b7280] mt-1">
+                  Variables: <code className="bg-gray-100 px-1 rounded text-[11px]">{'{first_name}'}</code>{' '}
+                  <code className="bg-gray-100 px-1 rounded text-[11px]">{'{full_name}'}</code>{' '}
+                  <code className="bg-gray-100 px-1 rounded text-[11px]">{'{phone}'}</code>{' '}
+                  <code className="bg-gray-100 px-1 rounded text-[11px]">{'{email}'}</code>
                 </p>
               </div>
 
@@ -1282,7 +1283,7 @@ function BroadcastModal({ groupId, groupName, memberCount, onClose }: {
               {memberCount > 100 && (
                 <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
                   <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[13px] text-amber-700">
+                  <p className="text-[14px] text-amber-700">
                     This group has <strong>{memberCount}</strong> members. The broadcast may take a moment to complete.
                   </p>
                 </div>
@@ -1290,13 +1291,13 @@ function BroadcastModal({ groupId, groupName, memberCount, onClose }: {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-black/5 flex gap-3 shrink-0">
+            <div className="px-6 py-4 border-t border-[var(--hairline)] flex gap-3 shrink-0">
               <button onClick={onClose}
-                className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--accent-tint)]">
+                className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--accent-tint)]">
                 Cancel
               </button>
               <button onClick={handleSend} disabled={!canSend || sending}
-                className="flex-1 px-4 py-2.5 rounded-xl text-[14px] font-bold text-white flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-60"
+                className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-bold text-white flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-60"
                 style={{ background: 'linear-gradient(135deg,#7c3aed 0%,#6d28d9 100%)', boxShadow: canSend && !sending ? '0 4px 14px rgba(109,40,217,0.28)' : undefined }}>
                 {sending
                   ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending...</>

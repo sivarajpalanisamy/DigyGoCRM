@@ -46,6 +46,7 @@ import callsRoutes from './routes/calls';
 import paymentsRoutes from './routes/payments';
 import devicesRoutes from './routes/devices';
 import mobileRoutes from './routes/mobile';
+import supportRoutes from './routes/support';
 import googleSheetsRoutes from './routes/google_sheets';
 import { processRecordingDownloads, recordingDownloadProcessor, RECORDING_QUEUE } from './utils/recordingDownloader';
 import { registerQueue } from './lib/queue';
@@ -242,6 +243,7 @@ app.use('/api/payments',          paymentsRoutes);
 app.use('/api/devices',           devicesRoutes);
 app.use('/api/mobile',            mobileRoutes); // device-token auth (mobile dialer app)
 app.use('/api/integrations/sheets', googleSheetsRoutes);
+app.use('/api/support',           supportRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));

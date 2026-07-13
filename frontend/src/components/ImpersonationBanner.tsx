@@ -25,16 +25,16 @@ export default function ImpersonationBanner() {
       {/* Left - what you're viewing */}
       <div className="flex items-center gap-2 text-white min-w-0">
         <Eye className="w-3.5 h-3.5 text-orange-200 shrink-0" />
-        <span className="text-[13px] font-semibold text-orange-100 shrink-0 hidden sm:inline">Viewing as</span>
-        <span className="text-[14px] font-bold text-white truncate">
+        <span className="text-[14px] font-semibold text-orange-100 shrink-0 hidden sm:inline">Viewing as</span>
+        <span className="text-[15px] font-bold text-white truncate">
           {companyName}
         </span>
         {currentUser?.email && (
-          <span className="text-[11px] text-orange-200 truncate hidden md:inline">
+          <span className="text-[12px] text-orange-200 truncate hidden md:inline">
             · {currentUser.name} ({currentUser.email})
           </span>
         )}
-        <span className="hidden lg:inline text-[10px] text-orange-300 bg-orange-900/40 px-2 py-0.5 rounded-full shrink-0 border border-orange-700/50">
+        <span className="hidden lg:inline text-[11px] text-orange-300 bg-orange-900/40 px-2 py-0.5 rounded-full shrink-0 border border-orange-700/50">
           IMPERSONATION SESSION
         </span>
       </div>
@@ -42,7 +42,7 @@ export default function ImpersonationBanner() {
       {/* Right - exit button */}
       <button
         onClick={handleExit}
-        className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[13px] font-bold text-white border border-orange-400/50 hover:bg-orange-900/50 transition-colors shrink-0 ml-3"
+        className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[14px] font-bold text-white border border-orange-400/50 hover:bg-orange-900/50 transition-colors shrink-0 ml-3"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">Back to Super Admin</span>

@@ -24,19 +24,19 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Api.instance.init();
-  runApp(const ProviderScope(child: DigygoDialerApp()));
+  runApp(const ProviderScope(child: HawcusDialerApp()));
 }
 
-class DigygoDialerApp extends StatefulWidget {
-  const DigygoDialerApp({super.key});
+class HawcusDialerApp extends StatefulWidget {
+  const HawcusDialerApp({super.key});
 
   @override
-  State<DigygoDialerApp> createState() => _DigygoDialerAppState();
+  State<HawcusDialerApp> createState() => _HawcusDialerAppState();
 }
 
-class _DigygoDialerAppState extends State<DigygoDialerApp> with WidgetsBindingObserver {
+class _HawcusDialerAppState extends State<HawcusDialerApp> with WidgetsBindingObserver {
   final _navKey = GlobalKey<NavigatorState>();
-  static const _nativeCh = MethodChannel('digygo/dialer');
+  static const _nativeCh = MethodChannel('hawcus/dialer');
   StreamSubscription<CallState>? _callSub;
   bool _inCallShown = false;
   bool _callDetailsOpen = false;
@@ -94,15 +94,15 @@ class _DigygoDialerAppState extends State<DigygoDialerApp> with WidgetsBindingOb
   Future<void> _maybeShowPostCallFromLog() async {
     try {
       if (!await Api.instance.hasDeviceToken()) return;
-      final logs = await DialerData.instance.callLogs();
-      if (logs.isEmpty) return;
-      final e = logs.first; // newest first
+      // Newest call that ended in the last 3 minutes AND is on a CRM-verified SIM.
+      // The SIM gate stops a call on the skipped/unverified SIM of a dual-SIM phone
+      // from being surfaced and saved as a lead with the wrong number.
+      final e = await DialerData.instance
+          .latestVerifiedSimCall(withinMs: 3 * 60 * 1000);
+      if (e == null) return;
       final number = e.number ?? '';
       if (number.isEmpty) return;
       final ts = e.timestamp ?? 0;
-      final endMs = ts + ((e.duration ?? 0) * 1000);
-      // Only surface calls that ended in the last 3 minutes.
-      if (DateTime.now().millisecondsSinceEpoch - endMs > 3 * 60 * 1000) return;
       final isOut = e.callType == CallType.outgoing;
       final dur = e.duration ?? 0;
       String outcome;

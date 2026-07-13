@@ -1,8 +1,8 @@
-name: digygo_dialer
-description: "DigyGo Dialer - call + CRM sync"
+name: hawcus_dialer
+description: "Hawcus Dialer - call + CRM sync"
 publish_to: 'none'
 
-version: 1.2.3+6
+version: 1.2.4+7
 
 environment:
   sdk: ^3.10.4

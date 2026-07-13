@@ -32,7 +32,7 @@ interface Theme { name: string; primary: string; primaryText: string; bg: string
 // ── Themes ────────────────────────────────────────────────────────────────────
 
 const THEMES: Record<string, Theme> = {
-  brand:  { name: 'Brand',   primary: '#ea580c', primaryText: '#fff', bg: '#ffffff', text: '#1c1410', muted: '#7a6b5c', accent: '#fff7f0' },
+  brand:  { name: 'Brand',   primary: '#ea580c', primaryText: '#fff', bg: '#ffffff', text: '#111318', muted: '#6b7280', accent: '#fff7f0' },
   ocean:  { name: 'Ocean',   primary: '#2563eb', primaryText: '#fff', bg: '#ffffff', text: '#0f172a', muted: '#64748b', accent: '#eff6ff' },
   forest: { name: 'Forest',  primary: '#16a34a', primaryText: '#fff', bg: '#ffffff', text: '#14532d', muted: '#6b7280', accent: '#f0fdf4' },
   royal:  { name: 'Royal',   primary: '#7c3aed', primaryText: '#fff', bg: '#ffffff', text: '#1e1b4b', muted: '#6b7280', accent: '#f5f3ff' },
@@ -98,7 +98,7 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
         }}>
           <h1 className="text-[34px] font-extrabold leading-tight max-w-xl" style={{ color: theme.text }}>{p.headline}</h1>
           <p className="text-[16px] max-w-lg leading-relaxed" style={{ color: theme.muted }}>{p.subtext}</p>
-          <button className="mt-2 px-8 py-3.5 rounded-xl text-[15px] font-bold shadow-lg"
+          <button className="mt-2 px-8 py-3.5 rounded-xl text-[16px] font-bold shadow-lg"
             style={{ background: theme.primary, color: theme.primaryText }}>{p.btnText}</button>
         </div>
       );
@@ -116,7 +116,7 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
     case 'paragraph':
       return (
         <div className={`px-10 py-4 flex flex-col ${alignFlex}`}>
-          <p className={`leading-relaxed max-w-2xl ${p.size === 'sm' ? 'text-[14px]' : p.size === 'lg' ? 'text-[18px]' : 'text-[15px]'}`}
+          <p className={`leading-relaxed max-w-2xl ${p.size === 'sm' ? 'text-[15px]' : p.size === 'lg' ? 'text-[18px]' : 'text-[16px]'}`}
             style={{ color: theme.muted }}>{p.text}</p>
         </div>
       );
@@ -124,7 +124,7 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
     case 'button':
       return (
         <div className={`px-10 py-5 flex ${alignFlex}`}>
-          <button className="px-7 py-3 rounded-xl text-[15px] font-bold transition-all" style={
+          <button className="px-7 py-3 rounded-xl text-[16px] font-bold transition-all" style={
             p.style === 'primary' ? { background: theme.primary, color: theme.primaryText } :
             p.style === 'outline' ? { border: `2px solid ${theme.primary}`, color: theme.primary, background: 'transparent' } :
             { color: theme.primary, background: 'transparent', textDecoration: 'underline' }
@@ -136,7 +136,7 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
       return (
         <div className="px-10 py-5">
           <img src={p.url} alt={p.alt} className={`w-full object-cover max-h-72 ${p.rounded ? 'rounded-2xl' : ''}`} />
-          {p.caption && <p className="text-center text-[13px] mt-2" style={{ color: theme.muted }}>{p.caption}</p>}
+          {p.caption && <p className="text-center text-[14px] mt-2" style={{ color: theme.muted }}>{p.caption}</p>}
         </div>
       );
 
@@ -158,8 +158,8 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
             {(p.items ?? []).map((item: any, i: number) => (
               <div key={i} className="flex flex-col gap-2 p-5 rounded-2xl" style={{ background: theme.accent }}>
                 <span className="text-2xl">{item.icon}</span>
-                <h4 className="font-bold text-[15px]" style={{ color: theme.text }}>{item.title}</h4>
-                <p className="text-[13px] leading-relaxed" style={{ color: theme.muted }}>{item.desc}</p>
+                <h4 className="font-bold text-[16px]" style={{ color: theme.text }}>{item.title}</h4>
+                <p className="text-[14px] leading-relaxed" style={{ color: theme.muted }}>{item.desc}</p>
               </div>
             ))}
           </div>
@@ -170,8 +170,8 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
       return (
         <div className="px-10 py-14 flex flex-col gap-4 items-center text-center" style={{ background: theme.primary }}>
           <h2 className="text-[26px] font-extrabold" style={{ color: theme.primaryText }}>{p.headline}</h2>
-          <p className="text-[15px] max-w-md opacity-90" style={{ color: theme.primaryText }}>{p.subtext}</p>
-          <button className="mt-2 px-8 py-3.5 rounded-xl text-[15px] font-bold shadow-lg"
+          <p className="text-[16px] max-w-md opacity-90" style={{ color: theme.primaryText }}>{p.subtext}</p>
+          <button className="mt-2 px-8 py-3.5 rounded-xl text-[16px] font-bold shadow-lg"
             style={{ background: theme.primaryText, color: theme.primary }}>{p.btnText}</button>
         </div>
       );
@@ -182,8 +182,8 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
           <span className="text-4xl" style={{ color: theme.primary }}>"</span>
           <p className="text-[17px] font-medium max-w-xl leading-relaxed italic" style={{ color: theme.text }}>{p.quote}</p>
           <div>
-            <p className="font-bold text-[15px]" style={{ color: theme.text }}>{p.name}</p>
-            <p className="text-[13px] mt-0.5" style={{ color: theme.muted }}>{p.role}, {p.company}</p>
+            <p className="font-bold text-[16px]" style={{ color: theme.text }}>{p.name}</p>
+            <p className="text-[14px] mt-0.5" style={{ color: theme.muted }}>{p.role}, {p.company}</p>
           </div>
         </div>
       );
@@ -195,7 +195,7 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
             {(p.items ?? []).map((item: any, i: number) => (
               <div key={i} className="flex flex-col items-center gap-1 p-5 rounded-2xl" style={{ background: theme.accent }}>
                 <span className="text-[28px] font-extrabold" style={{ color: theme.primary }}>{item.value}</span>
-                <span className="text-[13px]" style={{ color: theme.muted }}>{item.label}</span>
+                <span className="text-[14px]" style={{ color: theme.muted }}>{item.label}</span>
               </div>
             ))}
           </div>
@@ -209,10 +209,10 @@ function BlockContent({ block, theme }: { block: Block; theme: Theme }) {
           <div className="max-w-sm mx-auto flex flex-col gap-3">
             {p.fields.map((field: string) => (
               <input key={field} placeholder={field} readOnly
-                className="w-full px-4 py-2.5 rounded-xl border text-[14px] outline-none"
+                className="w-full px-4 py-2.5 rounded-xl border text-[15px] outline-none"
                 style={{ borderColor: theme.muted + '40', color: theme.text, background: theme.bg }} />
             ))}
-            <button className="w-full py-3 rounded-xl text-[15px] font-bold mt-1 shadow-sm"
+            <button className="w-full py-3 rounded-xl text-[16px] font-bold mt-1 shadow-sm"
               style={{ background: theme.primary, color: theme.primaryText }}>{p.btnText}</button>
           </div>
         </div>
@@ -249,7 +249,7 @@ function SortableBlock({
           className="p-1.5 rounded-lg hover:bg-black/8 cursor-grab active:cursor-grabbing touch-none"
           title="Drag to reorder"
         >
-          <GripVertical className="w-4 h-4 text-[#b09e8d]" />
+          <GripVertical className="w-4 h-4 text-[#9ca3af]" />
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
@@ -257,7 +257,7 @@ function SortableBlock({
           className="p-1 rounded-lg hover:bg-black/8 disabled:opacity-20 transition-colors"
           title="Move up"
         >
-          <ChevronUp className="w-3.5 h-3.5 text-[#b09e8d]" />
+          <ChevronUp className="w-3.5 h-3.5 text-[#9ca3af]" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
@@ -265,21 +265,21 @@ function SortableBlock({
           className="p-1 rounded-lg hover:bg-black/8 disabled:opacity-20 transition-colors"
           title="Move down"
         >
-          <ChevronDown className="w-3.5 h-3.5 text-[#b09e8d]" />
+          <ChevronDown className="w-3.5 h-3.5 text-[#9ca3af]" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
           className="p-1 rounded-lg hover:bg-blue-50 transition-colors mt-1"
           title="Duplicate block (Ctrl+D)"
         >
-          <Copy className="w-3.5 h-3.5 text-[#b09e8d] hover:text-blue-500" />
+          <Copy className="w-3.5 h-3.5 text-[#9ca3af] hover:text-blue-500" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="p-1 rounded-lg hover:bg-red-50 transition-colors"
           title="Delete block (Del)"
         >
-          <Trash2 className="w-3.5 h-3.5 text-[#b09e8d] hover:text-red-500" />
+          <Trash2 className="w-3.5 h-3.5 text-[#9ca3af] hover:text-red-500" />
         </button>
       </div>
 
@@ -295,7 +295,7 @@ function SortableBlock({
       >
         {/* Block type badge - top-left corner on select/hover */}
         {selected && (
-          <div className="absolute left-9 top-0 z-10 px-2 py-0.5 bg-primary text-white text-[9px] font-bold uppercase tracking-wider rounded-b-lg">
+          <div className="absolute left-9 top-0 z-10 px-2 py-0.5 bg-primary text-white text-[10px] font-bold uppercase tracking-wider rounded-b-lg">
             {block.type}
           </div>
         )}
@@ -313,24 +313,24 @@ function PropsPanel({ block, onChange }: { block: Block; onChange: (props: Recor
 
   const textInput = (label: string, key: string, multiline = false) => (
     <div key={key}>
-      <label className="block text-[10px] font-bold uppercase tracking-wider text-[#7a6b5c] mb-1">{label}</label>
+      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#6b7280] mb-1">{label}</label>
       {multiline
         ? <textarea value={p[key] ?? ''} onChange={(e) => set(key, e.target.value)} rows={3}
-            className="w-full px-3 py-2 rounded-xl border border-black/10 text-[13px] text-[#1c1410] bg-[var(--app-bg)] outline-none focus:border-primary/40 resize-none" />
+            className="w-full px-3 py-2 rounded-xl border border-[var(--hairline)] text-[14px] text-[#111318] bg-[var(--surface-2)] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-none" />
         : <input type="text" value={p[key] ?? ''} onChange={(e) => set(key, e.target.value)}
-            className="w-full px-3 py-2 rounded-xl border border-black/10 text-[13px] text-[#1c1410] bg-[var(--app-bg)] outline-none focus:border-primary/40" />
+            className="w-full px-3 py-2 rounded-xl border border-[var(--hairline)] text-[14px] text-[#111318] bg-[var(--surface-2)] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40" />
       }
     </div>
   );
 
   const seg = (label: string, key: string, opts: { value: string; label: string }[]) => (
     <div key={key}>
-      <label className="block text-[10px] font-bold uppercase tracking-wider text-[#7a6b5c] mb-1">{label}</label>
+      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#6b7280] mb-1">{label}</label>
       <div className="flex gap-0.5 p-1 bg-[var(--accent-tint)] rounded-xl">
         {opts.map((o) => (
           <button key={o.value} onClick={() => set(key, o.value)}
-            className={cn('flex-1 px-1.5 py-1 rounded-lg text-[11px] font-semibold transition-all',
-              p[key] === o.value ? 'bg-white text-primary shadow-sm' : 'text-[#7a6b5c] hover:text-primary')}>
+            className={cn('flex-1 px-1.5 py-1 rounded-lg text-[12px] font-semibold transition-all',
+              p[key] === o.value ? 'bg-white text-primary shadow-sm' : 'text-[#6b7280] hover:text-primary')}>
             {o.label}
           </button>
         ))}
@@ -340,7 +340,7 @@ function PropsPanel({ block, onChange }: { block: Block; onChange: (props: Recor
 
   const toggle = (label: string, key: string) => (
     <div className="flex items-center justify-between py-2">
-      <span className="text-[13px] font-semibold text-[#1c1410]">{label}</span>
+      <span className="text-[14px] font-semibold text-[#111318]">{label}</span>
       <button onClick={() => set(key, !p[key])}
         className={cn('w-9 h-5 rounded-full transition-colors relative', p[key] ? 'bg-primary' : 'bg-black/10')}>
         <span className={cn('absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform', p[key] ? 'translate-x-4' : 'translate-x-0.5')} />
@@ -350,7 +350,7 @@ function PropsPanel({ block, onChange }: { block: Block; onChange: (props: Recor
 
   const slider = (label: string, key: string, min: number, max: number) => (
     <div>
-      <label className="block text-[10px] font-bold uppercase tracking-wider text-[#7a6b5c] mb-1">{label}: {p[key]}{key === 'height' ? 'px' : ''}</label>
+      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#6b7280] mb-1">{label}: {p[key]}{key === 'height' ? 'px' : ''}</label>
       <input type="range" min={min} max={max} value={p[key] ?? min}
         onChange={(e) => set(key, Number(e.target.value))}
         className="w-full accent-primary" />
@@ -411,22 +411,22 @@ function PropsPanel({ block, onChange }: { block: Block; onChange: (props: Recor
       {textInput('Section Title', 'title')}
       <div className="space-y-3">
         {(p.items as any[]).map((item, i) => (
-          <div key={i} className="p-3 rounded-xl bg-[var(--app-bg)] border border-black/5 space-y-2">
+          <div key={i} className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--hairline)] space-y-2">
             <div className="flex gap-2">
               <input type="text" value={item.icon} onChange={(e) => { const items = [...p.items]; items[i] = { ...item, icon: e.target.value }; set('items', items); }}
-                className="w-10 px-2 py-1 rounded-lg border border-black/10 text-center text-[14px] bg-white outline-none" />
+                className="w-10 px-2 py-1 rounded-lg border border-[var(--hairline)] text-center text-[15px] bg-white outline-none" />
               <input type="text" value={item.title} onChange={(e) => { const items = [...p.items]; items[i] = { ...item, title: e.target.value }; set('items', items); }}
-                placeholder="Title" className="flex-1 px-2 py-1 rounded-lg border border-black/10 text-[13px] bg-white outline-none" />
+                placeholder="Title" className="flex-1 px-2 py-1 rounded-lg border border-[var(--hairline)] text-[14px] bg-white outline-none" />
               <button onClick={() => { const items = p.items.filter((_: any, j: number) => j !== i); set('items', items); }}
-                className="p-1 rounded-lg hover:bg-red-50 text-[#b09e8d] hover:text-red-500 transition-colors shrink-0"
+                className="p-1 rounded-lg hover:bg-red-50 text-[#9ca3af] hover:text-red-500 transition-colors shrink-0"
                 title="Remove"><Trash2 className="w-3 h-3" /></button>
             </div>
             <textarea value={item.desc} rows={2} onChange={(e) => { const items = [...p.items]; items[i] = { ...item, desc: e.target.value }; set('items', items); }}
-              placeholder="Description" className="w-full px-2 py-1 rounded-lg border border-black/10 text-[11px] bg-white outline-none resize-none" />
+              placeholder="Description" className="w-full px-2 py-1 rounded-lg border border-[var(--hairline)] text-[12px] bg-white outline-none resize-none" />
           </div>
         ))}
         <button onClick={() => set('items', [...p.items, { icon: '✨', title: 'New Feature', desc: 'Description here.' }])}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-black/15 text-[11px] font-semibold text-[#7a6b5c] hover:border-primary hover:text-primary transition-colors">
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-black/15 text-[12px] font-semibold text-[#6b7280] hover:border-primary hover:text-primary transition-colors">
           <Plus className="w-3 h-3" /> Add Feature
         </button>
       </div>
@@ -444,16 +444,16 @@ function PropsPanel({ block, onChange }: { block: Block; onChange: (props: Recor
         {(p.items as any[]).map((item, i) => (
           <div key={i} className="flex gap-2">
             <input type="text" value={item.value} placeholder="Value" onChange={(e) => { const items = [...p.items]; items[i] = { ...item, value: e.target.value }; set('items', items); }}
-              className="w-20 px-2 py-1.5 rounded-lg border border-black/10 text-[13px] font-bold bg-[var(--app-bg)] outline-none" />
+              className="w-20 px-2 py-1.5 rounded-lg border border-[var(--hairline)] text-[14px] font-bold bg-[var(--app-bg)] outline-none" />
             <input type="text" value={item.label} placeholder="Label" onChange={(e) => { const items = [...p.items]; items[i] = { ...item, label: e.target.value }; set('items', items); }}
-              className="flex-1 px-2 py-1.5 rounded-lg border border-black/10 text-[13px] bg-[var(--app-bg)] outline-none" />
+              className="flex-1 px-2 py-1.5 rounded-lg border border-[var(--hairline)] text-[14px] bg-[var(--app-bg)] outline-none" />
             <button onClick={() => { const items = p.items.filter((_: any, j: number) => j !== i); set('items', items); }}
-              className="p-1 rounded-lg hover:bg-red-50 text-[#b09e8d] hover:text-red-500 transition-colors shrink-0"
+              className="p-1 rounded-lg hover:bg-red-50 text-[#9ca3af] hover:text-red-500 transition-colors shrink-0"
               title="Remove"><Trash2 className="w-3 h-3" /></button>
           </div>
         ))}
         <button onClick={() => set('items', [...p.items, { value: '0', label: 'New Stat' }])}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-black/15 text-[11px] font-semibold text-[#7a6b5c] hover:border-primary hover:text-primary transition-colors">
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-black/15 text-[12px] font-semibold text-[#6b7280] hover:border-primary hover:text-primary transition-colors">
           <Plus className="w-3 h-3" /> Add Stat
         </button>
       </div>
@@ -463,20 +463,20 @@ function PropsPanel({ block, onChange }: { block: Block; onChange: (props: Recor
       {textInput('Form Title', 'title')}
       {textInput('Submit Button Text', 'btnText')}
       <div>
-        <label className="block text-[10px] font-bold uppercase tracking-wider text-[#7a6b5c] mb-2">Fields</label>
+        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#6b7280] mb-2">Fields</label>
         <div className="space-y-1.5">
           {['Name', 'Email', 'Phone', 'Message', 'Company'].map((field) => (
             <label key={field} className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={p.fields.includes(field)} className="accent-primary"
                 onChange={(e) => set('fields', e.target.checked ? [...p.fields, field] : p.fields.filter((f: string) => f !== field))} />
-              <span className="text-[13px] text-[#1c1410]">{field}</span>
+              <span className="text-[14px] text-[#111318]">{field}</span>
             </label>
           ))}
         </div>
       </div>
     </div>;
 
-    default: return <div className="p-4 text-[13px] text-[#7a6b5c]">No editable properties.</div>;
+    default: return <div className="p-4 text-[14px] text-[#6b7280]">No editable properties.</div>;
   }
 }
 
@@ -664,22 +664,22 @@ export default function LandingPageBuilderPage() {
 
   if (loadingPage) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#e8ddd5]">
+      <div className="h-screen flex items-center justify-center bg-[#e5e7eb]">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-[#e8ddd5] overflow-hidden">
+    <div className="h-screen flex flex-col bg-[#e5e7eb] overflow-hidden">
 
       {/* Top bar */}
-      <div className="h-12 bg-white border-b border-black/8 flex items-center px-4 gap-3 shrink-0 z-20 shadow-sm">
+      <div className="h-12 bg-white border-b border-[var(--hairline)] flex items-center px-4 gap-3 shrink-0 z-20 card-shadow">
         <button onClick={async () => {
             if (dirty && !(await confirmDialog({ title: 'Unsaved changes', message: 'You have unsaved changes. Leave anyway?', confirmText: 'Leave', danger: false }))) return;
             navigate('/lead-generation/landing-pages');
           }}
-          className="flex items-center gap-1 text-[13px] text-[#7a6b5c] hover:text-primary transition-colors shrink-0">
+          className="flex items-center gap-1 text-[14px] text-[#6b7280] hover:text-primary transition-colors shrink-0">
           <ArrowLeft className="w-3.5 h-3.5" /> Pages
         </button>
 
@@ -688,15 +688,15 @@ export default function LandingPageBuilderPage() {
         {editingName
           ? <input autoFocus value={pageName} onChange={(e) => setPageNameDirty(e.target.value)}
               onBlur={() => setEditingName(false)} onKeyDown={(e) => e.key === 'Enter' && setEditingName(false)}
-              className="text-[14px] font-semibold text-[#1c1410] border-b border-primary outline-none bg-transparent min-w-[140px]" />
+              className="text-[15px] font-semibold text-[#111318] border-b border-primary outline-none bg-transparent min-w-[140px]" />
           : <button onClick={() => setEditingName(true)}
-              className="text-[14px] font-semibold text-[#1c1410] hover:text-primary transition-colors">
+              className="text-[15px] font-semibold text-[#111318] hover:text-primary transition-colors">
               {pageName}
             </button>
         }
 
         {pageName.trim() && (
-          <span className="hidden sm:flex items-center gap-1 text-[10px] text-[#b09e8d] font-mono">
+          <span className="hidden sm:flex items-center gap-1 text-[11px] text-[#9ca3af] font-mono">
             <Globe className="w-3 h-3" />
             /p/{pageName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}
           </span>
@@ -707,21 +707,21 @@ export default function LandingPageBuilderPage() {
         {/* Theme picker */}
         <div className="relative">
           <button onClick={() => setShowThemes(!showThemes)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-black/10 text-[13px] font-medium text-[#1c1410] hover:border-primary/30 transition-colors">
-            <span className="w-3 h-3 rounded-full border border-black/10" style={{ background: SWATCHES[themeKey as keyof typeof SWATCHES] }} />
-            <Palette className="w-3.5 h-3.5 text-[#7a6b5c]" />
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--hairline)] text-[14px] font-medium text-[#111318] hover:border-primary/30 transition-colors">
+            <span className="w-3 h-3 rounded-full border border-[var(--hairline)]" style={{ background: SWATCHES[themeKey as keyof typeof SWATCHES] }} />
+            <Palette className="w-3.5 h-3.5 text-[#6b7280]" />
             <span className="hidden sm:inline">{theme.name}</span>
-            <ChevronDown className="w-3 h-3 text-[#7a6b5c]" />
+            <ChevronDown className="w-3 h-3 text-[#6b7280]" />
           </button>
           {showThemes && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setShowThemes(false)} />
-              <div className="absolute top-9 right-0 z-40 bg-white rounded-2xl border border-black/8 shadow-xl p-2 w-40">
+              <div className="absolute top-9 right-0 z-40 bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-2 w-40">
                 {Object.entries(THEMES).map(([key, t]) => (
                   <button key={key} onClick={() => { setThemeKeyDirty(key); setShowThemes(false); }}
-                    className={cn('w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors',
-                      themeKey === key ? 'bg-primary/10 text-primary' : 'text-[#1c1410] hover:bg-[var(--app-bg)]')}>
-                    <span className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
+                    className={cn('w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[14px] font-medium transition-colors',
+                      themeKey === key ? 'bg-primary/10 text-primary' : 'text-[#111318] hover:bg-[var(--app-bg)]')}>
+                    <span className="w-3.5 h-3.5 rounded-full border border-[var(--hairline)] shrink-0"
                       style={{ background: SWATCHES[key as keyof typeof SWATCHES] }} />
                     {t.name}
                     {themeKey === key && <Check className="w-3 h-3 ml-auto" />}
@@ -736,7 +736,7 @@ export default function LandingPageBuilderPage() {
         <div className="flex items-center gap-0.5 p-0.5 bg-[var(--accent-tint)] rounded-lg">
           {([['desktop', Monitor], ['tablet', Tablet], ['mobile', Smartphone]] as const).map(([d, Icon]) => (
             <button key={d} onClick={() => setDevice(d)}
-              className={cn('p-1.5 rounded-md transition-all', device === d ? 'bg-white text-primary shadow-sm' : 'text-[#7a6b5c] hover:text-primary')}>
+              className={cn('p-1.5 rounded-md transition-all', device === d ? 'bg-white text-primary shadow-sm' : 'text-[#6b7280] hover:text-primary')}>
               <Icon className="w-3.5 h-3.5" />
             </button>
           ))}
@@ -754,15 +754,15 @@ export default function LandingPageBuilderPage() {
       <div className="flex flex-1 overflow-hidden">
 
         {/* Left sidebar */}
-        <div className="w-52 bg-white border-r border-black/8 flex flex-col shrink-0 overflow-y-auto">
-          <div className="px-4 py-3 border-b border-black/5 sticky top-0 bg-white z-10">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a6b5c]">Blocks</p>
-            <p className="text-[10px] text-[#b09e8d] mt-0.5">Click to add · drag to reorder</p>
+        <div className="w-52 bg-white border-r border-[var(--hairline)] flex flex-col shrink-0 overflow-y-auto">
+          <div className="px-4 py-3 border-b border-[var(--hairline)] sticky top-0 bg-white z-10">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#6b7280]">Blocks</p>
+            <p className="text-[11px] text-[#9ca3af] mt-0.5">Click to add · drag to reorder</p>
           </div>
           <div className="flex-1 pb-4">
             {BLOCK_LIBRARY.map((cat) => (
               <div key={cat.category}>
-                <p className="px-4 pt-4 pb-1 text-[9px] font-bold uppercase tracking-widest text-[#b09e8d]">{cat.category}</p>
+                <p className="px-4 pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-[#9ca3af]">{cat.category}</p>
                 {cat.items.map((item) => (
                   <button key={item.type} onClick={() => addBlock(item.type)}
                     className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-[var(--app-bg)] transition-colors group text-left">
@@ -770,10 +770,10 @@ export default function LandingPageBuilderPage() {
                       <item.icon className="w-3.5 h-3.5 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[11px] font-semibold text-[#1c1410] truncate">{item.label}</p>
-                      <p className="text-[10px] text-[#b09e8d] truncate">{item.desc}</p>
+                      <p className="text-[12px] font-semibold text-[#111318] truncate">{item.label}</p>
+                      <p className="text-[11px] text-[#9ca3af] truncate">{item.desc}</p>
                     </div>
-                    <Plus className="w-3 h-3 text-[#c4b09e] opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" />
+                    <Plus className="w-3 h-3 text-[#c3c8cf] opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" />
                   </button>
                 ))}
               </div>
@@ -831,24 +831,24 @@ export default function LandingPageBuilderPage() {
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                   <Plus className="w-6 h-6 text-primary" />
                 </div>
-                <p className="text-[15px] font-semibold" style={{ color: theme.text }}>Add your first block</p>
-                <p className="text-[13px]" style={{ color: theme.muted }}>Click any block from the left sidebar.</p>
+                <p className="text-[16px] font-semibold" style={{ color: theme.text }}>Add your first block</p>
+                <p className="text-[14px]" style={{ color: theme.muted }}>Click any block from the left sidebar.</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Right panel */}
-        <div className="w-60 bg-white border-l border-black/8 flex flex-col shrink-0 overflow-y-auto">
+        <div className="w-60 bg-white border-l border-[var(--hairline)] flex flex-col shrink-0 overflow-y-auto">
           {selectedBlock ? (
             <>
-              <div className="px-4 py-3 border-b border-black/5 flex items-center justify-between sticky top-0 bg-white z-10">
+              <div className="px-4 py-3 border-b border-[var(--hairline)] flex items-center justify-between sticky top-0 bg-white z-10">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#7a6b5c]">Properties</p>
-                  <p className="text-[13px] font-semibold text-[#1c1410] mt-0.5 capitalize">{selectedBlock.type}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#6b7280]">Properties</p>
+                  <p className="text-[14px] font-semibold text-[#111318] mt-0.5 capitalize">{selectedBlock.type}</p>
                 </div>
                 <button onClick={() => setSelectedId(null)}
-                  className="p-1 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-primary transition-colors">
+                  className="p-1 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-primary transition-colors">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -858,8 +858,8 @@ export default function LandingPageBuilderPage() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-5">
-              <Settings2 className="w-8 h-8 text-[#d4c4b4]" />
-              <p className="text-[13px] text-[#b09e8d] font-medium leading-relaxed">
+              <Settings2 className="w-8 h-8 text-[#e5e7eb]" />
+              <p className="text-[14px] text-[#9ca3af] font-medium leading-relaxed">
                 Click any block on the canvas to edit its content and style
               </p>
             </div>

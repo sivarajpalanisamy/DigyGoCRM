@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, UsersRound, Megaphone, Zap, Inbox, Settings,
-  UserCog, SlidersHorizontal, X, Building2, CalendarDays, BarChart3,
+  LayoutDashboard, Gauge, UsersRound, Megaphone, Workflow, Inbox, Settings,
+  UserCog, SlidersHorizontal, X, Building2, CalendarDays, ChartColumn,
   Phone, PhoneCall, IndianRupee, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,11 +26,11 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard',       icon: LayoutDashboard,   path: '/dashboard' },
+  { label: 'Dashboard',       icon: Gauge,             path: '/dashboard' },
   { label: 'Lead Management', icon: UsersRound,        path: '/leads',           anyOf: ['leads:view_all', 'leads:view_own', 'contacts:read'] },
   { label: 'Lead Generation', icon: Megaphone,         path: '/lead-generation', anyOf: ['meta_forms:read', 'custom_forms:read', 'landing_pages:read', 'whatsapp_setup:read'] },
-  { label: 'Automation',      icon: Zap,               path: '/automation',      permKey: 'automation:view' },
-  { label: 'Reports',         icon: BarChart3,         path: '/reports' },
+  { label: 'Automation',      icon: Workflow,          path: '/automation',      permKey: 'automation:view' },
+  { label: 'Reports',         icon: ChartColumn,       path: '/reports' },
   { label: 'Calendar',        icon: CalendarDays,      path: '/calendar',        permKey: 'calendar:view' },
   { label: 'Inbox',           icon: Inbox,             path: '/inbox',           permKey: 'inbox:view_all' },
   { label: 'Calls',           icon: Phone,             path: '/calls',           anyOf: ['calls:view_all', 'calls:view_own'] },
@@ -52,7 +52,8 @@ const COLLAPSE_KEY = 'dg_sidebar_collapsed';
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
-    try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
+    // Default to the icon-only rail (Finexy style) unless the user explicitly expanded it.
+    try { return localStorage.getItem(COLLAPSE_KEY) !== '0'; } catch { return true; }
   });
   const toggleCollapsed = () =>
     setCollapsed((c) => {
@@ -60,6 +61,10 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
       try { localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0'); } catch { /* ignore */ }
       return next;
     });
+
+  // As a mobile drawer (open=true) always show full labels; the icon-only rail is a
+  // desktop-only affordance (hover tooltips don't work on touch).
+  const isCollapsed = collapsed && !open;
 
   // Tooltip shown next to an icon when the sidebar is collapsed. Rendered via a
   // portal so it is never clipped by the nav's scroll overflow. Positioned from the
@@ -100,22 +105,24 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
       key={key}
       to={to}
       onClick={() => { setTip(null); onClose(); }}
-      onMouseEnter={collapsed ? (e) => {
+      onMouseEnter={isCollapsed ? (e) => {
         const r = e.currentTarget.getBoundingClientRect();
         setTip({ label, top: r.top + r.height / 2, left: r.right + 10 });
       } : undefined}
-      onMouseLeave={collapsed ? () => setTip(null) : undefined}
+      onMouseLeave={isCollapsed ? () => setTip(null) : undefined}
       className={cn(
-        'relative flex items-center rounded-xl text-[13px] transition-all duration-200',
-        collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5',
+        'relative flex items-center text-[13.5px] transition-all duration-200',
+        isCollapsed ? 'justify-center h-9 w-9 mx-auto' : 'gap-3 px-3 py-2 rounded-xl',
         active
-          ? 'bg-[var(--accent-tint)] text-primary font-semibold'
-          : 'text-[#5c4a3a] font-medium hover:bg-black/[0.035] hover:text-[#1c1410]'
+          ? isCollapsed
+            ? 'rounded-full bg-primary text-white ring-4 ring-white shadow-[0_2px_10px_rgba(234,88,12,0.40)] font-semibold'
+            : 'bg-[var(--accent-tint)] text-primary font-semibold'
+          : 'rounded-xl text-[#4a4f57] font-medium hover:bg-[var(--surface-2)] hover:text-[#111318]'
       )}
     >
-      {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-primary" />}
-      <Icon className="w-[19px] h-[19px] shrink-0" strokeWidth={2} />
-      {!collapsed && <span className="truncate">{label}</span>}
+      {active && !isCollapsed && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-primary" />}
+      <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={2} />
+      {!isCollapsed && <span className="truncate">{label}</span>}
     </Link>
   );
 
@@ -126,52 +133,52 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
 
       <aside
         className={cn(
-          'fixed top-0 left-0 z-50 h-full bg-white border-r-2 border-black/10 shadow-[2px_0_8px_-4px_rgba(20,15,10,0.06)] flex flex-col transition-[width,transform] duration-300',
-          'md:translate-x-0 md:static md:z-auto',
-          collapsed ? 'w-[72px]' : 'w-[204px]',
+          'fixed top-0 left-0 z-50 h-full flex flex-col transition-[width,transform] duration-300',
+          'bg-white border-r border-[var(--hairline)] shadow-[2px_0_8px_-4px_rgba(16,24,40,0.06)]',
+          'md:translate-x-0 md:static md:z-auto md:h-full md:bg-transparent md:border-0 md:shadow-none md:gap-2',
+          isCollapsed ? 'w-[62px]' : (open ? 'w-[260px]' : 'w-[192px]'),
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        {/* Logo - tenant brand on custom domain, Hawcus otherwise; mark only when collapsed */}
+        {/* Logo - its own panel on desktop, sitting above (and wider than) the rail */}
         <div
-          className="relative flex justify-center items-center border-b-2 border-black/10 shrink-0 overflow-hidden"
-          style={{ height: '64px' }}
+          className="relative flex justify-center items-center shrink-0 overflow-hidden border-b border-[var(--hairline)] md:border-b-0"
+          style={{ height: '52px' }}
         >
-          {collapsed ? (
+          {isCollapsed ? (
             faviconUrl ? (
-              // Tenant-uploaded favicon (fixed square that fits the collapsed rail).
-              <img src={faviconUrl} alt={tenantName ?? ''} className="w-9 h-9 object-contain rounded-lg" />
+              <img src={faviconUrl} alt={tenantName ?? ''} className="w-9 h-9 object-contain rounded-full ring-[3px] ring-white shadow-[0_2px_8px_rgba(16,24,40,0.12)]" />
             ) : tenantName ? (
-              // No favicon uploaded: show the company's first initial (e.g. "Social Eagle" -> "S").
               <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-[16px] text-white leading-none"
+                className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-[16px] text-white leading-none ring-[3px] ring-white shadow-[0_2px_8px_rgba(16,24,40,0.12)]"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand-light))' }}
               >
                 {tenantName.trim().charAt(0).toUpperCase()}
               </div>
             ) : (
-              // No tenant context (e.g. super admin / pre-login): fall back to the Hawcus mark.
-              <img src="/favicon.png" alt="Hawcus" className="w-8 h-8 object-contain" />
+              <img src="/favicon.png" alt="Hawcus" className="w-9 h-9 object-contain" />
             )
           ) : branded && logoUrl ? (
-            <img src={logoUrl} alt={tenantName ?? ''} className="max-h-11 max-w-[160px] object-contain" />
+            <img src={logoUrl} alt={tenantName ?? ''} className="max-h-14 max-w-[172px] object-contain" />
           ) : branded && tenantName ? (
-            <span className="font-bold text-[15px] text-[#1c1410] px-3 text-center truncate">{tenantName}</span>
+            <span className="font-bold text-[18px] text-[#111318] px-3 text-center truncate">{tenantName}</span>
           ) : (
-            <img src="/hawcus-logo.png" alt="Hawcus" className="max-h-9 max-w-[150px] object-contain" />
+            <img src="/hawcus-logo.png" alt="Hawcus" className="max-h-11 max-w-[164px] object-contain" />
           )}
           <button
             onClick={onClose}
-            className="absolute right-2 top-1/2 -translate-y-1/2 md:hidden p-1.5 rounded-lg text-[#7a6b5c] hover:bg-[var(--accent-tint)] transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 md:hidden p-1.5 rounded-lg text-[#6b7280] hover:bg-[var(--accent-tint)] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
+        {/* Rail panel - separate card; slightly narrower than the logo when collapsed */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 py-3 space-y-1">
-          {!collapsed && (
-            <p className="px-3 pb-1.5 pt-0.5 text-[10px] font-bold uppercase tracking-wider text-[#b3a290]">Menu</p>
+        <nav className={cn('flex-1 overflow-y-auto scrollbar-hide py-3', isCollapsed ? 'px-2 space-y-1' : 'px-2.5 space-y-1')}>
+          {!isCollapsed && (
+            <p className="px-3 pb-1.5 pt-0.5 text-[11px] font-bold uppercase tracking-wider text-[#9ca3af]">Menu</p>
           )}
           {isSuperAdmin
             ? superAdminItems.map((it) => row(it.path, it.icon, it.label, it.path, it.match(location.pathname)))
@@ -179,12 +186,12 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         </nav>
 
         {/* Collapse / expand toggle - desktop only */}
-        <div className="hidden md:block border-t-2 border-black/10 p-2.5">
+        <div className="hidden md:block border-t border-[var(--hairline)] p-2">
           <button
             onClick={toggleCollapsed}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             className={cn(
-              'w-full flex items-center rounded-xl text-[12.5px] font-medium text-[#7a6b5c] hover:bg-black/[0.035] hover:text-[#1c1410] transition-colors',
+              'w-full flex items-center rounded-xl text-[13.5px] font-medium text-[#6b7280] hover:bg-[var(--surface-2)] hover:text-[#111318] transition-colors',
               collapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2.5'
             )}
           >
@@ -192,12 +199,13 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             {!collapsed && <span>Collapse</span>}
           </button>
         </div>
+        </div>
       </aside>
 
       {/* Collapsed-mode hover label - portaled to body so scroll overflow never clips it */}
-      {collapsed && tip && createPortal(
+      {isCollapsed && tip && createPortal(
         <div
-          className="pointer-events-none fixed z-[60] -translate-y-1/2 rounded-lg bg-[#1c1410] px-2.5 py-1.5 text-[12px] font-semibold text-white shadow-lg whitespace-nowrap"
+          className="pointer-events-none fixed z-[60] -translate-y-1/2 rounded-lg bg-[#111318] px-2.5 py-1.5 text-[13px] font-semibold text-white shadow-lg whitespace-nowrap"
           style={{ top: tip.top, left: tip.left }}
         >
           {tip.label}

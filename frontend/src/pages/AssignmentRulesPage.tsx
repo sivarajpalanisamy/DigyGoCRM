@@ -53,22 +53,22 @@ function RuleModal({ onClose, onSave, staffList }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-card rounded-2xl border border-black/5 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
-          <h3 className="font-headline font-bold text-[#1c1410]">Add Assignment Rule</h3>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--accent-tint)]"><X className="w-4 h-4" /></button>
+      <div className="bg-card rounded-2xl border border-[var(--hairline)] w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)]">
+          <h3 className="font-headline font-bold text-[#111318]">Add Assignment Rule</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-2)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Rule Name *</label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Rule Name *</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. WhatsApp Leads → Priya" />
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Assignment Method</label>
+            <label className="text-[15px] font-medium text-foreground mb-1.5 block">Assignment Method</label>
             <div className="grid grid-cols-2 gap-2">
               {(['round-robin', 'source', 'stage', 'manual'] as const).map((m) => (
                 <button key={m} onClick={() => setMethod(m)}
-                  className={cn('p-2.5 rounded-xl border text-sm font-medium transition-all capitalize', method === m ? 'border-primary bg-primary/5 text-primary' : 'border-border text-muted-foreground hover:border-primary/50 hover:bg-[var(--accent-tint)]')}>
+                  className={cn('p-2.5 rounded-xl border text-[15px] font-medium transition-all capitalize active:scale-[0.98]', method === m ? 'border-primary bg-primary/5 text-primary' : 'border-[var(--hairline)] text-muted-foreground hover:border-primary/40 hover:bg-[var(--surface-2)]')}>
                   {m.replace('-', ' ')}
                 </button>
               ))}
@@ -76,8 +76,8 @@ function RuleModal({ onClose, onSave, staffList }: {
           </div>
           {(method === 'source' || method === 'stage') && (
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">When {method === 'source' ? 'Source is' : 'Stage is'}</label>
-              <select className="w-full border border-black/5 rounded-lg px-3 py-2 text-sm bg-card focus:border-primary outline-none" value={condition} onChange={(e) => setCondition(e.target.value)}>
+              <label className="text-[15px] font-medium text-foreground mb-1.5 block">When {method === 'source' ? 'Source is' : 'Stage is'}</label>
+              <select className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2 text-[15px] bg-card outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40" value={condition} onChange={(e) => setCondition(e.target.value)}>
                 <option value="">Select…</option>
                 {conditionOptions.map((o) => <option key={o}>{o}</option>)}
               </select>
@@ -85,20 +85,20 @@ function RuleModal({ onClose, onSave, staffList }: {
           )}
           {method !== 'round-robin' && (
             <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Assign To</label>
-              <select className="w-full border border-black/5 rounded-lg px-3 py-2 text-sm bg-card focus:border-primary outline-none" value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
+              <label className="text-[15px] font-medium text-foreground mb-1.5 block">Assign To</label>
+              <select className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2 text-[15px] bg-card outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40" value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
                 <option value="">Select agent…</option>
                 {staffList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
           )}
           {method === 'round-robin' && (
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <p className="text-[11px] text-[#7a6b5c]">Leads will be distributed evenly across all active agents automatically.</p>
+            <div className="p-3 bg-[var(--surface-2)] rounded-xl">
+              <p className="text-[12px] text-[#6b7280]">Leads will be distributed evenly across all active agents automatically.</p>
             </div>
           )}
         </div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-black/5">
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[var(--hairline)]">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving}><Check className="w-4 h-4 mr-1" /> {saving ? 'Adding…' : 'Add Rule'}</Button>
         </div>
@@ -179,39 +179,39 @@ export default function AssignmentRulesPage() {
   return (
     <div className="space-y-8 max-w-3xl">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate('/settings')} className="p-2 rounded-lg hover:bg-[var(--accent-tint)] text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={() => navigate('/settings')} className="p-2 rounded-lg hover:bg-[var(--surface-2)] text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <Button className="ml-auto" onClick={() => setShowModal(true)}><Plus className="w-4 h-4 mr-1" /> Add Rule</Button>
       </div>
 
-      <div className="p-4 bg-muted/40 rounded-xl border border-black/5 text-[14px] text-[#7a6b5c]">
+      <div className="p-4 bg-[var(--surface-2)] rounded-xl border border-[var(--hairline)] text-[15px] text-[#6b7280]">
         Rules are evaluated in order. The first matching rule wins. Toggle off to disable without deleting.
       </div>
 
-      <div className="bg-white rounded-2xl border border-black/5 card-shadow overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
         {loading ? (
-          <div className="py-12 text-center text-[14px] text-[#b09e8d]">Loading…</div>
+          <div className="py-12 text-center text-[15px] text-[#9ca3af]">Loading…</div>
         ) : rules.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Shuffle className="w-10 h-10 mx-auto mb-2 opacity-30" />
             <p className="font-medium">No assignment rules yet</p>
-            <p className="text-sm mt-1">Add rules to automate lead distribution</p>
+            <p className="text-[15px] mt-1">Add rules to automate lead distribution</p>
           </div>
         ) : (
           rules.map((rule, i) => (
-            <div key={rule.id} className={cn('flex items-center gap-3 px-4 py-3.5 border-b border-black/5 last:border-0 hover:bg-[var(--app-bg)] transition-colors', !rule.is_active && 'opacity-60')}>
+            <div key={rule.id} className={cn('flex items-center gap-3 px-4 py-3.5 border-b border-[var(--hairline)] last:border-0 hover:bg-[var(--surface-2)] transition-colors', !rule.is_active && 'opacity-60')}>
               <button className="cursor-grab text-muted-foreground"><GripVertical className="w-4 h-4" /></button>
-              <span className="text-[11px] text-[#7a6b5c] w-5 shrink-0">{i + 1}</span>
+              <span className="text-[12px] text-[#6b7280] w-5 shrink-0">{i + 1}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">{rule.name}</p>
-                <p className="text-[11px] text-[#7a6b5c] mt-0.5">
+                <p className="text-[15px] font-medium text-foreground">{rule.name}</p>
+                <p className="text-[12px] text-[#6b7280] mt-0.5">
                   {rule.method === 'round-robin'
                     ? 'Distribute evenly across all agents'
                     : `${rule.method === 'source' ? 'Source' : rule.method === 'stage' ? 'Stage' : 'Condition'}: ${rule.condition || '-'} → ${rule.assign_to_name || 'Unassigned'}`}
                 </p>
               </div>
-              <Badge className={cn('border-0 text-xs shrink-0 capitalize', methodBadge[rule.method])}>
+              <Badge className={cn('border-0 text-[13px] shrink-0 capitalize', methodBadge[rule.method])}>
                 {rule.method.replace('-', ' ')}
               </Badge>
               <Switch checked={rule.is_active} onCheckedChange={() => toggleRule(rule)} />

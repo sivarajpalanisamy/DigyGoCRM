@@ -35,4 +35,6 @@ export const config = {
     apiKey:   process.env.RESEND_API_KEY ?? '',
     from:     process.env.RESEND_FROM ?? '',   // e.g. "DigyGo CRM <noreply@digygo.in>"
   },
+  // Destination for in-app "Raise a ticket" support requests. Defaults to the Hawcus admin inbox.
+  supportEmail: process.env.SUPPORT_EMAIL ?? 'hello@hawcus.com',
 };

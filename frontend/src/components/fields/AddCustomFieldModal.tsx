@@ -53,7 +53,7 @@ const slugify = (s: string): string => {
 };
 
 const inputCls =
-  'w-full border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-[#1c1410] outline-none focus:border-primary/40 bg-white';
+  'w-full border border-gray-200 rounded-lg px-3 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 bg-white';
 
 // ── FieldSelector ─────────────────────────────────────────────────────────────
 
@@ -71,11 +71,11 @@ function FieldSelector({ value, onChange }: { value: DataType; onChange: (t: Dat
               'flex flex-col items-center justify-center gap-1 py-2.5 px-1.5 rounded-lg border transition-all',
               active
                 ? 'border-primary bg-primary/5 text-primary'
-                : 'border-black/[0.06] hover:border-primary/40 hover:bg-primary/5 text-[#7a6b5c] hover:text-primary'
+                : 'border-black/[0.06] hover:border-primary/40 hover:bg-primary/5 text-[#6b7280] hover:text-primary'
             )}
           >
             <d.Icon className="w-4 h-4" />
-            <span className="text-[11px] font-semibold leading-tight text-center">{d.label}</span>
+            <span className="text-[12px] font-semibold leading-tight text-center">{d.label}</span>
           </button>
         );
       })}
@@ -101,7 +101,7 @@ function OptionBuilder({ options, onChange }: {
 
   return (
     <div>
-      <label className="text-[13px] font-semibold text-[#7a6b5c] mb-2 block">Options</label>
+      <label className="text-[14px] font-semibold text-[#6b7280] mb-2 block">Options</label>
       <div className="space-y-1.5">
         {options.map((o, idx) => (
           <div key={idx} className="flex items-center gap-2">
@@ -115,7 +115,7 @@ function OptionBuilder({ options, onChange }: {
               type="button"
               onClick={() => removeOption(idx)}
               disabled={options.length <= 1}
-              className="w-9 h-9 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#c4b09e] hover:text-red-500 transition-colors disabled:opacity-30"
+              className="w-9 h-9 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#c3c8cf] hover:text-red-500 transition-colors disabled:opacity-30"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -124,7 +124,7 @@ function OptionBuilder({ options, onChange }: {
         <button
           type="button"
           onClick={addOption}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold text-primary hover:bg-primary/5 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-semibold text-primary hover:bg-primary/5 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" /> Add option
         </button>
@@ -189,20 +189,20 @@ export function AddCustomFieldModal({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-black/5">
           <div className="flex items-center gap-2.5">
             {step === 'detail' && (
-              <button type="button" onClick={() => setStep('pick')} className="p-1 rounded-lg hover:bg-gray-100 text-[#7a6b5c]">
+              <button type="button" onClick={() => setStep('pick')} className="p-1 rounded-lg hover:bg-gray-100 text-[#6b7280]">
                 <ArrowLeft className="w-3.5 h-3.5" />
               </button>
             )}
             <div>
-              <h3 className="font-bold text-[#1c1410] text-[15px] leading-tight">
+              <h3 className="font-bold text-[#111318] text-[16px] leading-tight">
                 {step === 'pick' ? 'Choose field type' : `New Custom Field - ${type}`}
               </h3>
               {step === 'pick' && (
-                <p className="text-[11px] text-[#7a6b5c] mt-0.5">Pick a data type that fits what you want to capture</p>
+                <p className="text-[12px] text-[#6b7280] mt-0.5">Pick a data type that fits what you want to capture</p>
               )}
             </div>
           </div>
-          <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-[#7a6b5c]">
+          <button type="button" onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-[#6b7280]">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -218,7 +218,7 @@ export function AddCustomFieldModal({
         {step === 'detail' && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             <div>
-              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
+              <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">
                 Name <span className="text-red-400">*</span>
               </label>
               <input
@@ -230,15 +230,15 @@ export function AddCustomFieldModal({
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
               />
               {slug && (
-                <p className="text-[11px] text-[#b09e8d] mt-1.5">
+                <p className="text-[12px] text-[#9ca3af] mt-1.5">
                   Key: <code className="bg-muted px-1.5 rounded text-primary font-semibold">{`{%${slug}%}`}</code>
                 </p>
               )}
             </div>
 
             <div>
-              <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
-                Placeholder <span className="text-[#b09e8d] font-normal">(optional)</span>
+              <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">
+                Placeholder <span className="text-[#9ca3af] font-normal">(optional)</span>
               </label>
               <input
                 className={inputCls}
@@ -259,7 +259,7 @@ export function AddCustomFieldModal({
                 onChange={(e) => setRequired(e.target.checked)}
                 className="w-4 h-4 accent-primary"
               />
-              <span className="text-[14px] text-[#1c1410]">Mark as required</span>
+              <span className="text-[15px] text-[#111318]">Mark as required</span>
             </label>
           </div>
         )}
@@ -270,7 +270,7 @@ export function AddCustomFieldModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-lg text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors"
+              className="flex-1 py-2.5 rounded-lg text-[15px] font-semibold text-[#6b7280] hover:bg-gray-100 transition-colors"
             >
               Cancel
             </button>
@@ -278,7 +278,7 @@ export function AddCustomFieldModal({
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 py-2.5 rounded-lg text-[14px] font-bold text-white disabled:opacity-60 flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 rounded-lg text-[15px] font-bold text-white disabled:opacity-60 flex items-center justify-center gap-1.5"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
             >
               {saving

@@ -64,29 +64,29 @@ export default function NotificationsPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/settings')}
-          className="p-2 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-[#1c1410] transition-colors"
+          className="p-2 rounded-xl hover:bg-[var(--surface-2)] text-[#6b7280] hover:text-[#111318] transition active:scale-[0.98]"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-black/5 card-shadow overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
         {/* Table header */}
-        <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-3 border-b border-black/5 bg-[var(--app-bg)]">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Notification</span>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] text-center w-16">In-App</span>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c] text-center w-28">
+        <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-3 border-b border-[var(--hairline)] bg-[var(--surface-2)]">
+          <span className="text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af]">Notification</span>
+          <span className="text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] text-center w-16">In-App</span>
+          <span className="text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] text-center w-28">
             Email
           </span>
         </div>
         {settings.map((s) => (
           <div
             key={s.id}
-            className="grid grid-cols-[1fr_auto_auto] gap-4 items-center px-5 py-4 border-b border-black/5 last:border-0 hover:bg-[var(--app-bg)] transition-colors"
+            className="grid grid-cols-[1fr_auto_auto] gap-4 items-center px-5 py-4 border-b border-[var(--hairline)] last:border-0 hover:bg-[var(--surface-2)] transition-colors"
           >
             <div>
-              <p className="text-[14px] font-semibold text-[#1c1410]">{s.label}</p>
-              <p className="text-[11px] text-[#7a6b5c] mt-0.5">{s.description}</p>
+              <p className="text-[15px] font-semibold text-[#111318]">{s.label}</p>
+              <p className="text-[12px] text-[#6b7280] mt-0.5">{s.description}</p>
             </div>
             <div className="flex justify-center w-16">
               <Switch checked={s.inApp} onCheckedChange={(v) => update(s.id, 'inApp', v)} />

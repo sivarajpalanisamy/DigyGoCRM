@@ -16,13 +16,13 @@ interface AnalyticsData {
 
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: React.ElementType; color: string }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-5 flex items-center gap-4">
-      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', color)}>
+    <div className="bg-white border border-[var(--hairline)] card-shadow rounded-2xl p-5 flex items-center gap-4">
+      <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', color)}>
         <Icon className="w-5 h-5" />
       </div>
       <div>
         <p className="text-2xl font-bold">{value.toLocaleString()}</p>
-        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-[13px] text-muted-foreground">{label}</p>
       </div>
     </div>
   );
@@ -61,16 +61,16 @@ export default function WorkflowAnalyticsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-border bg-card px-6 py-4 flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-muted rounded-lg transition-colors">
+      <div className="border-b border-[var(--hairline)] bg-white px-6 py-4 flex items-center gap-4">
+        <button onClick={() => navigate(-1)} className="p-2 hover:bg-[var(--surface-2)] rounded-xl transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
           <h1 className="text-lg font-semibold">{workflow.name}</h1>
-          <p className="text-xs text-muted-foreground">Workflow Analytics</p>
+          <p className="text-[13px] text-muted-foreground">Workflow Analytics</p>
         </div>
         <div className="ml-auto">
-          <span className={cn('px-2.5 py-1 rounded-full text-xs font-semibold',
+          <span className={cn('px-2.5 py-1 rounded-full text-[13px] font-semibold',
             workflow.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground')}>
             {workflow.status}
           </span>
@@ -87,30 +87,30 @@ export default function WorkflowAnalyticsPage() {
         </div>
 
         {/* Success rate */}
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-white border border-[var(--hairline)] card-shadow rounded-2xl p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold">Completion Rate</span>
+              <span className="text-[15px] font-semibold">Completion Rate</span>
             </div>
             <span className="text-2xl font-bold text-primary">{successRate}%</span>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div className="h-2 bg-[var(--surface-2)] rounded-full overflow-hidden">
             <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${successRate}%` }} />
           </div>
         </div>
 
         {/* Daily activity (last 30 days) */}
         {daily.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-5">
+          <div className="bg-white border border-[var(--hairline)] card-shadow rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold">Daily Enrollments (last 30 days)</span>
+              <span className="text-[15px] font-semibold">Daily Enrollments (last 30 days)</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="text-muted-foreground border-b border-border">
+                  <tr className="text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] border-b border-[var(--hairline)]">
                     <th className="text-left py-2 font-medium">Date</th>
                     <th className="text-right py-2 font-medium">Total</th>
                     <th className="text-right py-2 font-medium">Completed</th>
@@ -119,7 +119,7 @@ export default function WorkflowAnalyticsPage() {
                 </thead>
                 <tbody>
                   {daily.map((row, i) => (
-                    <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                    <tr key={i} className="border-b border-[var(--hairline)] hover:bg-[var(--surface-2)]">
                       <td className="py-2 text-muted-foreground">{new Date(row.day).toLocaleDateString()}</td>
                       <td className="py-2 text-right font-medium">{row.total}</td>
                       <td className="py-2 text-right text-green-600">{row.completed}</td>
@@ -134,21 +134,21 @@ export default function WorkflowAnalyticsPage() {
 
         {/* Step breakdown */}
         {steps.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-5">
+          <div className="bg-white border border-[var(--hairline)] card-shadow rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold">Action Step Breakdown</span>
+              <span className="text-[15px] font-semibold">Action Step Breakdown</span>
             </div>
             <div className="space-y-2">
               {steps.map((s, i) => {
                 const rate = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0;
                 return (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="w-32 text-xs text-muted-foreground truncate">{s.action_type}</div>
-                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="w-32 text-[13px] text-muted-foreground truncate">{s.action_type}</div>
+                    <div className="flex-1 h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden">
                       <div className="h-full bg-green-500 rounded-full" style={{ width: `${rate}%` }} />
                     </div>
-                    <div className="text-xs w-16 text-right">
+                    <div className="text-[13px] w-16 text-right">
                       <span className="text-green-600">{s.completed}</span>
                       <span className="text-muted-foreground">/{s.total}</span>
                     </div>
@@ -160,18 +160,18 @@ export default function WorkflowAnalyticsPage() {
         )}
 
         {/* Recent executions */}
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-white border border-[var(--hairline)] card-shadow rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold">Recent Executions</span>
+            <span className="text-[15px] font-semibold">Recent Executions</span>
           </div>
           {recent.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No executions yet</p>
+            <p className="text-[15px] text-muted-foreground text-center py-4">No executions yet</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="text-muted-foreground border-b border-border">
+                  <tr className="text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af] border-b border-[var(--hairline)]">
                     <th className="text-left py-2 font-medium">Contact</th>
                     <th className="text-left py-2 font-medium">Trigger</th>
                     <th className="text-left py-2 font-medium">Status</th>
@@ -180,7 +180,7 @@ export default function WorkflowAnalyticsPage() {
                 </thead>
                 <tbody>
                   {recent.map((r) => (
-                    <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
+                    <tr key={r.id} className="border-b border-[var(--hairline)] hover:bg-[var(--surface-2)]">
                       <td className="py-2 font-medium">{r.lead_name || '-'}</td>
                       <td className="py-2 text-muted-foreground">{r.trigger_type}</td>
                       <td className="py-2">

@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Facebook, RefreshCw, Plus, Eye, Trash2, Check,
   X, User, Mail, Phone, Calendar, Search, Link, Key, Shuffle,
-  ArrowLeft, Settings2, Zap, History, CalendarDays, Download, AlertTriangle,
+  ArrowLeft, Settings2, Zap, Workflow, History, CalendarDays, Download, AlertTriangle,
   ChevronDown, GripVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -154,27 +154,27 @@ function MapFieldsModal({ form, onClose }: { form: MetaFormRow; onClose: () => v
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
       <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)]">
           <div>
-            <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">Map Fields</h3>
-            <p className="text-[11px] text-[#7a6b5c] mt-0.5">{form.form_name}</p>
+            <h3 className="font-headline font-bold text-[#111318] text-[16px]">Map Fields</h3>
+            <p className="text-[12px] text-[#6b7280] mt-0.5">{form.form_name}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-4 px-6 py-3 bg-[var(--app-bg)] border-b border-black/5">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">Facebook Form Field</p>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#7a6b5c]">CRM Field</p>
+        <div className="grid grid-cols-2 gap-4 px-6 py-3 bg-[var(--app-bg)] border-b border-[var(--hairline)]">
+          <p className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">Facebook Form Field</p>
+          <p className="text-[12px] font-bold uppercase tracking-wider text-[#6b7280]">CRM Field</p>
         </div>
-        <div className="flex-1 overflow-y-auto divide-y divide-black/5">
+        <div className="flex-1 overflow-y-auto divide-y divide-[var(--hairline)]">
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-[14px] text-[#7a6b5c]">Loading fields…</div>
+            <div className="flex items-center justify-center py-16 text-[15px] text-[#6b7280]">Loading fields…</div>
           ) : questions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2 text-center px-8">
-              <Shuffle className="w-8 h-8 text-[#c4b09e]" />
-              <p className="text-[14px] font-semibold text-[#1c1410]">No questions found</p>
-              <p className="text-[13px] text-[#7a6b5c]">This form has no questions, or the Meta API returned no data.</p>
+              <Shuffle className="w-8 h-8 text-[#c3c8cf]" />
+              <p className="text-[15px] font-semibold text-[#111318]">No questions found</p>
+              <p className="text-[14px] text-[#6b7280]">This form has no questions, or the Meta API returned no data.</p>
             </div>
           ) : (
             mapping.map((row, i) => {
@@ -184,15 +184,15 @@ function MapFieldsModal({ form, onClose }: { form: MetaFormRow; onClose: () => v
                 <div key={row.fb_field} className={cn('px-6 py-4', i % 2 === 0 ? 'bg-[var(--app-bg)]/60' : 'bg-white')}>
                   <div className="grid grid-cols-2 gap-4 items-center">
                     <div>
-                      <p className="text-[14px] text-[#1c1410] leading-snug">{label}</p>
+                      <p className="text-[15px] text-[#111318] leading-snug">{label}</p>
                       {q?.type && q.type !== 'CUSTOM' && (
-                        <p className="text-[10px] text-[#b09e8d] mt-0.5 uppercase">{q.type.replace(/_/g, ' ')}</p>
+                        <p className="text-[11px] text-[#9ca3af] mt-0.5 uppercase">{q.type.replace(/_/g, ' ')}</p>
                       )}
                     </div>
                     <select
                       value={row.crm_field}
                       onChange={(e) => handleSelectChange(i, e.target.value)}
-                      className="w-full border border-black/10 rounded-xl px-3 py-2.5 text-[14px] text-[#1c1410] bg-white outline-none focus:border-primary cursor-pointer"
+                      className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2.5 text-[15px] text-[#111318] bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 cursor-pointer"
                     >
                       <option value="">- Select field -</option>
                       <optgroup label="Standard Fields">
@@ -217,7 +217,7 @@ function MapFieldsModal({ form, onClose }: { form: MetaFormRow; onClose: () => v
             })
           )}
         </div>
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-black/5 bg-[var(--app-bg)]">
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[var(--hairline)] bg-[var(--app-bg)]">
           <Button variant="outline" onClick={onClose}>Close</Button>
           <Button onClick={handleSave} disabled={saving || loading || questions.length === 0}>
             {saving ? <><RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</> : <><Check className="w-3.5 h-3.5 mr-1.5" />Save Mapping</>}
@@ -250,14 +250,14 @@ function SortableStageRow({ stage, idx, onUpdate, onRemove }: {
     >
       <button
         {...attributes} {...listeners}
-        className="p-1 rounded text-[#c4b09e] hover:text-[#7a6b5c] cursor-grab active:cursor-grabbing transition-colors shrink-0"
+        className="p-1 rounded text-[#c3c8cf] hover:text-[#6b7280] cursor-grab active:cursor-grabbing transition-colors shrink-0"
       >
         <GripVertical className="w-4 h-4" />
       </button>
-      <div className="flex-1 flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2 focus-within:border-primary/40 bg-white transition-colors">
-        <span className="text-[11px] text-[#b09e8d] w-5 shrink-0 font-medium">{idx + 1}.</span>
+      <div className="flex-1 flex items-center gap-2 border border-[var(--hairline)] rounded-xl px-3 py-2 focus-within:border-primary/40 bg-white transition-colors">
+        <span className="text-[12px] text-[#9ca3af] w-5 shrink-0 font-medium">{idx + 1}.</span>
         <input
-          className="flex-1 text-[14px] text-[#1c1410] outline-none bg-transparent placeholder:text-gray-300"
+          className="flex-1 text-[15px] text-[#111318] outline-none bg-transparent placeholder:text-gray-300"
           placeholder="Stage name"
           value={stage.name}
           onChange={(e) => onUpdate(stage.id, e.target.value)}
@@ -265,7 +265,7 @@ function SortableStageRow({ stage, idx, onUpdate, onRemove }: {
       </div>
       <button
         onClick={() => onRemove(stage.id)}
-        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 text-[#c4b09e] hover:text-red-500 transition-all shrink-0"
+        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 text-[#c3c8cf] hover:text-red-500 transition-all shrink-0"
       >
         <Trash2 className="w-3.5 h-3.5" />
       </button>
@@ -323,20 +323,20 @@ function NewPipelineModal({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/5 shrink-0">
-          <h3 className="font-headline font-bold text-[#1c1410] text-[17px]">+ New Pipeline</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#7a6b5c] transition-colors">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--hairline)] shrink-0">
+          <h3 className="font-headline font-bold text-[#111318] text-[17px]">+ New Pipeline</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface-2)] text-[#6b7280] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           <div>
-            <label className="text-[13px] font-semibold text-[#7a6b5c] mb-1.5 block">
+            <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">
               Pipeline Name <span className="text-red-400">*</span>
             </label>
             <input
               autoFocus
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[15px] text-[#1c1410] outline-none focus:border-primary/40 placeholder:text-gray-400"
+              className="w-full border border-[var(--hairline)] rounded-xl px-4 py-2.5 text-[16px] text-[#111318] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 placeholder:text-gray-400"
               placeholder="e.g. Sales Pipeline"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -344,8 +344,8 @@ function NewPipelineModal({
           </div>
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-[13px] font-semibold text-[#7a6b5c]">Stages</label>
-              <span className="text-[11px] text-[#b09e8d]">{stages.length} stage{stages.length !== 1 ? 's' : ''} · drag to reorder</span>
+              <label className="text-[14px] font-semibold text-[#6b7280]">Stages</label>
+              <span className="text-[12px] text-[#9ca3af]">{stages.length} stage{stages.length !== 1 ? 's' : ''} · drag to reorder</span>
             </div>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={stages.map((s) => s.id)} strategy={verticalListSortingStrategy}>
@@ -364,23 +364,23 @@ function NewPipelineModal({
             </DndContext>
             <button
               onClick={addStage}
-              className="mt-3 flex items-center gap-1.5 text-[14px] font-semibold text-primary hover:opacity-80 transition-opacity"
+              className="mt-3 flex items-center gap-1.5 text-[15px] font-semibold text-primary hover:opacity-80 transition-opacity"
             >
               <Plus className="w-4 h-4" /> Add Stage
             </button>
           </div>
         </div>
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-black/5 shrink-0">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--hairline)] shrink-0">
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl text-[14px] font-semibold text-[#7a6b5c] hover:bg-gray-100 transition-colors"
+            className="px-5 py-2 rounded-xl text-[15px] font-semibold text-[#6b7280] hover:bg-[var(--surface-2)] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-2 rounded-xl text-[14px] font-bold text-white disabled:opacity-60 transition-all hover:-translate-y-0.5"
+            className="px-6 py-2 rounded-xl text-[15px] font-bold text-white disabled:opacity-60 transition-all hover:-translate-y-0.5 active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
           >
             {saving ? 'Saving…' : 'Save'}
@@ -426,12 +426,12 @@ function ImportConfigModal({
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
         <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)]">
             <div>
-              <p className="text-[11px] text-[#7a6b5c]">{type === 'old' ? 'Import historical' : 'Import recent'} leads</p>
-              <h3 className="font-bold text-[#1c1410] text-[15px] leading-tight">{form.form_name}</h3>
+              <p className="text-[12px] text-[#6b7280]">{type === 'old' ? 'Import historical' : 'Import recent'} leads</p>
+              <h3 className="font-bold text-[#111318] text-[16px] leading-tight">{form.form_name}</h3>
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors">
+            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -440,12 +440,12 @@ function ImportConfigModal({
             {/* Pipeline row with + New Pipeline button */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[13px] font-semibold text-[#1c1410]">
+                <label className="text-[14px] font-semibold text-[#111318]">
                   Pipeline <span className="text-red-500">*</span>
                 </label>
                 <button
                   onClick={() => setShowNewPipelineModal(true)}
-                  className="flex items-center gap-1 text-[11px] font-bold text-primary hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-1 text-[12px] font-bold text-primary hover:opacity-80 transition-opacity"
                 >
                   <Plus className="w-3 h-3" /> New Pipeline
                 </button>
@@ -454,20 +454,20 @@ function ImportConfigModal({
                 <select
                   value={selectedPipelineId}
                   onChange={(e) => setSelectedPipelineId(e.target.value)}
-                  className="w-full appearance-none border border-black/10 rounded-xl px-3 py-2.5 pr-8 text-[14px] text-[#1c1410] bg-white outline-none focus:border-primary cursor-pointer"
+                  className="w-full appearance-none border border-[var(--hairline)] rounded-xl px-3 py-2.5 pr-8 text-[15px] text-[#111318] bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 cursor-pointer"
                 >
                   <option value="">Select pipeline…</option>
                   {pipelines.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a6b5c] pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b7280] pointer-events-none" />
               </div>
             </div>
 
             {/* Stage */}
             <div>
-              <label className="text-[13px] font-semibold text-[#1c1410] mb-1.5 block">
+              <label className="text-[14px] font-semibold text-[#111318] mb-1.5 block">
                 Stage <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -475,36 +475,36 @@ function ImportConfigModal({
                   value={selectedStageId}
                   onChange={(e) => setSelectedStageId(e.target.value)}
                   disabled={!selectedPipelineId || stages.length === 0}
-                  className="w-full appearance-none border border-black/10 rounded-xl px-3 py-2.5 pr-8 text-[14px] text-[#1c1410] bg-white outline-none focus:border-primary cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full appearance-none border border-[var(--hairline)] rounded-xl px-3 py-2.5 pr-8 text-[15px] text-[#111318] bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <option value="">Select stage…</option>
                   {stages.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a6b5c] pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b7280] pointer-events-none" />
               </div>
             </div>
 
             {!canImport && (
-              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+              <p className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                 Select a pipeline and stage to continue. Leads will be placed here on import.
               </p>
             )}
           </div>
 
-          <div className="flex gap-2 px-6 py-4 border-t border-black/5">
+          <div className="flex gap-2 px-6 py-4 border-t border-[var(--hairline)]">
             <button
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--app-bg)] transition-colors"
+              className="flex-1 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--app-bg)] transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={() => onConfirm(selectedPipelineId, selectedStageId)}
               disabled={!canImport}
-              className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white disabled:opacity-40 transition-all"
-              style={canImport ? { background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' } : { background: '#d1cbc7' }}
+              className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white disabled:opacity-40 active:scale-[0.98] transition-all"
+              style={canImport ? { background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' } : { background: '#e5e7eb' }}
             >
               {type === 'old' ? 'Import Old Leads' : 'Import New Leads'}
             </button>
@@ -566,16 +566,16 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
   const initials = lead.name.split(' ').map((n) => n[0] ?? '').join('').slice(0, 2).toUpperCase();
 
   const SectionLabel = ({ text }: { text: string }) => (
-    <p className="text-[11px] font-bold text-[#7a6b5c] uppercase tracking-wider mb-2">{text}</p>
+    <p className="text-[12px] font-bold text-[#6b7280] uppercase tracking-wider mb-2">{text}</p>
   );
 
   const Row = ({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value?: string | null }) =>
     value ? (
       <div className="flex items-start gap-3 px-3 py-2.5 bg-[var(--app-bg)] rounded-xl">
-        <Icon className="w-4 h-4 text-[#7a6b5c] shrink-0 mt-0.5" />
+        <Icon className="w-4 h-4 text-[#6b7280] shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] text-[#7a6b5c] font-medium uppercase tracking-wide">{label}</p>
-          <p className="text-[14px] text-[#1c1410] font-medium break-words">{value}</p>
+          <p className="text-[11px] text-[#6b7280] font-medium uppercase tracking-wide">{label}</p>
+          <p className="text-[15px] text-[#111318] font-medium break-words">{value}</p>
         </div>
       </div>
     ) : null;
@@ -585,21 +585,21 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--hairline)] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-[15px] shrink-0"
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-[16px] shrink-0"
               style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}>
               {initials}
             </div>
             <div>
-              <h2 className="font-bold text-[15px] text-[#1c1410] leading-tight">{lead.name}</h2>
-              <p className="text-[11px] text-[#7a6b5c] mt-0.5">
+              <h2 className="font-bold text-[16px] text-[#111318] leading-tight">{lead.name}</h2>
+              <p className="text-[12px] text-[#6b7280] mt-0.5">
                 {new Date(lead.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors shrink-0">
-            <X className="w-4 h-4 text-[#7a6b5c]" />
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--surface-2)] transition-colors shrink-0">
+            <X className="w-4 h-4 text-[#6b7280]" />
           </button>
         </div>
 
@@ -640,7 +640,7 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
                   <SectionLabel text="Tags" />
                   <div className="flex flex-wrap gap-1.5">
                     {full.tags.map((t) => (
-                      <span key={t} className="text-[11px] bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{t}</span>
+                      <span key={t} className="text-[12px] bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{t}</span>
                     ))}
                   </div>
                 </div>
@@ -652,7 +652,7 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
                 {fields.length === 0 ? (
                   <div className="flex items-center gap-2 px-3 py-3 bg-[var(--app-bg)] rounded-xl">
                     <Settings2 className="w-4 h-4 text-gray-300" />
-                    <p className="text-[13px] text-[#b09e8d]">No additional fields recorded</p>
+                    <p className="text-[14px] text-[#9ca3af]">No additional fields recorded</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -660,8 +660,8 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
                       <div key={i} className="flex items-start gap-3 px-3 py-2.5 bg-[var(--app-bg)] rounded-xl">
                         <Link className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-[10px] text-[#7a6b5c] font-medium uppercase tracking-wide">{f.field_name}</p>
-                          <p className="text-[14px] text-[#1c1410] font-medium break-words">{f.value || '-'}</p>
+                          <p className="text-[11px] text-[#6b7280] font-medium uppercase tracking-wide">{f.field_name}</p>
+                          <p className="text-[15px] text-[#111318] font-medium break-words">{f.value || '-'}</p>
                         </div>
                       </div>
                     ))}
@@ -674,7 +674,7 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
                 <div>
                   <SectionLabel text="Notes" />
                   <div className="px-3 py-2.5 bg-[var(--app-bg)] rounded-xl">
-                    <p className="text-[14px] text-[#1c1410] whitespace-pre-wrap">{full.notes}</p>
+                    <p className="text-[15px] text-[#111318] whitespace-pre-wrap">{full.notes}</p>
                   </div>
                 </div>
               )}
@@ -682,10 +682,10 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-black/5 flex justify-end shrink-0">
+        <div className="px-5 py-3 border-t border-[var(--hairline)] flex justify-end shrink-0">
           <button
             onClick={() => { onClose(); window.location.href = `/leads?id=${lead.id}`; }}
-            className="text-[13px] font-semibold text-primary hover:underline"
+            className="text-[14px] font-semibold text-primary hover:underline"
           >
             Open in Leads →
           </button>
@@ -1172,7 +1172,7 @@ export default function MetaFormsPage() {
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
-    return <div className="text-center py-16 text-[14px] text-[#7a6b5c]">Loading…</div>;
+    return <div className="text-center py-16 text-[15px] text-[#6b7280]">Loading…</div>;
   }
 
   // ── Not connected ──────────────────────────────────────────────────────────
@@ -1181,15 +1181,15 @@ export default function MetaFormsPage() {
       <>
       <div className="space-y-5">
         <div>
-          <h2 className="font-headline font-bold text-[#1c1410] text-[16px]">Meta Forms</h2>
-          <p className="text-[13px] text-[#7a6b5c] mt-0.5">Connect Facebook Lead Ads to auto-capture leads</p>
+          <h2 className="font-headline font-bold text-[#111318] text-[16px]">Meta Forms</h2>
+          <p className="text-[14px] text-[#6b7280] mt-0.5">Connect Facebook Lead Ads to auto-capture leads</p>
         </div>
-        <div className="bg-white rounded-2xl border border-black/5 card-shadow px-8 py-16 text-center max-w-lg mx-auto">
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow px-8 py-16 text-center max-w-lg mx-auto">
           <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
             <Facebook className="w-8 h-8 text-blue-600" />
           </div>
-          <h3 className="font-headline font-bold text-[#1c1410] text-[16px] mb-2">Connect Meta Account</h3>
-          <p className="text-[14px] text-[#7a6b5c] mb-6 max-w-xs mx-auto">
+          <h3 className="font-headline font-bold text-[#111318] text-[16px] mb-2">Connect Meta Account</h3>
+          <p className="text-[15px] text-[#6b7280] mb-6 max-w-xs mx-auto">
             Authorise Hawcus CRM to receive leads from your Facebook & Instagram Lead Ads in real time.
           </p>
           {!showManual ? (
@@ -1200,14 +1200,14 @@ export default function MetaFormsPage() {
               </Button>
               <button
                 onClick={() => setShowManual(true)}
-                className="flex items-center gap-1.5 text-[11px] text-[#7a6b5c] hover:text-primary transition-colors"
+                className="flex items-center gap-1.5 text-[12px] text-[#6b7280] hover:text-primary transition-colors"
               >
                 <Key className="w-3 h-3" /> Use Page Access Token manually
               </button>
             </div>
           ) : (
             <div className="w-full max-w-sm space-y-3">
-              <p className="text-[13px] text-[#7a6b5c] text-left">
+              <p className="text-[14px] text-[#6b7280] text-left">
                 Paste your <strong>Page Access Token</strong> from{' '}
                 <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
                   Graph API Explorer
@@ -1218,7 +1218,7 @@ export default function MetaFormsPage() {
                 onChange={(e) => setManualToken(e.target.value)}
                 placeholder="Paste token here…"
                 rows={3}
-                className="w-full border border-black/10 rounded-xl px-3 py-2 text-[13px] text-[#1c1410] resize-none outline-none focus:border-primary"
+                className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2 text-[14px] text-[#111318] resize-none outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
               />
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => { setShowManual(false); setManualToken(''); }}>
@@ -1237,29 +1237,29 @@ export default function MetaFormsPage() {
       {oauthInstructionTarget && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.55)' }}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)]">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-[#1877F2] flex items-center justify-center shrink-0">
                   <Facebook className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#1c1410] text-[15px]">Before you connect</h3>
-                  <p className="text-[11px] text-[#7a6b5c] mt-0.5">Read this to connect all your pages</p>
+                  <h3 className="font-bold text-[#111318] text-[16px]">Before you connect</h3>
+                  <p className="text-[12px] text-[#6b7280] mt-0.5">Read this to connect all your pages</p>
                 </div>
               </div>
-              <button onClick={() => setOauthInstructionTarget(null)} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c]">
+              <button onClick={() => setOauthInstructionTarget(null)} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#6b7280]">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 flex gap-3">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-[13px] text-amber-800 leading-relaxed">
+                <p className="text-[14px] text-amber-800 leading-relaxed">
                   <strong>Facebook only connects pages you explicitly select.</strong> If you skip the page selection or leave pages unchecked, those pages will not appear in the CRM.
                 </p>
               </div>
               <div className="space-y-2">
-                <p className="text-[13px] font-bold text-[#1c1410]">In the Facebook dialog that opens:</p>
+                <p className="text-[14px] font-bold text-[#111318]">In the Facebook dialog that opens:</p>
                 <ol className="space-y-2.5">
                   {[
                     { label: 'Click "Edit" next to the pages list', detail: 'Do not skip this - it shows all your pages' },
@@ -1267,23 +1267,23 @@ export default function MetaFormsPage() {
                     { label: 'Click "Continue" to confirm', detail: 'Then finish the authorization' },
                   ].map((step, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <span className="w-5 h-5 rounded-full bg-[#1877F2] text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                      <span className="w-5 h-5 rounded-full bg-[#1877F2] text-white text-[12px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
                       <div>
-                        <p className="text-[13px] font-semibold text-[#1c1410]">{step.label}</p>
-                        <p className="text-[11px] text-[#9a8a7c]">{step.detail}</p>
+                        <p className="text-[14px] font-semibold text-[#111318]">{step.label}</p>
+                        <p className="text-[12px] text-[#6b7280]">{step.detail}</p>
                       </div>
                     </li>
                   ))}
                 </ol>
               </div>
               <div className="flex gap-2 pt-1">
-                <button onClick={() => setOauthInstructionTarget(null)} className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--app-bg)] transition-colors">
+                <button onClick={() => setOauthInstructionTarget(null)} className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--app-bg)] transition-colors">
                   Cancel
                 </button>
                 <button
                   onClick={() => { setOauthInstructionTarget(null); handleConnect(); }}
                   disabled={connecting}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-bold text-white bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-60 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[15px] font-bold text-white bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-60 active:scale-[0.98] transition-all"
                 >
                   <Facebook className="w-4 h-4" />
                   {connecting ? 'Redirecting…' : 'Open Facebook →'}
@@ -1309,25 +1309,25 @@ export default function MetaFormsPage() {
         {/* Back button */}
         <button
           onClick={() => { closeDetailPage(); setOpenForm(null); }}
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#7a6b5c] hover:text-[#1c1410] transition-colors"
+          className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#6b7280] hover:text-[#111318] transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           All Pages
         </button>
 
         {/* Page header card */}
-        <div className="bg-white rounded-2xl border border-black/5 card-shadow px-5 py-4 flex items-center gap-4">
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow px-5 py-4 flex flex-wrap items-center gap-4">
           <PageProfilePic pageId={detailPage.id} pageName={detailPage.name} size="lg" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-headline font-bold text-[#1c1410] text-[18px] truncate">{detailPage.name}</h2>
-              <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+              <h2 className="font-headline font-bold text-[#111318] text-[18px] truncate">{detailPage.name}</h2>
+              <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                 <Check className="w-2.5 h-2.5" /> Connected
               </span>
             </div>
-            <p className="text-[13px] text-[#7a6b5c] mt-0.5">Lead Capture · Facebook Page</p>
+            <p className="text-[14px] text-[#6b7280] mt-0.5">Lead Capture · Facebook Page</p>
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:shrink-0">
             <Button
               size="sm"
               onClick={() => { setDownloadFormId(''); setDownloadModal(true); }}
@@ -1356,12 +1356,12 @@ export default function MetaFormsPage() {
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-bold text-red-800">Meta token expired - leads are no longer syncing</p>
-              <p className="text-[11px] text-red-700 mt-0.5">Reconnect your Facebook account to resume automatic lead capture.</p>
+              <p className="text-[15px] font-bold text-red-800">Meta token expired - leads are no longer syncing</p>
+              <p className="text-[12px] text-red-700 mt-0.5">Reconnect your Facebook account to resume automatic lead capture.</p>
             </div>
             <button
               onClick={() => closeDetailPage()}
-              className="text-[11px] font-semibold text-red-700 underline shrink-0"
+              className="text-[12px] font-semibold text-red-700 underline shrink-0"
             >Reconnect</button>
           </div>
         )}
@@ -1370,15 +1370,15 @@ export default function MetaFormsPage() {
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-bold text-red-800">Lead capture disconnected - new leads are NOT being captured</p>
-              <p className="text-[11px] text-red-700 mt-0.5">
+              <p className="text-[15px] font-bold text-red-800">Lead capture disconnected - new leads are NOT being captured</p>
+              <p className="text-[12px] text-red-700 mt-0.5">
                 {status.lastError ? `Meta error: ${status.lastError}. ` : ''}Reconnect your Facebook account to resume.
                 {status.lastSuccessAt ? ` Last successful sync: ${new Date(status.lastSuccessAt).toLocaleString()}.` : ''}
               </p>
             </div>
             <button
               onClick={() => closeDetailPage()}
-              className="text-[11px] font-semibold text-red-700 underline shrink-0"
+              className="text-[12px] font-semibold text-red-700 underline shrink-0"
             >Reconnect</button>
           </div>
         )}
@@ -1386,42 +1386,42 @@ export default function MetaFormsPage() {
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-bold text-amber-800">Meta token expires in {status.tokenDaysLeft} day{status.tokenDaysLeft !== 1 ? 's' : ''}</p>
-              <p className="text-[11px] text-amber-700 mt-0.5">Reconnect now to avoid disruption to lead capture.</p>
+              <p className="text-[15px] font-bold text-amber-800">Meta token expires in {status.tokenDaysLeft} day{status.tokenDaysLeft !== 1 ? 's' : ''}</p>
+              <p className="text-[12px] text-amber-700 mt-0.5">Reconnect now to avoid disruption to lead capture.</p>
             </div>
             <button
               onClick={() => closeDetailPage()}
-              className="text-[11px] font-semibold text-amber-700 underline shrink-0"
+              className="text-[12px] font-semibold text-amber-700 underline shrink-0"
             >Reconnect</button>
           </div>
         )}
 
 
         {pageForms.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-black/5 card-shadow px-8 py-14 text-center">
+          <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow px-8 py-14 text-center">
             <div className="w-12 h-12 bg-[var(--accent-tint)] rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Link className="w-6 h-6 text-primary" />
             </div>
-            <p className="text-[15px] font-semibold text-[#1c1410] mb-1">No forms yet</p>
-            <p className="text-[13px] text-[#7a6b5c] max-w-xs mx-auto mb-4">
+            <p className="text-[16px] font-semibold text-[#111318] mb-1">No forms yet</p>
+            <p className="text-[14px] text-[#6b7280] max-w-xs mx-auto mb-4">
               Once you create a Lead Ad form for <strong>{detailPage.name}</strong> in Meta Ads Manager, it will appear here automatically.
             </p>
             <button
               onClick={() => window.open('https://business.facebook.com/latest/ads_manager/forms', '_blank')}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white bg-[#1877F2] hover:bg-[#166FE5] transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[14px] font-semibold text-white bg-[#1877F2] hover:bg-[#166FE5] transition-colors"
             >
               <Plus className="w-3.5 h-3.5" /> Create a form in Meta
             </button>
           </div>
         ) : (
           /* Single unified table - all forms in one row each */
-          <div className="bg-white rounded-2xl border border-black/5 card-shadow divide-y divide-black/5 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow divide-y divide-[var(--hairline)] overflow-hidden">
             {pageForms.map((form) => {
               const mappedCount = (form.field_mapping as any[] | null)?.length ?? 0;
               const isMapped = mappedCount > 0;
               const isActive = form.is_active;
               return (
-                <div key={form.id} className="flex items-center gap-3 px-5 py-4 hover:bg-[var(--app-bg)] transition-colors">
+                <div key={form.id} className="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-[var(--app-bg)] transition-colors">
 
                   {/* Icon */}
                   <div className="w-9 h-9 rounded-xl bg-[var(--accent-tint)] flex items-center justify-center shrink-0">
@@ -1430,30 +1430,30 @@ export default function MetaFormsPage() {
 
                   {/* Name + badges */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-bold text-[#1c1410] truncate">{form.form_name}</p>
+                    <p className="text-[15px] font-bold text-[#111318] truncate">{form.form_name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       {isMapped ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                           <Check className="w-2.5 h-2.5" /> {mappedCount} fields mapped
                         </span>
                       ) : (
                         <button
                           onClick={(e) => { e.stopPropagation(); setMapForm(form); }}
-                          className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
+                          className="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
                         >
                           Fields not mapped - click to map
                         </button>
                       )}
                       {isMapped && (
-                        <span className="text-[11px] text-[#b09e8d]">{(form.leads_count ?? 0).toLocaleString()} leads</span>
+                        <span className="text-[12px] text-[#9ca3af]">{(form.leads_count ?? 0).toLocaleString()} leads</span>
                       )}
                       {isActive && (
-                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                           live
                         </span>
                       )}
                       {form.meta_status && form.meta_status !== 'ACTIVE' && (
-                        <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                        <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                           {form.meta_status.toLowerCase()}
                         </span>
                       )}
@@ -1463,14 +1463,14 @@ export default function MetaFormsPage() {
                   {/* Map Fields - always available */}
                   <button
                     onClick={() => setMapForm(form)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-[13px] font-semibold transition-colors whitespace-nowrap shrink-0"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-[14px] font-semibold transition-colors whitespace-nowrap shrink-0"
                   >
                     <Shuffle className="w-3.5 h-3.5" /> Map Fields
                   </button>
 
                   {/* Toggle - disabled until fields are mapped; controls real-time auto-import only */}
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`text-[11px] font-medium ${isActive ? 'text-emerald-600' : 'text-[#b09e8d]'}`}>
+                    <span className={`text-[12px] font-medium ${isActive ? 'text-emerald-600' : 'text-[#9ca3af]'}`}>
                       {isActive ? 'Auto' : 'Manual'}
                     </span>
                     <span title={!isMapped ? 'Map fields first to enable auto-import' : isActive ? 'Auto ON - captures only NEW leads going forward. Does not import past leads.' : 'Enable to capture new leads from Meta ads in real time (past leads not imported)'}>
@@ -1490,7 +1490,7 @@ export default function MetaFormsPage() {
                         onClick={() => setHistoricalImportTarget(form)}
                         disabled={!!exportingId}
                         title="Import all leads ever submitted to this form from Meta (past leads)"
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--accent-tint)] text-primary hover:bg-primary hover:text-white disabled:opacity-50 transition-colors whitespace-nowrap"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-semibold bg-[var(--accent-tint)] text-primary hover:bg-primary hover:text-white disabled:opacity-50 transition-colors whitespace-nowrap"
                       >
                         {exportingId === `${form.form_id}-old`
                           ? <RefreshCw className="w-3 h-3 animate-spin" />
@@ -1499,7 +1499,7 @@ export default function MetaFormsPage() {
                       </button>
                       <button
                         onClick={() => { setOpenForm(form); setContactSearch(''); }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent-tint)] text-primary hover:bg-[var(--accent-tint)] text-[13px] font-semibold transition-colors whitespace-nowrap"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent-tint)] text-primary hover:bg-[var(--accent-tint)] text-[14px] font-semibold transition-colors whitespace-nowrap"
                       >
                         <Eye className="w-3.5 h-3.5" /> View Leads
                       </button>
@@ -1518,37 +1518,37 @@ export default function MetaFormsPage() {
           <>
             <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setOpenForm(null)} />
             <div className="fixed right-0 top-0 h-full z-50 w-full max-w-md bg-white shadow-2xl flex flex-col">
-              <div className="flex items-start justify-between px-6 py-5 border-b border-black/5">
+              <div className="flex items-start justify-between px-6 py-5 border-b border-[var(--hairline)]">
                 <div>
-                  <h3 className="font-headline font-bold text-[#1c1410] text-[15px]">{openForm.form_name}</h3>
+                  <h3 className="font-headline font-bold text-[#111318] text-[16px]">{openForm.form_name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="w-4 h-4 rounded bg-[#1877F2] flex items-center justify-center">
                       <Facebook className="w-2.5 h-2.5 text-white" />
                     </div>
-                    <span className="text-[11px] text-[#7a6b5c]">{openForm.page_name}</span>
-                    <span className="text-[11px] text-[#b09e8d]">·</span>
-                    <span className="text-[11px] font-semibold text-[#1c1410]">{openForm.leads_count.toLocaleString()} leads</span>
+                    <span className="text-[12px] text-[#6b7280]">{openForm.page_name}</span>
+                    <span className="text-[12px] text-[#9ca3af]">·</span>
+                    <span className="text-[12px] font-semibold text-[#111318]">{openForm.leads_count.toLocaleString()} leads</span>
                   </div>
                 </div>
                 <button
                   onClick={() => setOpenForm(null)}
-                  className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-[#1c1410] transition-colors mt-0.5"
+                  className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-[#111318] transition-colors mt-0.5"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="px-5 py-3 border-b border-black/5">
-                <div className="flex items-center gap-2 bg-[var(--app-bg)] border border-black/8 rounded-xl px-3 py-2">
-                  <Search className="w-3.5 h-3.5 text-[#b09e8d] shrink-0" />
+              <div className="px-5 py-3 border-b border-[var(--hairline)]">
+                <div className="flex items-center gap-2 bg-[var(--app-bg)] border border-[var(--hairline)] rounded-xl px-3 py-2">
+                  <Search className="w-3.5 h-3.5 text-[#9ca3af] shrink-0" />
                   <input
                     type="text"
                     placeholder="Search by name, email or phone…"
                     value={contactSearch}
                     onChange={(e) => setContactSearch(e.target.value)}
-                    className="flex-1 bg-transparent text-[13px] text-[#1c1410] placeholder-[#b09e8d] outline-none"
+                    className="flex-1 bg-transparent text-[14px] text-[#111318] placeholder-[#9ca3af] outline-none"
                   />
                   {contactSearch && (
-                    <button onClick={() => setContactSearch('')} className="text-[#b09e8d] hover:text-primary transition-colors">
+                    <button onClick={() => setContactSearch('')} className="text-[#9ca3af] hover:text-primary transition-colors">
                       <X className="w-3 h-3" />
                     </button>
                   )}
@@ -1556,19 +1556,19 @@ export default function MetaFormsPage() {
               </div>
               <div className="flex-1 overflow-y-auto">
                 {leadsLoading ? (
-                  <div className="flex items-center justify-center h-full text-[14px] text-[#7a6b5c]">Loading leads…</div>
+                  <div className="flex items-center justify-center h-full text-[15px] text-[#6b7280]">Loading leads…</div>
                 ) : filteredLeads.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
                     <div className="w-12 h-12 bg-[var(--accent-tint)] rounded-2xl flex items-center justify-center">
                       <User className="w-5 h-5 text-primary" />
                     </div>
-                    <p className="text-[14px] font-semibold text-[#1c1410]">No leads found</p>
-                    <p className="text-[13px] text-[#7a6b5c]">
+                    <p className="text-[15px] font-semibold text-[#111318]">No leads found</p>
+                    <p className="text-[14px] text-[#6b7280]">
                       {contactSearch ? 'Try a different search term.' : 'No leads from this form yet.'}
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-black/5">
+                  <div className="divide-y divide-[var(--hairline)]">
                     {filteredLeads.map((lead) => (
                       <div
                         key={lead.id}
@@ -1576,29 +1576,29 @@ export default function MetaFormsPage() {
                         onClick={() => setSelectedLead(lead)}
                       >
                         <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                          <span className="text-[14px] font-bold text-primary">
+                          <span className="text-[15px] font-bold text-primary">
                             {lead.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[14px] font-semibold text-[#1c1410] group-hover:text-primary transition-colors truncate">
+                          <p className="text-[15px] font-semibold text-[#111318] group-hover:text-primary transition-colors truncate">
                             {lead.name}
                           </p>
                           {lead.email && (
                             <div className="flex items-center gap-1 mt-0.5">
-                              <Mail className="w-3 h-3 text-[#b09e8d] shrink-0" />
-                              <span className="text-[11px] text-[#7a6b5c] truncate">{lead.email}</span>
+                              <Mail className="w-3 h-3 text-[#9ca3af] shrink-0" />
+                              <span className="text-[12px] text-[#6b7280] truncate">{lead.email}</span>
                             </div>
                           )}
                           {lead.phone && (
                             <div className="flex items-center gap-1 mt-0.5">
-                              <Phone className="w-3 h-3 text-[#b09e8d] shrink-0" />
-                              <a href={`tel:${lead.phone}`} className="text-[11px] text-[#7a6b5c] hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{lead.phone}</a>
+                              <Phone className="w-3 h-3 text-[#9ca3af] shrink-0" />
+                              <a href={`tel:${lead.phone}`} className="text-[12px] text-[#6b7280] hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>{lead.phone}</a>
                             </div>
                           )}
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="flex items-center gap-1 text-[10px] text-[#b09e8d]">
+                          <div className="flex items-center gap-1 text-[11px] text-[#9ca3af]">
                             <Calendar className="w-3 h-3" />
                             <span className="whitespace-nowrap">{new Date(lead.created_at).toLocaleDateString()}</span>
                           </div>
@@ -1608,8 +1608,8 @@ export default function MetaFormsPage() {
                   </div>
                 )}
               </div>
-              <div className="px-5 py-4 border-t border-black/5 flex items-center justify-between">
-                <span className="text-[11px] text-[#7a6b5c]">{filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''}</span>
+              <div className="px-5 py-4 border-t border-[var(--hairline)] flex items-center justify-between">
+                <span className="text-[12px] text-[#6b7280]">{filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''}</span>
                 <Button size="sm" variant="outline" onClick={() => navigate('/leads?source=meta_form')}>
                   View All in Leads
                 </Button>
@@ -1631,44 +1631,44 @@ export default function MetaFormsPage() {
 
         {/* Download Leads modal */}
         {downloadModal && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-[16px] font-bold text-[#1c1410]">Download Leads</h3>
-                  <p className="text-[11px] text-[#7a6b5c] mt-0.5">Download all lead data from Meta as Excel</p>
+                  <h3 className="text-[16px] font-bold text-[#111318]">Download Leads</h3>
+                  <p className="text-[12px] text-[#6b7280] mt-0.5">Download all lead data from Meta as Excel</p>
                 </div>
-                <button onClick={() => setDownloadModal(false)} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors">
+                <button onClick={() => setDownloadModal(false)} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-1.5">Select Form</label>
+              <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-1.5">Select Form</label>
               <div className="relative">
                 <select
                   value={downloadFormId}
                   onChange={(e) => setDownloadFormId(e.target.value)}
-                  className="w-full appearance-none bg-[#f5f0eb] border border-black/8 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:ring-2 focus:ring-primary/20 pr-9 cursor-pointer"
+                  className="w-full appearance-none bg-[var(--surface-2)] border border-[var(--hairline)] rounded-xl px-4 py-2.5 text-[15px] text-[#111318] outline-none focus:ring-2 focus:ring-primary/20 pr-9 cursor-pointer"
                 >
                   <option value="">- Choose a form -</option>
                   {forms.filter((f) => f.page_id === detailPage.id).map((f) => (
                     <option key={f.form_id} value={f.form_id}>{f.form_name}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9e8e7e] pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8b929c] pointer-events-none" />
               </div>
-              <p className="text-[11px] text-[#9e8e7e] mt-2">All fields submitted by leads will be included as columns in the Excel file.</p>
+              <p className="text-[12px] text-[#8b929c] mt-2">All fields submitted by leads will be included as columns in the Excel file.</p>
               <div className="flex gap-2 mt-5">
                 <button
                   onClick={() => setDownloadModal(false)}
-                  className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--app-bg)] transition-colors"
+                  className="flex-1 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--app-bg)] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDownloadLeads}
                   disabled={!downloadFormId || downloading}
-                  className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white disabled:opacity-40 flex items-center justify-center gap-1.5 transition-all"
-                  style={downloadFormId && !downloading ? { background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' } : { background: '#d1cbc7' }}
+                  className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white disabled:opacity-40 flex items-center justify-center gap-1.5 transition-all"
+                  style={downloadFormId && !downloading ? { background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' } : { background: '#e5e7eb' }}
                 >
                   {downloading ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Downloading…</> : <><Download className="w-3.5 h-3.5" />Download</>}
                 </button>
@@ -1679,33 +1679,33 @@ export default function MetaFormsPage() {
 
         {/* Trigger Workflow modal */}
         {triggerModal && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-[16px] font-bold text-[#1c1410]">Trigger Workflow</h3>
-                  <p className="text-[11px] text-[#7a6b5c] mt-0.5 truncate max-w-[240px]">{triggerModal.form_name}</p>
+                  <h3 className="text-[16px] font-bold text-[#111318]">Trigger Workflow</h3>
+                  <p className="text-[12px] text-[#6b7280] mt-0.5 truncate max-w-[240px]">{triggerModal.form_name}</p>
                 </div>
-                <button onClick={() => setTriggerModal(null)} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors">
+                <button onClick={() => setTriggerModal(null)} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-[13px] text-[#7a6b5c] mb-3">Select the workflow to run for all imported leads. Only the selected workflow will execute.</p>
-              <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-1.5">Select Active Workflow</label>
+              <p className="text-[14px] text-[#6b7280] mb-3">Select the workflow to run for all imported leads. Only the selected workflow will execute.</p>
+              <label className="block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-1.5">Select Active Workflow</label>
               {loadingTriggerWFs ? (
-                <div className="flex items-center justify-center h-10 text-[#9e8e7e] text-[13px] gap-1.5">
+                <div className="flex items-center justify-center h-10 text-[#8b929c] text-[14px] gap-1.5">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Loading workflows…
                 </div>
               ) : triggerWorkflows.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-black/10 px-4 py-5 text-center">
-                  <Zap className="w-6 h-6 text-[#d4c9bc] mx-auto mb-2" />
-                  <p className="text-[13px] font-semibold text-[#1c1410]">No active workflows</p>
-                  <p className="text-[11px] text-[#9e8e7e] mt-0.5 mb-3">Create a workflow with a Meta Form trigger and select this form.</p>
+                <div className="rounded-xl border border-dashed border-[var(--hairline)] px-4 py-5 text-center">
+                  <Workflow className="w-6 h-6 text-[#e5e7eb] mx-auto mb-2" />
+                  <p className="text-[14px] font-semibold text-[#111318]">No active workflows</p>
+                  <p className="text-[12px] text-[#8b929c] mt-0.5 mb-3">Create a workflow with a Meta Form trigger and select this form.</p>
                   <button
                     onClick={() => { setTriggerModal(null); navigate('/automation/workflows'); }}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-white text-[11px] font-semibold hover:bg-[#a33a0a] transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-white text-[12px] font-semibold hover:bg-[#a33a0a] transition-colors"
                   >
-                    <Zap className="w-3 h-3" /> Go to Automation
+                    <Workflow className="w-3 h-3" /> Go to Automation
                   </button>
                 </div>
               ) : (
@@ -1713,29 +1713,29 @@ export default function MetaFormsPage() {
                   <select
                     value={triggerWorkflowId}
                     onChange={(e) => setTriggerWorkflowId(e.target.value)}
-                    className="w-full appearance-none bg-[#f5f0eb] border border-black/8 rounded-xl px-4 py-2.5 text-[14px] text-[#1c1410] outline-none focus:ring-2 focus:ring-primary/20 pr-9 cursor-pointer"
+                    className="w-full appearance-none bg-[var(--surface-2)] border border-[var(--hairline)] rounded-xl px-4 py-2.5 text-[15px] text-[#111318] outline-none focus:ring-2 focus:ring-primary/20 pr-9 cursor-pointer"
                   >
                     <option value="">- Choose a workflow -</option>
                     {triggerWorkflows.map((wf) => (
                       <option key={wf.id} value={wf.id}>{wf.name}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9e8e7e] pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8b929c] pointer-events-none" />
                 </div>
               )}
               <div className="flex flex-col gap-2 mt-5">
                 <div className="flex gap-2">
                   <button
                     onClick={() => setTriggerModal(null)}
-                    className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--app-bg)] transition-colors"
+                    className="flex-1 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--app-bg)] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={() => handlePushToAutomation(triggerModal, 'old', triggerWorkflowId || undefined)}
                     disabled={!triggerWorkflowId}
-                    className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white disabled:opacity-40 transition-all"
-                    style={triggerWorkflowId ? { background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' } : { background: '#d1cbc7' }}
+                    className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white disabled:opacity-40 active:scale-[0.98] transition-all"
+                    style={triggerWorkflowId ? { background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' } : { background: '#e5e7eb' }}
                   >
                     Run Workflow
                   </button>
@@ -1743,7 +1743,7 @@ export default function MetaFormsPage() {
                 {triggerWorkflows.length > 0 && (
                   <button
                     onClick={() => handlePushToAutomation(triggerModal, 'old')}
-                    className="w-full py-2 rounded-xl text-[13px] font-medium text-[#7a6b5c] border border-black/10 hover:bg-[var(--app-bg)] transition-colors"
+                    className="w-full py-2 rounded-xl text-[14px] font-medium text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--app-bg)] transition-colors"
                   >
                     Import leads + run all matching workflows
                   </button>
@@ -1767,8 +1767,8 @@ export default function MetaFormsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="font-headline font-bold text-[#1c1410] text-[16px]">Meta Forms</h2>
-          <p className="text-[13px] text-[#7a6b5c] mt-0.5">
+          <h2 className="font-headline font-bold text-[#111318] text-[16px]">Meta Forms</h2>
+          <p className="text-[14px] text-[#6b7280] mt-0.5">
             {pages.length} page{pages.length !== 1 ? 's' : ''} connected
             {blockedPages.length > 0 && (
               <span className="text-amber-600 font-semibold"> · {blockedPages.length} need{blockedPages.length === 1 ? 's' : ''} token</span>
@@ -1791,7 +1791,7 @@ export default function MetaFormsPage() {
       <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 flex items-start gap-3">
         <AlertTriangle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] text-blue-800">
+          <p className="text-[14px] text-blue-800">
             <strong>Missing a page?</strong> Facebook only connects pages you selected during authorization.
             Click <button onClick={() => setOauthInstructionTarget('add-page')} className="underline font-bold hover:text-blue-600">Reconnect & Select All Pages</button> to open the Facebook dialog and tick every page you want.
           </p>
@@ -1808,29 +1808,29 @@ export default function MetaFormsPage() {
             <div
               key={page.id}
               onClick={() => openDetailPage(page)}
-              className="bg-white rounded-2xl border border-black/5 card-shadow p-5 flex flex-col gap-4 text-left cursor-pointer hover:border-blue-200 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 w-full relative"
+              className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 flex flex-col gap-4 text-left cursor-pointer hover:border-blue-200 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 w-full relative"
             >
               {/* Top row: profile pic + Connected badge + disconnect icon */}
               <div className="flex items-start justify-between">
                 <PageProfilePic pageId={page.id} pageName={page.name} />
                 <div className="flex items-center gap-2">
                   {status?.needsReconnect ? (
-                    <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200" title={status.lastError ?? 'Reconnect to resume lead capture'}>
+                    <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200" title={status.lastError ?? 'Reconnect to resume lead capture'}>
                       <AlertTriangle className="w-2.5 h-2.5" /> Needs Reconnect
                     </span>
                   ) : status?.tokenExpired ? (
-                    <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200">
+                    <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200">
                       <AlertTriangle className="w-2.5 h-2.5" /> Token Expired
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                       <Check className="w-2.5 h-2.5" /> Connected
                     </span>
                   )}
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setDisconnectPageTarget({ id: page.id, name: page.name }); }}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-[#7a6b5c] hover:bg-red-50 hover:text-red-500 transition-colors"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:bg-red-50 hover:text-red-500 transition-colors"
                     title="Disconnect page"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -1840,12 +1840,12 @@ export default function MetaFormsPage() {
 
               {/* Page name + subtitle */}
               <div>
-                <p className="text-[15px] font-bold text-[#1c1410] leading-snug">{page.name}</p>
-                <p className="text-[13px] text-[#7a6b5c] mt-0.5">Lead Capture</p>
+                <p className="text-[16px] font-bold text-[#111318] leading-snug">{page.name}</p>
+                <p className="text-[14px] text-[#6b7280] mt-0.5">Lead Capture</p>
               </div>
 
               {/* Stats */}
-              <p className="text-[13px] text-[#9a8a7c]">
+              <p className="text-[14px] text-[#6b7280]">
                 {pageForms.length} form{pageForms.length !== 1 ? 's' : ''} · {pageLeads.toLocaleString()} leads captured
               </p>
             </div>
@@ -1861,25 +1861,25 @@ export default function MetaFormsPage() {
             {/* Top row: profile pic + Needs Token badge */}
             <div className="flex items-start justify-between">
               <PageProfilePic pageId={page.id} pageName={page.name} />
-              <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+              <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                 <AlertTriangle className="w-2.5 h-2.5" /> Needs Token
               </span>
             </div>
 
             {/* Page name + subtitle */}
             <div>
-              <p className="text-[15px] font-bold text-[#1c1410] leading-snug">{page.name}</p>
-              <p className="text-[13px] text-[#7a6b5c] mt-0.5">Business Manager Page</p>
+              <p className="text-[16px] font-bold text-[#111318] leading-snug">{page.name}</p>
+              <p className="text-[14px] text-[#6b7280] mt-0.5">Business Manager Page</p>
             </div>
 
             {/* Explanation */}
-            <p className="text-[11px] text-[#9a8a7c] leading-relaxed">
+            <p className="text-[12px] text-[#6b7280] leading-relaxed">
               You have Business Manager access but no direct page token. Paste a Page Access Token to connect.
             </p>
 
             <button
               onClick={() => { setConnectBlockedPage(page); setBlockedToken(''); }}
-              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[13px] font-bold text-white bg-amber-500 hover:bg-amber-600 transition-colors w-full"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[14px] font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] transition-all w-full"
             >
               <Key className="w-3.5 h-3.5" /> Connect with Token
             </button>
@@ -1889,18 +1889,18 @@ export default function MetaFormsPage() {
         {/* Add Page card */}
         <button
           onClick={() => setOauthInstructionTarget('add-page')}
-          className="bg-white rounded-2xl border-2 border-dashed border-black/10 card-shadow p-5 flex flex-col gap-4 text-left hover:border-blue-300 hover:-translate-y-0.5 transition-all duration-150"
+          className="bg-white rounded-2xl border border-dashed border-[var(--hairline)] card-shadow card-hover p-5 flex flex-col gap-4 text-left hover:border-blue-300 hover:-translate-y-0.5 transition-all duration-150"
         >
           <div className="w-11 h-11 rounded-xl bg-[var(--app-bg)] flex items-center justify-center shrink-0">
-            <Plus className="w-5 h-5 text-[#7a6b5c]" />
+            <Plus className="w-5 h-5 text-[#6b7280]" />
           </div>
           <div>
-            <p className="text-[15px] font-bold text-[#7a6b5c]">Add Page</p>
-            <p className="text-[13px] text-[#b09e8d] mt-0.5">Lead Capture</p>
+            <p className="text-[16px] font-bold text-[#6b7280]">Add Page</p>
+            <p className="text-[14px] text-[#9ca3af] mt-0.5">Lead Capture</p>
           </div>
-          <p className="text-[13px] text-[#c4b09e]">Connect another Facebook page to capture leads</p>
-          <div className="pt-1 border-t border-black/5">
-            <span className="text-[14px] font-semibold text-[#7a6b5c]">+ Connect Page</span>
+          <p className="text-[14px] text-[#c3c8cf]">Connect another Facebook page to capture leads</p>
+          <div className="pt-1 border-t border-[var(--hairline)]">
+            <span className="text-[15px] font-semibold text-[#6b7280]">+ Connect Page</span>
           </div>
         </button>
       </div>
@@ -1909,31 +1909,31 @@ export default function MetaFormsPage() {
       {connectBlockedPage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)]">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
                   <AlertTriangle className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#1c1410] text-[15px]">Connect Page</h3>
-                  <p className="text-[11px] text-[#7a6b5c] mt-0.5 truncate max-w-[180px]">{connectBlockedPage.name}</p>
+                  <h3 className="font-bold text-[#111318] text-[16px]">Connect Page</h3>
+                  <p className="text-[12px] text-[#6b7280] mt-0.5 truncate max-w-[180px]">{connectBlockedPage.name}</p>
                 </div>
               </div>
               <button
                 onClick={() => { setConnectBlockedPage(null); setBlockedToken(''); }}
-                className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors"
+                className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-[13px] text-amber-800">
+                <p className="text-[14px] text-amber-800">
                   <strong>{connectBlockedPage.name}</strong> is accessible through your Business Manager, but we need a Page Access Token to import leads from it.
                 </p>
               </div>
               <div className="space-y-2">
-                <p className="text-[13px] font-semibold text-[#1c1410]">How to get the token:</p>
+                <p className="text-[14px] font-semibold text-[#111318]">How to get the token:</p>
                 <ol className="space-y-1">
                   {[
                     <>Open <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" className="text-primary underline font-semibold">Graph API Explorer</a></>,
@@ -1941,8 +1941,8 @@ export default function MetaFormsPage() {
                     <>Click <strong>Generate Access Token</strong> → copy it</>,
                     <>Paste below and click Connect</>,
                   ].map((step, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[11px] text-[#5c5245]">
-                      <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                    <li key={i} className="flex items-start gap-2 text-[12px] text-[#4a4f57]">
+                      <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
                       <span>{step}</span>
                     </li>
                   ))}
@@ -1953,19 +1953,19 @@ export default function MetaFormsPage() {
                 onChange={(e) => setBlockedToken(e.target.value)}
                 placeholder="Paste Page Access Token here…"
                 rows={3}
-                className="w-full border border-black/10 rounded-xl px-3 py-2 text-[13px] text-[#1c1410] resize-none outline-none focus:border-primary"
+                className="w-full border border-[var(--hairline)] rounded-xl px-3 py-2 text-[14px] text-[#111318] resize-none outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
               />
               <div className="flex gap-2">
                 <button
                   onClick={() => { setConnectBlockedPage(null); setBlockedToken(''); }}
-                  className="flex-1 py-2 rounded-xl text-[13px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--app-bg)] transition-colors"
+                  className="flex-1 py-2 rounded-xl text-[14px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--app-bg)] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConnectBlockedPage}
                   disabled={savingBlockedToken || !blockedToken.trim()}
-                  className="flex-1 py-2 rounded-xl text-[14px] font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                  className="flex-1 py-2 rounded-xl text-[15px] font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 active:scale-[0.98] transition-all"
                 >
                   {savingBlockedToken ? 'Connecting…' : 'Connect Page'}
                 </button>
@@ -1980,17 +1980,17 @@ export default function MetaFormsPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.55)' }}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black/5">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--hairline)]">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-[#1877F2] flex items-center justify-center shrink-0">
                   <Facebook className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#1c1410] text-[15px]">Before you connect</h3>
-                  <p className="text-[11px] text-[#7a6b5c] mt-0.5">Read this to connect all your pages</p>
+                  <h3 className="font-bold text-[#111318] text-[16px]">Before you connect</h3>
+                  <p className="text-[12px] text-[#6b7280] mt-0.5">Read this to connect all your pages</p>
                 </div>
               </div>
-              <button onClick={() => setOauthInstructionTarget(null)} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#7a6b5c]">
+              <button onClick={() => setOauthInstructionTarget(null)} className="p-1.5 rounded-xl hover:bg-[var(--accent-tint)] text-[#6b7280]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1999,14 +1999,14 @@ export default function MetaFormsPage() {
               {/* Critical warning */}
               <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 flex gap-3">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-[13px] text-amber-800 leading-relaxed">
+                <p className="text-[14px] text-amber-800 leading-relaxed">
                   <strong>Facebook only connects pages you explicitly select.</strong> If you skip the page selection or leave pages unchecked, those pages will not appear in the CRM.
                 </p>
               </div>
 
               {/* Steps */}
               <div className="space-y-2">
-                <p className="text-[13px] font-bold text-[#1c1410]">In the Facebook dialog that opens:</p>
+                <p className="text-[14px] font-bold text-[#111318]">In the Facebook dialog that opens:</p>
                 <ol className="space-y-2.5">
                   {[
                     { label: 'Click "Edit" next to the pages list', detail: 'Do not skip this - it shows all your pages' },
@@ -2014,10 +2014,10 @@ export default function MetaFormsPage() {
                     { label: 'Click "Continue" to confirm', detail: 'Then finish the authorization' },
                   ].map((step, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <span className="w-5 h-5 rounded-full bg-[#1877F2] text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                      <span className="w-5 h-5 rounded-full bg-[#1877F2] text-white text-[12px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
                       <div>
-                        <p className="text-[13px] font-semibold text-[#1c1410]">{step.label}</p>
-                        <p className="text-[11px] text-[#9a8a7c]">{step.detail}</p>
+                        <p className="text-[14px] font-semibold text-[#111318]">{step.label}</p>
+                        <p className="text-[12px] text-[#6b7280]">{step.detail}</p>
                       </div>
                     </li>
                   ))}
@@ -2026,8 +2026,8 @@ export default function MetaFormsPage() {
 
               {/* Already connected note */}
               {pages.length > 0 && (
-                <div className="rounded-xl bg-[var(--app-bg)] border border-black/5 px-4 py-3">
-                  <p className="text-[11px] text-[#7a6b5c]">
+                <div className="rounded-xl bg-[var(--app-bg)] border border-[var(--hairline)] px-4 py-3">
+                  <p className="text-[12px] text-[#6b7280]">
                     You currently have <strong>{pages.length} page{pages.length !== 1 ? 's' : ''}</strong> connected. After reconnecting, all previously connected pages plus any newly selected ones will be kept.
                   </p>
                 </div>
@@ -2036,7 +2036,7 @@ export default function MetaFormsPage() {
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setOauthInstructionTarget(null)}
-                  className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold text-[#7a6b5c] border border-black/10 hover:bg-[var(--app-bg)] transition-colors"
+                  className="flex-1 py-2.5 rounded-xl text-[14px] font-semibold text-[#6b7280] border border-[var(--hairline)] hover:bg-[var(--app-bg)] transition-colors"
                 >
                   Cancel
                 </button>
@@ -2046,7 +2046,7 @@ export default function MetaFormsPage() {
                     handleConnect();
                   }}
                   disabled={connecting}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-bold text-white bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-60 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[15px] font-bold text-white bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-60 active:scale-[0.98] transition-all"
                 >
                   <Facebook className="w-4 h-4" />
                   {connecting ? 'Redirecting…' : 'Open Facebook →'}
@@ -2059,23 +2059,23 @@ export default function MetaFormsPage() {
 
       {/* Historical import confirmation modal */}
       {historicalImportTarget && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-[16px] font-bold text-[#1c1410] mb-2">Import Historical Leads?</h3>
-            <p className="text-[14px] text-[#7a6b5c] mb-1">
+            <h3 className="text-[16px] font-bold text-[#111318] mb-2">Import Historical Leads?</h3>
+            <p className="text-[15px] text-[#6b7280] mb-1">
               This will import <strong>all leads ever submitted</strong> to <strong>{historicalImportTarget.form_name}</strong> from Meta - including leads from before you connected this form.
             </p>
-            <p className="text-[13px] text-[#9e8e7e] mb-5">Existing leads will be skipped. This is a one-time manual action and does not affect your Auto toggle.</p>
+            <p className="text-[14px] text-[#8b929c] mb-5">Existing leads will be skipped. This is a one-time manual action and does not affect your Auto toggle.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setHistoricalImportTarget(null)}
-                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold bg-gray-100 text-[#1c1410] hover:bg-gray-200 transition-colors"
+                className="flex-1 py-2.5 rounded-xl text-[15px] font-bold bg-[var(--surface-2)] text-[#111318] hover:brightness-95 active:scale-[0.98] transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={() => { const t = historicalImportTarget; setHistoricalImportTarget(null); openTriggerModal(t); }}
-                className="flex-1 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all"
+                className="flex-1 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)' }}
               >
                 Yes, Import All
@@ -2087,15 +2087,15 @@ export default function MetaFormsPage() {
 
       {/* Disconnect confirmation modal */}
       {showDisconnectConfirm && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-[16px] font-bold text-[#1c1410] mb-2">Disconnect Meta?</h3>
-            <p className="text-[14px] text-[#7a6b5c] mb-5">All linked forms will be removed and auto-import will stop. Your existing leads will remain in the CRM.</p>
+            <h3 className="text-[16px] font-bold text-[#111318] mb-2">Disconnect Meta?</h3>
+            <p className="text-[15px] text-[#6b7280] mb-5">All linked forms will be removed and auto-import will stop. Your existing leads will remain in the CRM.</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowDisconnectConfirm(false)} className="flex-1 py-2.5 rounded-xl text-[14px] font-bold bg-gray-100 text-[#1c1410] hover:bg-gray-200 transition-colors">
+              <button onClick={() => setShowDisconnectConfirm(false)} className="flex-1 py-2.5 rounded-xl text-[15px] font-bold bg-[var(--surface-2)] text-[#111318] hover:brightness-95 active:scale-[0.98] transition-all">
                 Cancel
               </button>
-              <button onClick={handleDisconnect} className="flex-1 py-2.5 rounded-xl text-[14px] font-bold bg-red-500 text-white hover:bg-red-600 transition-colors">
+              <button onClick={handleDisconnect} className="flex-1 py-2.5 rounded-xl text-[15px] font-bold bg-red-500 text-white hover:bg-red-600 active:scale-[0.98] transition-all">
                 Yes, Disconnect
               </button>
             </div>
@@ -2105,17 +2105,17 @@ export default function MetaFormsPage() {
 
       {/* Disconnect single page confirmation modal */}
       {disconnectPageTarget && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-[16px] font-bold text-[#1c1410] mb-2">Disconnect Page?</h3>
-            <p className="text-[14px] text-[#7a6b5c] mb-5">
-              Are you sure you want to disconnect <span className="font-semibold text-[#1c1410]">"{disconnectPageTarget.name}"</span>? All forms linked to this page will be removed and lead capture will stop. Your existing leads will remain in the CRM.
+            <h3 className="text-[16px] font-bold text-[#111318] mb-2">Disconnect Page?</h3>
+            <p className="text-[15px] text-[#6b7280] mb-5">
+              Are you sure you want to disconnect <span className="font-semibold text-[#111318]">"{disconnectPageTarget.name}"</span>? All forms linked to this page will be removed and lead capture will stop. Your existing leads will remain in the CRM.
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setDisconnectPageTarget(null)} disabled={disconnectingPage} className="flex-1 py-2.5 rounded-xl text-[14px] font-bold bg-gray-100 text-[#1c1410] hover:bg-gray-200 transition-colors">
+              <button onClick={() => setDisconnectPageTarget(null)} disabled={disconnectingPage} className="flex-1 py-2.5 rounded-xl text-[15px] font-bold bg-[var(--surface-2)] text-[#111318] hover:brightness-95 active:scale-[0.98] transition-all">
                 Cancel
               </button>
-              <button onClick={handleDisconnectPage} disabled={disconnectingPage} className="flex-1 py-2.5 rounded-xl text-[14px] font-bold bg-red-500 text-white hover:bg-red-600 disabled:opacity-60 transition-colors">
+              <button onClick={handleDisconnectPage} disabled={disconnectingPage} className="flex-1 py-2.5 rounded-xl text-[15px] font-bold bg-red-500 text-white hover:bg-red-600 disabled:opacity-60 active:scale-[0.98] transition-all">
                 {disconnectingPage ? 'Disconnecting…' : 'Yes, Disconnect'}
               </button>
             </div>
@@ -2125,15 +2125,15 @@ export default function MetaFormsPage() {
 
       {/* Delete form confirmation modal */}
       {deleteFormTarget && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-[16px] font-bold text-[#1c1410] mb-2">Remove Form?</h3>
-            <p className="text-[14px] text-[#7a6b5c] mb-5">Remove <strong>"{deleteFormTarget.form_name}"</strong>? Your existing leads will stay in the CRM.</p>
+            <h3 className="text-[16px] font-bold text-[#111318] mb-2">Remove Form?</h3>
+            <p className="text-[15px] text-[#6b7280] mb-5">Remove <strong>"{deleteFormTarget.form_name}"</strong>? Your existing leads will stay in the CRM.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteFormTarget(null)} className="flex-1 py-2.5 rounded-xl text-[14px] font-bold bg-gray-100 text-[#1c1410] hover:bg-gray-200 transition-colors">
+              <button onClick={() => setDeleteFormTarget(null)} className="flex-1 py-2.5 rounded-xl text-[15px] font-bold bg-[var(--surface-2)] text-[#111318] hover:brightness-95 active:scale-[0.98] transition-all">
                 Cancel
               </button>
-              <button onClick={confirmDeleteForm} className="flex-1 py-2.5 rounded-xl text-[14px] font-bold bg-red-500 text-white hover:bg-red-600 transition-colors">
+              <button onClick={confirmDeleteForm} className="flex-1 py-2.5 rounded-xl text-[15px] font-bold bg-red-500 text-white hover:bg-red-600 active:scale-[0.98] transition-all">
                 Remove
               </button>
             </div>

@@ -58,10 +58,10 @@ function EmailIcon() {
 function StatusBadge({ connected }: { connected: boolean }) {
   return (
     <span className={cn(
-      'inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full',
+      'inline-flex items-center gap-1 text-[12px] font-bold px-2.5 py-1 rounded-full',
       connected
         ? 'bg-emerald-50 text-emerald-600'
-        : 'bg-[#f5f0eb] text-[#9e8e7e]'
+        : 'bg-[var(--surface-2)] text-[#8b929c]'
     )}>
       {connected ? <><Check className="w-2.5 h-2.5" />Connected</> : 'Not connected'}
     </span>
@@ -77,18 +77,18 @@ function Modal({ title, onClose, children, footer }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
       <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-        <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
-          <p className="text-[15px] font-bold text-[#1c1410]">{title}</p>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] transition-colors"><X size={15} /></button>
+        <div className="px-5 py-4 border-b border-[var(--hairline)] flex items-center justify-between">
+          <p className="text-[16px] font-bold text-[#111318]">{title}</p>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] transition-colors"><X size={15} /></button>
         </div>
         <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">{children}</div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-black/5 bg-[var(--app-bg)]">{footer}</div>
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[var(--hairline)] bg-[var(--app-bg)]">{footer}</div>
       </div>
     </div>
   );
 }
 
-const labelCls = 'block text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245] mb-1';
+const labelCls = 'block text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57] mb-1';
 
 // ── WABA modal ─────────────────────────────────────────────────────────────────
 
@@ -209,15 +209,15 @@ function WabaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       {/* Embedded Signup - the recommended self-serve path */}
       {esConfig?.available && (
         <div className="rounded-xl border border-[#1877F2]/30 bg-[#1877F2]/5 p-3.5 mb-1">
-          <p className="text-[13px] text-[#5c5245] mb-2.5 leading-relaxed">
-            <strong className="text-[#1c1410]">Recommended.</strong> Connect your own WhatsApp number - Meta
+          <p className="text-[14px] text-[#4a4f57] mb-2.5 leading-relaxed">
+            <strong className="text-[#111318]">Recommended.</strong> Connect your own WhatsApp number - Meta
             guides you through it in a popup. No tokens to copy.
           </p>
           <button
             type="button"
             onClick={launchSignup}
             disabled={esBusy}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#1877F2] text-white text-sm font-semibold py-2.5 hover:bg-[#1568d8] disabled:opacity-60 transition-colors"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#1877F2] text-white text-[15px] font-semibold py-2.5 hover:bg-[#1568d8] disabled:opacity-60 active:scale-[0.98] transition"
           >
             {esBusy
               ? <><RefreshCw className="w-4 h-4 animate-spin" />Connecting…</>
@@ -231,13 +231,13 @@ function WabaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
 
       {esConfig?.available && (
         <div className="flex items-center gap-3 my-1">
-          <div className="h-px flex-1 bg-black/10" />
-          <span className="text-[10px] uppercase tracking-wider text-[#b09e8d]">or enter credentials manually</span>
-          <div className="h-px flex-1 bg-black/10" />
+          <div className="h-px flex-1 bg-[var(--hairline)]" />
+          <span className="text-[11px] uppercase tracking-wider text-[#9ca3af]">or enter credentials manually</span>
+          <div className="h-px flex-1 bg-[var(--hairline)]" />
         </div>
       )}
 
-      <p className="text-[13px] text-[#7a6b5c]">Get these values from your Meta Business Manager → WhatsApp → API Setup.</p>
+      <p className="text-[14px] text-[#6b7280]">Get these values from your Meta Business Manager → WhatsApp → API Setup.</p>
       <div>
         <label className={labelCls}>Phone Number ID *</label>
         <Input value={form.phone_number_id} onChange={(e) => set('phone_number_id', e.target.value)} placeholder="123456789012345" />
@@ -257,7 +257,7 @@ function WabaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
             className="pr-9"
           />
           <button type="button" onClick={() => setShowToken((s) => !s)}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9e8e7e] hover:text-[#1c1410]">
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8b929c] hover:text-[#111318]">
             {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
@@ -265,7 +265,7 @@ function WabaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       <div>
         <label className={labelCls}>Phone Number (optional)</label>
         <Input value={form.phone_number} onChange={(e) => set('phone_number', e.target.value)} placeholder="+91 98765 43210" />
-        <p className="text-[10px] text-[#b09e8d] mt-1">Leave blank to auto-resolve from Meta</p>
+        <p className="text-[11px] text-[#9ca3af] mt-1">Leave blank to auto-resolve from Meta</p>
       </div>
     </Modal>
   );
@@ -372,14 +372,14 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       </>
     }>
       <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mb-1">
-        <p className="text-[13px] text-blue-700">
+        <p className="text-[14px] text-blue-700">
           <strong>Note:</strong> Make sure your SMTP settings are correct. Test the configuration and send a test email before enabling.
         </p>
       </div>
 
       <div>
         <label className={labelCls}>Email Provider</label>
-        <select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white outline-none focus:border-primary/50"
+        <select className="w-full px-3 py-2 rounded-xl border border-[var(--hairline)] text-[15px] bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
           value="smtp" disabled>
           <option value="smtp">SMTP</option>
         </select>
@@ -406,7 +406,7 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
             className="pr-9"
           />
           <button type="button" onClick={() => setShowPass((s) => !s)}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9e8e7e] hover:text-[#1c1410]">
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8b929c] hover:text-[#111318]">
             {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
@@ -419,7 +419,7 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         </div>
         <div>
           <label className={labelCls}>SMTP Encryption</label>
-          <select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white outline-none focus:border-primary/50"
+          <select className="w-full px-3 py-2 rounded-xl border border-[var(--hairline)] text-[15px] bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             value={form.encryption}
             onChange={(e) => {
               const enc = e.target.value as 'tls' | 'ssl' | 'none';
@@ -429,14 +429,14 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
             <option value="ssl">SSL</option>
             <option value="none">None</option>
           </select>
-          <p className="text-[10px] text-[#b09e8d] mt-1">Select TLS or SSL if your SMTP provider requires encryption. Choose None for no encryption.</p>
+          <p className="text-[11px] text-[#9ca3af] mt-1">Select TLS or SSL if your SMTP provider requires encryption. Choose None for no encryption.</p>
         </div>
       </div>
 
       <div>
         <label className={labelCls}>From Address</label>
         <Input value={form.from_email} onChange={(e) => set('from_email', e.target.value)} placeholder="noreply@yourcompany.com" type="email" />
-        <p className="text-[10px] text-[#b09e8d] mt-1">Defaults to username if left blank</p>
+        <p className="text-[11px] text-[#9ca3af] mt-1">Defaults to username if left blank</p>
       </div>
 
       <div>
@@ -447,26 +447,26 @@ function SmtpModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2 pt-1">
         <button onClick={handleTest} disabled={testing}
-          className="px-4 py-2 rounded-lg text-[14px] font-semibold text-white bg-[#3b82f6] hover:bg-[#2563eb] transition-colors disabled:opacity-60">
+          className="px-4 py-2 rounded-xl text-[15px] font-semibold text-white bg-[#3b82f6] hover:bg-[#2563eb] active:scale-[0.98] transition disabled:opacity-60">
           {testing ? 'Testing…' : 'Test Configuration'}
         </button>
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-          <Input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="recipient@email.com" className="text-sm flex-1" />
+          <Input value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="recipient@email.com" className="text-[15px] flex-1" />
           <button onClick={handleSendTest} disabled={sendingTest}
-            className="px-4 py-2 rounded-lg text-[14px] font-semibold text-white bg-[#7c3aed] hover:bg-[#6d28d9] transition-colors disabled:opacity-60 whitespace-nowrap">
+            className="px-4 py-2 rounded-xl text-[15px] font-semibold text-white bg-[#7c3aed] hover:bg-[#6d28d9] active:scale-[0.98] transition disabled:opacity-60 whitespace-nowrap">
             {sendingTest ? 'Sending…' : 'Send Test Email'}
           </button>
         </div>
       </div>
 
       {/* Enable/Disable toggle */}
-      <div className="flex items-center justify-between pt-3 mt-2 border-t border-gray-100">
+      <div className="flex items-center justify-between pt-3 mt-2 border-t border-[var(--hairline)]">
         <div>
-          <p className="text-[14px] font-semibold text-[#1c1410]">Enable Email Configuration</p>
-          <p className="text-[11px] text-[#7a6b5c]">Toggle to enable or disable your custom email config</p>
+          <p className="text-[15px] font-semibold text-[#111318]">Enable Email Configuration</p>
+          <p className="text-[12px] text-[#6b7280]">Toggle to enable or disable your custom email config</p>
         </div>
         <div onClick={handleToggle}
-          className={cn('w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer', form.enabled ? 'bg-primary' : 'bg-[#d4c9bc]')}>
+          className={cn('w-11 h-6 rounded-full transition-colors relative shrink-0 cursor-pointer', form.enabled ? 'bg-primary' : 'bg-[#e5e7eb]')}>
           <div className={cn('absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform', form.enabled ? 'translate-x-5' : 'translate-x-0.5')} />
         </div>
       </div>
@@ -595,9 +595,9 @@ function WaPersonalModal({ onClose, onConnected, sessionId: initialSessionId }: 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
       <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
-        <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
-          <p className="text-[15px] font-bold text-[#1c1410]">{initialSessionId ? 'Connect WhatsApp Device' : 'Add New WhatsApp Device'}</p>
-          <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]"><X size={15} /></button>
+        <div className="px-5 py-4 border-b border-[var(--hairline)] flex items-center justify-between">
+          <p className="text-[16px] font-bold text-[#111318]">{initialSessionId ? 'Connect WhatsApp Device' : 'Add New WhatsApp Device'}</p>
+          <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280]"><X size={15} /></button>
         </div>
 
         <div className="p-6 flex flex-col items-center gap-4">
@@ -606,18 +606,18 @@ function WaPersonalModal({ onClose, onConnected, sessionId: initialSessionId }: 
               <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
                 <Check className="w-8 h-8 text-emerald-600" />
               </div>
-              <p className="text-[15px] font-bold text-emerald-600">Connected!</p>
-              <p className="text-[13px] text-[#7a6b5c] text-center">WhatsApp Personal is now linked to your CRM.</p>
+              <p className="text-[16px] font-bold text-emerald-600">Connected!</p>
+              <p className="text-[14px] text-[#6b7280] text-center">WhatsApp Personal is now linked to your CRM.</p>
             </>
           ) : qr ? (
             <>
-              <img src={qr} alt="WhatsApp QR Code" className="w-52 h-52 rounded-xl border border-black/10" />
+              <img src={qr} alt="WhatsApp QR Code" className="w-52 h-52 rounded-xl border border-[var(--hairline)]" />
               <div className="flex flex-col items-center gap-1">
-                <p className="text-[14px] font-semibold text-[#1c1410]">Scan with WhatsApp on your phone</p>
-                <p className="text-[11px] text-[#9e8e7e]">WhatsApp → Linked Devices → Link a Device</p>
+                <p className="text-[15px] font-semibold text-[#111318]">Scan with WhatsApp on your phone</p>
+                <p className="text-[12px] text-[#8b929c]">WhatsApp → Linked Devices → Link a Device</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                  <p className="text-[11px] text-[#9e8e7e]">QR refreshes in {countdown}s</p>
+                  <p className="text-[12px] text-[#8b929c]">QR refreshes in {countdown}s</p>
                 </div>
               </div>
             </>
@@ -626,32 +626,32 @@ function WaPersonalModal({ onClose, onConnected, sessionId: initialSessionId }: 
               <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
                 <X className="w-7 h-7 text-red-400" />
               </div>
-              <p className="text-[14px] font-semibold text-[#1c1410]">QR generation timed out</p>
-              <p className="text-[11px] text-[#9e8e7e] text-center">WhatsApp didn't respond in 60s. This is usually temporary throttling - wait a few minutes then try again.</p>
+              <p className="text-[15px] font-semibold text-[#111318]">QR generation timed out</p>
+              <p className="text-[12px] text-[#8b929c] text-center">WhatsApp didn't respond in 60s. This is usually temporary throttling - wait a few minutes then try again.</p>
               <button
                 onClick={startSession}
-                className="mt-1 flex items-center gap-1.5 text-[13px] font-semibold text-white bg-[#128C7E] rounded-lg px-4 py-1.5 hover:bg-[#0f7a6d] transition-colors"
+                className="mt-1 flex items-center gap-1.5 text-[14px] font-semibold text-white bg-[#128C7E] rounded-xl px-4 py-1.5 hover:bg-[#0f7a6d] active:scale-[0.98] transition"
               >
                 <RefreshCw className="w-3.5 h-3.5" />Try Again
               </button>
             </>
           ) : (
             <>
-              <div className="w-16 h-16 rounded-2xl bg-[#f5f0eb] flex items-center justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-[var(--surface-2)] flex items-center justify-center">
                 {starting
-                  ? <RefreshCw className="w-7 h-7 text-[#9e8e7e] animate-spin" />
-                  : <RefreshCw className="w-7 h-7 text-[#9e8e7e] animate-spin" />
+                  ? <RefreshCw className="w-7 h-7 text-[#8b929c] animate-spin" />
+                  : <RefreshCw className="w-7 h-7 text-[#8b929c] animate-spin" />
                 }
               </div>
-              <p className="text-[14px] text-[#7a6b5c] text-center">
+              <p className="text-[15px] text-[#6b7280] text-center">
                 {starting ? 'Starting session…' : 'Generating QR code…'}
               </p>
             </>
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-black/5 bg-[var(--app-bg)]">
-          <p className="text-[10.5px] text-[#b09e8d] text-center leading-relaxed">
+        <div className="px-5 py-4 border-t border-[var(--hairline)] bg-[var(--app-bg)]">
+          <p className="text-[11.5px] text-[#9ca3af] text-center leading-relaxed">
             Sends messages from your linked number. Avoid mass messaging to prevent WhatsApp from banning the number.
           </p>
         </div>
@@ -903,18 +903,18 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
       <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
 
         {/* Header */}
-        <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[var(--hairline)] flex items-center justify-between">
           <div className="flex items-center gap-2">
             {view === 'add' && configs.length > 0 && (
-              <button onClick={() => setView('list')} className="p-1 rounded hover:bg-[var(--accent-tint)] text-[#7a6b5c]">
+              <button onClick={() => setView('list')} className="p-1 rounded hover:bg-[var(--accent-tint)] text-[#6b7280]">
                 <ChevronLeft size={16} />
               </button>
             )}
-            <p className="text-[15px] font-bold text-[#1c1410]">
+            <p className="text-[16px] font-bold text-[#111318]">
               {view === 'list' ? 'Google Sheets' : (editingId ? 'Edit Sheet' : 'Connect a Sheet')}
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]"><X size={15} /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280]"><X size={15} /></button>
         </div>
 
         {/* Body */}
@@ -923,32 +923,32 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
           {view === 'list' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[13px] text-[#7a6b5c]">{configs.length} sheet{configs.length !== 1 ? 's' : ''} connected</p>
+                <p className="text-[14px] text-[#6b7280]">{configs.length} sheet{configs.length !== 1 ? 's' : ''} connected</p>
                 <Button size="sm" variant="outline" onClick={() => { resetAddState(); setView('add'); }}>
                   <Plus className="w-3.5 h-3.5 mr-1" />Add Sheet
                 </Button>
               </div>
               <div className="space-y-2">
                 {configs.map((c) => (
-                  <div key={c.id} className="flex items-center gap-3 bg-[var(--app-bg)] rounded-xl border border-black/5 px-4 py-3">
+                  <div key={c.id} className="flex items-center gap-3 bg-[var(--app-bg)] rounded-xl border border-[var(--hairline)] px-4 py-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold text-[#1c1410] truncate">
+                      <p className="text-[15px] font-semibold text-[#111318] truncate">
                         {c.spreadsheet_name ?? c.spreadsheet_id}
-                        {c.sheet_name ? <span className="text-[#9e8e7e] font-normal"> › {c.sheet_name}</span> : null}
+                        {c.sheet_name ? <span className="text-[#8b929c] font-normal"> › {c.sheet_name}</span> : null}
                       </p>
-                      <p className="text-[11px] text-[#9e8e7e]">Active · new rows sync every 5 min</p>
+                      <p className="text-[12px] text-[#8b929c]">Active · new rows sync every 5 min</p>
                     </div>
                     {(c.spreadsheet_url || c.spreadsheet_id) && (
                       <a href={c.spreadsheet_url || `https://docs.google.com/spreadsheets/d/${c.spreadsheet_id}`}
                         target="_blank" rel="noopener noreferrer"
-                        className="text-[#9e8e7e] hover:text-primary transition-colors p-1" title="Open in Google Sheets">
+                        className="text-[#8b929c] hover:text-primary transition-colors p-1" title="Open in Google Sheets">
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
-                    <button onClick={() => openEdit(c)} className="text-[#9e8e7e] hover:text-primary transition-colors p-1" title="Edit mapping">
+                    <button onClick={() => openEdit(c)} className="text-[#8b929c] hover:text-primary transition-colors p-1" title="Edit mapping">
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button onClick={() => deleteConfig(c.id)} className="text-[#9e8e7e] hover:text-red-500 transition-colors p-1" title="Remove">
+                    <button onClick={() => deleteConfig(c.id)} className="text-[#8b929c] hover:text-red-500 transition-colors p-1" title="Remove">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -961,9 +961,9 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
             <div className="space-y-4">
               {!editingId && (
                 <>
-                  <div className="bg-[#f5f0eb] rounded-xl p-3 space-y-1">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245]">Before you paste</p>
-                    <p className="text-[11px] text-[#7a6b5c] leading-relaxed">
+                  <div className="bg-[var(--surface-2)] rounded-xl p-3 space-y-1">
+                    <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57]">Before you paste</p>
+                    <p className="text-[12px] text-[#6b7280] leading-relaxed">
                       Open your Google Sheet → Share → set to <strong>"Anyone with the link can view"</strong>. Then copy the URL from your browser address bar.
                     </p>
                   </div>
@@ -986,7 +986,7 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
               )}
 
               {editingId && loading && (
-                <div className="flex items-center gap-2 text-[13px] text-[#7a6b5c] py-2">
+                <div className="flex items-center gap-2 text-[14px] text-[#6b7280] py-2">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Loading current columns & mapping…
                 </div>
               )}
@@ -1000,14 +1000,14 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Website Leads"
                     />
-                    <p className="text-[11px] text-[#9e8e7e] mt-1">Shown in your connected-sheets list. Auto-filled from the spreadsheet title - edit if you like.</p>
+                    <p className="text-[12px] text-[#8b929c] mt-1">Shown in your connected-sheets list. Auto-filled from the spreadsheet title - edit if you like.</p>
                   </div>
                   {/* Pipeline & Stage selection */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={labelCls}>Pipeline</label>
                       <select
-                        className="w-full text-[13px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
+                        className="w-full text-[14px] border border-[var(--hairline)] rounded-xl px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
                         value={sheetPipelineId}
                         onChange={(e) => { setSheetPipelineId(e.target.value); setSheetStageId(''); }}
                       >
@@ -1020,7 +1020,7 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                     <div>
                       <label className={labelCls}>Stage</label>
                       <select
-                        className="w-full text-[13px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
+                        className="w-full text-[14px] border border-[var(--hairline)] rounded-xl px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
                         value={sheetStageId}
                         onChange={(e) => setSheetStageId(e.target.value)}
                         disabled={!sheetPipelineId}
@@ -1032,14 +1032,14 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                       </select>
                     </div>
                   </div>
-                  <p className="text-[11px] text-[#9e8e7e] -mt-1">Imported leads land in this pipeline. Duplicates are checked within the same pipeline only.</p>
+                  <p className="text-[12px] text-[#8b929c] -mt-1">Imported leads land in this pipeline. Duplicates are checked within the same pipeline only.</p>
 
                   <div className="flex items-center justify-between">
-                    <p className="text-[13px] font-semibold text-[#1c1410]">Where should each column go?</p>
+                    <p className="text-[14px] font-semibold text-[#111318]">Where should each column go?</p>
                     <button
                       type="button"
                       onClick={captureRest}
-                      className="text-[11px] font-semibold text-primary hover:underline"
+                      className="text-[12px] font-semibold text-primary hover:underline"
                     >
                       + Capture rest as custom fields
                     </button>
@@ -1049,9 +1049,9 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                       const d = colDest[h] ?? '';
                       return (
                         <div key={h} className="grid grid-cols-2 gap-3 items-center">
-                          <p className="text-[13px] font-semibold text-[#5c5245] truncate" title={h}>{h}</p>
+                          <p className="text-[14px] font-semibold text-[#4a4f57] truncate" title={h}>{h}</p>
                           <select
-                            className="text-[13px] border border-border rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/50"
+                            className="text-[14px] border border-[var(--hairline)] rounded-xl px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
                             value={d}
                             onChange={(e) => {
                               if (e.target.value === 'new') { setCreatingHeader(h); return; }
@@ -1078,8 +1078,8 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
                       );
                     })}
                   </div>
-                  <p className="text-[11px] text-[#9e8e7e]">
-                    Columns set to a custom field are saved on each lead and usable as <code className="text-[#7a6b5c]">{'{slug}'}</code> in automations. "New custom field" creates it automatically.
+                  <p className="text-[12px] text-[#8b929c]">
+                    Columns set to a custom field are saved on each lead and usable as <code className="text-[#6b7280]">{'{slug}'}</code> in automations. "New custom field" creates it automatically.
                   </p>
                 </div>
               )}
@@ -1088,7 +1088,7 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-black/5 bg-[var(--app-bg)]">
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[var(--hairline)] bg-[var(--app-bg)]">
           <Button variant="outline" onClick={onClose}>Close</Button>
           {view === 'add' && headers.length > 0 && (
             <Button onClick={saveConfig} disabled={saving}>
@@ -1114,7 +1114,7 @@ function GoogleSheetsModal({ onClose, onSaved, configs: initialConfigs }: {
 function SuperfoneIcon() {
   return (
     <div className="w-12 h-12 rounded-2xl bg-[#1a1a2e] flex items-center justify-center shrink-0">
-      <span className="text-white font-extrabold text-[11px] tracking-tight">SF</span>
+      <span className="text-white font-extrabold text-[12px] tracking-tight">SF</span>
     </div>
   );
 }
@@ -1159,17 +1159,17 @@ function SuperfoneModal({ onClose, onSaved, tenantId }: { onClose: () => void; o
         </Button>
       </>
     }>
-      <p className="text-[13px] text-[#7a6b5c]">Connect your Superfone account to log calls, play recordings, and trigger automations.</p>
+      <p className="text-[14px] text-[#6b7280]">Connect your Superfone account to log calls, play recordings, and trigger automations.</p>
 
       {/* Webhook URL to copy */}
-      <div className="bg-[#f5f0eb] rounded-xl p-3 space-y-1">
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#5c5245]">Your CRM Webhook URL</p>
-        <p className="text-[11px] text-[#7a6b5c] leading-relaxed">Copy this URL into your Superfone dashboard under Webhook settings:</p>
+      <div className="bg-[var(--surface-2)] rounded-xl p-3 space-y-1">
+        <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#4a4f57]">Your CRM Webhook URL</p>
+        <p className="text-[12px] text-[#6b7280] leading-relaxed">Copy this URL into your Superfone dashboard under Webhook settings:</p>
         <div className="flex items-center gap-2 mt-1">
-          <code className="text-[10.5px] text-[var(--brand-dark)] bg-white rounded-lg px-2.5 py-1.5 flex-1 break-all border border-black/5">{webhookUrl}</code>
+          <code className="text-[11.5px] text-[var(--brand-dark)] bg-white rounded-lg px-2.5 py-1.5 flex-1 break-all border border-[var(--hairline)]">{webhookUrl}</code>
           <button
             onClick={() => { navigator.clipboard.writeText(webhookUrl); toast.success('Copied!'); }}
-            className="shrink-0 text-[11px] font-semibold text-white bg-[var(--brand-dark)] rounded-lg px-2.5 py-1.5 hover:bg-[#a83808] transition-colors"
+            className="shrink-0 text-[12px] font-semibold text-white bg-[var(--brand-dark)] rounded-xl px-2.5 py-1.5 hover:bg-[#a83808] active:scale-[0.98] transition"
           >
             Copy
           </button>
@@ -1179,7 +1179,7 @@ function SuperfoneModal({ onClose, onSaved, tenantId }: { onClose: () => void; o
       <div>
         <label className={labelCls}>Superfone Business Number *</label>
         <Input value={form.superfone_number} onChange={(e) => set('superfone_number', e.target.value)} placeholder="+919429694726" />
-        <p className="text-[10px] text-[#b09e8d] mt-1">Your Superfone virtual number - used to match incoming call webhooks</p>
+        <p className="text-[11px] text-[#9ca3af] mt-1">Your Superfone virtual number - used to match incoming call webhooks</p>
       </div>
 
       <div>
@@ -1193,18 +1193,18 @@ function SuperfoneModal({ onClose, onSaved, tenantId }: { onClose: () => void; o
             className="pr-9"
           />
           <button type="button" onClick={() => setShowKey((s) => !s)}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9e8e7e] hover:text-[#1c1410]">
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8b929c] hover:text-[#111318]">
             {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
-        <p className="text-[10px] text-[#b09e8d] mt-1">Required only if you purchased the Superfone API Key add-on</p>
+        <p className="text-[11px] text-[#9ca3af] mt-1">Required only if you purchased the Superfone API Key add-on</p>
       </div>
 
       <div>
         <label className={labelCls}>Superfone Endpoint URL (optional)</label>
         <Input value={form.superfone_endpoint_url} onChange={(e) => set('superfone_endpoint_url', e.target.value)}
           placeholder="https://prod-api.superfone.co.in/superfone/webhook/integration/..." type="url" />
-        <p className="text-[10px] text-[#b09e8d] mt-1">Superfone's webhook URL - required to push new leads from CRM to Superfone</p>
+        <p className="text-[11px] text-[#9ca3af] mt-1">Superfone's webhook URL - required to push new leads from CRM to Superfone</p>
       </div>
     </Modal>
   );
@@ -1235,16 +1235,16 @@ function IntegCard({ icon, name, tagline, connected, onConnect, onConfigure, onD
 
   if (locked) {
     return (
-      <div className="bg-white rounded-2xl border border-black/5 p-5 flex flex-col gap-4 opacity-70">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5 flex flex-col gap-4 opacity-70">
         <div className="flex items-start justify-between gap-2">
           <div className="grayscale">{icon}</div>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#f3efe9] text-[#9e8e7e] text-[11px] font-medium">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[#8b929c] text-[12px] font-medium">
             Not enabled
           </span>
         </div>
         <div className="flex-1">
-          <p className="text-[15px] font-bold text-[#1c1410]">{name}</p>
-          <p className="text-[13px] text-[#9e8e7e] mt-0.5 leading-relaxed">{lockedNote ?? tagline}</p>
+          <p className="text-[16px] font-bold text-[#111318]">{name}</p>
+          <p className="text-[14px] text-[#8b929c] mt-0.5 leading-relaxed">{lockedNote ?? tagline}</p>
         </div>
         <Button variant="outline" size="sm" className="flex-1" disabled>
           Contact Hawcus to enable
@@ -1254,14 +1254,14 @@ function IntegCard({ icon, name, tagline, connected, onConnect, onConfigure, onD
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-black/5 p-5 flex flex-col gap-4 hover:shadow-sm transition-all duration-200">
+    <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-2">
         {icon}
         <StatusBadge connected={connected} />
       </div>
       <div className="flex-1">
-        <p className="text-[15px] font-bold text-[#1c1410]">{name}</p>
-        <p className="text-[13px] text-[#9e8e7e] mt-0.5 leading-relaxed">{tagline}</p>
+        <p className="text-[16px] font-bold text-[#111318]">{name}</p>
+        <p className="text-[14px] text-[#8b929c] mt-0.5 leading-relaxed">{tagline}</p>
       </div>
       <div className="flex gap-2">
         {connected ? (
@@ -1322,8 +1322,8 @@ function RazorpayModal({ onClose, onSaved, webhookUrl }: { onClose: () => void; 
   return (
     <Modal title="Connect Razorpay" onClose={onClose} footer={
       <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-gray-600 bg-gray-100 hover:bg-gray-200">Cancel</button>
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60">
+        <button onClick={onClose} className="px-4 py-2 rounded-xl text-[15px] text-[#111318] bg-white border border-[var(--hairline)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition">Cancel</button>
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-xl text-[15px] font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-60 active:scale-[0.98] transition">
           {saving ? 'Connecting...' : 'Connect'}
         </button>
       </div>
@@ -1331,10 +1331,10 @@ function RazorpayModal({ onClose, onSaved, webhookUrl }: { onClose: () => void; 
       <div className="space-y-4">
         {/* Step 1: Webhook URL */}
         <div>
-          <p className="text-[14px] font-semibold text-[#1c1410] mb-2">Step 1: Copy your Webhook URL</p>
+          <p className="text-[15px] font-semibold text-[#111318] mb-2">Step 1: Copy your Webhook URL</p>
           <div className="flex items-center gap-2">
-            <input readOnly value={webhookUrl} className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-[13px] text-[#7a6b5c] bg-gray-50 outline-none" />
-            <button onClick={copyUrl} className="px-3 py-2 rounded-lg border border-gray-200 text-[13px] font-semibold text-[#1c1410] hover:bg-gray-50 transition-colors">
+            <input readOnly value={webhookUrl} className="flex-1 px-3 py-2 rounded-xl border border-[var(--hairline)] text-[14px] text-[#6b7280] bg-[var(--surface-2)] outline-none" />
+            <button onClick={copyUrl} className="px-3 py-2 rounded-xl border border-[var(--hairline)] text-[14px] font-semibold text-[#111318] hover:bg-[var(--surface-2)] active:scale-[0.98] transition">
               {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
@@ -1342,25 +1342,25 @@ function RazorpayModal({ onClose, onSaved, webhookUrl }: { onClose: () => void; 
 
         {/* Step 2: Instructions */}
         <div>
-          <p className="text-[14px] font-semibold text-[#1c1410] mb-2">Step 2: Add webhook in Razorpay</p>
-          <ol className="text-[13px] text-[#7a6b5c] space-y-1.5 list-decimal pl-4">
-            <li>Login to your <span className="font-semibold text-[#1c1410]">Razorpay Dashboard</span></li>
-            <li>Go to <span className="font-semibold text-[#1c1410]">Settings &gt; Webhooks &gt; Add New Webhook</span></li>
+          <p className="text-[15px] font-semibold text-[#111318] mb-2">Step 2: Add webhook in Razorpay</p>
+          <ol className="text-[14px] text-[#6b7280] space-y-1.5 list-decimal pl-4">
+            <li>Login to your <span className="font-semibold text-[#111318]">Razorpay Dashboard</span></li>
+            <li>Go to <span className="font-semibold text-[#111318]">Settings &gt; Webhooks &gt; Add New Webhook</span></li>
             <li>Paste the webhook URL above</li>
-            <li>Select events: <span className="font-semibold text-[#1c1410]">payment.captured</span>, <span className="font-semibold text-[#1c1410]">payment.failed</span>, <span className="font-semibold text-[#1c1410]">refund.created</span></li>
-            <li>Copy the <span className="font-semibold text-[#1c1410]">Webhook Secret</span> that Razorpay generates</li>
+            <li>Select events: <span className="font-semibold text-[#111318]">payment.captured</span>, <span className="font-semibold text-[#111318]">payment.failed</span>, <span className="font-semibold text-[#111318]">refund.created</span></li>
+            <li>Copy the <span className="font-semibold text-[#111318]">Webhook Secret</span> that Razorpay generates</li>
           </ol>
         </div>
 
         {/* Step 3: Paste secret */}
         <div>
-          <p className="text-[14px] font-semibold text-[#1c1410] mb-2">Step 3: Paste your Webhook Secret</p>
+          <p className="text-[15px] font-semibold text-[#111318] mb-2">Step 3: Paste your Webhook Secret</p>
           <input
             type="password"
             value={secret}
             onChange={(e) => setSecret(e.target.value)}
             placeholder="Enter Razorpay webhook secret"
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-[14px] text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+            className="w-full px-3 py-2 rounded-xl border border-[var(--hairline)] text-[15px] text-[#111318] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
           />
         </div>
       </div>
@@ -1466,13 +1466,13 @@ export default function IntegrationsPage() {
       <div className="flex items-center gap-2.5">
         <button
           onClick={() => navigate('/settings')}
-          className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c] hover:text-[#1c1410] transition-colors"
+          className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#6b7280] hover:text-[#111318] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h2 className="font-headline font-bold text-[17px] text-[#1c1410]">Integrations</h2>
-          <p className="text-[13px] text-[#9e8e7e]">Connect your tools to Hawcus CRM</p>
+          <h2 className="font-headline font-bold text-[17px] text-[#111318]">Integrations</h2>
+          <p className="text-[14px] text-[#8b929c]">Connect your tools to Hawcus CRM</p>
         </div>
       </div>
 
@@ -1481,8 +1481,8 @@ export default function IntegrationsPage() {
         <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
           <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
           <div className="min-w-0">
-            <p className="text-[14px] font-bold text-red-700">Facebook lead capture is disconnected</p>
-            <p className="text-[13px] text-red-600 mt-0.5">
+            <p className="text-[15px] font-bold text-red-700">Facebook lead capture is disconnected</p>
+            <p className="text-[14px] text-red-600 mt-0.5">
               We can no longer pull leads from your Facebook page - new leads are <b>not</b> being captured.
               Reconnect Meta below to resume.{metaHealth.lastError ? ` (Meta: ${metaHealth.lastError})` : ''}
             </p>
@@ -1526,14 +1526,14 @@ export default function IntegrationsPage() {
         />
 
         {/* WhatsApp Personal (QR) - Multi-session */}
-        <div className="bg-white rounded-2xl border border-black/5 p-5 flex flex-col gap-4 hover:shadow-sm transition-all duration-200">
+        <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover p-5 flex flex-col gap-4">
           <div className="flex items-start justify-between gap-2">
             <WhatsAppPersonalIcon />
             <span className={cn(
-              'inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full',
+              'inline-flex items-center gap-1 text-[12px] font-bold px-2.5 py-1 rounded-full',
               waSessions.some((s) => s.status === 'connected') ? 'bg-emerald-50 text-emerald-600'
               : waSessions.some((s) => s.status === 'connecting') ? 'bg-amber-50 text-amber-600'
-              : 'bg-[#f5f0eb] text-[#9e8e7e]'
+              : 'bg-[var(--surface-2)] text-[#8b929c]'
             )}>
               {waSessions.filter((s) => s.status === 'connected').length > 0
                 ? <><Check className="w-2.5 h-2.5" />{waSessions.filter((s) => s.status === 'connected').length} connected</>
@@ -1542,8 +1542,8 @@ export default function IntegrationsPage() {
             </span>
           </div>
           <div className="flex-1">
-            <p className="text-[15px] font-bold text-[#1c1410]">WhatsApp Personal (QR)</p>
-            <p className="text-[13px] text-[#9e8e7e] mt-0.5 leading-relaxed">
+            <p className="text-[16px] font-bold text-[#111318]">WhatsApp Personal (QR)</p>
+            <p className="text-[14px] text-[#8b929c] mt-0.5 leading-relaxed">
               Link multiple WhatsApp numbers via QR scan. Send messages to any contact without WABA approval.
             </p>
           </div>
@@ -1552,7 +1552,7 @@ export default function IntegrationsPage() {
           {waSessions.length > 0 && (
             <div className="space-y-2">
               {waSessions.map((s) => (
-                <div key={s.session_id} className="flex items-center gap-2 bg-[var(--app-bg)] rounded-xl border border-black/5 px-3 py-2">
+                <div key={s.session_id} className="flex items-center gap-2 bg-[var(--app-bg)] rounded-xl border border-[var(--hairline)] px-3 py-2">
                   <div className={cn('w-2 h-2 rounded-full shrink-0', s.status === 'connected' ? 'bg-emerald-500' : s.status === 'connecting' ? 'bg-amber-400 animate-pulse' : 'bg-gray-300')} />
                   <div className="flex-1 min-w-0">
                     {editingWaSession === s.session_id ? (
@@ -1569,7 +1569,7 @@ export default function IntegrationsPage() {
                       }}>
                         <input
                           autoFocus
-                          className="text-[13px] font-semibold text-[#1c1410] bg-white border border-black/10 rounded px-1.5 py-0.5 w-full outline-none focus:border-[#128C7E]"
+                          className="text-[14px] font-semibold text-[#111318] bg-white border border-[var(--hairline)] rounded px-1.5 py-0.5 w-full outline-none focus:border-[#128C7E]"
                           value={editingWaName}
                           onChange={(e) => setEditingWaName(e.target.value)}
                           onBlur={(e) => { (e.target.closest('form') as HTMLFormElement)?.requestSubmit(); }}
@@ -1577,10 +1577,10 @@ export default function IntegrationsPage() {
                         />
                       </form>
                     ) : (
-                      <p className="text-[13px] font-semibold text-[#1c1410] truncate flex items-center gap-1">
+                      <p className="text-[14px] font-semibold text-[#111318] truncate flex items-center gap-1">
                         {s.session_name}
                         <button
-                          className="text-[#9e8e7e] hover:text-[#128C7E] transition-colors p-0.5 shrink-0"
+                          className="text-[#8b929c] hover:text-[#128C7E] transition-colors p-0.5 shrink-0"
                           title="Rename device"
                           onClick={() => { setEditingWaSession(s.session_id); setEditingWaName(s.session_name); }}
                         >
@@ -1588,11 +1588,11 @@ export default function IntegrationsPage() {
                         </button>
                       </p>
                     )}
-                    <p className="text-[10px] text-[#9e8e7e]">{s.phone_number || (s.status === 'connecting' ? 'Connecting...' : 'Disconnected')}</p>
+                    <p className="text-[11px] text-[#8b929c]">{s.phone_number || (s.status === 'connecting' ? 'Connecting...' : 'Disconnected')}</p>
                   </div>
                   {s.status === 'connected' ? (
                     <button
-                      className="text-[10px] font-semibold text-red-500 hover:underline shrink-0"
+                      className="text-[11px] font-semibold text-red-500 hover:underline shrink-0"
                       onClick={async () => {
                         try {
                           await api.post(`/api/whatsapp-personal/sessions/${s.session_id}/disconnect`, {});
@@ -1604,12 +1604,12 @@ export default function IntegrationsPage() {
                     >Disconnect</button>
                   ) : (
                     <button
-                      className="text-[10px] font-semibold text-[#128C7E] hover:underline shrink-0"
+                      className="text-[11px] font-semibold text-[#128C7E] hover:underline shrink-0"
                       onClick={() => { setWaQrSessionId(s.session_id); setModal('wa_personal'); }}
                     >Connect</button>
                   )}
                   <button
-                    className="text-[#9e8e7e] hover:text-red-500 transition-colors p-0.5 shrink-0"
+                    className="text-[#8b929c] hover:text-red-500 transition-colors p-0.5 shrink-0"
                     title="Remove device"
                     onClick={async () => {
                       try {
@@ -1629,13 +1629,13 @@ export default function IntegrationsPage() {
 
           <div className="flex gap-2">
             <button
-              className="flex-1 flex items-center justify-center gap-1.5 text-[13px] font-semibold text-white bg-[#128C7E] rounded-lg px-3 py-1.5 hover:bg-[#0f7a6d] transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 text-[14px] font-semibold text-white bg-[#128C7E] rounded-xl px-3 py-1.5 hover:bg-[#0f7a6d] active:scale-[0.98] transition"
               onClick={addWaSession}
             >
               <Plus className="w-3.5 h-3.5" />Add New WhatsApp Device
             </button>
             <button
-              className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#7a6b5c] border border-black/10 rounded-lg px-3 py-1.5 hover:bg-[var(--accent-tint)] hover:text-[var(--brand-dark)] transition-colors"
+              className="flex items-center justify-center gap-1.5 text-[14px] font-semibold text-[#6b7280] bg-white border border-[var(--hairline)] rounded-xl px-3 py-1.5 hover:bg-[var(--surface-2)] hover:text-[var(--brand-dark)] active:scale-[0.98] transition"
               onClick={() => navigate('/automation/devices')}
             >
               <BarChart2 className="w-3.5 h-3.5" />Manage Devices

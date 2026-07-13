@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// DigyGo brand palette - mirrors the CRM web app.
+/// Hawcus brand palette - mirrors the CRM web app.
 class Brand {
   static const primary = Color(0xFFC2410C);
   static const accent = Color(0xFFEA580C);

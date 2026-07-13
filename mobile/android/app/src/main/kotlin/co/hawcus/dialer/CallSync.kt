@@ -1,4 +1,4 @@
-package co.digygo.digygo_dialer
+package co.hawcus.dialer
 
 import android.Manifest
 import android.content.Context
@@ -180,7 +180,8 @@ object CallSync {
         return try {
             val cursor = ctx.contentResolver.query(
                 CallLog.Calls.CONTENT_URI,
-                arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DURATION, CallLog.Calls.DATE),
+                arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DURATION, CallLog.Calls.DATE,
+                        CallLog.Calls.PHONE_ACCOUNT_ID),
                 null, null,
                 "${CallLog.Calls.DATE} DESC"
             ) ?: return null
@@ -190,12 +191,27 @@ object CallSync {
                     number = it.getString(0) ?: "",
                     type = it.getInt(1),
                     duration = it.getInt(2),
-                    date = it.getLong(3)
+                    date = it.getLong(3),
+                    phoneAccountId = it.getString(4)
                 )
             }
         } catch (e: Exception) {
             null
         }
+    }
+
+    // True when a call is on a CRM-verified SIM (or SIM can't matter). Mirrors the
+    // fail-closed rule in [filterAndTag]: on a dual-SIM phone the slot MUST resolve
+    // AND be a verified slot; a single-SIM phone (or nothing verified to compare)
+    // has no ambiguity, so it's allowed.
+    private fun isOnVerifiedSim(ctx: Context, prefs: SharedPreferences, c: CallRow): Boolean {
+        val verifiedSlots = readVerifiedSims(prefs)
+            .mapNotNull { if (it.slot >= 0) it.slot else null }.toSet()
+        if (isMultiSim(ctx, prefs) && verifiedSlots.isNotEmpty()) {
+            val slot = buildAccountSlotMap(ctx)[c.phoneAccountId]
+            return slot != null && verifiedSlots.contains(slot)
+        }
+        return true
     }
 
     private fun outcomeOf(c: CallRow): String = when {
@@ -327,6 +343,11 @@ object CallSync {
     fun lastCallInfo(ctx: Context): Map<String, Any?>? {
         val c = readLatestCall(ctx) ?: return null
         if (c.number.isBlank()) return null
+        // SIM gate: never surface a call on an unverified/skipped SIM (dual-SIM
+        // phones), so the post-call notification can't pre-fill a number from the
+        // wrong SIM into the create-lead screen. Matches the background sync gate.
+        val prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (!isOnVerifiedSim(ctx, prefs, c)) return null
         return mapOf(
             "phone" to c.number,
             "direction" to (if (c.type == CallLog.Calls.OUTGOING_TYPE) "OUTBOUND" else "INBOUND"),

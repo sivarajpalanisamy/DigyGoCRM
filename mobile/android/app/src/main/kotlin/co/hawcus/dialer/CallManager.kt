@@ -1,4 +1,4 @@
-package co.digygo.digygo_dialer
+package co.hawcus.dialer
 
 import android.media.MediaRecorder
 import android.os.Build

@@ -35,18 +35,18 @@ export default function SecurityPage() {
   };
 
   if (!canManage) {
-    return <div className="p-8 text-center text-[#7a6b5c]">You don't have permission to manage security.</div>;
+    return <div className="p-8 text-center text-[#6b7280]">You don't have permission to manage security.</div>;
   }
 
   return (
     <div className="max-w-2xl mx-auto w-full">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/settings')} className="p-1.5 rounded-lg hover:bg-[var(--accent-tint)] text-[#7a6b5c]">
+        <button onClick={() => navigate('/settings')} className="p-1.5 rounded-xl hover:bg-[var(--surface-2)] text-[#6b7280] transition active:scale-[0.98]">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="font-headline font-bold text-[#1c1410] text-lg leading-tight">Security</h1>
-          <p className="text-[13px] text-[#7a6b5c]">Protect your team's accounts</p>
+          <h1 className="font-headline font-bold text-[#111318] text-lg leading-tight">Security</h1>
+          <p className="text-[14px] text-[#6b7280]">Protect your team's accounts</p>
         </div>
       </div>
 
@@ -55,15 +55,15 @@ export default function SecurityPage() {
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <section className="bg-white rounded-xl border border-black/5 p-5">
+        <section className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="font-semibold text-[#1c1410] text-[15px]">Login PIN / OTP</h2>
-                <p className="text-[13px] text-[#7a6b5c] mt-1 max-w-md">
+                <h2 className="font-semibold text-[#111318] text-[16px]">Login PIN / OTP</h2>
+                <p className="text-[14px] text-[#6b7280] mt-1 max-w-md">
                   When enabled, team members can sign in with just their email and a 4-digit PIN - either the
                   PIN you set for them in Staff, or a one-time PIN they request by email - instead of a password
                   (their password still works too). Requires email delivery for the emailed-PIN option.
@@ -75,7 +75,7 @@ export default function SecurityPage() {
             </div>
           </div>
           {enabled && (
-            <div className="mt-4 pt-4 border-t border-black/5 text-[13px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 inline-flex items-start gap-2">
+            <div className="mt-4 text-[14px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3 inline-flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>Login PIN is ON. Set a PIN for each staff member in Staff, or make sure email delivery works so they can request a one-time PIN. Without either, users can't log in.</span>
             </div>

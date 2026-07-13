@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useUserLevel } from '@/hooks/useUserLevel';
 import { brandHex } from '@/lib/brand';
+import { DatePicker } from '@/components/ui/date-picker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface KpiShape {
@@ -77,7 +78,7 @@ function Spinner() {
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <div className="flex items-center justify-center h-[120px] text-[14px] text-[#9a8a7a]">{text}</div>;
+  return <div className="flex items-center justify-center h-[120px] text-[15px] text-[#8b929c]">{text}</div>;
 }
 
 // Period Filter
@@ -91,10 +92,10 @@ function PeriodFilter({ period, onChange, from, to, onFrom, onTo }: {
         {PERIODS.map((p) => (
           <button key={p.value} onClick={() => onChange(p.value)}
             className={cn(
-              'text-[13px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all',
+              'text-[14px] font-semibold px-3.5 py-1.5 rounded-full border transition active:scale-[0.98]',
               period === p.value
-                ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-sm'
-                : 'bg-white text-[#7a6b5c] border-black/10 hover:border-primary/40 hover:text-[var(--brand)]',
+                ? 'bg-primary text-white border-primary shadow-sm'
+                : 'bg-[var(--surface-2)] text-[#6b7280] border-[var(--hairline)] hover:text-[#111318]',
             )}>
             {p.label}
           </button>
@@ -102,11 +103,9 @@ function PeriodFilter({ period, onChange, from, to, onFrom, onTo }: {
       </div>
       {period === 'custom' && (
         <div className="flex items-center gap-2 flex-wrap">
-          <input type="date" value={from} onChange={(e) => onFrom(e.target.value)}
-            className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] transition-colors bg-white" />
-          <span className="text-[13px] text-[#9a8a7a] font-medium">to</span>
-          <input type="date" value={to} onChange={(e) => onTo(e.target.value)}
-            className="border border-black/10 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--brand)] transition-colors bg-white" />
+          <DatePicker value={from} onChange={onFrom} placeholder="Start date" />
+          <span className="text-[14px] text-[#8b929c] font-medium">to</span>
+          <DatePicker value={to} onChange={onTo} placeholder="End date" />
         </div>
       )}
     </div>
@@ -120,11 +119,11 @@ function KpiCard({ label, value, sub, icon: Icon, accent }: {
 }) {
   const body = (
     <div className="min-w-0 flex-1">
-      <p className={cn('text-[11px] truncate', accent ? 'opacity-75 text-white' : 'text-[#7a6b5c]')}>{label}</p>
-      <h3 className={cn('font-bold text-[24px] leading-tight tracking-tight', accent ? 'text-white' : 'text-[#1c1410]')}>
+      <p className={cn('text-[12px] truncate', accent ? 'opacity-75 text-white' : 'text-[#6b7280]')}>{label}</p>
+      <h3 className={cn('font-bold text-[24px] leading-tight tracking-tight', accent ? 'text-white' : 'text-[#111318]')}>
         {value}
       </h3>
-      {sub && <p className={cn('text-[10px] mt-0.5 truncate', accent ? 'opacity-65 text-white' : 'text-[#9a8a7a]')}>{sub}</p>}
+      {sub && <p className={cn('text-[11px] mt-0.5 truncate', accent ? 'opacity-65 text-white' : 'text-[#8b929c]')}>{sub}</p>}
     </div>
   );
   if (accent) return (
@@ -137,7 +136,7 @@ function KpiCard({ label, value, sub, icon: Icon, accent }: {
     </div>
   );
   return (
-    <div className="bg-white rounded-xl px-4 py-3.5 flex items-center gap-3 border border-black/5 shadow-sm">
+    <div className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3 border border-[var(--hairline)] card-shadow">
       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
         <Icon className="w-4 h-4 text-primary" />
       </div>
@@ -151,10 +150,10 @@ function Card({ title, sub, children, className }: {
   title: string; sub?: string; children: React.ReactNode; className?: string;
 }) {
   return (
-    <div className={cn('bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden', className)}>
-      <div className="px-5 py-4 border-b border-black/5">
-        <p className="text-[15px] font-bold text-[#1c1410]">{title}</p>
-        {sub && <p className="text-[11px] text-[#9a8a7a] mt-0.5">{sub}</p>}
+    <div className={cn('bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden', className)}>
+      <div className="px-5 py-4 border-b border-[var(--hairline)]">
+        <p className="text-[16px] font-bold text-[#111318]">{title}</p>
+        {sub && <p className="text-[12px] text-[#8b929c] mt-0.5">{sub}</p>}
       </div>
       <div className="p-5">{children}</div>
     </div>
@@ -167,10 +166,10 @@ function TrendChart({ data }: { data: WinLossRow[] }) {
   return (
     <ResponsiveContainer width="100%" height={210}>
       <ComposedChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe5" vertical={false} />
-        <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#9a8a7a' }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 10, fill: '#9a8a7a' }} axisLine={false} tickLine={false} allowDecimals={false} />
-        <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #f0ebe5', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" vertical={false} />
+        <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#8b929c' }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 10, fill: '#8b929c' }} axisLine={false} tickLine={false} allowDecimals={false} />
+        <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #eef1f4', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
         <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
         <Bar dataKey="new_leads" name="New Leads" fill="#bfdbfe" radius={[3, 3, 0, 0]} maxBarSize={32} />
         <Area dataKey="won" name="Won" type="monotone" fill="rgba(234,88,12,0.12)" stroke={brandHex()} strokeWidth={2} dot={false} />
@@ -198,13 +197,13 @@ function HBarList({ items, getLabel, getRight, getWidth, getColor, avatar }: {
             {avatar && (
               <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
                 style={{ background: `${color}18` }}>
-                <span className="text-[10px] font-bold" style={{ color }}>
+                <span className="text-[11px] font-bold" style={{ color }}>
                   {avatar(item).charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-[#1c1410] truncate">{getLabel(item)}</p>
+              <p className="text-[14px] font-semibold text-[#111318] truncate">{getLabel(item)}</p>
               <div className="mt-0.5">
                 <div className="h-1.5 rounded-full transition-all"
                   style={{ width: `${Math.max(getWidth(item), 2)}%`, background: color, minWidth: 4 }} />
@@ -245,36 +244,36 @@ function StageFunnel({ stages }: { stages: StageRow[] }) {
     <div>
       {/* Summary insights */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f4efe9]">
-          <span className="text-[10px] text-[#9a8a7a] font-semibold uppercase">Entry</span>
-          <span className="text-[14px] font-bold text-[#1c1410]">{firstCount}</span>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f1f3f5]">
+          <span className="text-[11px] text-[#8b929c] font-semibold uppercase">Entry</span>
+          <span className="text-[15px] font-bold text-[#111318]">{firstCount}</span>
         </div>
         {wonStage && (
           <>
-            <span className="text-[#d0c0b0] text-[11px]">→</span>
+            <span className="text-[#cbd0d7] text-[12px]">→</span>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
-              <span className="text-[10px] text-emerald-600 font-semibold uppercase">Won</span>
-              <span className="text-[14px] font-bold text-emerald-700">{wonStage.lead_count}</span>
+              <span className="text-[11px] text-emerald-600 font-semibold uppercase">Won</span>
+              <span className="text-[15px] font-bold text-emerald-700">{wonStage.lead_count}</span>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
               style={{ background: overallConv >= 15 ? '#f0fdf4' : overallConv >= 5 ? '#fefce8' : '#fef2f2' }}>
-              <span className="text-[10px] font-semibold uppercase"
+              <span className="text-[11px] font-semibold uppercase"
                 style={{ color: overallConv >= 15 ? '#16a34a' : overallConv >= 5 ? '#ca8a04' : '#ef4444' }}>Conv Rate</span>
-              <span className="text-[14px] font-bold"
+              <span className="text-[15px] font-bold"
                 style={{ color: overallConv >= 15 ? '#15803d' : overallConv >= 5 ? '#a16207' : '#dc2626' }}>{overallConv}%</span>
             </div>
           </>
         )}
         {bottleneckIdx >= 0 && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50">
-            <span className="text-[10px] text-red-500 font-semibold uppercase">Bottleneck</span>
-            <span className="text-[13px] font-bold text-red-600">{stages[bottleneckIdx].stage_name} ({worstDropPct}%)</span>
+            <span className="text-[11px] text-red-500 font-semibold uppercase">Bottleneck</span>
+            <span className="text-[14px] font-bold text-red-600">{stages[bottleneckIdx].stage_name} ({worstDropPct}%)</span>
           </div>
         )}
         {slowestStage && (slowestStage.avg_days ?? 0) > 3 && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50">
-            <span className="text-[10px] text-amber-600 font-semibold uppercase">Slowest</span>
-            <span className="text-[13px] font-bold text-amber-700">{slowestStage.stage_name} ({slowestStage.avg_days}d avg)</span>
+            <span className="text-[11px] text-amber-600 font-semibold uppercase">Slowest</span>
+            <span className="text-[14px] font-bold text-amber-700">{slowestStage.stage_name} ({slowestStage.avg_days}d avg)</span>
           </div>
         )}
       </div>
@@ -295,25 +294,25 @@ function StageFunnel({ stages }: { stages: StageRow[] }) {
             <div key={stage.stage_name}>
               {dropPct !== null && dropPct > 0 && (
                 <div className="flex items-center gap-1.5 my-1 pl-1">
-                  <div className={`w-px h-3 ${isBottleneck ? 'bg-red-300' : 'bg-[#e5d5c5]'}`} />
-                  <span className={`text-[10px] font-medium ${isBottleneck ? 'text-red-500 font-bold' : 'text-[#b0a090]'}`}>
+                  <div className={`w-px h-3 ${isBottleneck ? 'bg-red-300' : 'bg-[#e5e7eb]'}`} />
+                  <span className={`text-[11px] font-medium ${isBottleneck ? 'text-red-500 font-bold' : 'text-[#9ca3af]'}`}>
                     ↓ {dropPct}% drop-off{isBottleneck ? ' - bottleneck' : ''}
                   </span>
                 </div>
               )}
               <div className={`flex items-center gap-3 ${isBottleneck ? 'ring-1 ring-red-200 rounded-xl px-2 py-1 -mx-2 bg-red-50/30' : ''}`}>
-                <span className="text-[11px] font-semibold text-[#4a3a2a] w-[90px] shrink-0 truncate">{stage.stage_name}</span>
-                <div className="flex-1 bg-[#f4efe9] rounded-full h-7 overflow-hidden">
+                <span className="text-[12px] font-semibold text-[#3a3f47] w-[90px] shrink-0 truncate">{stage.stage_name}</span>
+                <div className="flex-1 bg-[#f1f3f5] rounded-full h-7 overflow-hidden">
                   <div className="h-full rounded-full flex items-center justify-end pr-2.5 transition-all duration-500"
                     style={{ width: `${barW}%`, background: color }}>
-                    {barW > 14 && <span className="text-[11px] font-bold text-white">{stage.lead_count}</span>}
+                    {barW > 14 && <span className="text-[12px] font-bold text-white">{stage.lead_count}</span>}
                   </div>
                 </div>
-                {barW <= 14 && <span className="text-[13px] font-bold text-[#1c1410] w-5 text-right">{stage.lead_count}</span>}
+                {barW <= 14 && <span className="text-[14px] font-bold text-[#111318] w-5 text-right">{stage.lead_count}</span>}
                 {cumulConv !== null && (
-                  <span className="text-[9px] font-semibold text-[#9a8a7a] w-8 text-right shrink-0">{cumulConv}%</span>
+                  <span className="text-[10px] font-semibold text-[#8b929c] w-8 text-right shrink-0">{cumulConv}%</span>
                 )}
-                <span className="text-[10px] font-bold px-2 py-1 rounded-lg shrink-0"
+                <span className="text-[11px] font-bold px-2 py-1 rounded-lg shrink-0"
                   style={{ background: stage.is_won ? '#f0fdf4' : idleBg, color: stage.is_won ? '#16a34a' : idleColor }}>
                   {stage.is_won ? <span className="inline-flex items-center gap-0.5">Won <Check className="w-2.5 h-2.5" strokeWidth={3} /></span> : `${idle}d avg`}
                 </span>
@@ -322,7 +321,7 @@ function StageFunnel({ stages }: { stages: StageRow[] }) {
           );
         })}
       </div>
-      <p className="text-[10px] text-[#c0b0a0] mt-2 pt-2 border-t border-black/[0.04]">
+      <p className="text-[11px] text-[#c3c8cf] mt-2 pt-2 border-t border-black/[0.04]">
         % = cumulative conversion from entry · Avg = mean days leads sit in stage · Bottleneck = highest drop-off point
       </p>
     </div>
@@ -336,29 +335,29 @@ function LeadBreakdown({ total, won, active }: { total: number; won: number; act
   const activePct = Math.round((active / total) * 100);
   const lostPct   = Math.max(100 - wonPct - activePct, 0);
   return (
-    <div className="bg-white rounded-2xl border border-black/5 p-4 shadow-sm">
+    <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[14px] font-bold text-[#1c1410]">Lead Breakdown</p>
-        <span className="text-[11px] text-[#9a8a7a]">{total} total leads</span>
+        <p className="text-[15px] font-bold text-[#111318]">Lead Breakdown</p>
+        <span className="text-[12px] text-[#8b929c]">{total} total leads</span>
       </div>
       <div className="flex h-3.5 rounded-full overflow-hidden gap-0.5">
         {wonPct > 0    && <div style={{ width: `${wonPct}%`,    background: '#10b981' }} className="transition-all duration-700" />}
         {activePct > 0 && <div style={{ width: `${activePct}%`, background: '#6366f1' }} className="transition-all duration-700" />}
-        {lostPct > 0   && <div style={{ width: `${lostPct}%`,   background: '#f4efe9' }} className="transition-all duration-700" />}
+        {lostPct > 0   && <div style={{ width: `${lostPct}%`,   background: '#f1f3f5' }} className="transition-all duration-700" />}
       </div>
       <div className="flex items-center gap-4 mt-2.5 flex-wrap">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-[#10b981]" />
-          <span className="text-[11px] text-[#9a8a7a]">Won {wonPct}% ({won})</span>
+          <span className="text-[12px] text-[#8b929c]">Won {wonPct}% ({won})</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-[#6366f1]" />
-          <span className="text-[11px] text-[#9a8a7a]">Active {activePct}% ({active})</span>
+          <span className="text-[12px] text-[#8b929c]">Active {activePct}% ({active})</span>
         </div>
         {lostPct > 0 && (
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#e5d5c5]" />
-            <span className="text-[11px] text-[#9a8a7a]">Other {lostPct}%</span>
+            <div className="w-2 h-2 rounded-full bg-[#e5e7eb]" />
+            <span className="text-[12px] text-[#8b929c]">Other {lostPct}%</span>
           </div>
         )}
       </div>
@@ -389,31 +388,31 @@ function SourceROIChart({ sources }: { sources: SourceRow[] }) {
       <div className="flex flex-wrap gap-2 mb-4">
         {highestVol && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50">
-            <span className="text-[10px] text-blue-500 font-semibold uppercase">Top Volume</span>
-            <span className="text-[13px] font-bold text-blue-700">{highestVol.source || 'Unknown'} ({highestVol.total})</span>
+            <span className="text-[11px] text-blue-500 font-semibold uppercase">Top Volume</span>
+            <span className="text-[14px] font-bold text-blue-700">{highestVol.source || 'Unknown'} ({highestVol.total})</span>
           </div>
         )}
         {bestConv && bestConv.conv_pct > 0 && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
-            <span className="text-[10px] text-emerald-500 font-semibold uppercase">Best Conversion</span>
-            <span className="text-[13px] font-bold text-emerald-700">{bestConv.source || 'Unknown'} ({bestConv.conv_pct}%)</span>
+            <span className="text-[11px] text-emerald-500 font-semibold uppercase">Best Conversion</span>
+            <span className="text-[14px] font-bold text-emerald-700">{bestConv.source || 'Unknown'} ({bestConv.conv_pct}%)</span>
           </div>
         )}
         {bestContact && bestContact.contacted > 0 && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50">
-            <span className="text-[10px] text-violet-500 font-semibold uppercase">Best Contact Rate</span>
-            <span className="text-[13px] font-bold text-violet-700">{bestContact.source || 'Unknown'} ({bestContact.total > 0 ? Math.round(bestContact.contacted / bestContact.total * 100) : 0}%)</span>
+            <span className="text-[11px] text-violet-500 font-semibold uppercase">Best Contact Rate</span>
+            <span className="text-[14px] font-bold text-violet-700">{bestContact.source || 'Unknown'} ({bestContact.total > 0 ? Math.round(bestContact.contacted / bestContact.total * 100) : 0}%)</span>
           </div>
         )}
       </div>
       <ResponsiveContainer width="100%" height={220}>
         <ComposedChart data={chartData} margin={{ top: 18, right: 40, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe5" vertical={false} />
-          <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#8a7c6e' }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="left" tick={{ fontSize: 9, fill: '#8a7c6e' }} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" vertical={false} />
+          <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="left" tick={{ fontSize: 9, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
           <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: '#10b981' }} axisLine={false} tickLine={false} domain={[0, 100]} unit="%" width={34} />
           <Tooltip
-            contentStyle={{ borderRadius: 12, border: '1px solid #f0ebe5', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+            contentStyle={{ borderRadius: 12, border: '1px solid #eef1f4', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
             formatter={(val: any, name: string) => {
               if (name === 'conv') return [`${val}%`, 'Conversion'];
               if (name === 'contactRate') return [`${val}%`, 'Contact Rate'];
@@ -423,16 +422,16 @@ function SourceROIChart({ sources }: { sources: SourceRow[] }) {
           />
           <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
           <Bar yAxisId="left" dataKey="total" name="Volume" fill="#bfdbfe" radius={[3, 3, 0, 0]} maxBarSize={36}>
-            <LabelList dataKey="total" position="top" style={{ fontSize: 10, fill: '#1c1410', fontWeight: 700 }} />
+            <LabelList dataKey="total" position="top" style={{ fontSize: 10, fill: '#111318', fontWeight: 700 }} />
           </Bar>
           <Line yAxisId="right" type="monotone" dataKey="conv" name="Conv %" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3.5, fill: '#10b981' }} />
           <Line yAxisId="right" type="monotone" dataKey="contactRate" name="Contact %" stroke="#8b5cf6" strokeWidth={2} strokeDasharray="4 3" dot={{ r: 3, fill: '#8b5cf6' }} />
         </ComposedChart>
       </ResponsiveContainer>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-[13px]">
+        <table className="w-full text-[14px]">
           <thead>
-            <tr className="text-[10px] text-[#9a8a7a] uppercase font-semibold border-b border-black/5">
+            <tr className="text-[11px] text-[#9ca3af] uppercase font-semibold border-b border-[var(--hairline)]">
               <th className="text-left py-2 px-2">Source</th>
               <th className="text-right py-2 px-2">Total</th>
               <th className="text-right py-2 px-2">Contacted</th>
@@ -445,21 +444,21 @@ function SourceROIChart({ sources }: { sources: SourceRow[] }) {
             {sources.map((s, i) => {
               const contactPct = s.total > 0 ? Math.round((s.contacted / s.total) * 100) : 0;
               return (
-                <tr key={i} className="border-b border-black/[0.03] hover:bg-[var(--app-bg)]">
+                <tr key={i} className="border-b border-[var(--hairline)] hover:bg-[var(--surface-2)]">
                   <td className="py-2 px-2">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: SOURCE_COLORS[i % SOURCE_COLORS.length] }} />
-                      <span className="font-semibold text-[#1c1410]">{s.source || 'Unknown'}</span>
+                      <span className="font-semibold text-[#111318]">{s.source || 'Unknown'}</span>
                     </div>
                   </td>
-                  <td className="text-right px-2 font-bold text-[#1c1410]">{s.total}</td>
-                  <td className="text-right px-2 text-[#1c1410]">{s.contacted}</td>
+                  <td className="text-right px-2 font-bold text-[#111318]">{s.total}</td>
+                  <td className="text-right px-2 text-[#111318]">{s.contacted}</td>
                   <td className="text-right px-2 font-bold text-emerald-600">{s.won}</td>
                   <td className="text-right px-2">
-                    <span className={`font-semibold ${contactPct >= 60 ? 'text-violet-600' : contactPct >= 30 ? 'text-[#1c1410]' : 'text-red-500'}`}>{contactPct}%</span>
+                    <span className={`font-semibold ${contactPct >= 60 ? 'text-violet-600' : contactPct >= 30 ? 'text-[#111318]' : 'text-red-500'}`}>{contactPct}%</span>
                   </td>
                   <td className="text-right px-2">
-                    <span className={`font-bold px-2 py-0.5 rounded-md text-[11px] ${s.conv_pct >= 20 ? 'bg-emerald-50 text-emerald-700' : s.conv_pct >= 5 ? 'bg-amber-50 text-amber-700' : 'bg-[#f4efe9] text-[#9a8a7a]'}`}>
+                    <span className={`font-bold px-2 py-0.5 rounded-md text-[12px] ${s.conv_pct >= 20 ? 'bg-emerald-50 text-emerald-700' : s.conv_pct >= 5 ? 'bg-amber-50 text-amber-700' : 'bg-[#f1f3f5] text-[#8b929c]'}`}>
                       {s.conv_pct}%
                     </span>
                   </td>
@@ -497,11 +496,11 @@ function StaffLeaderboard({ staff }: { staff: StaffRow[] }) {
   };
 
   const SortHead = ({ label, field }: { label: string; field: keyof StaffRow }) => (
-    <th className="py-2.5 px-2 cursor-pointer select-none hover:text-[#1c1410] transition-colors text-right"
+    <th className="py-2.5 px-2 cursor-pointer select-none hover:text-[#111318] transition-colors text-right"
       onClick={() => toggle(field)}>
       <div className="flex items-center gap-1 justify-end">
         <span>{label}</span>
-        {sortBy === field && <span className="text-[8px]">{sortDir === 'desc' ? '▼' : '▲'}</span>}
+        {sortBy === field && <span className="text-[9px]">{sortDir === 'desc' ? '▼' : '▲'}</span>}
       </div>
     </th>
   );
@@ -514,34 +513,34 @@ function StaffLeaderboard({ staff }: { staff: StaffRow[] }) {
   return (
     <div>
       <div className="flex flex-wrap gap-2 mb-4">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f4efe9]">
-          <span className="text-[10px] text-[#9a8a7a] font-semibold uppercase">Team</span>
-          <span className="text-[14px] font-bold text-[#1c1410]">{active.length} members</span>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f1f3f5]">
+          <span className="text-[11px] text-[#8b929c] font-semibold uppercase">Team</span>
+          <span className="text-[15px] font-bold text-[#111318]">{active.length} members</span>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f4efe9]">
-          <span className="text-[10px] text-[#9a8a7a] font-semibold uppercase">Assigned</span>
-          <span className="text-[14px] font-bold text-[#1c1410]">{totalAssigned}</span>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f1f3f5]">
+          <span className="text-[11px] text-[#8b929c] font-semibold uppercase">Assigned</span>
+          <span className="text-[15px] font-bold text-[#111318]">{totalAssigned}</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50">
-          <span className="text-[10px] text-emerald-600 font-semibold uppercase">Won</span>
-          <span className="text-[14px] font-bold text-emerald-700">{totalWon}</span>
+          <span className="text-[11px] text-emerald-600 font-semibold uppercase">Won</span>
+          <span className="text-[15px] font-bold text-emerald-700">{totalWon}</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50">
-          <span className="text-[10px] text-violet-500 font-semibold uppercase">Avg Contact</span>
-          <span className="text-[14px] font-bold text-violet-700">{avgContact}%</span>
+          <span className="text-[11px] text-violet-500 font-semibold uppercase">Avg Contact</span>
+          <span className="text-[15px] font-bold text-violet-700">{avgContact}%</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
           style={{ background: avgConv >= 15 ? '#f0fdf4' : avgConv >= 5 ? '#fefce8' : '#fef2f2' }}>
-          <span className="text-[10px] font-semibold uppercase"
+          <span className="text-[11px] font-semibold uppercase"
             style={{ color: avgConv >= 15 ? '#16a34a' : avgConv >= 5 ? '#ca8a04' : '#ef4444' }}>Avg Conv</span>
-          <span className="text-[14px] font-bold"
+          <span className="text-[15px] font-bold"
             style={{ color: avgConv >= 15 ? '#15803d' : avgConv >= 5 ? '#a16207' : '#dc2626' }}>{avgConv}%</span>
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
+        <table className="w-full text-[14px]">
           <thead>
-            <tr className="text-[10px] text-[#9a8a7a] uppercase font-semibold border-b border-black/5">
+            <tr className="text-[11px] text-[#9ca3af] uppercase font-semibold border-b border-[var(--hairline)]">
               <th className="text-left py-2.5 px-2 w-8">#</th>
               <th className="text-left py-2.5 px-2">Staff</th>
               <SortHead label="Assigned" field="assigned" />
@@ -559,36 +558,36 @@ function StaffLeaderboard({ staff }: { staff: StaffRow[] }) {
               const rankStyle = rank === 1 ? 'bg-amber-100 text-amber-800'
                 : rank === 2 ? 'bg-gray-200 text-gray-700'
                 : rank === 3 ? 'bg-orange-100 text-orange-700'
-                : 'bg-[#f4efe9] text-[#9a8a7a]';
+                : 'bg-[#f1f3f5] text-[#8b929c]';
               return (
-                <tr key={s.id} className="border-b border-black/[0.03] hover:bg-[var(--app-bg)] transition-colors">
+                <tr key={s.id} className="border-b border-[var(--hairline)] hover:bg-[var(--surface-2)] transition-colors">
                   <td className="py-2.5 px-2">
-                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg text-[10px] font-bold ${rankStyle}`}>{rank}</span>
+                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-lg text-[11px] font-bold ${rankStyle}`}>{rank}</span>
                   </td>
                   <td className="py-2.5 px-2">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="text-[10px] font-bold text-primary">{s.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                        <span className="text-[11px] font-bold text-primary">{s.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}</span>
                       </div>
-                      <span className="font-semibold text-[#1c1410] truncate">{s.name}</span>
+                      <span className="font-semibold text-[#111318] truncate">{s.name}</span>
                     </div>
                   </td>
-                  <td className="text-right px-2 font-bold text-[#1c1410]">{s.assigned}</td>
+                  <td className="text-right px-2 font-bold text-[#111318]">{s.assigned}</td>
                   <td className="text-right px-2">
                     <div className="flex items-center gap-2 justify-end">
-                      <div className="w-14 h-1.5 bg-[#f0ece8] rounded-full overflow-hidden">
+                      <div className="w-14 h-1.5 bg-[#eceef1] rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${s.contact_pct}%`, background: s.contact_pct >= 60 ? '#10b981' : s.contact_pct >= 30 ? '#f59e0b' : '#ef4444' }} />
                       </div>
                       <span className={`font-semibold w-8 text-right ${s.contact_pct >= 60 ? 'text-emerald-600' : s.contact_pct >= 30 ? 'text-amber-500' : 'text-red-500'}`}>{s.contact_pct}%</span>
                     </div>
                   </td>
                   <td className="text-right px-2 font-bold text-emerald-600">{s.won}</td>
-                  <td className="text-right px-2 text-[#1c1410]">{s.followups}</td>
+                  <td className="text-right px-2 text-[#111318]">{s.followups}</td>
                   <td className="text-right px-2">
-                    <span className={`font-bold px-2 py-0.5 rounded-md text-[11px] ${s.conv_pct >= 20 ? 'bg-emerald-50 text-emerald-700' : s.conv_pct >= 5 ? 'bg-amber-50 text-amber-700' : 'bg-[#f4efe9] text-[#9a8a7a]'}`}>{s.conv_pct}%</span>
+                    <span className={`font-bold px-2 py-0.5 rounded-md text-[12px] ${s.conv_pct >= 20 ? 'bg-emerald-50 text-emerald-700' : s.conv_pct >= 5 ? 'bg-amber-50 text-amber-700' : 'bg-[#f1f3f5] text-[#8b929c]'}`}>{s.conv_pct}%</span>
                   </td>
                   <td className="text-center px-2">
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-lg border"
+                    <span className="text-[11px] font-bold px-2 py-1 rounded-lg border"
                       style={{ background: perf.bg, color: perf.color, borderColor: perf.border }}>{perf.label}</span>
                   </td>
                 </tr>
@@ -610,16 +609,16 @@ function TagIntelligence({ tags }: { tags: PipelineData['tags'] }) {
       {tags.map((tag, i) => (
         <div key={i} className="flex items-center gap-2.5">
           <span className="w-3 h-3 rounded-full shrink-0" style={{ background: tag.color || SOURCE_COLORS[i % SOURCE_COLORS.length] }} />
-          <span className="text-[13px] font-semibold text-[#1c1410] w-28 shrink-0 truncate">{tag.name}</span>
-          <div className="flex-1 bg-[#f4efe9] rounded-full h-5 overflow-hidden">
+          <span className="text-[14px] font-semibold text-[#111318] w-28 shrink-0 truncate">{tag.name}</span>
+          <div className="flex-1 bg-[#f1f3f5] rounded-full h-5 overflow-hidden">
             <div className="h-full rounded-full flex items-center justify-end pr-2 transition-all"
               style={{ width: `${Math.max(Math.round((tag.total / maxTotal) * 100), 3)}%`, background: tag.color || SOURCE_COLORS[i % SOURCE_COLORS.length] }}>
-              {tag.total > 0 && <span className="text-[10px] font-bold text-white">{tag.total}</span>}
+              {tag.total > 0 && <span className="text-[11px] font-bold text-white">{tag.total}</span>}
             </div>
           </div>
           <div className="shrink-0 text-right w-20">
-            <span className="text-[11px] font-bold text-emerald-600">{tag.won} won</span>
-            <span className="text-[10px] text-[#9a8a7a] ml-1">({tag.conv_pct}%)</span>
+            <span className="text-[12px] font-bold text-emerald-600">{tag.won} won</span>
+            <span className="text-[11px] text-[#8b929c] ml-1">({tag.conv_pct}%)</span>
           </div>
         </div>
       ))}
@@ -632,9 +631,9 @@ function AutomationEffectiveness({ workflows }: { workflows: PipelineData['autom
   if (!workflows.length) return <EmptyState text="No automation activity in this period" />;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[13px]">
+      <table className="w-full text-[14px]">
         <thead>
-          <tr className="text-[10px] text-[#9a8a7a] uppercase font-semibold border-b border-black/5">
+          <tr className="text-[11px] text-[#9ca3af] uppercase font-semibold border-b border-[var(--hairline)]">
             <th className="text-left py-2 px-2">Workflow</th>
             <th className="text-right py-2 px-2">Runs</th>
             <th className="text-right py-2 px-2">Done</th>
@@ -647,18 +646,18 @@ function AutomationEffectiveness({ workflows }: { workflows: PipelineData['autom
           {workflows.map((w, i) => {
             const successPct = w.total > 0 ? Math.round((w.completed / w.total) * 100) : 0;
             return (
-              <tr key={i} className="border-b border-black/[0.03] hover:bg-[var(--app-bg)]">
-                <td className="py-2 px-2 font-semibold text-[#1c1410] truncate max-w-[200px]">{w.name}</td>
-                <td className="text-right px-2 font-bold text-[#1c1410]">{w.total}</td>
+              <tr key={i} className="border-b border-[var(--hairline)] hover:bg-[var(--surface-2)]">
+                <td className="py-2 px-2 font-semibold text-[#111318] truncate max-w-[200px]">{w.name}</td>
+                <td className="text-right px-2 font-bold text-[#111318]">{w.total}</td>
                 <td className="text-right px-2 text-emerald-600 font-bold">{w.completed}</td>
                 <td className="text-right px-2 text-red-500 font-bold">{w.failed || 0}</td>
-                <td className="text-right px-2 text-[#1c1410]">{w.leads_enrolled}</td>
+                <td className="text-right px-2 text-[#111318]">{w.leads_enrolled}</td>
                 <td className="px-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-[#f0ece8] rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-[#eceef1] rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${successPct}%`, background: successPct >= 80 ? '#10b981' : successPct >= 50 ? '#f59e0b' : '#ef4444' }} />
                     </div>
-                    <span className="text-[10px] font-semibold w-8 text-right" style={{ color: successPct >= 80 ? '#10b981' : successPct >= 50 ? '#f59e0b' : '#ef4444' }}>{successPct}%</span>
+                    <span className="text-[11px] font-semibold w-8 text-right" style={{ color: successPct >= 80 ? '#10b981' : successPct >= 50 ? '#f59e0b' : '#ef4444' }}>{successPct}%</span>
                   </div>
                 </td>
               </tr>
@@ -686,7 +685,7 @@ function LeadQualityChart({ quality }: { quality: PipelineData['quality'] }) {
           return (
             <div key={i} className="h-full flex items-center justify-center transition-all"
               style={{ width: `${pct}%`, background: qualityColors[q.quality?.toLowerCase()] || SOURCE_COLORS[i % SOURCE_COLORS.length], minWidth: pct > 0 ? 24 : 0 }}>
-              {pct > 8 && <span className="text-[10px] font-bold text-white">{q.count}</span>}
+              {pct > 8 && <span className="text-[11px] font-bold text-white">{q.count}</span>}
             </div>
           );
         })}
@@ -698,8 +697,8 @@ function LeadQualityChart({ quality }: { quality: PipelineData['quality'] }) {
           return (
             <div key={i} className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-              <span className="text-[11px] font-semibold text-[#1c1410] capitalize">{q.quality || 'Unknown'}</span>
-              <span className="text-[10px] text-[#9a8a7a]">{q.count} ({pct}%)</span>
+              <span className="text-[12px] font-semibold text-[#111318] capitalize">{q.quality || 'Unknown'}</span>
+              <span className="text-[11px] text-[#8b929c]">{q.count} ({pct}%)</span>
             </div>
           );
         })}
@@ -725,20 +724,20 @@ function LeadAgingChart({ aging }: { aging: PipelineData['aging'] }) {
           const pct = total > 0 ? Math.round((a.count / total) * 100) : 0;
           return (
             <div key={i} className="flex items-center gap-3">
-              <span className="text-[11px] font-semibold text-[#4a3a2a] w-14 shrink-0">{a.bucket}</span>
-              <div className="flex-1 bg-[#f4efe9] rounded-full h-6 overflow-hidden">
+              <span className="text-[12px] font-semibold text-[#3a3f47] w-14 shrink-0">{a.bucket}</span>
+              <div className="flex-1 bg-[#f1f3f5] rounded-full h-6 overflow-hidden">
                 <div className="h-full rounded-full flex items-center justify-end pr-2 transition-all"
                   style={{ width: `${barW}%`, background: color }}>
-                  {barW > 12 && <span className="text-[10px] font-bold text-white">{a.count}</span>}
+                  {barW > 12 && <span className="text-[11px] font-bold text-white">{a.count}</span>}
                 </div>
               </div>
-              {barW <= 12 && <span className="text-[11px] font-bold text-[#1c1410] w-6 text-right">{a.count}</span>}
-              <span className="text-[10px] text-[#9a8a7a] w-8 text-right shrink-0">{pct}%</span>
+              {barW <= 12 && <span className="text-[12px] font-bold text-[#111318] w-6 text-right">{a.count}</span>}
+              <span className="text-[11px] text-[#8b929c] w-8 text-right shrink-0">{pct}%</span>
             </div>
           );
         })}
       </div>
-      <p className="text-[10px] text-[#c0b0a0] mt-2 pt-2 border-t border-black/[0.04]">
+      <p className="text-[11px] text-[#c3c8cf] mt-2 pt-2 border-t border-black/[0.04]">
         Active leads only (excludes won) · Grouped by days since creation
       </p>
     </div>
@@ -763,39 +762,39 @@ function CallAnalytics({ calls }: { calls: PipelineData['calls'] }) {
   return (
     <div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        <div className="rounded-xl bg-[#f4efe9] px-3 py-2.5 text-center">
-          <p className="text-[18px] font-bold text-[#1c1410]">{totalCalls}</p>
-          <p className="text-[10px] text-[#9a8a7a]">Total Calls</p>
+        <div className="rounded-xl bg-[#f1f3f5] px-3 py-2.5 text-center">
+          <p className="text-[18px] font-bold text-[#111318]">{totalCalls}</p>
+          <p className="text-[11px] text-[#8b929c]">Total Calls</p>
         </div>
         <div className="rounded-xl bg-emerald-50 px-3 py-2.5 text-center">
           <p className="text-[18px] font-bold text-emerald-700">{answered}</p>
-          <p className="text-[10px] text-emerald-600">Answered ({answerRate}%)</p>
+          <p className="text-[11px] text-emerald-600">Answered ({answerRate}%)</p>
         </div>
         <div className="rounded-xl bg-red-50 px-3 py-2.5 text-center">
           <p className="text-[18px] font-bold text-red-600">{missed}</p>
-          <p className="text-[10px] text-red-500">Missed</p>
+          <p className="text-[11px] text-red-500">Missed</p>
         </div>
         <div className="rounded-xl bg-blue-50 px-3 py-2.5 text-center">
           <p className="text-[18px] font-bold text-blue-700">{fmtDur(avgDur)}</p>
-          <p className="text-[10px] text-blue-500">Avg Duration</p>
+          <p className="text-[11px] text-blue-500">Avg Duration</p>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-[#9a8a7a] w-16 shrink-0">Inbound</span>
-          <div className="flex-1 bg-[#f4efe9] rounded-full h-5 overflow-hidden">
+          <span className="text-[12px] text-[#8b929c] w-16 shrink-0">Inbound</span>
+          <div className="flex-1 bg-[#f1f3f5] rounded-full h-5 overflow-hidden">
             <div className="h-full bg-blue-400 rounded-full flex items-center justify-end pr-2"
               style={{ width: `${totalCalls > 0 ? Math.max((inbound / totalCalls) * 100, inbound > 0 ? 8 : 0) : 0}%` }}>
-              {inbound > 0 && <span className="text-[10px] font-bold text-white">{inbound}</span>}
+              {inbound > 0 && <span className="text-[11px] font-bold text-white">{inbound}</span>}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-[#9a8a7a] w-16 shrink-0">Outbound</span>
-          <div className="flex-1 bg-[#f4efe9] rounded-full h-5 overflow-hidden">
+          <span className="text-[12px] text-[#8b929c] w-16 shrink-0">Outbound</span>
+          <div className="flex-1 bg-[#f1f3f5] rounded-full h-5 overflow-hidden">
             <div className="h-full bg-violet-400 rounded-full flex items-center justify-end pr-2"
               style={{ width: `${totalCalls > 0 ? Math.max((outbound / totalCalls) * 100, outbound > 0 ? 8 : 0) : 0}%` }}>
-              {outbound > 0 && <span className="text-[10px] font-bold text-white">{outbound}</span>}
+              {outbound > 0 && <span className="text-[11px] font-bold text-white">{outbound}</span>}
             </div>
           </div>
         </div>
@@ -810,12 +809,12 @@ function LeadInflowChart({ data }: { data: { day: string; count: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height={180}>
       <BarChart data={data} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0ebe5" vertical={false} />
-        <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#9a8a7a' }} axisLine={false} tickLine={false} interval={Math.max(0, Math.floor(data.length / 8))} />
-        <YAxis tick={{ fontSize: 9, fill: '#9a8a7a' }} axisLine={false} tickLine={false} allowDecimals={false} />
-        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #f0ebe5', fontSize: 12 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" vertical={false} />
+        <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#8b929c' }} axisLine={false} tickLine={false} interval={Math.max(0, Math.floor(data.length / 8))} />
+        <YAxis tick={{ fontSize: 9, fill: '#8b929c' }} axisLine={false} tickLine={false} allowDecimals={false} />
+        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #eef1f4', fontSize: 12 }} />
         <Bar dataKey="count" name="Leads" fill="#bfdbfe" radius={[3, 3, 0, 0]} maxBarSize={24}>
-          <LabelList dataKey="count" position="top" style={{ fontSize: 9, fill: '#1c1410', fontWeight: 700 }} />
+          <LabelList dataKey="count" position="top" style={{ fontSize: 9, fill: '#111318', fontWeight: 700 }} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -827,7 +826,7 @@ function OverdueList({ items }: { items: OverdueRow[] }) {
   if (!items.length) return (
     <div className="flex flex-col items-center justify-center py-8 gap-2">
       <CheckCircle2 className="w-8 h-8 text-[#10b981]" />
-      <p className="text-[14px] font-semibold text-[#10b981]">No overdue follow-ups</p>
+      <p className="text-[15px] font-semibold text-[#10b981]">No overdue follow-ups</p>
     </div>
   );
   return (
@@ -835,10 +834,10 @@ function OverdueList({ items }: { items: OverdueRow[] }) {
       {items.map((item, i) => (
         <div key={i} className="flex items-center justify-between p-3 bg-[#fefce8] rounded-xl border border-[#fef08a]">
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-[#1c1410] truncate">{item.lead_name}</p>
-            <p className="text-[10px] text-[#9a8a7a] mt-0.5">{item.staff_name ?? item.title ?? ''}</p>
+            <p className="text-[14px] font-semibold text-[#111318] truncate">{item.lead_name}</p>
+            <p className="text-[11px] text-[#8b929c] mt-0.5">{item.staff_name ?? item.title ?? ''}</p>
           </div>
-          <span className="text-[11px] font-bold text-[#ca8a04] shrink-0 ml-3 bg-white px-2 py-1 rounded-lg border border-[#fde047]">
+          <span className="text-[12px] font-bold text-[#ca8a04] shrink-0 ml-3 bg-white px-2 py-1 rounded-lg border border-[#fde047]">
             {item.overdue_days}d late
           </span>
         </div>
@@ -852,20 +851,20 @@ function StaleList({ stale }: { stale: StaleShape }) {
   if (!stale?.stale_count) return (
     <div className="flex flex-col items-center justify-center py-8 gap-2">
       <CheckCircle2 className="w-8 h-8 text-[#10b981]" />
-      <p className="text-[14px] font-semibold text-[#10b981]">All leads active</p>
-      <p className="text-[11px] text-[#9a8a7a]">No leads stuck for 7+ days</p>
+      <p className="text-[15px] font-semibold text-[#10b981]">All leads active</p>
+      <p className="text-[12px] text-[#8b929c]">No leads stuck for 7+ days</p>
     </div>
   );
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[11px] text-[#9a8a7a] mb-1">{stale.stale_count} leads stuck · max {stale.max_days}d</p>
+      <p className="text-[12px] text-[#8b929c] mb-1">{stale.stale_count} leads stuck · max {stale.max_days}d</p>
       {stale.list?.map((l, i) => (
         <div key={i} className="flex items-center justify-between p-3 bg-[#fef2f2] rounded-xl border border-[#fee2e2]">
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-[#1c1410] truncate">{l.name}</p>
-            <p className="text-[10px] text-[#9a8a7a] mt-0.5">{l.stage_name ?? '-'} · {l.assigned_name ?? 'Unassigned'}</p>
+            <p className="text-[14px] font-semibold text-[#111318] truncate">{l.name}</p>
+            <p className="text-[11px] text-[#8b929c] mt-0.5">{l.stage_name ?? '-'} · {l.assigned_name ?? 'Unassigned'}</p>
           </div>
-          <span className="text-[11px] font-bold text-[#ef4444] shrink-0 ml-3 bg-white px-2 py-1 rounded-lg border border-[#fecaca]">
+          <span className="text-[12px] font-bold text-[#ef4444] shrink-0 ml-3 bg-white px-2 py-1 rounded-lg border border-[#fecaca]">
             {l.days_stale}d
           </span>
         </div>
@@ -883,11 +882,11 @@ function FollowupSummary({ fu }: { fu: { total: number; completed: number; pendi
     { label: 'Overdue',   value: fu.overdue ?? 0,   color: '#ef4444' },
   ];
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {items.map(({ label, value, color }) => (
         <div key={label} className="text-center p-3 rounded-xl" style={{ background: `${color}0f` }}>
           <p className="text-[22px] font-bold" style={{ color }}>{value}</p>
-          <p className="text-[11px] text-[#9a8a7a] mt-0.5">{label}</p>
+          <p className="text-[12px] text-[#8b929c] mt-0.5">{label}</p>
         </div>
       ))}
     </div>
@@ -913,16 +912,16 @@ function PipelineDropdown({ pipelines, selected, onChange }: {
   return (
     <div className="relative" ref={ref}>
       <button onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 bg-white border border-black/10 rounded-xl px-4 py-2 text-[14px] font-semibold text-[#1c1410] hover:border-primary/40 transition-colors min-w-[180px] shadow-sm">
+        className="flex items-center gap-2 bg-white border border-[var(--hairline)] rounded-xl px-4 py-2 text-[15px] font-semibold text-[#111318] hover:bg-[var(--surface-2)] transition min-w-[180px] card-shadow">
         <span className="flex-1 text-left truncate">{name}</span>
-        <ChevronDown className={cn('w-4 h-4 text-[#9e8e7e] shrink-0 transition-transform duration-200', open && 'rotate-180')} />
+        <ChevronDown className={cn('w-4 h-4 text-[#8b929c] shrink-0 transition-transform duration-200', open && 'rotate-180')} />
       </button>
       {open && (
-        <div className="absolute top-full mt-1.5 left-0 min-w-[200px] bg-white border border-black/8 rounded-xl shadow-xl z-50 py-1.5 max-h-64 overflow-y-auto">
+        <div className="absolute top-full mt-1.5 left-0 min-w-[200px] bg-white border border-[var(--hairline)] rounded-xl shadow-xl z-50 py-1.5 max-h-64 overflow-y-auto">
           {pipelines.map((pl) => (
             <button key={pl.id} onClick={() => { onChange(pl.id); setOpen(false); }}
-              className={cn('w-full text-left px-4 py-2.5 text-[14px] transition-colors',
-                pl.id === selected ? 'bg-primary/8 text-primary font-semibold' : 'text-[#1c1410] hover:bg-[var(--app-bg)] font-medium')}>
+              className={cn('w-full text-left px-4 py-2.5 text-[15px] transition-colors',
+                pl.id === selected ? 'bg-primary/8 text-primary font-semibold' : 'text-[#111318] hover:bg-[var(--surface-2)] font-medium')}>
               {pl.name}
             </button>
           ))}
@@ -965,8 +964,8 @@ function OwnerReport() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[18px] font-bold text-[#1c1410]">Business Analytics</h1>
-          <p className="text-[13px] text-[#9a8a7a] mt-0.5">Full pipeline performance · owner view</p>
+          <h1 className="text-[18px] font-bold text-[#111318]">Business Analytics</h1>
+          <p className="text-[14px] text-[#8b929c] mt-0.5">Full pipeline performance · owner view</p>
         </div>
         {!plLoading && pipelines.length > 0 && (
           <PipelineDropdown pipelines={pipelines} selected={pipelineId} onChange={setPipelineId} />
@@ -977,7 +976,7 @@ function OwnerReport() {
 
       {(plLoading || loading) && <Spinner />}
       {!plLoading && !loading && pipelines.length === 0 && (
-        <div className="text-center py-20 text-[14px] text-[#9a8a7a]">No pipelines found. Create a pipeline first.</div>
+        <div className="text-center py-20 text-[15px] text-[#8b929c]">No pipelines found. Create a pipeline first.</div>
       )}
 
       {data && !loading && (
@@ -1096,8 +1095,8 @@ function ManagerReport() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[18px] font-bold text-[#1c1410]">Team Analytics</h1>
-          <p className="text-[13px] text-[#9a8a7a] mt-0.5">Your team's pipeline and performance metrics</p>
+          <h1 className="text-[18px] font-bold text-[#111318]">Team Analytics</h1>
+          <p className="text-[14px] text-[#8b929c] mt-0.5">Your team's pipeline and performance metrics</p>
         </div>
         {!plLoading && pipelines.length > 0 && (
           <PipelineDropdown pipelines={pipelines} selected={pipelineId} onChange={setPipelineId} />
@@ -1208,8 +1207,8 @@ function StaffReport() {
     <div className="flex flex-col gap-5 pb-10">
       {/* Header */}
       <div>
-        <h1 className="text-[18px] font-bold text-[#1c1410]">My Performance</h1>
-        <p className="text-[13px] text-[#9a8a7a] mt-0.5">Your personal lead analytics</p>
+        <h1 className="text-[18px] font-bold text-[#111318]">My Performance</h1>
+        <p className="text-[14px] text-[#8b929c] mt-0.5">Your personal lead analytics</p>
       </div>
 
       <PeriodFilter period={period} onChange={setPeriod} from={from} to={to} onFrom={setFrom} onTo={setTo} />
@@ -1242,8 +1241,8 @@ function StaffReport() {
                 getColor={(_, i) => SOURCE_COLORS[i % SOURCE_COLORS.length]}
                 getRight={(s) => (
                   <>
-                    <p className="text-[13px] font-bold text-[#1c1410]">{s.total}</p>
-                    <p className="text-[10px] text-[#9a8a7a]">{s.conv_pct}% conv</p>
+                    <p className="text-[14px] font-bold text-[#111318]">{s.total}</p>
+                    <p className="text-[11px] text-[#8b929c]">{s.conv_pct}% conv</p>
                   </>
                 )}
                 avatar={(s) => s.source}
@@ -1263,15 +1262,15 @@ function StaffReport() {
                     const color = stage.is_won ? '#10b981' : STAGE_COLORS[i % STAGE_COLORS.length];
                     return (
                       <div key={stage.stage_name} className="flex items-center gap-3">
-                        <span className="text-[11px] font-semibold text-[#4a3a2a] w-[90px] shrink-0 truncate">{stage.stage_name}</span>
-                        <div className="flex-1 bg-[#f4efe9] rounded-full h-7 overflow-hidden">
+                        <span className="text-[12px] font-semibold text-[#3a3f47] w-[90px] shrink-0 truncate">{stage.stage_name}</span>
+                        <div className="flex-1 bg-[#f1f3f5] rounded-full h-7 overflow-hidden">
                           <div className="h-full rounded-full flex items-center justify-end pr-2.5 transition-all duration-500"
                             style={{ width: `${barW}%`, background: color }}>
-                            {barW > 14 && <span className="text-[11px] font-bold text-white">{stage.lead_count}</span>}
+                            {barW > 14 && <span className="text-[12px] font-bold text-white">{stage.lead_count}</span>}
                           </div>
                         </div>
-                        {barW <= 14 && <span className="text-[13px] font-bold text-[#1c1410] w-5 text-right">{stage.lead_count}</span>}
-                        {stage.is_won && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 shrink-0">Won <Check className="w-2.5 h-2.5" strokeWidth={3} /></span>}
+                        {barW <= 14 && <span className="text-[14px] font-bold text-[#111318] w-5 text-right">{stage.lead_count}</span>}
+                        {stage.is_won && <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 shrink-0">Won <Check className="w-2.5 h-2.5" strokeWidth={3} /></span>}
                       </div>
                     );
                   })}
@@ -1291,7 +1290,7 @@ function StaffReport() {
       )}
 
       {data && !loading && data.kpi.total_leads === 0 && (
-        <div className="text-center py-10 text-[14px] text-[#9a8a7a]">No leads assigned to you in this period.</div>
+        <div className="text-center py-10 text-[15px] text-[#8b929c]">No leads assigned to you in this period.</div>
       )}
     </div>
   );

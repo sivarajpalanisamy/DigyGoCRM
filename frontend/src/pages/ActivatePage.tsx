@@ -40,39 +40,39 @@ export default function ActivatePage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)] p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 space-y-6">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow w-full max-w-md p-8 space-y-6">
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand))' }}>
             <PartyPopper className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-extrabold text-[#1c1410]">Activate your account</h1>
-          <p className="text-[14px] text-[#7a6b5c] mt-1">Enter the PIN from your welcome email and set a password</p>
+          <h1 className="text-2xl font-extrabold text-[#111318]">Activate your account</h1>
+          <p className="text-[15px] text-[#6b7280] mt-1">Enter the PIN from your welcome email and set a password</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Activation PIN</label>
+            <label className="text-[15px] font-medium text-[#111318] mb-1.5 block">Activation PIN</label>
             <input
               inputMode="numeric"
               maxLength={4}
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
               placeholder="0000"
-              className="w-full text-center tracking-[0.5em] text-2xl font-bold border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-primary"
+              className="w-full text-center tracking-[0.5em] text-2xl font-bold border border-[var(--hairline)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition"
               required
               autoFocus
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">New Password</label>
+            <label className="text-[15px] font-medium text-[#111318] mb-1.5 block">New Password</label>
             <div className="relative">
               <input
                 type={showPw ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 6 characters"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-primary pr-10"
+                className="w-full border border-[var(--hairline)] rounded-xl px-4 py-2.5 text-[15px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition pr-10"
                 required
               />
               <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -81,20 +81,20 @@ export default function ActivatePage() {
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Confirm Password</label>
+            <label className="text-[15px] font-medium text-[#111318] mb-1.5 block">Confirm Password</label>
             <input
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Repeat your password"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-primary"
+              className="w-full border border-[var(--hairline)] rounded-xl px-4 py-2.5 text-[15px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition"
               required
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl text-white font-bold text-[15px] transition-all hover:-translate-y-0.5 disabled:opacity-60"
+            className="w-full py-3 rounded-xl text-white font-bold text-[16px] transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60"
             style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
           >
             {loading ? 'Activating…' : 'Activate Account'}

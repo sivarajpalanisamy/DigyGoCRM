@@ -109,9 +109,9 @@ function KpiCard({ icon: Icon, label, value, sub }: {
         <Icon className="w-5 h-5 text-white" />
       </div>
       <div className="min-w-0">
-        <p className="text-[13px] opacity-80 font-medium">{label}</p>
+        <p className="text-[14px] opacity-80 font-medium">{label}</p>
         <p className="font-headline text-[22px] font-bold leading-tight mt-0.5">{typeof value === 'number' ? value.toLocaleString() : value}</p>
-        {sub && <p className="text-[12px] opacity-70 mt-0.5">{sub}</p>}
+        {sub && <p className="text-[13px] opacity-70 mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -121,11 +121,10 @@ function Card({ title, sub, children, className }: {
   title: string; sub?: string; children: React.ReactNode; className?: string;
 }) {
   return (
-    <div className={cn('bg-white rounded-2xl border border-black/5 p-5', className)}
-      style={{ boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
+    <div className={cn('bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-5', className)}>
       <div className="mb-4">
-        <h3 className="text-[15px] font-bold text-[#1c1410]">{title}</h3>
-        {sub && <p className="text-[11px] text-[#9a8a7a] mt-0.5">{sub}</p>}
+        <h3 className="text-[16px] font-bold text-[#111318]">{title}</h3>
+        {sub && <p className="text-[12px] text-[#8b929c] mt-0.5">{sub}</p>}
       </div>
       {children}
     </div>
@@ -199,7 +198,7 @@ export default function SuperAdminDashboardPage() {
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center py-32 text-[14px] text-[#9a8a7a]">
+      <div className="flex items-center justify-center py-32 text-[15px] text-[#8b929c]">
         Failed to load dashboard data.
       </div>
     );
@@ -222,11 +221,11 @@ export default function SuperAdminDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[18px] font-bold text-[#1c1410]">Super Admin Dashboard</h1>
-          <p className="text-[13px] text-[#9a8a7a] mt-0.5">Cross-account analytics and health overview</p>
+          <h1 className="text-[18px] font-bold text-[#111318]">Super Admin Dashboard</h1>
+          <p className="text-[14px] text-[#8b929c] mt-0.5">Cross-account analytics and health overview</p>
         </div>
         <button onClick={fetchData} disabled={loading}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 text-[13px] font-semibold text-[#7a6b5c] hover:border-primary/40 hover:text-primary transition-all">
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[var(--hairline)] bg-white text-[14px] font-semibold text-[#111318] hover:bg-[var(--surface-2)] hover:text-primary active:scale-[0.98] transition">
           <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> Refresh
         </button>
       </div>
@@ -244,7 +243,7 @@ export default function SuperAdminDashboardPage() {
         {/* Plan Distribution */}
         <Card title="Plan Distribution" sub="Accounts by billing cycle">
           {data.plan_distribution.length === 0 ? (
-            <p className="text-[13px] text-[#9a8a7a] text-center py-8">No data</p>
+            <p className="text-[14px] text-[#8b929c] text-center py-8">No data</p>
           ) : (
             <div className="flex items-center gap-6">
               <ResponsiveContainer width="50%" height={180}>
@@ -262,8 +261,8 @@ export default function SuperAdminDashboardPage() {
                 {data.plan_distribution.map((p, i) => (
                   <div key={p.plan_name} className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                    <span className="text-[13px] font-medium text-[#1c1410] capitalize">{p.plan_name}</span>
-                    <span className="text-[13px] text-[#9a8a7a] ml-auto pl-3">{p.count}</span>
+                    <span className="text-[14px] font-medium text-[#111318] capitalize">{p.plan_name}</span>
+                    <span className="text-[14px] text-[#8b929c] ml-auto pl-3">{p.count}</span>
                   </div>
                 ))}
               </div>
@@ -274,18 +273,18 @@ export default function SuperAdminDashboardPage() {
         {/* Most Active Accounts (bar chart) */}
         <Card title="Most Active Accounts" sub="Top 10 by lead count">
           {sorted.length === 0 ? (
-            <p className="text-[13px] text-[#9a8a7a] text-center py-8">No data</p>
+            <p className="text-[14px] text-[#8b929c] text-center py-8">No data</p>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={sorted.slice(0, 10)} layout="vertical"
                 margin={{ left: 0, right: 30, top: 0, bottom: 0 }}>
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" width={120}
-                  tick={{ fontSize: 11, fill: '#7a6b5c' }} tickLine={false} axisLine={false} />
+                  tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} axisLine={false} />
                 <Tooltip formatter={(v: number) => [v.toLocaleString(), 'Leads']} />
                 <Bar dataKey="lead_count" fill="#ea580c" radius={[0, 6, 6, 0]} barSize={16}>
                   <LabelList dataKey="lead_count" position="right"
-                    style={{ fontSize: 11, fontWeight: 600, fill: '#1c1410' }} />
+                    style={{ fontSize: 11, fontWeight: 600, fill: '#111318' }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -296,13 +295,13 @@ export default function SuperAdminDashboardPage() {
       {/* Lead Growth Trend - Top 5 accounts */}
       <Card title="Lead Growth Trend (30 days)" sub="Top 5 accounts by new leads">
         {growthChartData.length === 0 ? (
-          <p className="text-[13px] text-[#9a8a7a] text-center py-8">No data in last 30 days</p>
+          <p className="text-[14px] text-[#8b929c] text-center py-8">No data in last 30 days</p>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={growthChartData} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0ebe4" />
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#9a8a7a' }} tickLine={false} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#9a8a7a' }} tickLine={false} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef1f4" />
+              <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#8b929c' }} tickLine={false} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#8b929c' }} tickLine={false} axisLine={false} />
               <Tooltip />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               {data.growth.map((acct, i) => (
@@ -318,9 +317,9 @@ export default function SuperAdminDashboardPage() {
       {/* Account-wise Table */}
       <Card title="Account-wise Breakdown" sub="Click column headers to sort">
         <div className="overflow-x-auto -mx-5 px-5">
-          <table className="w-full min-w-[1000px] text-[13px]">
+          <table className="w-full min-w-[1000px] text-[14px]">
             <thead>
-              <tr className="border-b border-gray-100 text-[#9a8a7a]">
+              <tr className="border-b border-[var(--hairline)] text-[12px] font-semibold uppercase tracking-wide text-[#9ca3af]">
                 {([
                   ['name', 'Account'],
                   ['billing_cycle', 'Plan'],
@@ -346,23 +345,23 @@ export default function SuperAdminDashboardPage() {
                 const badge = cycleBadge(a.billing_cycle);
                 const conv = a.lead_count > 0 ? Math.round((a.won_count / a.lead_count) * 100) : 0;
                 return (
-                  <tr key={a.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                    <td className="py-2.5 px-2 font-semibold text-[#1c1410] whitespace-nowrap">
+                  <tr key={a.id} className="border-b border-[var(--hairline)] hover:bg-[var(--surface-2)] transition-colors">
+                    <td className="py-2.5 px-2 font-semibold text-[#111318] whitespace-nowrap">
                       <button onClick={() => navigate('/admin')}
                         className="hover:text-[var(--brand)] transition-colors flex items-center gap-1">
                         {a.name} <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100" />
                       </button>
                     </td>
                     <td className="py-2.5 px-2">
-                      <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full', badge.cls)}>{badge.label}</span>
+                      <span className={cn('text-[11px] font-bold px-2 py-0.5 rounded-full', badge.cls)}>{badge.label}</span>
                     </td>
-                    <td className="py-2.5 px-2 text-[#1c1410] font-medium">{a.user_count}</td>
-                    <td className="py-2.5 px-2 text-[#1c1410] font-bold">{a.lead_count.toLocaleString()}</td>
+                    <td className="py-2.5 px-2 text-[#111318] font-medium">{a.user_count}</td>
+                    <td className="py-2.5 px-2 text-[#111318] font-bold">{a.lead_count.toLocaleString()}</td>
                     <td className="py-2.5 px-2 text-green-700 font-medium">{a.won_count}</td>
-                    <td className="py-2.5 px-2 text-[#1c1410]">{a.pipeline_count}</td>
-                    <td className="py-2.5 px-2 text-[#1c1410]">{a.form_count}</td>
-                    <td className="py-2.5 px-2 text-[#1c1410]">{a.workflow_count}</td>
-                    <td className="py-2.5 px-2 text-[#9a8a7a] whitespace-nowrap">{timeAgo(a.last_lead_at)}</td>
+                    <td className="py-2.5 px-2 text-[#111318]">{a.pipeline_count}</td>
+                    <td className="py-2.5 px-2 text-[#111318]">{a.form_count}</td>
+                    <td className="py-2.5 px-2 text-[#111318]">{a.workflow_count}</td>
+                    <td className="py-2.5 px-2 text-[#8b929c] whitespace-nowrap">{timeAgo(a.last_lead_at)}</td>
                     <td className="py-2.5 px-2">
                       <div className="flex items-center gap-1.5">
                         <div className="w-14 h-1.5 rounded-full bg-gray-100 overflow-hidden">
@@ -371,7 +370,7 @@ export default function SuperAdminDashboardPage() {
                             background: conv >= 20 ? '#10b981' : conv >= 10 ? '#f59e0b' : '#ef4444',
                           }} />
                         </div>
-                        <span className="text-[11px] font-medium text-[#1c1410]">{conv}%</span>
+                        <span className="text-[12px] font-medium text-[#111318]">{conv}%</span>
                       </div>
                     </td>
                   </tr>
@@ -387,7 +386,7 @@ export default function SuperAdminDashboardPage() {
         {/* Inactive Accounts */}
         <Card title="Inactive Accounts" sub="No leads in 30+ days - churn risk">
           {data.inactive.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-[13px] text-[#9a8a7a]">
+            <div className="flex items-center justify-center py-8 text-[14px] text-[#8b929c]">
               All accounts are active
             </div>
           ) : (
@@ -397,15 +396,15 @@ export default function SuperAdminDashboardPage() {
                   <div className="flex items-center gap-2.5 min-w-0">
                     <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[13px] font-semibold text-[#1c1410] truncate">{a.name}</p>
-                      <p className="text-[10px] text-[#9a8a7a]">
+                      <p className="text-[14px] font-semibold text-[#111318] truncate">{a.name}</p>
+                      <p className="text-[11px] text-[#8b929c]">
                         {a.last_lead_at ? `Last lead: ${timeAgo(a.last_lead_at)}` : 'No leads ever'}
                       </p>
                     </div>
                   </div>
                   <div className="text-right shrink-0 ml-3">
-                    <span className="text-[14px] font-bold text-red-600">{a.inactive_days}d</span>
-                    <p className="text-[10px] text-red-500">inactive</p>
+                    <span className="text-[15px] font-bold text-red-600">{a.inactive_days}d</span>
+                    <p className="text-[11px] text-red-500">inactive</p>
                   </div>
                 </div>
               ))}
@@ -416,7 +415,7 @@ export default function SuperAdminDashboardPage() {
         {/* Nearing Plan Limits */}
         <Card title="Nearing Plan Limits" sub="Accounts at 80%+ of plan capacity">
           {nearingLimits.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-[13px] text-[#9a8a7a]">
+            <div className="flex items-center justify-center py-8 text-[14px] text-[#8b929c]">
               No accounts near limits
             </div>
           ) : (
@@ -428,14 +427,14 @@ export default function SuperAdminDashboardPage() {
                 return (
                   <div key={a.id} className="px-3 py-2.5 rounded-xl bg-amber-50/60 border border-amber-100">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[13px] font-semibold text-[#1c1410]">{a.name}</p>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full capitalize">{a.plan}</span>
+                      <p className="text-[14px] font-semibold text-[#111318]">{a.name}</p>
+                      <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full capitalize">{a.plan}</span>
                     </div>
                     <div className="flex gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center justify-between text-[10px] mb-1">
-                          <span className="text-[#9a8a7a]">Leads</span>
-                          <span className="font-medium text-[#1c1410]">{a.lead_count}/{limits.leads === Infinity ? '∞' : limits.leads}</span>
+                        <div className="flex items-center justify-between text-[11px] mb-1">
+                          <span className="text-[#8b929c]">Leads</span>
+                          <span className="font-medium text-[#111318]">{a.lead_count}/{limits.leads === Infinity ? '∞' : limits.leads}</span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
                           <div className="h-full rounded-full transition-all" style={{
@@ -445,9 +444,9 @@ export default function SuperAdminDashboardPage() {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center justify-between text-[10px] mb-1">
-                          <span className="text-[#9a8a7a]">Users</span>
-                          <span className="font-medium text-[#1c1410]">{a.user_count}/{limits.users === Infinity ? '∞' : limits.users}</span>
+                        <div className="flex items-center justify-between text-[11px] mb-1">
+                          <span className="text-[#8b929c]">Users</span>
+                          <span className="font-medium text-[#111318]">{a.user_count}/{limits.users === Infinity ? '∞' : limits.users}</span>
                         </div>
                         <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
                           <div className="h-full rounded-full transition-all" style={{

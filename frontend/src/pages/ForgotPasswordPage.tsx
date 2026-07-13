@@ -26,16 +26,16 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)] p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 space-y-6">
+      <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow w-full max-w-md p-8 space-y-6">
         {sent ? (
           <div className="text-center space-y-4">
             <CheckCircle2 className="w-14 h-14 text-emerald-500 mx-auto" />
-            <h1 className="text-2xl font-extrabold text-[#1c1410]">Check your email</h1>
-            <p className="text-[14px] text-[#7a6b5c]">
+            <h1 className="text-2xl font-extrabold text-[#111318]">Check your email</h1>
+            <p className="text-[15px] text-[#6b7280]">
               If an account exists for <strong>{email}</strong>, we've sent a password reset link.
               It expires in 1 hour.
             </p>
-            <Link to="/login" className="inline-flex items-center gap-1.5 text-[14px] text-primary font-semibold hover:underline">
+            <Link to="/login" className="inline-flex items-center gap-1.5 text-[15px] text-primary font-semibold hover:underline">
               <ArrowLeft className="w-4 h-4" /> Back to login
             </Link>
           </div>
@@ -46,19 +46,19 @@ export default function ForgotPasswordPage() {
                    style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand))' }}>
                 <Mail className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-2xl font-extrabold text-[#1c1410]">Forgot password?</h1>
-              <p className="text-[14px] text-[#7a6b5c] mt-1">Enter your email and we'll send you a reset link</p>
+              <h1 className="text-2xl font-extrabold text-[#111318]">Forgot password?</h1>
+              <p className="text-[15px] text-[#6b7280] mt-1">Enter your email and we'll send you a reset link</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-[#1c1410] mb-1.5 block">Email Address</label>
+                <label className="text-[15px] font-medium text-[#111318] mb-1.5 block">Email Address</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-primary"
+                  className="w-full border border-[var(--hairline)] rounded-xl px-4 py-2.5 text-[15px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition"
                   required
                   autoFocus
                 />
@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl text-white font-bold text-[15px] transition-all hover:-translate-y-0.5 disabled:opacity-60"
+                className="w-full py-3 rounded-xl text-white font-bold text-[16px] transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 55%, var(--brand-light) 100%)', boxShadow: '0 4px 14px rgba(234,88,12,0.3)' }}
               >
                 {loading ? 'Sending…' : 'Send reset link'}
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
             </form>
 
             <div className="text-center">
-              <Link to="/login" className="inline-flex items-center gap-1.5 text-[14px] text-[#7a6b5c] hover:text-primary">
+              <Link to="/login" className="inline-flex items-center gap-1.5 text-[15px] text-[#6b7280] hover:text-primary">
                 <ArrowLeft className="w-4 h-4" /> Back to login
               </Link>
             </div>

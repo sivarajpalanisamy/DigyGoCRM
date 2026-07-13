@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Upload, X, Check, Image as ImageIcon, LayoutDashboard, Users, Zap } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, Image as ImageIcon, LayoutDashboard, Users, Workflow } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -12,7 +12,7 @@ const COLOR_PRESETS = [
   '#e11d48', '#db2777', '#a21caf', '#9333ea', '#7c3aed',
   '#4f46e5', '#2563eb', '#0284c7', '#0891b2', '#0d9488',
   '#059669', '#16a34a', '#65a30d', '#a16207', '#78350f',
-  '#1e3a8a', '#334155', '#1c1410',
+  '#1e3a8a', '#334155', '#111318',
 ];
 
 interface BrandingForm {
@@ -105,25 +105,25 @@ export default function BrandingPage() {
   };
 
   if (!canManage) {
-    return <div className="p-8 text-center text-[#7a6b5c]">You don't have permission to manage branding.</div>;
+    return <div className="p-8 text-center text-[#6b7280]">You don't have permission to manage branding.</div>;
   }
 
   const pal = derivePalette(form.brand_color);
-  const inp = 'w-full px-3 py-2 rounded-lg border border-[#e8ddd4] text-sm text-[#1c1410] outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 bg-white';
-  const labelCls = 'text-[13px] font-semibold text-[#1c1410] mb-1 block';
-  const hintCls = 'text-[11px] text-[#9e8e7e] mt-1';
+  const inp = 'w-full px-3 py-2 rounded-xl border border-[var(--hairline)] text-[15px] text-[#111318] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20 bg-white transition';
+  const labelCls = 'text-[14px] font-semibold text-[#111318] mb-1 block';
+  const hintCls = 'text-[12px] text-[#8b929c] mt-1';
 
   const Uploader = ({ url, onPick, onClear, size }: { url: string | null; onPick: () => void; onClear: () => void; size: string }) => (
     <div className="flex items-center gap-2">
       <button type="button" onClick={onPick}
-        className={`relative ${size} rounded-lg overflow-hidden group border-2 border-dashed border-black/10 hover:border-primary/40 transition-colors bg-[#faf8f6] flex items-center justify-center shrink-0`}>
-        {url ? <img src={url} alt="" className="w-full h-full object-contain" /> : <ImageIcon className="w-5 h-5 text-[#c4b09e]" />}
+        className={`relative ${size} rounded-xl overflow-hidden group border-2 border-dashed border-[var(--hairline)] hover:border-primary/40 transition-colors bg-[var(--surface-2)] flex items-center justify-center shrink-0`}>
+        {url ? <img src={url} alt="" className="w-full h-full object-contain" /> : <ImageIcon className="w-5 h-5 text-[#c3c8cf]" />}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100">
           <Upload className="w-4 h-4 text-white" />
         </div>
       </button>
       {url && (
-        <button type="button" onClick={onClear} className="text-[11px] text-red-500 hover:text-red-700 flex items-center gap-1">
+        <button type="button" onClick={onClear} className="text-[12px] text-red-500 hover:text-red-700 flex items-center gap-1">
           <X className="w-3 h-3" /> Remove
         </button>
       )}
@@ -135,16 +135,16 @@ export default function BrandingPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/settings')} className="p-1.5 rounded-lg hover:bg-[#f5ede3] text-[#7a6b5c]">
+          <button onClick={() => navigate('/settings')} className="p-1.5 rounded-xl hover:bg-[var(--surface-2)] text-[#6b7280] transition">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="font-headline font-bold text-[#1c1410] text-lg leading-tight">Branding</h1>
-            <p className="text-[13px] text-[#7a6b5c]">Customize your CRM's logo, colors, and identity</p>
+            <h1 className="font-headline font-bold text-[#111318] text-lg leading-tight">Branding</h1>
+            <p className="text-[14px] text-[#6b7280]">Customize your CRM's logo, colors, and identity</p>
           </div>
         </div>
         <button onClick={handleSave} disabled={saving}
-          className="px-5 py-2 rounded-lg text-white text-sm font-semibold bg-primary hover:bg-primary/90 transition-colors disabled:opacity-60 shrink-0">
+          className="px-5 py-2 rounded-xl text-white text-[15px] font-semibold bg-primary hover:bg-primary/90 active:scale-[0.98] transition disabled:opacity-60 shrink-0">
           {saving ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
@@ -160,8 +160,8 @@ export default function BrandingPage() {
           <div className="space-y-4">
 
             {/* Identity */}
-            <section className="bg-white rounded-xl border border-black/5 p-4">
-              <h2 className="font-semibold text-[#1c1410] text-[14px] mb-3">Identity</h2>
+            <section className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-4">
+              <h2 className="font-semibold text-[#111318] text-[15px] mb-3">Identity</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Company Name</label>
@@ -175,8 +175,8 @@ export default function BrandingPage() {
             </section>
 
             {/* Images */}
-            <section className="bg-white rounded-xl border border-black/5 p-4">
-              <h2 className="font-semibold text-[#1c1410] text-[14px] mb-3">Images</h2>
+            <section className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-4">
+              <h2 className="font-semibold text-[#111318] text-[15px] mb-3">Images</h2>
               <input ref={logoRef} type="file" accept="image/*" hidden onChange={handleFile('logo_url', 2)} />
               <input ref={faviconRef} type="file" accept="image/png,image/x-icon,image/svg+xml" hidden onChange={handleFile('favicon_url', 1)} />
               <input ref={bannerRef} type="file" accept="image/*" hidden onChange={handleFile('banner_url', 3)} />
@@ -185,11 +185,11 @@ export default function BrandingPage() {
                   <div><label className={labelCls}>Logo</label><p className={hintCls}>Sidebar & header · PNG/SVG · max 2 MB</p></div>
                   <Uploader url={form.logo_url} onPick={() => logoRef.current?.click()} onClear={() => upd('logo_url', null)} size="w-16 h-16" />
                 </div>
-                <div className="flex items-center justify-between gap-4 pt-3 border-t border-black/5">
+                <div className="flex items-center justify-between gap-4 pt-3 border-t border-[var(--hairline)]">
                   <div><label className={labelCls}>Favicon</label><p className={hintCls}>Browser tab &amp; collapsed sidebar · square, e.g. 128×128 · max 1 MB. If empty, your company initial is shown.</p></div>
                   <Uploader url={form.favicon_url} onPick={() => faviconRef.current?.click()} onClear={() => upd('favicon_url', null)} size="w-10 h-10" />
                 </div>
-                <div className="flex items-center justify-between gap-4 pt-3 border-t border-black/5">
+                <div className="flex items-center justify-between gap-4 pt-3 border-t border-[var(--hairline)]">
                   <div><label className={labelCls}>Login Banner</label><p className={hintCls}>Login page banner · max 3 MB</p></div>
                   <Uploader url={form.banner_url} onPick={() => bannerRef.current?.click()} onClear={() => upd('banner_url', null)} size="w-24 h-12" />
                 </div>
@@ -197,34 +197,34 @@ export default function BrandingPage() {
             </section>
 
             {/* Brand Color - one color drives the whole palette */}
-            <section className="bg-white rounded-xl border border-black/5 p-4">
-              <h2 className="font-semibold text-[#1c1410] text-[14px] mb-1">Brand Color</h2>
+            <section className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-4">
+              <h2 className="font-semibold text-[#111318] text-[15px] mb-1">Brand Color</h2>
               <p className={`${hintCls} mb-3 mt-0`}>Pick one color - the system automatically builds a matching palette (background, accents, charts) across your whole CRM.</p>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {COLOR_PRESETS.map((c) => (
                   <button key={c} type="button" onClick={() => upd('brand_color', c)}
                     className="w-8 h-8 rounded-md border-2 transition-all flex items-center justify-center"
-                    style={{ background: c, borderColor: form.brand_color.toLowerCase() === c.toLowerCase() ? '#1c1410' : 'transparent' }}>
+                    style={{ background: c, borderColor: form.brand_color.toLowerCase() === c.toLowerCase() ? '#111318' : 'transparent' }}>
                     {form.brand_color.toLowerCase() === c.toLowerCase() && <Check className="w-4 h-4 text-white" />}
                   </button>
                 ))}
               </div>
               <div className="flex items-center gap-2">
                 <input type="color" value={form.brand_color} onChange={(e) => upd('brand_color', e.target.value)}
-                  className="w-9 h-9 rounded-lg border border-[#e8ddd4] cursor-pointer p-0.5 shrink-0" />
+                  className="w-9 h-9 rounded-xl border border-[var(--hairline)] cursor-pointer p-0.5 shrink-0" />
                 <input value={form.brand_color} onChange={(e) => upd('brand_color', e.target.value)}
                   placeholder="#c2410c" className={`${inp} max-w-[130px] font-mono`} />
               </div>
 
               {/* Derived palette swatches */}
-              <div className="flex items-center gap-3 mt-4 pt-3 border-t border-black/5">
-                <span className="text-[11px] text-[#9e8e7e]">Auto palette:</span>
+              <div className="flex items-center gap-3 mt-4 pt-3 border-t border-[var(--hairline)]">
+                <span className="text-[12px] text-[#8b929c]">Auto palette:</span>
                 {(() => { const p = derivePalette(form.brand_color); return (
                   <div className="flex items-center gap-1.5">
                     {[['Primary', p.brand], ['Dark', p.brandDark], ['Light', p.brandLight], ['Accent', p.accentTint], ['Surface', p.appBg]].map(([label, c]) => (
                       <div key={label} className="flex flex-col items-center gap-1">
-                        <div className="w-7 h-7 rounded-md border border-black/10" style={{ background: c as string }} />
-                        <span className="text-[8px] text-[#9e8e7e]">{label}</span>
+                        <div className="w-7 h-7 rounded-md border border-[var(--hairline)]" style={{ background: c as string }} />
+                        <span className="text-[9px] text-[#8b929c]">{label}</span>
                       </div>
                     ))}
                   </div>
@@ -235,58 +235,58 @@ export default function BrandingPage() {
 
           {/* ── Right: live preview (sticky) ── */}
           <div className="lg:sticky lg:top-4">
-            <div className="bg-white rounded-xl border border-black/5 p-4">
-              <h2 className="font-semibold text-[#1c1410] text-[14px] mb-3">Live Preview</h2>
+            <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow p-4">
+              <h2 className="font-semibold text-[#111318] text-[15px] mb-3">Live Preview</h2>
 
               {/* Browser tab mock */}
-              <div className="flex items-center gap-1.5 bg-[#ece6df] rounded-t-lg px-2 py-1.5 w-fit max-w-full">
+              <div className="flex items-center gap-1.5 bg-[#eceef1] rounded-t-lg px-2 py-1.5 w-fit max-w-full">
                 <div className="w-4 h-4 rounded-sm overflow-hidden bg-white flex items-center justify-center shrink-0">
                   {form.favicon_url ? <img src={form.favicon_url} alt="" className="w-full h-full object-contain" /> : <div className="w-2 h-2 rounded-full" style={{ background: form.brand_color }} />}
                 </div>
-                <span className="text-[11px] text-[#5c5245] truncate max-w-[160px]">{form.tab_title || form.name || 'Your Company CRM'}</span>
-                <X className="w-3 h-3 text-[#9e8e7e] shrink-0" />
+                <span className="text-[12px] text-[#4a4f57] truncate max-w-[160px]">{form.tab_title || form.name || 'Your Company CRM'}</span>
+                <X className="w-3 h-3 text-[#8b929c] shrink-0" />
               </div>
 
               {/* App mock: sidebar + content */}
-              <div className="border border-[#ece6df] rounded-b-lg rounded-tr-lg overflow-hidden flex h-[260px]">
+              <div className="border border-[#eceef1] rounded-b-lg rounded-tr-lg overflow-hidden flex h-[260px]">
                 {/* mini sidebar */}
                 <div className="w-[88px] border-r border-black/5 flex flex-col shrink-0" style={{ background: pal.appBg }}>
                   <div className="h-12 flex items-center justify-center border-b border-black/5 px-1">
                     {form.logo_url
                       ? <img src={form.logo_url} alt="" className="max-h-8 max-w-full object-contain" />
-                      : <span className="text-[9px] font-bold text-[#1c1410] text-center leading-tight truncate">{form.name || 'Logo'}</span>}
+                      : <span className="text-[10px] font-bold text-[#111318] text-center leading-tight truncate">{form.name || 'Logo'}</span>}
                   </div>
                   <div className="p-1.5 space-y-1">
                     <div className="flex items-center gap-1 px-1.5 py-1 rounded-md" style={{ background: form.brand_color }}>
-                      <LayoutDashboard className="w-3 h-3 text-white" /><span className="text-[8px] text-white font-medium">Dashboard</span>
+                      <LayoutDashboard className="w-3 h-3 text-white" /><span className="text-[9px] text-white font-medium">Dashboard</span>
                     </div>
-                    <div className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[#7a6b5c]" style={{ background: pal.accentTint }}>
-                      <Users className="w-3 h-3" /><span className="text-[8px]">Leads</span>
+                    <div className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[#6b7280]" style={{ background: pal.accentTint }}>
+                      <Users className="w-3 h-3" /><span className="text-[9px]">Leads</span>
                     </div>
-                    <div className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[#7a6b5c]">
-                      <Zap className="w-3 h-3" /><span className="text-[8px]">Automation</span>
+                    <div className="flex items-center gap-1 px-1.5 py-1 rounded-md text-[#6b7280]">
+                      <Workflow className="w-3 h-3" /><span className="text-[9px]">Automation</span>
                     </div>
                   </div>
                 </div>
                 {/* mini content */}
                 <div className="flex-1 bg-white p-3 flex flex-col gap-2">
-                  <div className="h-2.5 w-20 rounded-full bg-[#ece6df]" />
+                  <div className="h-2.5 w-20 rounded-full bg-[#eceef1]" />
                   <div className="flex gap-1.5">
                     <div className="h-9 flex-1 rounded-md border border-black/5" style={{ background: pal.appBg }} />
                     <div className="h-9 flex-1 rounded-md border border-black/5" style={{ background: pal.appBg }} />
                   </div>
-                  <button className="text-[9px] text-white font-semibold rounded-md px-2 py-1.5 w-fit" style={{ background: form.brand_color }}>
+                  <button className="text-[10px] text-white font-semibold rounded-md px-2 py-1.5 w-fit" style={{ background: form.brand_color }}>
                     + Add Lead
                   </button>
                   <div className="space-y-1 mt-1">
-                    <div className="h-2 w-full rounded-full bg-[#f0eae3]" />
-                    <div className="h-2 w-4/5 rounded-full bg-[#f0eae3]" />
-                    <div className="h-2 w-3/5 rounded-full bg-[#f0eae3]" />
+                    <div className="h-2 w-full rounded-full bg-[#eef1f4]" />
+                    <div className="h-2 w-4/5 rounded-full bg-[#eef1f4]" />
+                    <div className="h-2 w-3/5 rounded-full bg-[#eef1f4]" />
                   </div>
                 </div>
               </div>
 
-              <p className="text-[11px] text-[#9e8e7e] mt-3 text-center">Changes apply across your whole CRM after saving.</p>
+              <p className="text-[12px] text-[#8b929c] mt-3 text-center">Changes apply across your whole CRM after saving.</p>
             </div>
           </div>
 

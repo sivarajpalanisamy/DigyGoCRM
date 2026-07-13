@@ -24,41 +24,41 @@ export function PaymentDuePage() {
 
   return (
     <div className="min-h-[100dvh] w-full flex items-center justify-center p-4 bg-[var(--app-bg)]">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-black/5 overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
         <div className="px-6 py-5 text-center" style={{ background: 'linear-gradient(135deg, var(--brand-dark, #9a3412) 0%, var(--brand, #ea580c) 100%)' }}>
           <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-3">
             <AlertTriangle className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-white font-bold text-[18px]">Subscription Payment Due</h1>
-          {info?.business_name && <p className="text-white/85 text-[14px] mt-0.5">{info.business_name}</p>}
+          {info?.business_name && <p className="text-white/85 text-[15px] mt-0.5">{info.business_name}</p>}
         </div>
 
         <div className="px-6 py-5 space-y-4">
-          <dl className="rounded-xl border border-black/5 divide-y divide-black/[0.06] text-[14px]">
+          <dl className="rounded-xl border border-[var(--hairline)] divide-y divide-[var(--hairline)] bg-[var(--surface-2)] text-[15px]">
             <div className="flex items-center justify-between px-4 py-2.5">
-              <dt className="text-[#7a6b5c]">Plan</dt><dd className="font-semibold text-[#1c1410]">{cycleLabel}</dd>
+              <dt className="text-[#6b7280]">Plan</dt><dd className="font-semibold text-[#111318]">{cycleLabel}</dd>
             </div>
             <div className="flex items-center justify-between px-4 py-2.5">
-              <dt className="text-[#7a6b5c]">Expired on</dt><dd className="font-semibold text-[#1c1410]">{fmtDate(info?.expires_at)}</dd>
+              <dt className="text-[#6b7280]">Expired on</dt><dd className="font-semibold text-[#111318]">{fmtDate(info?.expires_at)}</dd>
             </div>
             <div className="flex items-center justify-between px-4 py-2.5">
-              <dt className="text-[#7a6b5c]">Overdue</dt><dd className="font-semibold text-red-600">{overdue} day{overdue !== 1 ? 's' : ''}</dd>
+              <dt className="text-[#6b7280]">Overdue</dt><dd className="font-semibold text-red-600">{overdue} day{overdue !== 1 ? 's' : ''}</dd>
             </div>
             {info?.amount_due != null && (
               <div className="flex items-center justify-between px-4 py-2.5">
-                <dt className="text-[#7a6b5c]">Amount due</dt><dd className="font-bold text-[#1c1410]">₹{info.amount_due}</dd>
+                <dt className="text-[#6b7280]">Amount due</dt><dd className="font-bold text-[#111318]">₹{info.amount_due}</dd>
               </div>
             )}
           </dl>
 
           <div className="flex items-start gap-2.5 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3">
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            <p className="text-[13px] text-emerald-800 leading-relaxed">
+            <p className="text-[14px] text-emerald-800 leading-relaxed">
               Your data is safe. New leads are still being captured and your automations are still running in the background - nothing is lost.
             </p>
           </div>
 
-          <p className="text-[14px] text-[#3d3128] text-center">
+          <p className="text-[15px] text-[#2b2f36] text-center">
             {isOwner
               ? 'Please renew your subscription to restore access to the CRM.'
               : 'Access is paused. Please contact your account owner to renew the subscription.'}
@@ -67,13 +67,13 @@ export function PaymentDuePage() {
           <div className="flex flex-col gap-2 pt-1">
             {isOwner && (
               <a href="mailto:admin@digygo.in?subject=Subscription%20Renewal"
-                className="w-full text-center px-4 py-2.5 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5"
+                className="w-full text-center px-4 py-2.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5"
                 style={{ background: 'linear-gradient(135deg, var(--brand-dark, #9a3412), var(--brand, #ea580c))' }}>
                 Contact us to renew
               </a>
             )}
             <button onClick={logout}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-[#7a6b5c] bg-gray-100 hover:bg-gray-200 transition-colors">
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] bg-white border border-[var(--hairline)] hover:bg-[var(--surface-2)] transition-colors">
               <LogOut className="w-4 h-4" /> Log out
             </button>
           </div>
