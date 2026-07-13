@@ -1389,6 +1389,7 @@ export default function IntegrationsPage() {
   const [waQrSessionId, setWaQrSessionId] = useState<string | null>(null);
   const [editingWaSession, setEditingWaSession] = useState<string | null>(null);
   const [editingWaName, setEditingWaName] = useState('');
+  const [hiddenIntegrations, setHiddenIntegrations] = useState<string[]>([]);
 
   const loadWaSessions = async () => {
     try {
@@ -1442,7 +1443,10 @@ export default function IntegrationsPage() {
   };
 
 
-  useEffect(() => { loadStatus(); }, []);
+  useEffect(() => {
+    loadStatus();
+    api.get<{ hidden: string[] }>('/api/integrations/visibility').then((d) => setHiddenIntegrations(d.hidden)).catch(() => {});
+  }, []);
 
   const disconnect = async (key: keyof typeof status, endpoint: string) => {
     try {
@@ -1493,6 +1497,7 @@ export default function IntegrationsPage() {
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
+        {!hiddenIntegrations.includes('facebook') && (
         <IntegCard
           icon={<FacebookIcon />}
           name="Facebook"
@@ -1503,7 +1508,9 @@ export default function IntegrationsPage() {
           onDisconnect={() => disconnect('meta', '/api/integrations/meta/disconnect')}
           configureLabel="Manage Forms"
         />
+        )}
 
+        {!hiddenIntegrations.includes('instagram') && (
         <IntegCard
           icon={<InstagramIcon />}
           name="Instagram"
@@ -1514,7 +1521,9 @@ export default function IntegrationsPage() {
           onDisconnect={async () => toast.info('Facebook and Instagram share the same Meta connection')}
           configureLabel="Manage Forms"
         />
+        )}
 
+        {!hiddenIntegrations.includes('whatsapp_business') && (
         <IntegCard
           icon={<WhatsAppIcon />}
           name="WhatsApp Business"
@@ -1524,8 +1533,10 @@ export default function IntegrationsPage() {
           onConfigure={() => setModal('waba')}
           onDisconnect={() => disconnect('waba', '/api/integrations/waba/disconnect')}
         />
+        )}
 
         {/* WhatsApp Personal (QR) - Multi-session */}
+        {!hiddenIntegrations.includes('whatsapp_personal') && (
         <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow card-hover p-5 flex flex-col gap-4">
           <div className="flex items-start justify-between gap-2">
             <WhatsAppPersonalIcon />
@@ -1642,7 +1653,9 @@ export default function IntegrationsPage() {
             </button>
           </div>
         </div>
+        )}
 
+        {!hiddenIntegrations.includes('email_smtp') && (
         <IntegCard
           icon={<EmailIcon />}
           name="Email (SMTP)"
@@ -1652,7 +1665,9 @@ export default function IntegrationsPage() {
           onConfigure={() => setModal('smtp')}
           onDisconnect={() => disconnect('smtp', '/api/integrations/smtp/disconnect')}
         />
+        )}
 
+        {!hiddenIntegrations.includes('superfone') && (
         <IntegCard
           icon={<SuperfoneIcon />}
           name="Superfone"
@@ -1664,7 +1679,9 @@ export default function IntegrationsPage() {
           locked={!superfoneEnabled}
           lockedNote="Calls & Superfone are not active on your account. Contact Hawcus to enable this add-on."
         />
+        )}
 
+        {!hiddenIntegrations.includes('google_sheets') && (
         <IntegCard
           icon={<GoogleSheetsIcon />}
           name="Google Sheets"
@@ -1674,7 +1691,9 @@ export default function IntegrationsPage() {
           onConfigure={() => setModal('google_sheets')}
           onDisconnect={() => disconnect('sheets', '/api/integrations/sheets/disconnect')}
         />
+        )}
 
+        {!hiddenIntegrations.includes('razorpay') && (
         <IntegCard
           icon={<RazorpayIcon />}
           name="Razorpay"
@@ -1684,6 +1703,7 @@ export default function IntegrationsPage() {
           onConfigure={() => setModal('razorpay')}
           onDisconnect={() => disconnect('razorpay', '/api/integrations/razorpay/disconnect')}
         />
+        )}
 
       </div>
 

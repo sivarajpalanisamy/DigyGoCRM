@@ -200,7 +200,7 @@ function splitPhone(full?: string): { code: typeof COUNTRY_CODES[number]; nation
   const matched = byLen.find((c) => withPlus.startsWith(c.code));
   const code = matched ?? COUNTRY_CODES[0];
   let digits = (matched ? withPlus.slice(matched.code.length) : withPlus).replace(/[^\d]/g, '');
-  // Strip repeated copies of the code left over from the +91+91 bug — but never so far
+  // Strip repeated copies of the code left over from the +91+91 bug - but never so far
   // that fewer than 10 national digits remain (Indian mobile length).
   const codeDigits = code.code.replace('+', '');
   while (digits.startsWith(codeDigits) && digits.length - codeDigits.length >= 10) {
