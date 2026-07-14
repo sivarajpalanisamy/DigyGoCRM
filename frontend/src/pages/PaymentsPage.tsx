@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { IndianRupee, Download, Search, Filter, X, ChevronDown, ChevronUp, CreditCard, TrendingUp, ArrowDownRight, RefreshCw } from 'lucide-react';
 import { api, downloadBlob } from '@/lib/api';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 import { useCrmStore } from '@/store/crmStore';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -52,7 +53,6 @@ function dateLabel(ts: string | null) {
   return new Date(ts).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-const tooltipStyle = { borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 };
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   captured: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
@@ -310,7 +310,7 @@ export default function PaymentsPage() {
                     tickFormatter={(v) => new Date(v + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} />
                   <YAxis fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} allowDecimals={false}
                     tickFormatter={(v) => `Rs ${(v / 100).toLocaleString('en-IN')}`} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`Rs ${formatAmount(value)}`, 'Revenue']} />
+                  <Tooltip content={<ChartTooltip formatter={(value: number) => [`Rs ${formatAmount(value)}`, 'Revenue']} />} />
                   <Area type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} fill="url(#amountGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -326,7 +326,7 @@ export default function PaymentsPage() {
                     tickFormatter={(v) => `Rs ${(v / 100).toLocaleString('en-IN')}`} />
                   <YAxis type="category" dataKey="method" fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} width={80}
                     tickFormatter={(v) => v ? v.charAt(0).toUpperCase() + v.slice(1) : '-'} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`Rs ${formatAmount(value)}`, 'Amount']} />
+                  <Tooltip content={<ChartTooltip formatter={(value: number) => [`Rs ${formatAmount(value)}`, 'Amount']} />} />
                   <Bar dataKey="amount" radius={[0, 4, 4, 0]} barSize={20}>
                     {stats.methods.map((entry) => (
                       <Cell key={entry.method} fill={METHOD_COLORS[entry.method] || '#9ca3af'} />

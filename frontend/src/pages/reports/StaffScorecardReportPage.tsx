@@ -6,6 +6,7 @@ import {
   PolarAngleAxis, PolarRadiusAxis, LabelList,
 } from 'recharts';
 import { api } from '@/lib/api';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -127,7 +128,7 @@ export default function StaffScorecardReportPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" horizontal={false} />
                       <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
                       <YAxis type="category" dataKey="staff_name" width={100} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }} />
+                      <Tooltip content={<ChartTooltip />} />
                       <Bar dataKey="calls_made" fill="#3b82f6" name="Calls" radius={[0, 2, 2, 0]} barSize={10} />
                       <Bar dataKey="messages_sent" fill="#10b981" name="Messages" radius={[0, 2, 2, 0]} barSize={10} />
                       <Bar dataKey="followups_completed" fill="#f59e0b" name="Follow-ups" radius={[0, 2, 2, 0]} barSize={10} />

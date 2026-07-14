@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, LineChart, Line, LabelList,
 } from 'recharts';
 import { api } from '@/lib/api';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useCrmStore } from '@/store/crmStore';
@@ -151,8 +152,8 @@ export default function ResponseTimeReportPage() {
                       <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false}
                         tickFormatter={(v: string) => { const d = new Date(v); return `${d.getDate()}/${d.getMonth()+1}`; }} />
                       <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }}
-                        formatter={(v: number) => [`${v} min`, 'Avg Response']} />
+                      <Tooltip content={<ChartTooltip
+                        formatter={(v: number) => [`${v} min`, 'Avg Response']} />} />
                       <Line type="monotone" dataKey="avg_response_min" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} name="Avg Response (min)" />
                     </LineChart>
                   </ResponsiveContainer>
@@ -178,7 +179,7 @@ export default function ResponseTimeReportPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" horizontal={false} />
                     <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="bucket" width={90} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }} />
+                    <Tooltip content={<ChartTooltip />} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                       <LabelList dataKey="count" position="right" style={{ fontSize: 10, fill: '#6b7280' }} />
                     </Bar>

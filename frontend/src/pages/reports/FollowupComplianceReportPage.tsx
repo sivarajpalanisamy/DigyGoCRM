@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, LineChart, Line, Legend, LabelList, Cell,
 } from 'recharts';
 import { api } from '@/lib/api';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -142,7 +143,7 @@ export default function FollowupComplianceReportPage() {
                       <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false}
                         tickFormatter={(v: string) => { const d = new Date(v); return `${d.getDate()}/${d.getMonth()+1}`; }} />
                       <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }} />
+                      <Tooltip content={<ChartTooltip />} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
                       <Bar dataKey="completed" fill="#10b981" name="Completed" radius={[2, 2, 0, 0]} stackId="a" />
                       <Bar dataKey="pending" fill="#f59e0b" name="Pending" radius={[2, 2, 0, 0]} stackId="a" />
@@ -168,8 +169,8 @@ export default function FollowupComplianceReportPage() {
                       <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false}
                         tickFormatter={(v: number) => `${v}%`} />
                       <YAxis type="category" dataKey="staff_name" width={100} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }}
-                        formatter={(v: number) => [`${v}%`, 'Compliance']} />
+                      <Tooltip content={<ChartTooltip
+                        formatter={(v: number) => [`${v}%`, 'Compliance']} />} />
                       <Bar dataKey="compliance_pct" radius={[0, 4, 4, 0]} barSize={18}>
                         {staff.map((s, i) => (
                           <Cell key={i} fill={s.compliance_pct >= 80 ? '#10b981' : s.compliance_pct >= 50 ? '#f59e0b' : '#ef4444'} />

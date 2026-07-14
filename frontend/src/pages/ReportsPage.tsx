@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 import { cn } from '@/lib/utils';
 import { useUserLevel } from '@/hooks/useUserLevel';
 import { brandHex } from '@/lib/brand';
@@ -169,7 +170,7 @@ function TrendChart({ data }: { data: WinLossRow[] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" vertical={false} />
         <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#8b929c' }} axisLine={false} tickLine={false} />
         <YAxis tick={{ fontSize: 10, fill: '#8b929c' }} axisLine={false} tickLine={false} allowDecimals={false} />
-        <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #eef1f4', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+        <Tooltip content={<ChartTooltip />} />
         <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
         <Bar dataKey="new_leads" name="New Leads" fill="#bfdbfe" radius={[3, 3, 0, 0]} maxBarSize={32} />
         <Area dataKey="won" name="Won" type="monotone" fill="rgba(234,88,12,0.12)" stroke={brandHex()} strokeWidth={2} dot={false} />
@@ -411,15 +412,14 @@ function SourceROIChart({ sources }: { sources: SourceRow[] }) {
           <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
           <YAxis yAxisId="left" tick={{ fontSize: 9, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
           <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: '#10b981' }} axisLine={false} tickLine={false} domain={[0, 100]} unit="%" width={34} />
-          <Tooltip
-            contentStyle={{ borderRadius: 12, border: '1px solid #eef1f4', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+          <Tooltip content={<ChartTooltip
             formatter={(val: any, name: string) => {
               if (name === 'conv') return [`${val}%`, 'Conversion'];
               if (name === 'contactRate') return [`${val}%`, 'Contact Rate'];
               return [val, 'Volume'];
             }}
             labelFormatter={(_: any, p: any) => p?.[0]?.payload?.fullName ?? _}
-          />
+          />} />
           <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
           <Bar yAxisId="left" dataKey="total" name="Volume" fill="#bfdbfe" radius={[3, 3, 0, 0]} maxBarSize={36}>
             <LabelList dataKey="total" position="top" style={{ fontSize: 10, fill: '#111318', fontWeight: 700 }} />
@@ -812,7 +812,7 @@ function LeadInflowChart({ data }: { data: { day: string; count: number }[] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" vertical={false} />
         <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#8b929c' }} axisLine={false} tickLine={false} interval={Math.max(0, Math.floor(data.length / 8))} />
         <YAxis tick={{ fontSize: 9, fill: '#8b929c' }} axisLine={false} tickLine={false} allowDecimals={false} />
-        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #eef1f4', fontSize: 12 }} />
+        <Tooltip content={<ChartTooltip />} />
         <Bar dataKey="count" name="Leads" fill="#bfdbfe" radius={[3, 3, 0, 0]} maxBarSize={24}>
           <LabelList dataKey="count" position="top" style={{ fontSize: 9, fill: '#111318', fontWeight: 700 }} />
         </Bar>

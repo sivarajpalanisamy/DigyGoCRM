@@ -8,6 +8,7 @@ import { useUserLevel } from '@/hooks/useUserLevel';
 import { useHeaderSearch } from '@/store/headerSearchStore';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area,
@@ -88,7 +89,7 @@ function BusinessGrowthChart({ data, growthPct, height = 230 }: { data: { day: s
           <CartesianGrid strokeDasharray="4 4" stroke="#eceef1" vertical={false} />
           <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} dy={6} interval={Math.max(0, Math.floor(data.length / 8))} />
           <YAxis tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} width={34} />
-          <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }} cursor={{ stroke: brand, strokeOpacity: 0.25, strokeWidth: 1 }} />
+          <Tooltip content={<ChartTooltip />} cursor={{ stroke: brand, strokeOpacity: 0.25, strokeWidth: 1 }} />
           <Area
             type="linear" dataKey="leads" stroke={brand} strokeWidth={2.5} fill="url(#bgGrowthFill)"
             dot={{ r: 4, fill: '#fff', stroke: brand, strokeWidth: 2 }}
@@ -678,10 +679,7 @@ function ManagementDashboard({ analytics, lineData }: {
                             <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip
-                          contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }}
-                          formatter={(val: any, _n: any, p: any) => [`${val} leads (${p.payload.pct}%)`, p.payload.name]}
-                        />
+                        <Tooltip content={<ChartTooltip hideLabel formatter={(val: any, _n: any, p: any) => [`${val} leads (${p.payload.pct}%)`, p.payload.name]} />} />
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -970,7 +968,7 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
             <CartesianGrid strokeDasharray="3 3" stroke="#eceef1" />
             <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} interval={Math.max(0, Math.floor(lineData.length / 6))} />
             <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
-            <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }} />
+            <Tooltip content={<ChartTooltip />} />
             <Line type="monotone" dataKey="leads" stroke={brandHex()} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
           </LineChart>
         </ResponsiveContainer>

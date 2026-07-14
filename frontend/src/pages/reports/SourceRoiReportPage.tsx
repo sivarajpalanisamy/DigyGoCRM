@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, LineChart, Line, Legend, Cell, LabelList,
 } from 'recharts';
 import { api } from '@/lib/api';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -132,7 +133,7 @@ export default function SourceRoiReportPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" horizontal={false} />
                       <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
                       <YAxis type="category" dataKey="source" width={100} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }} />
+                      <Tooltip content={<ChartTooltip />} />
                       <Bar dataKey="total_leads" fill="#3b82f6" name="Total" radius={[0, 2, 2, 0]} barSize={12} />
                       <Bar dataKey="won" fill="#10b981" name="Won" radius={[0, 2, 2, 0]} barSize={12} />
                     </BarChart>
@@ -156,7 +157,7 @@ export default function SourceRoiReportPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" />
                       <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }} />
+                      <Tooltip content={<ChartTooltip />} />
                       <Legend wrapperStyle={{ fontSize: 10 }} />
                       {sourceNames.slice(0, 6).map((name, i) => (
                         <Line key={name} type="monotone" dataKey={name} stroke={SOURCE_COLORS[i % SOURCE_COLORS.length]}
@@ -185,8 +186,8 @@ export default function SourceRoiReportPage() {
                     <XAxis dataKey="source" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false}
                       tickFormatter={(v: number) => `${v}%`} />
-                    <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }}
-                      formatter={(v: number) => [`${v}%`, 'Conversion']} />
+                    <Tooltip content={<ChartTooltip
+                      formatter={(v: number) => [`${v}%`, 'Conversion']} />} />
                     <Bar dataKey="conv_pct" radius={[4, 4, 0, 0]} barSize={32}>
                       {sources.map((_, i) => (
                         <Cell key={i} fill={SOURCE_COLORS[i % SOURCE_COLORS.length]} />

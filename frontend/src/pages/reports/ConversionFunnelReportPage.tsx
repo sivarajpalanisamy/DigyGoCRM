@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, FunnelChart, Funnel, LabelList, Cell,
 } from 'recharts';
 import { api } from '@/lib/api';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useCrmStore } from '@/store/crmStore';
@@ -139,8 +140,8 @@ export default function ConversionFunnelReportPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#eef1f4" horizontal={false} />
                     <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="stage_name" width={110} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }}
-                      formatter={(v: number, _n: string, p: any) => [`${v} leads (${p.payload.conversion_pct}%)`, 'Count']} />
+                    <Tooltip content={<ChartTooltip
+                      formatter={(v: number, _n: string, p: any) => [`${v} leads (${p.payload.conversion_pct}%)`, 'Count']} />} />
                     <Bar dataKey="current_count" radius={[0, 4, 4, 0]} barSize={24}>
                       {stages.map((_, i) => (
                         <Cell key={i} fill={FUNNEL_COLORS[i % FUNNEL_COLORS.length]} />

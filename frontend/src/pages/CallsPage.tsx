@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Download, Play, Pause, Filter, X, Search, Phone, PhoneOff, Clock, ChevronDown, ChevronUp, UserPlus, Link2, XCircle, AlertTriangle } from 'lucide-react';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 import { useCrmStore } from '@/store/crmStore';
 import { useHeaderSearch } from '@/store/headerSearchStore';
 import { toast } from 'sonner';
@@ -67,7 +68,6 @@ const DISPOSITION_CHART_COLORS: Record<string, string> = {
   not_interested: '#6b7280', hot_lead: '#f97316', deal_closed: '#8b5cf6',
 };
 
-const tooltipStyle = { borderRadius: 10, border: 'none', background: '#111318', color: '#fff', fontSize: 11 };
 
 const OUTCOMES = ['ANSWERED', 'MISSED', 'NO_ANSWER', 'REJECTED', 'BUSY', 'IVR_TIMEOUT', 'UNKNOWN'];
 const NOT_CONNECTED = new Set(['MISSED', 'NO_ANSWER', 'REJECTED', 'BUSY']);
@@ -511,7 +511,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                   <XAxis dataKey="date" fontSize={10} fill="#6b7280" axisLine={false} tickLine={false}
                     tickFormatter={(v) => new Date(v + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} />
                   <YAxis fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip contentStyle={tooltipStyle} />
+                  <Tooltip content={<ChartTooltip />} />
                   <Line type="monotone" dataKey="inbound" stroke="#10b981" strokeWidth={2} dot={false} name="Inbound" />
                   <Line type="monotone" dataKey="outbound" stroke="#3b82f6" strokeWidth={2} dot={false} name="Outbound" />
                 </LineChart>
@@ -527,7 +527,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                   <XAxis type="number" fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} allowDecimals={false} />
                   <YAxis type="category" dataKey="outcome" fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} width={80}
                     tickFormatter={(v) => outcomeLabel(v)} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [value, 'Calls']} />
+                  <Tooltip content={<ChartTooltip formatter={(value: number) => [value, 'Calls']} />} />
                   <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
                     {stats.outcomes.map((entry) => (
                       <Cell key={entry.outcome} fill={OUTCOME_COLORS[entry.outcome] || '#9ca3af'} />
@@ -550,7 +550,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                       <CartesianGrid strokeDasharray="3 3" stroke="#eceef1" horizontal={false} />
                       <XAxis type="number" fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} allowDecimals={false} />
                       <YAxis type="category" dataKey="disposition" fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} width={110} />
-                      <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [value, 'Calls']} />
+                      <Tooltip content={<ChartTooltip formatter={(value: number) => [value, 'Calls']} />} />
                       <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
                         {stats.dispositions.map((entry) => (
                           <Cell key={entry.disposition_key} fill={DISPOSITION_CHART_COLORS[entry.disposition_key] || '#9ca3af'} />
@@ -570,7 +570,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                       <CartesianGrid strokeDasharray="3 3" stroke="#eceef1" horizontal={false} />
                       <XAxis type="number" fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} allowDecimals={false} />
                       <YAxis type="category" dataKey="pipeline_name" fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} width={110} />
-                      <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [value, 'Calls']} />
+                      <Tooltip content={<ChartTooltip formatter={(value: number) => [value, 'Calls']} />} />
                       <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20} fill="#3b82f6" />
                     </BarChart>
                   </ResponsiveContainer>
@@ -588,7 +588,7 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                   <CartesianGrid strokeDasharray="3 3" stroke="#eceef1" horizontal={false} />
                   <XAxis type="number" fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} allowDecimals={false} />
                   <YAxis type="category" dataKey="staff_name" fontSize={10} fill="#6b7280" axisLine={false} tickLine={false} width={120} />
-                  <Tooltip contentStyle={tooltipStyle} />
+                  <Tooltip content={<ChartTooltip />} />
                   <Bar dataKey="answered" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} barSize={20} name="Answered" />
                   <Bar dataKey="missed" stackId="a" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={20} name="Missed" />
                 </BarChart>

@@ -11,6 +11,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList,
 } from 'recharts';
 import { brandHex } from '@/lib/brand';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface FormRow {
@@ -193,11 +194,7 @@ function ExpandedRow({ form }: { form: FormRow }) {
                   interval={period === 'month' ? Math.floor((data!.sparkline.length) / 6) : 0}
                 />
                 <YAxis hide allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ borderRadius: 8, border: 'none', background: '#111318', color: '#fff', fontSize: 11 }}
-                  labelFormatter={tooltipFmt}
-                  formatter={(v) => [v, 'Leads']}
-                />
+                <Tooltip content={<ChartTooltip labelFormatter={tooltipFmt} formatter={(v) => [v, 'Leads']} />} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {data!.sparkline.map((entry, i) => (
                     <Cell key={i} fill={entry.count > 0 ? brandHex() : '#eceef1'} />

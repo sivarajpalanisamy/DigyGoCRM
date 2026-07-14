@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import ChartTooltip from '@/components/charts/ChartTooltip';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -254,7 +255,7 @@ export default function SuperAdminDashboardPage() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => [v, 'Accounts']} />
+                  <Tooltip content={<ChartTooltip hideLabel formatter={(v: number) => [v, 'Accounts']} />} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex flex-col gap-2">
@@ -281,7 +282,7 @@ export default function SuperAdminDashboardPage() {
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" width={120}
                   tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(v: number) => [v.toLocaleString(), 'Leads']} />
+                <Tooltip content={<ChartTooltip formatter={(v: number) => [v.toLocaleString(), 'Leads']} />} />
                 <Bar dataKey="lead_count" fill="#ea580c" radius={[0, 6, 6, 0]} barSize={16}>
                   <LabelList dataKey="lead_count" position="right"
                     style={{ fontSize: 11, fontWeight: 600, fill: '#111318' }} />
@@ -302,7 +303,7 @@ export default function SuperAdminDashboardPage() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef1f4" />
               <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#8b929c' }} tickLine={false} />
               <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#8b929c' }} tickLine={false} axisLine={false} />
-              <Tooltip />
+              <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               {data.growth.map((acct, i) => (
                 <Line key={acct.account} type="monotone" dataKey={acct.account}
