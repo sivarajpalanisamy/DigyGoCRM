@@ -56,6 +56,19 @@ import { resolveDomain } from './middleware/domainResolver';
 import { query as dbQuery } from './db';
 import { initCorsOrigins, isAllowedOrigin, addAllowedOrigin } from './utils/corsOrigins';
 
+// ── Global crash guards ─────────────────────────────────────────────────────────
+// Real paying clients depend on this process staying up. A single unhandled promise
+// rejection or stray synchronous throw (e.g. a double pool.release, a ROLLBACK on a
+// connection Postgres already closed) must NEVER take the whole server down — that
+// was the root cause of repeated production restarts. Log loudly and keep serving;
+// PM2 restart is the last resort, not the first line of defence.
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[unhandledRejection] server kept alive:', reason?.stack || reason);
+});
+process.on('uncaughtException', (err: any) => {
+  console.error('[uncaughtException] server kept alive:', err?.stack || err);
+});
+
 const app        = express();
 const httpServer = createServer(app);
 const PORT       = config.port;

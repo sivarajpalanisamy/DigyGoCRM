@@ -64,10 +64,9 @@ router.post('/', checkPermission('pipeline:manage'), async (req: AuthRequest, re
       [req.user!.tenantId, name]
     );
     if (existing.rows.length > 0) {
-      await conn.query('ROLLBACK');
-      conn.release();
+      await conn.query('ROLLBACK').catch(() => {});
       res.status(409).json({ error: `A pipeline named "${name}" already exists` });
-      return;
+      return; // conn is released once in the finally block below — do NOT release here
     }
     const pRes = await conn.query(
       'INSERT INTO pipelines (tenant_id, name) VALUES ($1,$2) RETURNING *',
@@ -86,7 +85,7 @@ router.post('/', checkPermission('pipeline:manage'), async (req: AuthRequest, re
     await conn.query('COMMIT');
     res.status(201).json({ ...pipeline, stages: stageRows });
   } catch (err) {
-    await conn.query('ROLLBACK');
+    await conn.query('ROLLBACK').catch(() => {});
     console.error(err);
     res.status(500).json({ error: 'Server error' });
   } finally {
@@ -217,7 +216,7 @@ router.delete('/:id/stages/:stageId', checkPermission('pipeline:manage'), async 
     await conn.query('COMMIT');
     res.json({ success: true });
   } catch {
-    await conn.query('ROLLBACK');
+    await conn.query('ROLLBACK').catch(() => {});
     res.status(500).json({ error: 'Server error' });
   } finally {
     conn.release();

@@ -689,7 +689,7 @@ router.post('/tenants', requireAuth, requireSuperAdmin, async (req: AuthRequest,
       credentials: { email: email.toLowerCase().trim(), password },
     });
   } catch (err: any) {
-    await conn.query('ROLLBACK');
+    await conn.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') {
       res.status(409).json({ error: 'Email already exists' });
     } else {
