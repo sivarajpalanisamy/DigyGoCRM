@@ -15,10 +15,12 @@ class Api {
   Api._();
   static final Api instance = Api._();
 
-  // Compile-time default (override with --dart-define=DIGYGO_API=...).
+  // Compile-time default is the LIVE server, so a plain `flutter build` can never
+  // ship a dev URL by accident. For local development against a PC backend, override
+  // it explicitly: `flutter run --dart-define=DIGYGO_API=http://<your-pc-ip>:4000`.
   static const String defaultBaseUrl = String.fromEnvironment(
     'DIGYGO_API',
-    defaultValue: 'http://192.168.1.9:4000',
+    defaultValue: 'https://app.hawcus.com',
   );
 
   static const _tokenKey = 'digygo_device_token';
