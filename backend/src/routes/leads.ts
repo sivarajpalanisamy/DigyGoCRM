@@ -55,6 +55,8 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     updated_from, updated_to, lead_quality, has_overdue_followup,
     page = '1', limit = '200',
     after,          // cursor: ISO timestamp — when present, enables keyset pagination
+    sort,           // 'followup' | 'created_at' | 'updated_at' — board Sort menu
+    sort_from, sort_to, // ISO instants bounding the picked day (created_at/updated_at sorts)
   } = req.query as Record<string, string>;
   // Multi-value filters: tags=a,b, assigned_tos=id1,id2, stages=id1,id2
   const tags = (req.query.tags as string)?.split(',').filter(Boolean) ?? [];
@@ -200,7 +202,53 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
   const pageSize = parseInt(limit);
 
-  if (after !== undefined) {
+  // ── Board "Sort" menu ────────────────────────────────────────────────────────
+  // The kanban loads each column a page at a time from here, so ordering has to
+  // happen in SQL: sorting client-side would only reorder the ~25 cards already
+  // loaded and leave a matching lead sitting unseen at position 400.
+  //
+  // Every mode keeps matching leads FIRST and the rest after (never filtered out),
+  // which is what the Sort menu promises. An unknown value falls through to the
+  // default order, so a bad query string can never break the board.
+  const sortMode = sort === 'followup' || sort === 'created_at' || sort === 'updated_at' ? sort : null;
+  let orderBy = ' ORDER BY l.created_at DESC, l.id DESC';
+
+  if (sortMode === 'followup') {
+    // Leads with a pending follow-up first, soonest due first — so overdue lead
+    // the column, then today's, then upcoming. NULLS LAST parks the leads with no
+    // follow-up after them, still newest-first among themselves.
+    // idx_lead_followups_lead (lead_id, completed) covers this subquery.
+    orderBy =
+      ` ORDER BY (SELECT MIN(f.due_at) FROM lead_followups f
+                  WHERE f.lead_id = l.id AND f.completed = FALSE) ASC NULLS LAST,
+                 l.created_at DESC, l.id DESC`;
+  } else if (sortMode) {
+    const col = sortMode === 'created_at' ? 'l.created_at' : 'l.updated_at';
+    if (sort_from && sort_to) {
+      // Bounds are absolute instants built from the picked day in the browser's
+      // timezone (same convention as the date_from/date_to filters), so this does
+      // not depend on the server's timezone. Booleans sort false < true, hence DESC
+      // to float the picked day to the top.
+      params.push(sort_from, sort_to);
+      orderBy =
+        ` ORDER BY (${col} >= $${params.length - 1}::timestamptz
+                AND ${col} <= $${params.length}::timestamptz) DESC NULLS LAST,
+                   ${col} DESC NULLS LAST, l.id DESC`;
+    } else {
+      orderBy = ` ORDER BY ${col} DESC NULLS LAST, l.id DESC`;
+    }
+  }
+
+  if (after !== undefined && sortMode) {
+    // Sorted views page by offset. The keyset cursor encodes (created_at, id),
+    // which cannot express these sort keys — a computed "matches the picked day"
+    // flag, or a follow-up due date living in another table — so `after` carries a
+    // plain row offset instead. Columns here are in the low thousands at most, so
+    // the OFFSET scan is cheap, and this leaves the default keyset path untouched.
+    const off = Math.max(0, parseInt(after || '0', 10) || 0);
+    sql += `${orderBy} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(pageSize, off);
+  } else if (after !== undefined) {
     // Keyset / cursor pagination — after="" means first page. Cursor is
     // "<iso>|<id>" so leads sharing a created_at (bulk import) can't skip or
     // duplicate at a page boundary. (Legacy bare-timestamp cursors still work:
@@ -219,7 +267,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     params.push(pageSize);
   } else {
     // Legacy offset pagination (used by initFromApi with limit=200)
-    sql += ` ORDER BY l.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    sql += `${orderBy} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(pageSize, offset);
   }
 
@@ -234,7 +282,12 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       return shouldMaskPhone ? { ...slim, phone: maskPhone(slim.phone) } : slim;
     });
 
-    if (after !== undefined) {
+    if (after !== undefined && sortMode) {
+      // Offset-paged (see the sort block above): hand back the next row offset.
+      const off = Math.max(0, parseInt(after || '0', 10) || 0);
+      const nextCursor = rows.length === pageSize ? String(off + pageSize) : null;
+      res.json({ leads: rows, nextCursor });
+    } else if (after !== undefined) {
       const last = rows[rows.length - 1];
       const nextCursor = rows.length === pageSize
         ? `${new Date(last.created_at).toISOString()}|${last.id}`

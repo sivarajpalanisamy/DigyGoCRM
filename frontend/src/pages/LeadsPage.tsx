@@ -395,6 +395,25 @@ const emptyFilters = {
 };
 type FilterState = typeof emptyFilters;
 
+// ─── Sort ──────────────────────────────────────────────────────────────────────
+// A sort never hides a lead: matching leads float to the top of every column and
+// the rest follow. Applied server-side (see `sort` in GET /api/leads) because the
+// board pages each column in from the API - sorting only the loaded cards would
+// leave a matching lead stranded further down the column, unseen.
+type SortKey = '' | 'followup' | 'created_at' | 'updated_at';
+type SortState = {
+  key: SortKey;
+  /** yyyy-MM-dd - the day floated to the top. Unused by 'followup'. */
+  date: string;
+};
+const emptySort: SortState = { key: '', date: '' };
+
+const SORT_OPTIONS: { key: Exclude<SortKey, ''>; label: string; hint: string; needsDate: boolean }[] = [
+  { key: 'followup',   label: 'Follow Up',  hint: 'Leads with a follow-up first, soonest due first', needsDate: false },
+  { key: 'created_at', label: 'Created At', hint: 'Leads created on the chosen day first',           needsDate: true  },
+  { key: 'updated_at', label: 'Updated At', hint: 'Leads updated on the chosen day first',           needsDate: true  },
+];
+
 // One kanban column's loaded slice for per-column infinite scroll.
 type BoardCol = { leads: Lead[]; cursor: string; done: boolean; loading: boolean };
 
@@ -744,6 +763,87 @@ function FilterPopover({ filters, onChange, onClose, stages, anchorRef, isMobile
     </>
   );
   return isMobile ? createPortal(node, document.body) : node;
+}
+
+// ─── Sort Menu ─────────────────────────────────────────────────────────────────
+// Selecting an option applies it straight away (no Apply button) - a sort is
+// cheap to undo and instant feedback is the point. Picking a day is optional:
+// Created/Updated At on their own just order the column by that timestamp.
+function SortMenu({ sort, onChange, onClose }: {
+  sort: SortState;
+  onChange: (s: SortState) => void;
+  onClose: () => void;
+}) {
+  const select = (key: Exclude<SortKey, ''>) => {
+    // Re-picking the active option turns it off, so the button is a toggle.
+    if (sort.key === key) onChange(emptySort);
+    else onChange({ key, date: sort.date });
+  };
+
+  return (
+    <div className="absolute right-0 top-12 z-40 w-[268px] bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-hidden">
+      <div className="flex items-center gap-2 px-4 pt-3.5 pb-2">
+        <ArrowUpDown className="w-4 h-4 text-primary" />
+        <h4 className="text-[15px] font-bold text-[#111318] flex-1">Sort</h4>
+        {sort.key && (
+          <button onClick={() => onChange(emptySort)} className="text-[12px] font-bold text-[#6b7280] hover:text-primary transition-colors">
+            Clear
+          </button>
+        )}
+      </div>
+      <p className="px-4 pb-2 text-[11.5px] text-[#6b7280] leading-snug">
+        Matching leads move to the top of every stage. Nothing is hidden.
+      </p>
+
+      <div className="py-1">
+        {SORT_OPTIONS.map((opt) => {
+          const active = sort.key === opt.key;
+          return (
+            <div key={opt.key}>
+              <button
+                onClick={() => select(opt.key)}
+                className={cn(
+                  'w-full flex items-start gap-2.5 px-4 py-2.5 text-left transition-colors',
+                  active ? 'bg-orange-50' : 'hover:bg-[#f1f3f5]',
+                )}
+              >
+                <span className={cn(
+                  'mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
+                  active ? 'border-primary' : 'border-[#c3c8cf]',
+                )}>
+                  {active && <span className="w-2 h-2 rounded-full bg-primary" />}
+                </span>
+                <span className="min-w-0">
+                  <span className={cn('block text-[14px] font-semibold', active ? 'text-primary' : 'text-[#111318]')}>
+                    {opt.label}
+                  </span>
+                  <span className="block text-[11.5px] text-[#6b7280] leading-snug mt-0.5">{opt.hint}</span>
+                </span>
+              </button>
+
+              {active && opt.needsDate && (
+                <div className="px-4 pb-3 pt-0.5">
+                  <DatePicker
+                    className="w-full"
+                    align="end"
+                    value={sort.date}
+                    onChange={(v) => onChange({ key: opt.key, date: v })}
+                    placeholder="Pick a day (optional)"
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="border-t border-black/5 px-4 py-2.5">
+        <button onClick={onClose} className="w-full h-9 rounded-lg text-[13px] font-bold text-white bg-primary hover:bg-primary/90 transition-colors">
+          Done
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ─── Removable Filter Chip ─────────────────────────────────────────────────────
@@ -4663,12 +4763,25 @@ function buildLeadsParams(
   pipelineId: string | null,
   selectedPipeline: Pipeline | undefined,
   cursor = '',
+  sort: SortState = emptySort,
 ): URLSearchParams {
   const p = new URLSearchParams();
   p.set('after', cursor);          // triggers cursor-mode response
   p.set('limit', '2000');
   if (pipelineId) p.set('pipeline_id', pipelineId);
   if (search)     p.set('search', search);
+
+  // Sort (server-side - see the SortState comment). The picked day is sent as the
+  // absolute instants bounding it in the user's own timezone, matching how the
+  // created/updated date filters below are built, so the day means the same thing
+  // to the database regardless of the server's timezone.
+  if (sort.key) {
+    p.set('sort', sort.key);
+    if (sort.key !== 'followup' && sort.date) {
+      p.set('sort_from', new Date(sort.date + 'T00:00:00').toISOString());
+      p.set('sort_to',   new Date(sort.date + 'T23:59:59.999').toISOString());
+    }
+  }
 
   // Assignee filter (single or multi)
   if (filters.assignedTo.length === 1) p.set('assigned_to', filters.assignedTo[0]);
@@ -4877,6 +4990,8 @@ export default function LeadsPage() {
   const [showAddLead, setShowAddLead] = useState(false);
   const [showNewPipeline, setShowNewPipeline] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showSort, setShowSort] = useState(false);
+  const [sort, setSort] = useState<SortState>(emptySort);
   const [showImport, setShowImport] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
@@ -4889,6 +5004,7 @@ export default function LeadsPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
 
   // Cmd/Ctrl+K is handled globally by the command palette (AppLayout). Here we
   // only keep Escape-to-clear when the search box itself is focused.
@@ -4911,6 +5027,18 @@ export default function LeadsPage() {
     if (showMoreMenu) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showMoreMenu]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const t = e.target as Element | null;
+      // The day picker mounts in a Radix portal outside this subtree, so clicking a
+      // date would otherwise read as a click-away and shut the menu mid-selection.
+      if (t?.closest?.('[data-radix-popper-content-wrapper]')) return;
+      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) setShowSort(false);
+    };
+    if (showSort) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showSort]);
 
   const stageMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -5019,7 +5147,7 @@ export default function LeadsPage() {
         let allLeads: any[] = [];
         let cursor = '';
         while (true) {
-          const params = buildLeadsParams(filters, search, dashFilter ? null : selectedPipelineId, dashFilter ? undefined : selectedPipeline, cursor);
+          const params = buildLeadsParams(filters, search, dashFilter ? null : selectedPipelineId, dashFilter ? undefined : selectedPipeline, cursor, sort);
           if (dashFilter) params.set('quick', dashFilter);
           if (dashStageName) params.set('stage_name', dashStageName);
           const data = await api.get<{ leads: any[]; nextCursor: string | null }>(`/api/leads?${params}`);
@@ -5036,7 +5164,7 @@ export default function LeadsPage() {
     // `leads.length` is intentionally a dep: when a new lead enters the store
     // (realtime lead:created socket → addLead, the manual Add Lead modal, or the
     // 30s background poll), this re-fetches the snapshot so it shows immediately.
-  }, [boardActive, filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, dashStageName, leads.length]);
+  }, [boardActive, filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, dashStageName, leads.length, sort]);
 
   // ── Board: per-column infinite scroll (desktop kanban) ──────────────────────
   // Each stage column loads its own page from the server (stage= + cursor) and
@@ -5078,7 +5206,7 @@ export default function LeadsPage() {
       [stageId]: { leads: reset ? [] : (prev[stageId]?.leads ?? []), cursor, done: false, loading: true },
     }));
     try {
-      const params = buildLeadsParams(filters, search, dashFilter ? null : selectedPipelineId, dashFilter ? undefined : selectedPipeline, cursor);
+      const params = buildLeadsParams(filters, search, dashFilter ? null : selectedPipelineId, dashFilter ? undefined : selectedPipeline, cursor, sort);
       params.set('stage', stageId);
       params.set('limit', String(BOARD_PAGE));
       if (dashFilter) params.set('quick', dashFilter);
@@ -5110,7 +5238,7 @@ export default function LeadsPage() {
     }, search ? 300 : 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boardActive, filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, dashStageName]);
+  }, [boardActive, filters, search, selectedPipelineId, selectedPipeline?.id, dashFilter, dashStageName, sort]);
 
   // Exact per-stage badge counts (cheap COUNT(*) GROUP BY). Refreshed on board
   // open, pipeline switch, and whenever the store lead count changes (create/
@@ -5336,9 +5464,12 @@ export default function LeadsPage() {
 
   // Leads of one stage, sorted: overdue follow-ups first, then newest. Shared by board + mobile.
   const stageLeadsFor = (stage: string) => {
+    const inStage = filteredLeads.filter((l) => l.stage === stage);
+    // An explicit Sort is applied server-side, so filteredLeads already arrives in
+    // the requested order - re-sorting here would silently override the user's pick.
+    if (sort.key) return inStage;
     const now = Date.now();
-    return filteredLeads
-      .filter((l) => l.stage === stage)
+    return inStage
       .sort((a, b) => {
         const ta = nextFollowUpByLead.get(a.id);
         const tb = nextFollowUpByLead.get(b.id);
@@ -5657,6 +5788,19 @@ export default function LeadsPage() {
                 {showFilters && <FilterPopover filters={filters} onChange={setFilters} onClose={() => setShowFilters(false)} stages={activeStages} anchorRef={filterBtnRef} isMobile={isMobile} />}
               </div>
 
+              {/* Sort */}
+              <div className="relative" ref={sortMenuRef}>
+                <button onClick={() => { setShowSort((v) => !v); setShowMoreMenu(false); setShowFilters(false); }}
+                  className={cn('relative flex items-center gap-1.5 px-3 h-10 rounded-xl border text-[14px] font-semibold transition-all active:scale-[0.98]',
+                    sort.key || showSort ? 'bg-orange-50 border-primary/30 text-primary' : 'bg-white border-[var(--hairline)] text-[#6b7280] hover:border-primary/30 hover:text-primary'
+                  )}>
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  Sort
+                  {sort.key && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                </button>
+                {showSort && <SortMenu sort={sort} onChange={setSort} onClose={() => setShowSort(false)} />}
+              </div>
+
               {/* More */}
               <div className="relative" ref={moreMenuRef}>
                 <button onClick={() => setShowMoreMenu((v) => !v)}
@@ -5682,7 +5826,7 @@ export default function LeadsPage() {
                       {showPhone ? 'Hide contact info' : 'Show contact info'}
                     </button>
                     <div className="border-t border-black/5 my-1" />
-                    <button onClick={() => { setShowMoreMenu(false); setSearch(''); setFilters({ ...emptyFilters }); setSelectedIds([]); toast.success('Reset'); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
+                    <button onClick={() => { setShowMoreMenu(false); setSearch(''); setFilters({ ...emptyFilters }); setSort(emptySort); setSelectedIds([]); toast.success('Reset'); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors">
                       <RotateCcw className="w-3.5 h-3.5 text-[#6b7280]" /> Reset filters
                     </button>
                     {canDeleteLead && (
