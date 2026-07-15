@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Gauge, UsersRound, Megaphone, Workflow, Inbox, Settings,
-  UserCog, SlidersHorizontal, X, Building2, CalendarDays, ChartColumn,
+  UserCog, SlidersHorizontal, X, Building2, CalendarDays, ChartNoAxesCombined,
   Phone, PhoneCall, IndianRupee, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,7 +30,7 @@ const navItems: NavItem[] = [
   { label: 'Lead Management', icon: UsersRound,        path: '/leads',           anyOf: ['leads:view_all', 'leads:view_own', 'contacts:read'] },
   { label: 'Lead Generation', icon: Megaphone,         path: '/lead-generation', anyOf: ['meta_forms:read', 'custom_forms:read', 'landing_pages:read', 'whatsapp_setup:read'] },
   { label: 'Automation',      icon: Workflow,          path: '/automation',      permKey: 'automation:view' },
-  { label: 'Reports',         icon: ChartColumn,       path: '/reports' },
+  { label: 'Reports',         icon: ChartNoAxesCombined, path: '/reports' },
   { label: 'Calendar',        icon: CalendarDays,      path: '/calendar',        permKey: 'calendar:view' },
   { label: 'Inbox',           icon: Inbox,             path: '/inbox',           permKey: 'inbox:view_all' },
   { label: 'Calls',           icon: Phone,             path: '/calls',           anyOf: ['calls:view_all', 'calls:view_own'] },

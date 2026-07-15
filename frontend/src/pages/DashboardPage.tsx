@@ -3,7 +3,7 @@ import {
   Users, AlertTriangle, Clock, Target, CheckCircle, Star, PhoneOff, Phone, ChevronDown, Check, Layers,
   TrendingUp, TrendingDown,
 } from 'lucide-react';
-import { useCompanyStore } from '@/store/companyStore';
+import { usePermissions } from '@/hooks/usePermission';
 import { useUserLevel } from '@/hooks/useUserLevel';
 import { useHeaderSearch } from '@/store/headerSearchStore';
 import { api } from '@/lib/api';
@@ -115,6 +115,15 @@ function BusinessGrowthChart({ data, growthPct, height = 230 }: { data: { day: s
 }
 
 // ── Compact horizontal Stat Card ──────────────────────────────────────────────
+// ── Calls KPI ────────────────────────────────────────────────────────────────
+// call_logs is fed by the mobile Dialer as well as the Superfone CDR webhook, so
+// this card must not hang off the Superfone feature flag - doing so hid it from
+// every company that had not switched Superfone on, whether or not they had calls.
+// A company with no calls yet keeps the card and reads NIL instead of losing it.
+const callsValue = (total: number): string | number => (total > 0 ? total : 'NIL');
+const callsSub = (total: number, answered: number, missed: number): string =>
+  total > 0 ? `${answered} answered · ${missed} missed` : 'No calls logged yet';
+
 function StatCard({ label, value, sub, icon: Icon, accent = false, warn = false, danger = false, smallValue = false, onClick }: {
   label: string; value: string | number; sub?: string;
   icon: React.ElementType; accent?: boolean; warn?: boolean; danger?: boolean;
@@ -544,7 +553,10 @@ function LeadAgingCard() {
 function ManagementDashboard({ analytics, lineData }: {
   analytics: Analytics; lineData: any[];
 }) {
-  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
+  // Mirrors the sidebar's Calls item and the /calls page: owner/super_admin get
+  // permAll, so the card is always there for them.
+  const perm = usePermissions();
+  const canViewCalls = perm('calls:view_all') || perm('calls:view_own');
   const accountability = analytics.staff_accountability ?? [];
   const totalAssigned  = accountability.reduce((s, a) => s + a.assigned, 0);
   const totalContacted = accountability.reduce((s, a) => s + a.contacted, 0);
@@ -599,11 +611,11 @@ function ManagementDashboard({ analytics, lineData }: {
           icon={Star} accent
           smallValue
         />
-        {superfoneEnabled && (
+        {canViewCalls && (
           <StatCard
             label="Calls"
-            value={analytics.calls_total ?? 0}
-            sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
+            value={callsValue(analytics.calls_total ?? 0)}
+            sub={callsSub(analytics.calls_total ?? 0, analytics.calls_answered ?? 0, analytics.calls_missed ?? 0)}
             icon={Phone} accent
           />
         )}
@@ -778,7 +790,10 @@ function ManagementDashboard({ analytics, lineData }: {
 
 // ── Sales Manager Dashboard - operational team oversight, staff+lead names OK ─
 function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineData: any[] }) {
-  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
+  // Mirrors the sidebar's Calls item and the /calls page: owner/super_admin get
+  // permAll, so the card is always there for them.
+  const perm = usePermissions();
+  const canViewCalls = perm('calls:view_all') || perm('calls:view_own');
   const navigate   = useNavigate();
   const rangeLabel = analytics.range_label ?? 'This Period';
   const accountability = analytics.staff_accountability ?? [];
@@ -815,11 +830,11 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
           icon={Users} accent
           onClick={() => navigate('/leads')}
         />
-        {superfoneEnabled && (
+        {canViewCalls && (
           <StatCard
             label="Calls"
-            value={analytics.calls_total ?? 0}
-            sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
+            value={callsValue(analytics.calls_total ?? 0)}
+            sub={callsSub(analytics.calls_total ?? 0, analytics.calls_answered ?? 0, analytics.calls_missed ?? 0)}
             icon={Phone}
             onClick={() => navigate('/calls')}
           />
@@ -980,7 +995,10 @@ function ManagerDashboard({ analytics, lineData }: { analytics: Analytics; lineD
 // ── Staff Dashboard - personal task view, individual lead names appropriate ────
 function StaffDashboard({ analytics }: { analytics: Analytics }) {
   const navigate = useNavigate();
-  const superfoneEnabled = useCompanyStore((s) => s.superfoneEnabled);
+  // Mirrors the sidebar's Calls item and the /calls page: owner/super_admin get
+  // permAll, so the card is always there for them.
+  const perm = usePermissions();
+  const canViewCalls = perm('calls:view_all') || perm('calls:view_own');
   const todayDue = analytics.today_followups.filter((f) => isToday(new Date(f.due_at)));
 
   return (
@@ -1011,11 +1029,11 @@ function StaffDashboard({ analytics }: { analytics: Analytics }) {
           icon={Target}
           onClick={() => navigate('/leads?filter=converted')}
         />
-        {superfoneEnabled && (
+        {canViewCalls && (
           <StatCard
             label="My Calls"
-            value={analytics.calls_total ?? 0}
-            sub={`${analytics.calls_answered ?? 0} answered · ${analytics.calls_missed ?? 0} missed`}
+            value={callsValue(analytics.calls_total ?? 0)}
+            sub={callsSub(analytics.calls_total ?? 0, analytics.calls_answered ?? 0, analytics.calls_missed ?? 0)}
             icon={Phone}
             onClick={() => navigate('/calls')}
           />
