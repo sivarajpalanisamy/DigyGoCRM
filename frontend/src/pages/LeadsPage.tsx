@@ -846,6 +846,32 @@ function SortMenu({ sort, onChange, onClose }: {
   );
 }
 
+// ─── Next follow-up cell (List view) ───────────────────────────────────────────
+// Same urgency treatment the board card uses, so the two views agree at a glance:
+// overdue reads red, due-today amber, upcoming plain, none a muted dash. `dueAt`
+// is the earliest INCOMPLETE follow-up (see nextFollowUpByLead).
+function NextFollowUpCell({ dueAt }: { dueAt?: number }) {
+  if (dueAt === undefined) return <span className="text-[#c3c8cf]">-</span>;
+  const d = new Date(dueAt);
+  const now = new Date();
+  const overdue = d.getTime() < now.getTime();
+  const isToday = d.toDateString() === now.toDateString();
+  // Match the card's wording exactly: same-day reads "today" even when the time
+  // has already passed, rather than "0d ago".
+  const diffDays = Math.round((d.getTime() - now.getTime()) / 86_400_000);
+  const rel = diffDays === 0 ? 'today' : diffDays > 0 ? `in ${diffDays}d` : `${Math.abs(diffDays)}d ago`;
+  return (
+    <span className="whitespace-nowrap">
+      <span className={cn('font-medium', overdue ? 'text-red-600' : isToday ? 'text-amber-600' : 'text-[#2b2f36]')}>
+        {format(d, 'dd/MM/yyyy hh:mm aa')}
+      </span>
+      <span className={cn('ml-1.5 text-[11px]', overdue ? 'text-red-500' : isToday ? 'text-amber-500' : 'text-[#9ca3af]')}>
+        ({rel})
+      </span>
+    </span>
+  );
+}
+
 // ─── Removable Filter Chip ─────────────────────────────────────────────────────
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
@@ -5999,7 +6025,7 @@ export default function LeadsPage() {
         /* ── List View ── */
         <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow overflow-y-auto flex-1 min-h-0">
           <div className="overflow-x-auto">
-          <table className="w-full text-[15px] min-w-[900px]">
+          <table className="w-full text-[15px] min-w-[1100px]">
             <thead>
               <tr className="bg-[var(--surface-2)] border-b border-[var(--hairline)]">
                 <th className="w-10 px-4 py-3">
@@ -6009,7 +6035,7 @@ export default function LeadsPage() {
                     className="w-4 h-4 accent-primary"
                   />
                 </th>
-                {[['Lead Name', '180px'], ['Contact Email', '210px'], ['Contact Phone', '160px'], ['Pipeline', '170px'], ['Stage', '110px'], ['Quality', '100px'], ['Created', '150px'], ['Updated', '150px']].map(([col]) => (
+                {[['Lead Name', '180px'], ['Contact Email', '210px'], ['Contact Phone', '160px'], ['Pipeline', '170px'], ['Stage', '110px'], ['Quality', '100px'], ['Next Follow-up', '200px'], ['Created', '150px'], ['Updated', '150px']].map(([col]) => (
                   <th key={col} className="px-3 py-3 text-left">
                     <button className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-wider text-[#6b7280] hover:text-[#111318] transition-colors">
                       {col} <ArrowUpDown className="w-3 h-3 opacity-50" />
@@ -6020,7 +6046,7 @@ export default function LeadsPage() {
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
               {filteredLeads.length === 0 && (
-                <tr><td colSpan={9} className="py-16 text-center">
+                <tr><td colSpan={10} className="py-16 text-center">
                   <User className="w-8 h-8 text-[#c3c8cf] mx-auto mb-2" />
                   <p className="text-[15px] text-[#6b7280]">No leads found</p>
                 </td></tr>
@@ -6075,6 +6101,9 @@ export default function LeadsPage() {
                           'bg-emerald-100 text-emerald-700'
                         )}>{lead.leadQuality}</span>
                       ) : <span className="text-[#c3c8cf]">-</span>}
+                    </td>
+                    <td className="px-3 py-3">
+                      <NextFollowUpCell dueAt={nextFollowUpByLead.get(lead.id)} />
                     </td>
                     <td className="px-3 py-3 text-[#6b7280] whitespace-nowrap">{format(new Date(lead.createdAt), 'dd/MM/yyyy hh:mm aa')}</td>
                     <td className="px-3 py-3 text-[#6b7280] whitespace-nowrap">{format(new Date(lead.lastActivity), 'dd/MM/yyyy hh:mm aa')}</td>
