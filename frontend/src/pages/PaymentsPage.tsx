@@ -340,7 +340,7 @@ export default function PaymentsPage() {
       )}
 
       {/* Table */}
-      <div className="flex-1 bg-white border border-[var(--hairline)] rounded-2xl card-shadow overflow-hidden flex flex-col min-h-0">
+      <div className="flex-1 bg-white border border-[var(--hairline)] rounded-2xl card-shadow overflow-hidden flex flex-col min-h-[480px]">
         <div className="overflow-auto flex-1">
           <table className="w-full text-[15px]">
             <thead className="sticky top-0 bg-[var(--surface-2)] border-b border-[var(--hairline)] z-10">
