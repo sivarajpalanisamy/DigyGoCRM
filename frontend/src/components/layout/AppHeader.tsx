@@ -256,7 +256,15 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
         </div>
 
         {/* Desktop: company name - sits just after the rail's favicon (brand lockup across the boundary) */}
-        <span className="hidden md:block font-headline font-bold text-[15px] text-[#111318] truncate max-w-[200px] shrink-0">
+        <span
+          title={(branded && tenantName) ? tenantName : companyName}
+          className={cn(
+            'hidden md:block font-headline font-bold text-[15px] text-[#111318] truncate shrink-0',
+            // While impersonating the sidebar already shows the tenant's logo, so the header
+            // copy can truncate harder to keep the tab nav intact.
+            isImpersonating ? 'max-w-[150px]' : 'max-w-[200px]',
+          )}
+        >
           {(branded && tenantName) ? tenantName : companyName}
         </span>
 
@@ -288,8 +296,11 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           </div>
         )}
 
-        {/* Tab nav - desktop only in full, scrollable on mobile */}
-        <div className="flex-1 flex items-center overflow-x-auto scrollbar-hide">
+        {/* Tab nav - desktop only in full, scrollable on mobile. Sized to its content and
+            pushed left by mr-auto rather than flex-1: with flex-1 its basis is 0, so it only
+            ever rendered into the space the fixed-width right cluster left over, and the tabs
+            silently clipped once impersonation added another control to the row. */}
+        <div className="mr-auto min-w-0 flex items-center overflow-x-auto scrollbar-hide">
           {subNav ? (
             <nav className="flex items-center gap-1 rounded-full bg-[var(--surface-2)] p-1">
               {subNav.map((item) => {
@@ -372,25 +383,31 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           )}
         </div>
 
-        {/* Right - bell + profile, always visible */}
+        {/* Right - bell + profile, always visible. Stays shrink-0: if this cluster is allowed
+            to shrink, its children (which cannot) spill out and push the profile off-screen. */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
 
           {/* Back to Admin - only while impersonating a tenant */}
           {isImpersonating && (
             <button
               onClick={async () => { await exitImpersonation(); navigate('/admin'); }}
-              title="Exit impersonation - back to Super Admin"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-semibold text-white shrink-0 hover:-translate-y-px transition-transform"
+              title="Back to Admin - exit impersonation"
+              aria-label="Back to Admin - exit impersonation"
+              className="flex items-center justify-center h-10 w-10 rounded-full text-white shrink-0 hover:-translate-y-px transition-transform"
               style={{ background: 'linear-gradient(90deg, var(--brand-dark), var(--brand))' }}
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Back to Admin</span>
+              <ArrowLeft className="w-[18px] h-[18px] shrink-0" />
             </button>
           )}
 
           {/* Context-aware search (desktop) - to the left of the notification bell */}
           {searchConfig && (
-            <div className="hidden md:flex items-center relative w-52 lg:w-72 shrink-0">
+            <div className={cn(
+              'hidden md:flex items-center relative shrink-0',
+              // Impersonating adds a 5th control to an already-full row, so the search gives
+              // up width first - it is the least essential thing competing with the tabs.
+              isImpersonating ? 'w-52 lg:w-56' : 'w-52 lg:w-72',
+            )}>
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af] pointer-events-none" />
               <input
                 autoComplete="off"
@@ -426,7 +443,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           )}
 
           {/* Bell */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => { setShowNotifs(!showNotifs); setOpenDropdown(null); }}
               className={cn(
@@ -579,21 +596,29 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           <button
             onClick={() => { setShowHelp(true); setShowNotifs(false); setShowProfile(false); setOpenDropdown(null); }}
             title="Help & Support"
-            className="h-10 w-10 flex items-center justify-center rounded-full bg-white border border-[var(--hairline)] shadow-[0_1px_3px_rgba(16,24,40,0.06)] text-[#6b7280] hover:text-primary hover:bg-[var(--surface-2)] transition-colors"
+            className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-white border border-[var(--hairline)] shadow-[0_1px_3px_rgba(16,24,40,0.06)] text-[#6b7280] hover:text-primary hover:bg-[var(--surface-2)] transition-colors"
           >
             <HelpCircle className="w-[19px] h-[19px]" />
           </button>
 
           {/* Divider */}
-          <div className="w-px h-6 bg-black/8" />
+          <div className="w-px h-6 bg-black/8 shrink-0" />
 
           {/* Profile */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => { setShowProfile((v) => !v); setShowNotifs(false); setOpenDropdown(null); }}
-              className="flex items-center gap-2 h-10 rounded-full bg-white border border-[var(--hairline)] shadow-[0_1px_3px_rgba(16,24,40,0.06)] pl-3.5 pr-2 hover:bg-[var(--surface-2)] transition-colors"
+              className={cn(
+                'flex items-center gap-2 h-10 rounded-full bg-white border border-[var(--hairline)] shadow-[0_1px_3px_rgba(16,24,40,0.06)] hover:bg-[var(--surface-2)] transition-colors',
+                // Symmetric padding once the name block collapses, so it reads as a circle
+                // rather than a lopsided pill.
+                isImpersonating ? 'px-1' : 'pl-3.5 pr-2',
+              )}
             >
-              <div className="hidden sm:block text-right">
+              {/* Name/role collapse to just the avatar while impersonating - the same
+                  details sit one click away in the dropdown, and this is the single
+                  biggest block competing with the tab nav for width. */}
+              <div className={cn('text-right', isImpersonating ? 'hidden' : 'hidden sm:block')}>
                 <p className="text-[13px] font-semibold text-[#111318] leading-tight">{currentUser?.name ?? 'User'}</p>
                 <p className="text-[11px] text-[#6b7280] leading-tight mt-0.5">{roleLabel}</p>
               </div>
