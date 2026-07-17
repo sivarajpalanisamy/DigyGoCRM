@@ -96,6 +96,19 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
   const [staffDropOpen, setStaffDropOpen] = useState(false);
   const [staffSearch, setStaffSearch] = useState('');
   const [tagDropOpen, setTagDropOpen] = useState(false);
+  const staffBoxRef = useRef<HTMLDivElement>(null);
+
+  // Close the Assign To dropdown on an outside click. Done with a ref listener
+  // (not a full-screen backdrop) so it never blocks the modal from scrolling, and
+  // it stays open across multiple picks (clicks inside the box don't close it).
+  useEffect(() => {
+    if (!staffDropOpen) return;
+    const onDocMouseDown = (e: MouseEvent) => {
+      if (staffBoxRef.current && !staffBoxRef.current.contains(e.target as Node)) setStaffDropOpen(false);
+    };
+    document.addEventListener('mousedown', onDocMouseDown);
+    return () => document.removeEventListener('mousedown', onDocMouseDown);
+  }, [staffDropOpen]);
 
   // Build assignable list: owner (current user if owner) + all staff
   const assignableStaff = (() => {
@@ -227,7 +240,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
               <input className={inputCls} type="number" placeholder="0" value={form.dealValue || ''} onChange={(e) => setForm({ ...form, dealValue: Number(e.target.value) })} />
             </div>
             {/* Assign To - multi-select chips */}
-            <div className="sm:col-span-2 relative">
+            <div className="sm:col-span-2 relative" ref={staffBoxRef}>
               {lbl('Assign To')}
               <div
                 className="bg-[#f4f5f7] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all cursor-text"
@@ -256,8 +269,9 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
               </div>
               {staffDropOpen && (
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setStaffDropOpen(false)} />
-                  <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  {/* Opens upward, no fixed backdrop (that blocked modal scroll). Outside
+                      clicks are closed by the ref listener above; stays open for multi-pick. */}
+                  <div className="absolute left-0 right-0 bottom-full mb-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
                     {assignableStaff
                       .filter((s: any) => s.name.toLowerCase().includes(staffSearch.toLowerCase()))
                       .map((s: any) => {
