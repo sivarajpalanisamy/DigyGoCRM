@@ -21,35 +21,35 @@ class DialerData {
     return list;
   }
 
-  // True when a single call-log entry is on a CRM-verified SIM. FAIL CLOSED:
-  //  - dual-SIM: the call's slot must resolve AND be a verified slot. If the phone
-  //    is dual-SIM but no verified slot is known yet, NOTHING is trusted (returns
-  //    false) - we can't prove any call is on the verified SIM.
-  //  - single-SIM: the only SIM is the verified one, so the entry is allowed.
+  // Whether a single call-log entry is allowed to show/sync. BEST EFFORT: we hide a
+  // call ONLY when we can positively prove it is on the OTHER (unverified) SIM -
+  // i.e. its slot resolves to a real slot that is not a verified one. Everything else
+  // is allowed, because on many phones (notably MIUI/Redmi) Android does not map a
+  // call's PHONE_ACCOUNT_ID to a SIM slot, so we cannot tell which SIM it used - and
+  // hiding those would blank the whole app. So:
+  //  - single-SIM, or no verified slot known, or slot unresolved → allow;
+  //  - dual-SIM with a resolved slot → allow only if that slot is verified.
   // This is the one per-call rule every in-app surface shares (list, contacts count,
-  // post-call popup, recording gate) so the unverified SIM never appears anywhere.
+  // post-call popup, recording gate).
   static bool onVerifiedSimEntry(SimGate gate, CallLogEntry e) {
-    if (gate.multiSim) {
-      if (gate.verifiedSlots.isEmpty) return false;
-      final slot = gate.slotFor(e.phoneAccountId);
-      return slot != null && gate.verifiedSlots.contains(slot);
-    }
-    return true;
+    if (!gate.multiSim) return true;
+    if (gate.verifiedSlots.isEmpty) return true;
+    final slot = gate.slotFor(e.phoneAccountId);
+    if (slot == null) return true;              // SIM can't be resolved → can't prove it's the other SIM
+    return gate.verifiedSlots.contains(slot);   // resolved → allow only the verified SIM
   }
 
-  // Keep only entries on a CRM-verified SIM (fail closed). Returns an empty list
-  // when the device isn't linked, or when a dual-SIM phone has no verified slot yet
-  // (unattributable → hide everything rather than leak the unverified SIM).
+  // Keep only entries we're allowed to show/sync (best effort - see onVerifiedSimEntry).
+  // A linked device never gets a blank list: only calls provably on the unverified SIM
+  // are dropped.
   static List<CallLogEntry> filterVerifiedSim(List<CallLogEntry> logs, SimGate gate, {required bool linked}) {
     if (!linked) return const [];
-    if (gate.multiSim && gate.verifiedSlots.isEmpty) return const [];
     if (!gate.multiSim) return logs;
     return logs.where((e) => onVerifiedSimEntry(gate, e)).toList();
   }
 
-  /// The device's call log, filtered to CRM-verified-SIM calls only (fail closed).
-  /// Every in-app surface that shows call data uses this, so a call on the skipped/
-  /// unverified SIM of a dual-SIM phone is never listed, counted, or attached to.
+  /// The device's call log, minus calls provably on the unverified SIM (best effort).
+  /// Every in-app surface that shows call data uses this.
   Future<List<CallLogEntry>> verifiedCallLogs() async {
     final logs = await callLogs();
     final gate = await Native.instance.simGateInfo();
@@ -76,18 +76,18 @@ class DialerData {
     return null;
   }
 
-  /// True when a recording (identified by the customer [number] + approximate
-  /// [startedAtMs]) belongs to a call on a CRM-verified SIM. Stops a recording from
-  /// the unverified SIM of a dual-SIM phone being uploaded. Single-SIM phones and
-  /// their sole verified SIM always pass; unlinked devices never do (fail closed).
+  /// Whether a recording (identified by the customer [number] + approximate
+  /// [startedAtMs]) is allowed to upload. BEST EFFORT: block it only when its matched
+  /// call is provably on the OTHER (unverified) SIM. Single-SIM phones, phones where
+  /// the SIM can't be resolved, and no-match cases all pass (an unlinked device never).
   Future<bool> recordingIsOnVerifiedSim({String? number, int? startedAtMs}) async {
     if (!await Api.instance.hasDeviceToken()) return false;
     final gate = await Native.instance.simGateInfo();
-    if (!gate.multiSim) return true;           // single SIM → the only SIM is verified
-    if (gate.verifiedSlots.isEmpty) return false; // dual-SIM, unattributable → block
+    if (!gate.multiSim) return true;              // single SIM → the only SIM is verified
+    if (gate.verifiedSlots.isEmpty) return true;  // can't attribute → allow (best effort)
     final n = (number ?? '').replaceAll(RegExp(r'[^0-9]'), '');
     final tail = n.length >= 9 ? n.substring(n.length - 9) : n;
-    if (tail.isEmpty) return false;
+    if (tail.isEmpty) return true;
     const windowMs = 6 * 60 * 1000;
     for (final e in await callLogs()) {
       final en = (e.number ?? '').replaceAll(RegExp(r'[^0-9]'), '');
@@ -97,7 +97,7 @@ class DialerData {
       if ((startedAtMs ?? 0) > 0 && (start - startedAtMs!).abs() > windowMs) continue;
       return onVerifiedSimEntry(gate, e);
     }
-    return false; // no matching verified-SIM call found → don't upload
+    return true; // no matching call to prove it's the unverified SIM → allow
   }
 
   // ── Contacts ─────────────────────────────────────────────────────────────
@@ -147,11 +147,11 @@ class DialerData {
   // Posts recent call logs to the CRM (deduped server-side by clientCallId).
   // Best-effort and silent - never blocks or surfaces errors in the dialer UI.
   //
-  // SIM gate (mirrors the native background sync): on a dual-SIM phone, a call is
-  // uploaded ONLY when we can positively resolve its SIM slot AND that slot is one the
-  // user verified in the CRM. Calls on the skipped/unverified SIM - or whose slot we
-  // can't resolve - are DROPPED so they never reach the CRM. Single-SIM phones have no
-  // ambiguity, so every call is kept and tagged with the sole verified SIM.
+  // SIM gate (best effort, mirrors the in-app rule): a call is DROPPED only when we can
+  // positively prove it is on the OTHER (unverified) SIM - i.e. its slot resolves to a
+  // real slot that is not verified. Calls whose SIM can't be resolved (common on MIUI/
+  // Redmi, where PHONE_ACCOUNT_ID doesn't map to a slot) are kept, and tagged with the
+  // sole verified slot when there is exactly one, so they attribute correctly server-side.
   Future<void> syncToCrm(List<CallLogEntry> logs) async {
     if (logs.isEmpty) return;
     // Only sync when this number is linked to the CRM (device token present).
@@ -162,16 +162,12 @@ class DialerData {
       for (final e in logs.take(200)) {
         final slot = gate.slotFor(e.phoneAccountId);
         int? tagSlot;
-        if (gate.multiSim) {
-          // Dual-SIM (fail closed): with no verified slot yet we can't prove which SIM
-          // a call is on, so upload nothing. Otherwise the slot must resolve AND be verified.
-          if (gate.verifiedSlots.isEmpty) continue;
-          if (slot == null || !gate.verifiedSlots.contains(slot)) continue;
-          tagSlot = slot;
-        } else {
-          // Single SIM: the sole SIM is the verified one. Tag with it when known.
-          tagSlot = slot ?? (gate.verifiedSlots.length == 1 ? gate.verifiedSlots.first : null);
+        if (gate.multiSim && gate.verifiedSlots.isNotEmpty && slot != null && !gate.verifiedSlots.contains(slot)) {
+          continue; // provably on the unverified SIM → drop
         }
+        // Otherwise keep it. Tag with the resolved slot, or fall back to the sole
+        // verified slot so an unresolved call still attributes to the verified number.
+        tagSlot = slot ?? (gate.verifiedSlots.length == 1 ? gate.verifiedSlots.first : null);
 
         final ts = e.timestamp ?? 0;
         final started = DateTime.fromMillisecondsSinceEpoch(ts).toUtc().toIso8601String();

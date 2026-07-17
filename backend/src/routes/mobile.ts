@@ -539,16 +539,15 @@ async function ingestOneCall(
       const slotMatch = simSlot !== null && allow.slots.has(simSlot);
       if (hasAttribution) {
         // Attribution present but matches NONE of the verified numbers/slots → this is
-        // the unverified / skipped SIM. Never log it.
+        // provably the unverified / skipped SIM. Never log it.
         if (!numMatch && !slotMatch) {
           return { clientCallId, id: null, status: 'rejected' };
         }
-      } else if (allow.multiSim && (gateCapable || SIM_GATE_STRICT)) {
-        // Dual-SIM device with NO attribution → we cannot prove the call came from the
-        // verified SIM. A SIM-tagging (new-APK) client drops/tags at source, so a bare
-        // call here is the unverified SIM — reject. SIM_GATE_STRICT extends this to
-        // legacy clients too. Single-SIM devices are unaffected (their only SIM IS the
-        // verified one), so their calls always pass.
+      } else if (allow.multiSim && SIM_GATE_STRICT) {
+        // BEST EFFORT: a dual-SIM call with NO attribution can't be proven to be on the
+        // unverified SIM — on many phones (MIUI/Redmi) Android never maps a call to a SIM
+        // slot, so rejecting these would silently drop most of the device's calls. So we
+        // KEEP them by default and only reject when SIM_GATE_STRICT is explicitly enabled.
         return { clientCallId, id: null, status: 'rejected' };
       }
     }

@@ -61,18 +61,11 @@ class _CallHistoryPageState extends State<CallHistoryPage> {
     }
   }
 
-  // A CRM-verified SIM must be established before any calls are shown. Fail closed:
-  //  - not linked (no verified number) → prompt to verify;
-  //  - dual-SIM with no verified slot yet → can't tell which SIM is yours, so prompt;
-  //  - otherwise (single-SIM linked, or dual-SIM with a verified slot) → show the list.
-  // A single-SIM linked device passes even if its slot is unknown, because its only
-  // SIM is the verified one - so a verified user is never wrongly shown a blank list.
-  bool get _verifiedReady {
-    final g = _gate;
-    if (g == null || !_linked) return false;
-    if (g.multiSim && g.verifiedSlots.isEmpty) return false;
-    return true;
-  }
+  // The device must be linked (its number verified in the CRM) before calls show;
+  // otherwise we prompt the user to verify. Once linked, the list is shown and the
+  // per-call best-effort filter (DialerData.filterVerifiedSim) hides only calls we can
+  // prove are on the other, unverified SIM - so a linked device is never blank.
+  bool get _verifiedReady => _gate != null && _linked;
 
   Future<void> _addNote(CallLogEntry e) async {
     final key = _keyFor(e);
