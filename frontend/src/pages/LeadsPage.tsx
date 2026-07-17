@@ -88,7 +88,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
   const now = new Date().toISOString();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '', phone: '+91 ',
+    name: '', email: '', phone: '+91 ',
     city: '', pipelineId: pipelines[0]?.id ?? '', stage: pipelines[0]?.stages[0]?.name ?? '',
     tags: [] as string[], tagInput: '', dealValue: 0, source: 'Manual',
     assignedTo: [] as string[], leadQuality: '',
@@ -109,7 +109,10 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
   const selectedPipeline = pipelines.find((p) => p.id === form.pipelineId);
 
   const handleSave = async () => {
-    if (!form.firstName.trim() || !form.phone.trim()) { toast.error('Name and phone are required'); return; }
+    const fullName = form.name.trim();
+    if (!fullName || !form.phone.trim()) { toast.error('Name and phone are required'); return; }
+    const [firstName, ...rest] = fullName.split(/\s+/);
+    const lastName = rest.join(' ');
     const normalizedPhone = form.phone.replace(/\D/g, '');
     if (normalizedPhone.length > 4) {
       const dup = leads.find((l) => l.phone.replace(/\D/g, '') === normalizedPhone);
@@ -119,7 +122,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
     try {
       const stageId = selectedPipeline?.stages.find((s) => s.name === form.stage)?.id;
       const created = await api.post<any>('/api/leads', {
-        name: `${form.firstName} ${form.lastName}`.trim(),
+        name: fullName,
         email: form.email,
         phone: form.phone,
         source: form.source,
@@ -132,7 +135,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
       });
       addLead({
         id: created.id,
-        firstName: form.firstName, lastName: form.lastName,
+        firstName, lastName,
         email: form.email, phone: form.phone,
         pipelineId: form.pipelineId, stage: form.stage,
         source: form.source, dealValue: form.dealValue,
@@ -154,16 +157,16 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const inputCls = 'w-full bg-[#f4f5f7] border border-black/10 rounded-xl px-3.5 py-2.5 text-[15px] text-[#111318] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 focus:bg-white transition-all placeholder:text-[#9ca3af]';
+  const inputCls = 'w-full bg-[#f4f5f7] border border-black/10 rounded-xl px-3.5 py-2 text-[15px] text-[#111318] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 focus:bg-white transition-all placeholder:text-[#9ca3af]';
   const lbl = (text: string, required = false) => (
-    <label className="text-[14px] font-semibold text-[#6b7280] mb-1.5 block">{text}{required && <span className="text-primary ml-0.5">*</span>}</label>
+    <label className="text-[13px] font-semibold text-[#6b7280] mb-1 block">{text}{required && <span className="text-primary ml-0.5">*</span>}</label>
   );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] border border-black/5">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[88vh] border border-black/5">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 shrink-0">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-black/5 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><Plus className="w-4 h-4 text-primary" /></div>
             <h3 className="text-[16px] font-bold text-[#111318]">Add Lead</h3>
@@ -172,11 +175,11 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
             <div className="sm:col-span-2">
               {lbl('Contact Name', true)}
-              <input className={inputCls} placeholder="e.g. Priya Sharma" value={`${form.firstName} ${form.lastName}`.trim()} onChange={(e) => { const [f, ...l] = e.target.value.split(' '); setForm({ ...form, firstName: f, lastName: l.join(' ') }); }} />
+              <input className={inputCls} placeholder="e.g. Priya Sharma" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div>
               {lbl('Phone', true)}
@@ -282,85 +285,84 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
               )}
             </div>
 
-            {/* Tags - chips + dropdown */}
-            <div className="sm:col-span-2 relative">
+            {/* Tags - separate typing box + separate scrollable added-tags box */}
+            <div className="sm:col-span-2">
               {lbl('Tags')}
-              <div
-                className="bg-[#f4f5f7] border border-black/10 rounded-xl px-3.5 py-2.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white transition-all cursor-text"
-                onClick={() => setTagDropOpen(true)}
-              >
-                {form.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-1.5">
-                    {form.tags.map((t) => (
-                      <span key={t} className="text-[12px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-md flex items-center gap-1">
-                        {t}<button type="button" onClick={(e) => { e.stopPropagation(); setForm({ ...form, tags: form.tags.filter((x) => x !== t) }); }} className="hover:text-red-500">×</button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+              {/* Typing box (its own input, with the suggestions dropdown) */}
+              <div className="relative">
                 <input
-                  className="w-full text-[15px] outline-none bg-transparent placeholder:text-[#9ca3af]"
-                  placeholder={form.tags.length === 0 ? 'Search or type a tag…' : ''}
+                  className={inputCls}
+                  placeholder="Search or type a tag, then press Enter"
                   value={form.tagInput}
                   onChange={(e) => { setForm({ ...form, tagInput: e.target.value }); setTagDropOpen(true); }}
                   onFocus={() => setTagDropOpen(true)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && form.tagInput.trim()) {
                       e.preventDefault();
-                      if (!form.tags.includes(form.tagInput.trim())) {
-                        setForm({ ...form, tags: [...form.tags, form.tagInput.trim()], tagInput: '' });
-                      }
+                      const v = form.tagInput.trim();
+                      setForm({ ...form, tags: form.tags.includes(v) ? form.tags : [...form.tags, v], tagInput: '' });
                     }
                   }}
                 />
+                {tagDropOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setTagDropOpen(false)} />
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      {storeTags
+                        .filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase()))
+                        .map((t) => {
+                          const selected = form.tags.includes(t.name);
+                          return (
+                            <button
+                              key={t.id}
+                              type="button"
+                              className={`w-full text-left px-3.5 py-2 text-[15px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#111318]'}`}
+                              onClick={() => {
+                                setForm({ ...form, tags: selected ? form.tags.filter((x) => x !== t.name) : [...form.tags, t.name], tagInput: '' });
+                              }}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color || '#ea580c' }} />
+                                {t.name}
+                              </span>
+                              {selected && <span className="text-primary">✓</span>}
+                            </button>
+                          );
+                        })
+                      }
+                      {form.tagInput.trim() && !storeTags.some((t) => t.name.toLowerCase() === form.tagInput.trim().toLowerCase()) && (
+                        <button
+                          type="button"
+                          className="w-full text-left px-3.5 py-2 text-[15px] text-primary hover:bg-gray-50 transition-colors"
+                          onClick={() => { const v = form.tagInput.trim(); setForm({ ...form, tags: form.tags.includes(v) ? form.tags : [...form.tags, v], tagInput: '' }); }}
+                        >
+                          + Create "{form.tagInput.trim()}"
+                        </button>
+                      )}
+                      {storeTags.filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase())).length === 0 && !form.tagInput.trim() && (
+                        <p className="px-3.5 py-2 text-[14px] text-[#9ca3af]">No tags available</p>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
-              {tagDropOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setTagDropOpen(false)} />
-                  <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                    {storeTags
-                      .filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase()))
-                      .map((t) => {
-                        const selected = form.tags.includes(t.name);
-                        return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            className={`w-full text-left px-3.5 py-2 text-[15px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#111318]'}`}
-                            onClick={() => {
-                              setForm({ ...form, tags: selected ? form.tags.filter((x) => x !== t.name) : [...form.tags, t.name], tagInput: '' });
-                            }}
-                          >
-                            <span className="flex items-center gap-2">
-                              <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color || '#ea580c' }} />
-                              {t.name}
-                            </span>
-                            {selected && <span className="text-primary">✓</span>}
-                          </button>
-                        );
-                      })
-                    }
-                    {form.tagInput.trim() && !storeTags.some((t) => t.name.toLowerCase() === form.tagInput.trim().toLowerCase()) && (
-                      <button
-                        type="button"
-                        className="w-full text-left px-3.5 py-2 text-[15px] text-primary hover:bg-gray-50 transition-colors"
-                        onClick={() => { setForm({ ...form, tags: [...form.tags, form.tagInput.trim()], tagInput: '' }); }}
-                      >
-                        + Create "{form.tagInput.trim()}"
-                      </button>
-                    )}
-                    {storeTags.filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase())).length === 0 && !form.tagInput.trim() && (
-                      <p className="px-3.5 py-2 text-[14px] text-[#9ca3af]">No tags available</p>
-                    )}
-                  </div>
-                </>
+              {/* Added tags (separate box, scrolls when there are many) */}
+              {form.tags.length > 0 && (
+                <div className="mt-2 max-h-[88px] overflow-y-auto rounded-xl border border-black/10 bg-[#f4f5f7] p-2 flex flex-wrap gap-1.5 content-start [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-black/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+                  {form.tags.map((t) => (
+                    <span key={t} className="text-[12px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-md flex items-center gap-1 h-fit">
+                      {t}
+                      <button type="button" onClick={() => setForm({ ...form, tags: form.tags.filter((x) => x !== t) })} className="hover:text-red-500 leading-none">×</button>
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-black/5 shrink-0">
+        <div className="flex items-center justify-between gap-3 px-6 py-3 border-t border-black/5 shrink-0">
           <p className="hidden sm:block text-[12px] text-[#9ca3af]">Created {format(new Date(now), 'dd MMM yyyy, hh:mm aa')}</p>
           <div className="flex gap-2 w-full sm:w-auto">
             <button onClick={onClose} className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[15px] font-semibold text-[#6b7280] bg-white border border-black/10 hover:bg-gray-50 active:scale-95 transition-all">Cancel</button>
