@@ -1399,20 +1399,49 @@ router.post('/leads/:id/tag', async (req: AuthRequest, res: Response) => {
   try {
     const owns = await query('SELECT id FROM leads WHERE id=$1::uuid AND tenant_id=$2::uuid AND is_deleted=FALSE', [id, tenantId]);
     if (!owns.rows[0]) { res.status(404).json({ error: 'Lead not found' }); return; }
+    // Resolve/create the tag and use its canonical name (case-insensitive match), so
+    // the name stored on the lead matches the tag definition the web uses.
     let tagId: string;
-    const existing = await query('SELECT id FROM tags WHERE tenant_id=$1::uuid AND LOWER(name)=LOWER($2) LIMIT 1', [tenantId, tag]);
+    let tagName: string;
+    const existing = await query('SELECT id, name FROM tags WHERE tenant_id=$1::uuid AND LOWER(name)=LOWER($2) LIMIT 1', [tenantId, tag]);
     if (existing.rows[0]) {
       tagId = existing.rows[0].id;
+      tagName = existing.rows[0].name;
     } else {
-      const ins = await query('INSERT INTO tags (tenant_id, name, color) VALUES ($1::uuid,$2,$3) RETURNING id', [tenantId, tag, '#6b7280']);
+      const ins = await query('INSERT INTO tags (tenant_id, name, color) VALUES ($1::uuid,$2,$3) RETURNING id, name', [tenantId, tag, '#6b7280']);
       tagId = ins.rows[0].id;
+      tagName = ins.rows[0].name;
     }
+    // The web CRM reads a lead's tags from the leads.tags TEXT[] column; the lead_tags
+    // junction is only a derived index for filters. Previously this endpoint wrote ONLY
+    // the junction, so mobile-added tags never showed on the CRM. Write BOTH.
+    await query(
+      `UPDATE leads
+          SET tags = CASE WHEN $3 = ANY(COALESCE(tags, '{}')) THEN tags
+                          ELSE array_append(COALESCE(tags, '{}'), $3) END,
+              updated_at = NOW()
+        WHERE id=$1::uuid AND tenant_id=$2::uuid`,
+      [id, tenantId, tagName]
+    );
     await query('INSERT INTO lead_tags (lead_id, tag_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [id, tagId]);
     await query(
       `INSERT INTO lead_activities (lead_id, tenant_id, type, title, detail, created_by)
        VALUES ($1,$2,'tag','Tag added from mobile dialer',$3,$4)`,
-      [id, tenantId, tag, userId]
+      [id, tenantId, tagName, userId]
     ).catch(() => null);
+    // Reflect on the CRM in real time (same event the web board/list listens for),
+    // re-fetching with assigned_name so the payload matches what the frontend expects.
+    const updated = await query(
+      `SELECT l.*, u.name AS assigned_name FROM leads l LEFT JOIN users u ON u.id = l.assigned_to WHERE l.id=$1::uuid`,
+      [id]
+    );
+    if (updated.rows[0]) emitToTenant(tenantId!, 'lead:updated', updated.rows[0]);
+    // Fire the same automation the web fires when a tag is added.
+    const leadRow = updated.rows[0];
+    if (leadRow) {
+      setImmediate(() => triggerWorkflows('contact_tagged', leadRow, tenantId!, userId,
+        { triggerContext: { tag: tagName } } as any).catch(() => null));
+    }
     res.json({ added: true });
   } catch (err: any) {
     console.error('[mobile/leads/tag]', err.message);
