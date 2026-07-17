@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Download, Play, Pause, Filter, X, Search, Phone, PhoneOff, Clock, ChevronDown, ChevronUp, UserPlus, Link2, XCircle, AlertTriangle } from 'lucide-react';
 import { api, downloadBlob, fetchBlob } from '@/lib/api';
 import ChartTooltip from '@/components/charts/ChartTooltip';
@@ -84,6 +84,146 @@ function durLabel(sec: number | null) {
 function dateLabel(ts: string | null) {
   if (!ts) return '-';
   return new Date(ts).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+// mm:ss for the recording player scrubber.
+function clockLabel(sec: number) {
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+const PLAY_RATES = [1, 1.5, 2, 0.75];
+
+// Recording player with a DRAGGABLE seek bar so users can jump to and replay only
+// the parts of a call they need. Native <audio controls> already has a scrubber, but
+// phone call recordings frequently ship with missing duration metadata, which makes
+// the browser report duration=Infinity and the native seek bar impossible to drag.
+// This player forces the real duration (and falls back to the DB call duration), so
+// dragging always works, and adds skip ±10s + playback speed.
+function RecordingPlayer({
+  src,
+  fallbackDuration,
+  onClose,
+}: {
+  src: string;
+  fallbackDuration?: number | null;
+  onClose?: () => void;
+}) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying]   = useState(false);
+  const [current, setCurrent]   = useState(0);
+  const [duration, setDuration] = useState(fallbackDuration && fallbackDuration > 0 ? fallbackDuration : 0);
+  const [rate, setRate]         = useState(1);
+
+  // Resolve a reliable duration. When the file has no duration header the browser
+  // reports Infinity/NaN; seeking far past the end forces it to compute the real
+  // value. If it still won't resolve, keep the DB-known call duration.
+  const resolveDuration = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    const d = a.duration;
+    if (d === Infinity || Number.isNaN(d) || d === 0) {
+      const onTU = () => {
+        a.removeEventListener('timeupdate', onTU);
+        const real = a.duration;
+        setDuration(
+          real === Infinity || Number.isNaN(real)
+            ? (fallbackDuration && fallbackDuration > 0 ? fallbackDuration : 0)
+            : real,
+        );
+        try { a.currentTime = 0; } catch { /* ignore */ }
+      };
+      a.addEventListener('timeupdate', onTU);
+      try { a.currentTime = 1e101; } catch { /* ignore */ }
+    } else {
+      setDuration(d);
+    }
+  };
+
+  const togglePlay = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) a.play().catch(() => {}); else a.pause();
+  };
+
+  const seekTo = (t: number) => {
+    const a = audioRef.current;
+    if (!a) return;
+    const clamped = Math.max(0, Math.min(t, duration || 0));
+    a.currentTime = clamped;
+    setCurrent(clamped);
+  };
+
+  const cycleRate = () => {
+    const next = PLAY_RATES[(PLAY_RATES.indexOf(rate) + 1) % PLAY_RATES.length];
+    setRate(next);
+    if (audioRef.current) audioRef.current.playbackRate = next;
+  };
+
+  return (
+    <div className="flex items-center gap-2.5 w-full">
+      <audio
+        ref={audioRef}
+        src={src}
+        autoPlay
+        onLoadedMetadata={resolveDuration}
+        onDurationChange={resolveDuration}
+        onTimeUpdate={() => { const a = audioRef.current; if (a) setCurrent(a.currentTime); }}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+      />
+      <button
+        type="button"
+        onClick={togglePlay}
+        title={playing ? 'Pause' : 'Play'}
+        className="flex items-center justify-center h-8 w-8 rounded-full bg-[#ea580c] text-white shrink-0 hover:bg-[#c2410c] transition"
+      >
+        {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+      </button>
+      <button
+        type="button"
+        onClick={() => seekTo(current - 10)}
+        title="Back 10 seconds"
+        className="text-[11px] font-semibold text-[#6b7280] hover:text-[#111318] shrink-0 tabular-nums"
+      >-10s</button>
+      <span className="text-[11px] tabular-nums text-[#6b7280] shrink-0 w-9 text-right">{clockLabel(current)}</span>
+      {/* Draggable seek bar - drag anywhere to skip to that point in the call. */}
+      <input
+        type="range"
+        min={0}
+        max={duration || 0}
+        step={0.1}
+        value={Math.min(current, duration || 0)}
+        onChange={(e) => seekTo(Number(e.target.value))}
+        title="Drag to skip through the recording"
+        className="flex-1 cursor-pointer accent-[#ea580c]"
+      />
+      <span className="text-[11px] tabular-nums text-[#6b7280] shrink-0 w-9">{clockLabel(duration)}</span>
+      <button
+        type="button"
+        onClick={() => seekTo(current + 10)}
+        title="Forward 10 seconds"
+        className="text-[11px] font-semibold text-[#6b7280] hover:text-[#111318] shrink-0 tabular-nums"
+      >+10s</button>
+      <button
+        type="button"
+        onClick={cycleRate}
+        title="Playback speed"
+        className="text-[11px] font-bold text-[#ea580c] hover:text-[#c2410c] shrink-0 w-8 tabular-nums"
+      >{rate}x</button>
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          title="Close player"
+          className="text-[#9ca3af] hover:text-[#111318] shrink-0"
+        ><X className="w-4 h-4" /></button>
+      )}
+    </div>
+  );
 }
 
 export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' } = {}) {
@@ -738,12 +878,10 @@ export default function CallsPage({ source }: { source?: 'mobile' | 'superfone' 
                     {playingId === c.id && audioUrls[c.id] && (
                       <tr key={`${c.id}-audio`} className="bg-orange-50/50">
                         <td colSpan={9} className="px-3 py-2">
-                          <audio
+                          <RecordingPlayer
                             src={audioUrls[c.id]}
-                            autoPlay
-                            controls
-                            className="w-full h-8"
-                            onEnded={() => setPlayingId(null)}
+                            fallbackDuration={c.duration_seconds}
+                            onClose={() => setPlayingId(null)}
                           />
                         </td>
                       </tr>
