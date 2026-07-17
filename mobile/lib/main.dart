@@ -21,10 +21,62 @@ import 'screens/in_call_screen.dart';
 import 'screens/post_call_screen.dart';
 import 'screens/splash_screen.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Api.instance.init();
-  runApp(const ProviderScope(child: HawcusDialerApp()));
+void main() {
+  // Global safety net so a single device-specific failure (a plugin that throws on
+  // one OEM, a malformed platform payload, an unexpected build error) can never leave
+  // the user on a blank/grey screen.
+  //  - ErrorWidget.builder: replace Flutter's default grey error box with a readable screen.
+  //  - runZonedGuarded + FlutterError.onError: catch uncaught async/framework errors.
+  //  - try/catch around Api.init(): secure storage can throw on some devices; if it does,
+  //    START THE APP ANYWAY (init is best-effort - a failed read just means "no token yet").
+  //    Previously an init() throw meant runApp was never called and the app hung on the splash.
+  ErrorWidget.builder = (details) => const _AppErrorScreen();
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    FlutterError.onError = FlutterError.presentError;
+    try {
+      await Api.instance.init();
+    } catch (_) {
+      // Start regardless; features degrade instead of the whole app blanking.
+    }
+    runApp(const ProviderScope(child: HawcusDialerApp()));
+  }, (error, stack) {
+    // Uncaught async errors land here instead of silently killing an action. The UI is
+    // already running by this point, so we just swallow to keep the app alive.
+  });
+}
+
+// Friendly fallback shown instead of Flutter's grey ErrorWidget if any widget fails to
+// build. Uses Directionality/Material so it renders even outside a MaterialApp ancestor.
+class _AppErrorScreen extends StatelessWidget {
+  const _AppErrorScreen();
+  @override
+  Widget build(BuildContext context) {
+    return const Directionality(
+      textDirection: TextDirection.ltr,
+      child: Material(
+        color: Colors.white,
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.refresh_rounded, size: 48, color: Color(0xFF9AA0A6)),
+                SizedBox(height: 14),
+                Text('Something went wrong',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1C1410))),
+                SizedBox(height: 6),
+                Text('Please close and reopen the app. If it keeps happening, contact support.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Color(0xFF7A6B5C), height: 1.4)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class HawcusDialerApp extends StatefulWidget {
@@ -54,7 +106,7 @@ class _HawcusDialerAppState extends State<HawcusDialerApp> with WidgetsBindingOb
             ?.push(MaterialPageRoute(builder: (_) => InCallScreen(initial: s)))
             .then((_) => _inCallShown = false);
       }
-    });
+    }, onError: (_) {}); // a malformed native call event must not crash the app
     // Native → Flutter: a post-call notification asks us to open the Call Details page.
     _nativeCh.setMethodCallHandler((call) async {
       if (call.method == 'openCallDetails' && call.arguments is Map) {
@@ -210,6 +262,7 @@ class _RootRouterState extends State<RootRouter> with WidgetsBindingObserver {
   }
 
   Future<void> _resolve() async {
+   try {
     // 1) Permissions first (incl. mandatory call recording + phone for SIM detection).
     bool passed;
     try {
@@ -257,6 +310,11 @@ class _RootRouterState extends State<RootRouter> with WidgetsBindingObserver {
       });
     }
     _set(HomeScreen(onSignOut: _resolve));
+   } catch (_) {
+    // Safety net: a secure-storage read (or any step) throwing on this device must
+    // never trap the user on the boot spinner - fall through into the app.
+    _set(HomeScreen(onSignOut: _resolve));
+   }
   }
 
   // Primary sync is the native background foreground service (real-time, even when

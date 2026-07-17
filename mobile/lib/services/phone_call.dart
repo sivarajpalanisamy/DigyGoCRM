@@ -22,12 +22,14 @@ class CallState {
   bool get isOngoing =>
       const ['new', 'dialing', 'ringing', 'active', 'holding', 'disconnecting'].contains(state);
 
+  // Lenient parsing - a malformed/typed-differently native payload must never throw
+  // into the call-state stream (that would be an uncaught error on some OEM builds).
   factory CallState.fromMap(Map<dynamic, dynamic> m) => CallState(
-        state: (m['state'] ?? 'none') as String,
-        number: m['number'] as String?,
-        direction: (m['direction'] ?? 'outgoing') as String,
-        muted: (m['muted'] ?? false) as bool,
-        speaker: (m['speaker'] ?? false) as bool,
+        state: (m['state'] ?? 'none').toString(),
+        number: m['number']?.toString(),
+        direction: (m['direction'] ?? 'outgoing').toString(),
+        muted: m['muted'] == true,
+        speaker: m['speaker'] == true,
       );
 }
 
@@ -39,8 +41,8 @@ class RecordingEvent {
   final int? startedAt;
 
   factory RecordingEvent.fromMap(Map m) => RecordingEvent(
-        path: m['path'] as String,
-        number: m['number'] as String?,
+        path: (m['path'] ?? '').toString(),
+        number: m['number']?.toString(),
         startedAt: (m['startedAt'] as num?)?.toInt(),
       );
 }
@@ -65,17 +67,20 @@ class PhoneCall {
   Stream<RecordingEvent> get recordings =>
       _rawStream.where((m) => m['event'] == 'recording').map(RecordingEvent.fromMap);
 
+  // All call-control channel calls are guarded: a PlatformException from the native
+  // telecom layer (no active call, OEM telecom quirk, permission) must not become an
+  // uncaught async error - the control simply no-ops instead of killing the action.
   /// Place a call through our own dialer (routes to our InCallService when we are
   /// the default dialer, so the call runs inside the app).
   Future<void> placeCall(String number) async {
-    await _ch.invokeMethod('placeCall', {'number': number});
+    try { await _ch.invokeMethod('placeCall', {'number': number}); } catch (_) {}
   }
 
-  Future<void> answer() => _ch.invokeMethod('answer');
-  Future<void> reject() => _ch.invokeMethod('reject');
-  Future<void> hangup() => _ch.invokeMethod('hangup');
-  Future<void> mute(bool on) => _ch.invokeMethod('mute', {'on': on});
-  Future<void> speaker(bool on) => _ch.invokeMethod('speaker', {'on': on});
-  Future<void> hold(bool on) => _ch.invokeMethod('hold', {'on': on});
-  Future<void> dtmf(String digit) => _ch.invokeMethod('dtmf', {'digit': digit});
+  Future<void> answer() async { try { await _ch.invokeMethod('answer'); } catch (_) {} }
+  Future<void> reject() async { try { await _ch.invokeMethod('reject'); } catch (_) {} }
+  Future<void> hangup() async { try { await _ch.invokeMethod('hangup'); } catch (_) {} }
+  Future<void> mute(bool on) async { try { await _ch.invokeMethod('mute', {'on': on}); } catch (_) {} }
+  Future<void> speaker(bool on) async { try { await _ch.invokeMethod('speaker', {'on': on}); } catch (_) {} }
+  Future<void> hold(bool on) async { try { await _ch.invokeMethod('hold', {'on': on}); } catch (_) {} }
+  Future<void> dtmf(String digit) async { try { await _ch.invokeMethod('dtmf', {'digit': digit}); } catch (_) {} }
 }

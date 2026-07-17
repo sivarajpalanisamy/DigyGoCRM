@@ -200,16 +200,17 @@ object CallSync {
         }
     }
 
-    // True when a call is on a CRM-verified SIM (or SIM can't matter). Mirrors the
-    // fail-closed rule in [filterAndTag]: on a dual-SIM phone the slot MUST resolve
-    // AND be a verified slot; a single-SIM phone (or nothing verified to compare)
-    // has no ambiguity, so it's allowed.
+    // True when a call is allowed to surface/sync (BEST EFFORT, mirrors [filterAndTag]
+    // and the Dart rule): we reject only when we can PROVE it is on the other, unverified
+    // SIM - its slot resolves to a real slot that is not verified. A slot that can't be
+    // resolved (common on MIUI/Redmi, where PHONE_ACCOUNT_ID doesn't map to a slot) is
+    // allowed, so real-time sync doesn't silently drop every call on those devices.
     private fun isOnVerifiedSim(ctx: Context, prefs: SharedPreferences, c: CallRow): Boolean {
         val verifiedSlots = readVerifiedSims(prefs)
             .mapNotNull { if (it.slot >= 0) it.slot else null }.toSet()
         if (isMultiSim(ctx, prefs) && verifiedSlots.isNotEmpty()) {
             val slot = buildAccountSlotMap(ctx)[c.phoneAccountId]
-            return slot != null && verifiedSlots.contains(slot)
+            return slot == null || verifiedSlots.contains(slot)
         }
         return true
     }
@@ -239,12 +240,14 @@ object CallSync {
     }
 
     // ── SIM gating ───────────────────────────────────────────────────────────────
-    // Keep only calls on a verified SIM, and tag each kept call with its slot + number.
-    // FAIL CLOSED on a dual-SIM phone: a call is uploaded only when we positively resolve
-    // its SIM slot AND that slot is one the user verified in the CRM. A call whose slot we
-    // cannot resolve, or that resolves to an unverified (skipped) SIM, is DROPPED - the
-    // unverified SIM must never reach the CRM. On a single-SIM phone there is no ambiguity
-    // (the only SIM is the verified one), so calls are kept and tagged with it.
+    // BEST EFFORT: drop a call ONLY when we can prove it is on the other, unverified SIM
+    // (its slot resolves to a real slot that is not verified). A call whose slot cannot be
+    // resolved - which is the norm on MIUI/Redmi and several other OEMs, where the call
+    // log's PHONE_ACCOUNT_ID maps to neither the subscriptionId nor the ICCID - is KEPT
+    // and tagged with the sole verified slot when there is exactly one, so it still
+    // attributes to the verified number server-side. This avoids silently dropping every
+    // call (and thus blanking the CRM) on those devices, while still hiding the unverified
+    // SIM wherever attribution actually works.
     private fun filterAndTag(ctx: Context, prefs: SharedPreferences, calls: List<CallRow>, verified: List<SimRef>): List<CallRow> {
         val verifiedSlots = verified.mapNotNull { if (it.slot >= 0) it.slot else null }.toSet()
         val numberBySlot = verified.filter { it.slot >= 0 && !it.number.isNullOrEmpty() }
@@ -255,16 +258,10 @@ object CallSync {
         val out = ArrayList<CallRow>()
         for (c in calls) {
             val slot = accountSlot[c.phoneAccountId]
-            if (multiSim && verifiedSlots.isNotEmpty()) {
-                // Dual-SIM: the slot MUST resolve AND be verified, else drop (fail closed).
-                if (slot == null || !verifiedSlots.contains(slot)) continue
-                out.add(c.copy(simSlot = slot, simNumber = numberBySlot[slot]))
-            } else {
-                // Single active SIM (or nothing verified to compare): keep and, when the sole
-                // verified slot is known, tag with it. NEVER fabricate a slot on multi-SIM.
-                val tagSlot = slot ?: (if (verifiedSlots.size == 1) verifiedSlots.first() else null)
-                out.add(c.copy(simSlot = tagSlot, simNumber = tagSlot?.let { numberBySlot[it] }))
-            }
+            // Provably on the unverified SIM → drop. Everything else is kept.
+            if (multiSim && verifiedSlots.isNotEmpty() && slot != null && !verifiedSlots.contains(slot)) continue
+            val tagSlot = slot ?: (if (verifiedSlots.size == 1) verifiedSlots.first() else null)
+            out.add(c.copy(simSlot = tagSlot, simNumber = tagSlot?.let { numberBySlot[it] }))
         }
         return out
     }

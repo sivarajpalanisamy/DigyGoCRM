@@ -36,7 +36,7 @@ class _InCallScreenState extends State<InCallScreen> {
           if (mounted) Navigator.of(context).maybePop();
         });
       }
-    });
+    }, onError: (_) {}); // never let a bad native event crash the in-call screen
   }
 
   @override
