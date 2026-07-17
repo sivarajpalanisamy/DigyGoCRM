@@ -296,6 +296,7 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                   value={form.tagInput}
                   onChange={(e) => { setForm({ ...form, tagInput: e.target.value }); setTagDropOpen(true); }}
                   onFocus={() => setTagDropOpen(true)}
+                  onBlur={() => setTagDropOpen(false)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && form.tagInput.trim()) {
                       e.preventDefault();
@@ -313,32 +314,36 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                   const typed = form.tagInput.trim();
                   const canCreate = !!typed && !form.tags.includes(typed) && !storeTags.some((t) => t.name.toLowerCase() === typed.toLowerCase());
                   if (suggestions.length === 0 && !canCreate) return null;
+                  // Opens UPWARD (bottom-full) so the dropdown is fully visible above this
+                  // last field without needing to scroll. No fixed backdrop - that blocked
+                  // the modal from scrolling; onBlur closes it instead, and onMouseDown
+                  // preventDefault keeps the input focused so clicking a row still works.
                   return (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setTagDropOpen(false)} />
-                      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                        {suggestions.map((t) => (
-                          <button
-                            key={t.id}
-                            type="button"
-                            className="w-full text-left px-3.5 py-2 text-[15px] flex items-center gap-2 text-[#111318] hover:bg-gray-50 transition-colors"
-                            onClick={() => { setForm({ ...form, tags: [...form.tags, t.name], tagInput: '' }); setTagDropOpen(false); }}
-                          >
-                            <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color || '#ea580c' }} />
-                            {t.name}
-                          </button>
-                        ))}
-                        {canCreate && (
-                          <button
-                            type="button"
-                            className="w-full text-left px-3.5 py-2 text-[15px] text-primary hover:bg-gray-50 transition-colors"
-                            onClick={() => { setForm({ ...form, tags: [...form.tags, typed], tagInput: '' }); setTagDropOpen(false); }}
-                          >
-                            + Create "{typed}"
-                          </button>
-                        )}
-                      </div>
-                    </>
+                    <div
+                      className="absolute left-0 right-0 bottom-full mb-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto"
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      {suggestions.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          className="w-full text-left px-3.5 py-2 text-[15px] flex items-center gap-2 text-[#111318] hover:bg-gray-50 transition-colors"
+                          onClick={() => { setForm({ ...form, tags: [...form.tags, t.name], tagInput: '' }); setTagDropOpen(false); }}
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color || '#ea580c' }} />
+                          {t.name}
+                        </button>
+                      ))}
+                      {canCreate && (
+                        <button
+                          type="button"
+                          className="w-full text-left px-3.5 py-2 text-[15px] text-primary hover:bg-gray-50 transition-colors"
+                          onClick={() => { setForm({ ...form, tags: [...form.tags, typed], tagInput: '' }); setTagDropOpen(false); }}
+                        >
+                          + Create "{typed}"
+                        </button>
+                      )}
+                    </div>
                   );
                 })()}
               </div>
