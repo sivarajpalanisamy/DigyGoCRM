@@ -239,13 +239,17 @@ class _RootRouterState extends State<RootRouter> with WidgetsBindingObserver {
     _ensureNotificationPermission();
     Api.instance.refreshSyncConfig(); // ensure the background auto-sync service has the latest config
     if (await Api.instance.hasDeviceToken()) {
+      // Repair the on-device SIM gate for users who linked on an older build, so the
+      // call list isn't blank, THEN sync (both respect the verified-SIM gate).
+      await Api.instance.backfillVerifiedSims();
       _syncCallLogsFallback(); // FALLBACK: mirror any calls the background service missed
       RecordingUploader.instance.start();
       RecordingHarvester.instance.run();
     } else {
       // Not linked yet - try to link in case an admin has since added this number.
-      Api.instance.tryLink().then((linked) {
+      Api.instance.tryLink().then((linked) async {
         if (linked) {
+          await Api.instance.backfillVerifiedSims();
           _syncCallLogsFallback();
           RecordingUploader.instance.start();
           RecordingHarvester.instance.run();

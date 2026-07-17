@@ -20,6 +20,11 @@ class RecordingUploader {
 
   Future<void> _handle(RecordingEvent r) async {
     try {
+      // Never upload a recording for a call on the unverified SIM of a dual-SIM phone.
+      // (Single-SIM devices always pass, so their recordings are unaffected.)
+      final onVerified = await DialerData.instance
+          .recordingIsOnVerifiedSim(number: r.number, startedAtMs: r.startedAt);
+      if (!onVerified) return; // leave the file; it's the unverified SIM's audio
       // Make sure the just-ended call is synced first, so the server has a row to
       // attach the recording to.
       final logs = await DialerData.instance.callLogs();

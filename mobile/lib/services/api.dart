@@ -238,6 +238,44 @@ class Api {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
+  /// The numbers verified for THIS device on the server, each with its SIM slot
+  /// (slot may be null when unknown). Used only by [backfillVerifiedSims].
+  Future<List<Map<String, dynamic>>> numbers() async {
+    final res = await _dio.get('/api/mobile/numbers');
+    return ((res.data['numbers'] as List?) ?? [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+  }
+
+  /// Launch-time repair for devices linked on an older build: make sure the local
+  /// SIM gate knows this device's verified SIM(s), so the app can show/record their
+  /// calls. Cheap and idempotent - safe to call on every launch.
+  ///
+  ///  1. Always re-mirror any locally-stored verified SIMs to the native gate
+  ///     (covers the case where the native mirror was cleared but secure storage
+  ///     still has them).
+  ///  2. If no verified SIM *slot* is known locally, pull the device's verified
+  ///     numbers (+ slots) from the server and store them. This is what stops a
+  ///     linked user seeing a blank call list after updating to the SIM-gated app.
+  Future<void> backfillVerifiedSims() async {
+    try {
+      if (!await hasDeviceToken()) return;
+      await _pushVerifiedSims(); // step 1 - re-mirror what we already have
+      final sims = await _localSims();
+      final hasSlot = sims.any((s) => (s['slot'] is int ? s['slot'] as int : -1) >= 0);
+      if (hasSlot) return; // already have usable per-SIM data
+      for (final m in await numbers()) {
+        final phone = (m['phone_number'] ?? '').toString();
+        if (phone.isEmpty) continue;
+        final raw = m['sim_slot'];
+        final slot = raw is int ? raw : (raw is num ? raw.toInt() : null);
+        await addLocalNumber(phone, slot: slot); // also re-pushes to the native gate
+      }
+    } catch (_) {
+      // best-effort; the next launch retries
+    }
+  }
+
   Future<Map<String, dynamic>> myStats() async {
     final res = await _dio.get('/api/mobile/me/stats');
     return Map<String, dynamic>.from(res.data as Map);

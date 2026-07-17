@@ -30,7 +30,9 @@ class _ContactsPageState extends State<ContactsPage> {
     setState(() => _loading = true);
     try {
       final contacts = await DialerData.instance.contacts();
-      final logs = await DialerData.instance.callLogs();
+      // Verified-SIM calls only, so a contact's "times called" never counts calls
+      // made/received on the unverified SIM of a dual-SIM phone.
+      final logs = await DialerData.instance.verifiedCallLogs();
       final counts = <String, int>{};
       for (final e in logs) {
         final key = _norm(e.number ?? '');

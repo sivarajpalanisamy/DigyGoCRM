@@ -24,15 +24,19 @@ class RecordingHarvester {
       final files = await Native.instance.scanRecordings(since);
       if (files.isEmpty) return;
 
-      // Ensure the calls these recordings belong to are synced first.
+      // Ensure the calls these recordings belong to are synced first (self-gated).
       final logs = await DialerData.instance.callLogs();
       await DialerData.instance.syncToCrm(logs);
       await Future.delayed(const Duration(milliseconds: 800));
 
+      // Match recordings ONLY against verified-SIM calls, so a recording that lines up
+      // with a call on the unverified SIM of a dual-SIM phone is never uploaded.
+      final verifiedLogs = await DialerData.instance.verifiedCallLogs();
+
       int maxModified = since;
       for (final f in files) {
         if (f.modified > maxModified) maxModified = f.modified;
-        final match = _matchCall(logs, f.modified);
+        final match = _matchCall(verifiedLogs, f.modified);
         if (match == null) continue;
         try {
           await Api.instance.uploadRecordingByKey(

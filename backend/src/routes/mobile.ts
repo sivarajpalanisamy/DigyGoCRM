@@ -399,6 +399,28 @@ router.get('/me', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/mobile/numbers — the numbers VERIFIED for this device, each with its SIM
+// slot when known. Lets an app that linked on an older build (before per-SIM data was
+// stored locally) re-populate its on-device SIM gate, so it only ever shows/records
+// calls on a CRM-verified SIM. Read-only, device-scoped, no side effects.
+router.get('/numbers', async (req: AuthRequest, res: Response) => {
+  const deviceId = req.deviceId ?? null;
+  try {
+    const r = await query(
+      `SELECT phone_number, sim_slot FROM mobile_device_numbers
+         WHERE device_id=$1::uuid AND verified=TRUE
+       UNION
+       SELECT phone_number, NULL::int AS sim_slot FROM mobile_devices
+         WHERE id=$1::uuid AND phone_verified=TRUE AND phone_number IS NOT NULL`,
+      [deviceId]
+    );
+    res.json({ numbers: r.rows });
+  } catch (err: any) {
+    console.error('[mobile/numbers]', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /api/mobile/push-token — register/refresh FCM token for this device
 router.post('/push-token', async (req: AuthRequest, res: Response) => {
   const { pushToken } = req.body as { pushToken?: string };

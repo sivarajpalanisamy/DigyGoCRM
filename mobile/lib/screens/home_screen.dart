@@ -9,6 +9,7 @@ import 'contacts_page.dart';
 import 'crm_leads_page.dart';
 import 'followups_page.dart';
 import 'enable_recording_screen.dart';
+import 'sim_verify_screen.dart';
 
 /// The dialer shell - a Callyzer-style call app. Tabs: Call History, Contacts,
 /// More. Shows the device's real call log + contacts (no CRM/lead data in the UI;
@@ -121,6 +122,21 @@ class _MorePageState extends State<_MorePage> {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const EnableRecordingScreen()),
             ),
+          ),
+          _tile(
+            icon: Icons.sim_card_outlined,
+            title: 'SIM Number',
+            subtitle: 'Verify which SIM syncs its calls to the CRM',
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ConnectSimScreen(onDone: () async {
+                    if (mounted) Navigator.of(context).pop();
+                  }),
+                ),
+              );
+              if (mounted) _loadMe();
+            },
           ),
           _tile(
             icon: Icons.logout,

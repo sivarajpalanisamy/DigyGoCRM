@@ -21,16 +21,40 @@ class DialerData {
     return list;
   }
 
-  // True when a call-log entry is on a CRM-verified SIM (or SIM can't matter).
-  // Mirrors the fail-closed rule in [syncToCrm]: on a dual-SIM phone a call is
-  // trusted only when its slot resolves AND is a verified slot; a single-SIM
-  // phone (or nothing verified yet to compare) has no ambiguity, so it's allowed.
-  bool _isOnVerifiedSim(SimGate gate, CallLogEntry e) {
-    if (gate.multiSim && gate.verifiedSlots.isNotEmpty) {
+  // True when a single call-log entry is on a CRM-verified SIM. FAIL CLOSED:
+  //  - dual-SIM: the call's slot must resolve AND be a verified slot. If the phone
+  //    is dual-SIM but no verified slot is known yet, NOTHING is trusted (returns
+  //    false) - we can't prove any call is on the verified SIM.
+  //  - single-SIM: the only SIM is the verified one, so the entry is allowed.
+  // This is the one per-call rule every in-app surface shares (list, contacts count,
+  // post-call popup, recording gate) so the unverified SIM never appears anywhere.
+  static bool onVerifiedSimEntry(SimGate gate, CallLogEntry e) {
+    if (gate.multiSim) {
+      if (gate.verifiedSlots.isEmpty) return false;
       final slot = gate.slotFor(e.phoneAccountId);
       return slot != null && gate.verifiedSlots.contains(slot);
     }
     return true;
+  }
+
+  // Keep only entries on a CRM-verified SIM (fail closed). Returns an empty list
+  // when the device isn't linked, or when a dual-SIM phone has no verified slot yet
+  // (unattributable → hide everything rather than leak the unverified SIM).
+  static List<CallLogEntry> filterVerifiedSim(List<CallLogEntry> logs, SimGate gate, {required bool linked}) {
+    if (!linked) return const [];
+    if (gate.multiSim && gate.verifiedSlots.isEmpty) return const [];
+    if (!gate.multiSim) return logs;
+    return logs.where((e) => onVerifiedSimEntry(gate, e)).toList();
+  }
+
+  /// The device's call log, filtered to CRM-verified-SIM calls only (fail closed).
+  /// Every in-app surface that shows call data uses this, so a call on the skipped/
+  /// unverified SIM of a dual-SIM phone is never listed, counted, or attached to.
+  Future<List<CallLogEntry>> verifiedCallLogs() async {
+    final logs = await callLogs();
+    final gate = await Native.instance.simGateInfo();
+    final linked = await Api.instance.hasDeviceToken();
+    return filterVerifiedSim(logs, gate, linked: linked);
   }
 
   /// Newest call-log entry that ended within [withinMs] AND is on a CRM-verified
@@ -47,9 +71,33 @@ class DialerData {
       final endMs = ts + ((e.duration ?? 0) * 1000);
       if (now - endMs > withinMs) break; // sorted desc → all remaining are older
       if ((e.number ?? '').isEmpty) continue;
-      if (_isOnVerifiedSim(gate, e)) return e;
+      if (onVerifiedSimEntry(gate, e)) return e;
     }
     return null;
+  }
+
+  /// True when a recording (identified by the customer [number] + approximate
+  /// [startedAtMs]) belongs to a call on a CRM-verified SIM. Stops a recording from
+  /// the unverified SIM of a dual-SIM phone being uploaded. Single-SIM phones and
+  /// their sole verified SIM always pass; unlinked devices never do (fail closed).
+  Future<bool> recordingIsOnVerifiedSim({String? number, int? startedAtMs}) async {
+    if (!await Api.instance.hasDeviceToken()) return false;
+    final gate = await Native.instance.simGateInfo();
+    if (!gate.multiSim) return true;           // single SIM → the only SIM is verified
+    if (gate.verifiedSlots.isEmpty) return false; // dual-SIM, unattributable → block
+    final n = (number ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+    final tail = n.length >= 9 ? n.substring(n.length - 9) : n;
+    if (tail.isEmpty) return false;
+    const windowMs = 6 * 60 * 1000;
+    for (final e in await callLogs()) {
+      final en = (e.number ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+      final etail = en.length >= 9 ? en.substring(en.length - 9) : en;
+      if (etail != tail) continue;
+      final start = e.timestamp ?? 0;
+      if ((startedAtMs ?? 0) > 0 && (start - startedAtMs!).abs() > windowMs) continue;
+      return onVerifiedSimEntry(gate, e);
+    }
+    return false; // no matching verified-SIM call found → don't upload
   }
 
   // ── Contacts ─────────────────────────────────────────────────────────────
@@ -114,12 +162,14 @@ class DialerData {
       for (final e in logs.take(200)) {
         final slot = gate.slotFor(e.phoneAccountId);
         int? tagSlot;
-        if (gate.multiSim && gate.verifiedSlots.isNotEmpty) {
-          // Dual-SIM: must resolve the slot AND it must be verified, else skip (fail closed).
+        if (gate.multiSim) {
+          // Dual-SIM (fail closed): with no verified slot yet we can't prove which SIM
+          // a call is on, so upload nothing. Otherwise the slot must resolve AND be verified.
+          if (gate.verifiedSlots.isEmpty) continue;
           if (slot == null || !gate.verifiedSlots.contains(slot)) continue;
           tagSlot = slot;
         } else {
-          // Single SIM (or nothing to compare): tag with the sole verified slot when known.
+          // Single SIM: the sole SIM is the verified one. Tag with it when known.
           tagSlot = slot ?? (gate.verifiedSlots.length == 1 ? gate.verifiedSlots.first : null);
         }
 

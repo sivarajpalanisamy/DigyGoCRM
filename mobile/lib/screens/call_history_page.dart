@@ -5,6 +5,7 @@ import '../theme.dart';
 import '../services/dialer_data.dart';
 import '../services/call_launcher.dart';
 import '../services/api.dart';
+import '../services/native.dart';
 import 'call_details_page.dart';
 
 class CallHistoryPage extends StatefulWidget {
@@ -22,6 +23,13 @@ class _CallHistoryPageState extends State<CallHistoryPage> {
   bool _loading = true;
   String _search = '';
   _Filter _filter = _Filter.all;
+  // SIM gate snapshot - the same one the background sync uses to decide which
+  // calls reach the CRM. This screen mirrors that rule so it only ever shows
+  // calls on a CRM-verified SIM (null until the first load completes).
+  SimGate? _gate;
+  // Whether this device is linked to the CRM (i.e. its number is verified). A
+  // device only gets a token once its number is OTP-verified in the dashboard.
+  bool _linked = false;
 
   String _keyFor(CallLogEntry e) => '${e.number ?? 'unknown'}_${e.timestamp ?? 0}';
 
@@ -36,17 +44,34 @@ class _CallHistoryPageState extends State<CallHistoryPage> {
     try {
       final logs = await DialerData.instance.callLogs();
       final notes = await Api.instance.notes();
+      final gate = await Native.instance.simGateInfo();
+      final linked = await Api.instance.hasDeviceToken();
       if (!mounted) return;
       setState(() {
         _all = logs;
         _notes = notes;
+        _gate = gate;
+        _linked = linked;
         _loading = false;
       });
-      // Mirror to CRM silently in the background.
+      // Mirror to CRM silently in the background (has its own SIM gate).
       DialerData.instance.syncToCrm(logs);
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  // A CRM-verified SIM must be established before any calls are shown. Fail closed:
+  //  - not linked (no verified number) → prompt to verify;
+  //  - dual-SIM with no verified slot yet → can't tell which SIM is yours, so prompt;
+  //  - otherwise (single-SIM linked, or dual-SIM with a verified slot) → show the list.
+  // A single-SIM linked device passes even if its slot is unknown, because its only
+  // SIM is the verified one - so a verified user is never wrongly shown a blank list.
+  bool get _verifiedReady {
+    final g = _gate;
+    if (g == null || !_linked) return false;
+    if (g.multiSim && g.verifiedSlots.isEmpty) return false;
+    return true;
   }
 
   Future<void> _addNote(CallLogEntry e) async {
@@ -121,7 +146,13 @@ class _CallHistoryPageState extends State<CallHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _all.where(_matchesFilter).where(_matchesSearch).toList();
+    // Only calls on a CRM-verified SIM ever reach this list (fail closed).
+    final filtered = _verifiedReady
+        ? DialerData.filterVerifiedSim(_all, _gate!, linked: true)
+            .where(_matchesFilter)
+            .where(_matchesSearch)
+            .toList()
+        : <CallLogEntry>[];
     final grouped = _groupByDay(filtered);
 
     return SafeArea(
@@ -170,7 +201,9 @@ class _CallHistoryPageState extends State<CallHistoryPage> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
-                : filtered.isEmpty
+                : !_verifiedReady
+                    ? _notVerified()
+                    : filtered.isEmpty
                     ? _empty()
                     : RefreshIndicator(
                         onRefresh: _load,
@@ -197,6 +230,31 @@ class _CallHistoryPageState extends State<CallHistoryPage> {
           Icon(Icons.call_outlined, size: 56, color: Brand.muted),
           SizedBox(height: 12),
           Center(child: Text('No calls yet', style: TextStyle(color: Brand.muted, fontSize: 16))),
+        ],
+      );
+
+  // Shown when no CRM-verified SIM is set up on this device. We deliberately do
+  // NOT fall back to the raw OS call log here - only a verified number's calls
+  // are ever shown in the app.
+  Widget _notVerified() => ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        children: const [
+          SizedBox(height: 100),
+          Icon(Icons.sim_card_outlined, size: 56, color: Brand.muted),
+          SizedBox(height: 14),
+          Center(
+            child: Text('Verify your number first',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Brand.ink, fontSize: 18, fontWeight: FontWeight.w700)),
+          ),
+          SizedBox(height: 8),
+          Center(
+            child: Text(
+              'Your calls appear here once your SIM number is verified in the CRM. '
+              'Open More → SIM Number to verify.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Brand.muted, fontSize: 14, height: 1.4)),
+          ),
         ],
       );
 
