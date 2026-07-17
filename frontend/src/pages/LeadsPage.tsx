@@ -301,50 +301,46 @@ function AddLeadModal({ onClose }: { onClose: () => void }) {
                       e.preventDefault();
                       const v = form.tagInput.trim();
                       setForm({ ...form, tags: form.tags.includes(v) ? form.tags : [...form.tags, v], tagInput: '' });
+                      setTagDropOpen(false); // close so the added-tags box below is visible
                     }
                   }}
                 />
-                {tagDropOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setTagDropOpen(false)} />
-                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                      {storeTags
-                        .filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase()))
-                        .map((t) => {
-                          const selected = form.tags.includes(t.name);
-                          return (
-                            <button
-                              key={t.id}
-                              type="button"
-                              className={`w-full text-left px-3.5 py-2 text-[15px] flex items-center justify-between hover:bg-gray-50 transition-colors ${selected ? 'text-primary font-semibold' : 'text-[#111318]'}`}
-                              onClick={() => {
-                                setForm({ ...form, tags: selected ? form.tags.filter((x) => x !== t.name) : [...form.tags, t.name], tagInput: '' });
-                              }}
-                            >
-                              <span className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color || '#ea580c' }} />
-                                {t.name}
-                              </span>
-                              {selected && <span className="text-primary">✓</span>}
-                            </button>
-                          );
-                        })
-                      }
-                      {form.tagInput.trim() && !storeTags.some((t) => t.name.toLowerCase() === form.tagInput.trim().toLowerCase()) && (
-                        <button
-                          type="button"
-                          className="w-full text-left px-3.5 py-2 text-[15px] text-primary hover:bg-gray-50 transition-colors"
-                          onClick={() => { const v = form.tagInput.trim(); setForm({ ...form, tags: form.tags.includes(v) ? form.tags : [...form.tags, v], tagInput: '' }); }}
-                        >
-                          + Create "{form.tagInput.trim()}"
-                        </button>
-                      )}
-                      {storeTags.filter((t) => t.name.toLowerCase().includes(form.tagInput.toLowerCase())).length === 0 && !form.tagInput.trim() && (
-                        <p className="px-3.5 py-2 text-[14px] text-[#9ca3af]">No tags available</p>
-                      )}
-                    </div>
-                  </>
-                )}
+                {tagDropOpen && (() => {
+                  // Suggest only tags NOT already added, so an added tag never shows in the
+                  // dropdown. If there is nothing to suggest and nothing to create, show no box.
+                  const q = form.tagInput.trim().toLowerCase();
+                  const suggestions = storeTags.filter((t) => !form.tags.includes(t.name) && t.name.toLowerCase().includes(q));
+                  const typed = form.tagInput.trim();
+                  const canCreate = !!typed && !form.tags.includes(typed) && !storeTags.some((t) => t.name.toLowerCase() === typed.toLowerCase());
+                  if (suggestions.length === 0 && !canCreate) return null;
+                  return (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setTagDropOpen(false)} />
+                      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-black/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        {suggestions.map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            className="w-full text-left px-3.5 py-2 text-[15px] flex items-center gap-2 text-[#111318] hover:bg-gray-50 transition-colors"
+                            onClick={() => { setForm({ ...form, tags: [...form.tags, t.name], tagInput: '' }); setTagDropOpen(false); }}
+                          >
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color || '#ea580c' }} />
+                            {t.name}
+                          </button>
+                        ))}
+                        {canCreate && (
+                          <button
+                            type="button"
+                            className="w-full text-left px-3.5 py-2 text-[15px] text-primary hover:bg-gray-50 transition-colors"
+                            onClick={() => { setForm({ ...form, tags: [...form.tags, typed], tagInput: '' }); setTagDropOpen(false); }}
+                          >
+                            + Create "{typed}"
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               {/* Added tags (separate box, scrolls when there are many) */}
               {form.tags.length > 0 && (
