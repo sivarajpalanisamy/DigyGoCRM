@@ -33,7 +33,7 @@ import { brandHex } from '@/lib/brand';
 import { formatDistanceToNow, format, isPast } from 'date-fns';
 import {
   DndContext, closestCorners, PointerSensor, useSensor, useSensors,
-  DragEndEvent, DragOverlay, DragStartEvent,
+  DragEndEvent, DragOverlay, DragStartEvent, CollisionDetection,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
@@ -5168,6 +5168,29 @@ export default function LeadsPage() {
   const selectedPipeline = pipelines.find((p) => p.id === selectedPipelineId) ?? pipelines[0];
   const activeStages = selectedPipeline?.stages.map((s) => s.name) ?? [];
 
+  // Drop a dragged lead into the stage that covers the MAJORITY of the card's area,
+  // not the nearest corner. A card lands in a stage only when >= 70% of the card sits
+  // over that stage's column - so straddling a boundary won't drop it into the wrong
+  // stage. Below 70% (ambiguous straddle / card-to-card sorting), fall back to the
+  // default corner-based detection so behaviour stays sensible.
+  const collisionDetection = useCallback<CollisionDetection>((args) => {
+    const { collisionRect, droppableContainers, droppableRects } = args;
+    const cardArea = collisionRect.width * collisionRect.height;
+    let best: { id: string | number; ratio: number } | null = null;
+    for (const c of droppableContainers) {
+      // Only weigh the stage COLUMNS (their droppable id is the stage name).
+      if (!activeStages.includes(c.id as string)) continue;
+      const r = droppableRects.get(c.id);
+      if (!r) continue;
+      const ox = Math.max(0, Math.min(collisionRect.right, r.right) - Math.max(collisionRect.left, r.left));
+      const oy = Math.max(0, Math.min(collisionRect.bottom, r.bottom) - Math.max(collisionRect.top, r.top));
+      const ratio = cardArea > 0 ? (ox * oy) / cardArea : 0;
+      if (!best || ratio > best.ratio) best = { id: c.id, ratio };
+    }
+    if (best && best.ratio >= 0.7) return [{ id: best.id }];
+    return closestCorners(args);
+  }, [activeStages]);
+
   // ── Server-side filter state (S2.3.1 + S2.3.3) ──────────────────────────────
   const [apiLeads, setApiLeads] = useState<Lead[] | null>(null);
   const [filterLoading, setFilterLoading] = useState(false);
@@ -5462,19 +5485,21 @@ export default function LeadsPage() {
     let newStage: string | undefined;
     let newStageId: string | undefined;
 
+    const srcLead = (apiLeads ?? leads).find((l) => l.id === leadId);
     if (activeStages.includes(overId)) {
       newStage = overId;
       newStageId = selectedPipeline?.stages.find((s) => s.name === overId)?.id;
     } else {
       const targetLead = (apiLeads ?? leads).find((l) => l.id === overId);
-      const srcLead = (apiLeads ?? leads).find((l) => l.id === leadId);
       if (targetLead && targetLead.stage !== srcLead?.stage) {
         newStage = targetLead.stage;
         newStageId = targetLead.stageId;
       }
     }
 
-    if (!newStage) return;
+    // No stage resolved, or dropped back onto its own stage → nothing to do (avoids a
+    // spurious "moved" toast + API call when a drag ends within the same column).
+    if (!newStage || newStage === srcLead?.stage) return;
 
     // Update store leads
     moveLeadStage(leadId, newStage, newStageId);
@@ -6011,7 +6036,7 @@ export default function LeadsPage() {
           </div>
         </div>
       ) : kanbanView ? (
-        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex gap-4 overflow-x-scroll overflow-y-hidden flex-1 min-h-0 items-stretch [&::-webkit-scrollbar]:h-2.5 [&::-webkit-scrollbar-track]:bg-black/[0.06] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/30 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-black/45">
             {activeStages.map((stage, stageIndex) => {
               const col = boardColFor(stage);
