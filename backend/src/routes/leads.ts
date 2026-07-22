@@ -364,7 +364,7 @@ router.get('/pipeline-counts', async (req: AuthRequest, res: Response) => {
       SELECT p.id AS pipeline_id, ps.id AS stage_id, COUNT(l.id)::int AS count
       FROM pipelines p
       JOIN pipeline_stages ps ON ps.pipeline_id = p.id
-      LEFT JOIN leads l ON l.stage_id = ps.id AND l.is_deleted = FALSE AND l.tenant_id = $1${scope}
+      LEFT JOIN leads l ON l.stage_id = ps.id AND l.pipeline_id = p.id AND l.is_deleted = FALSE AND l.tenant_id = $1${scope}
       WHERE p.tenant_id = $1
       GROUP BY p.id, ps.id`, params);
     const stages: Record<string, number> = {};
