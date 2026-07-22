@@ -5242,6 +5242,8 @@ export default function LeadsPage() {
   const BOARD_PAGE = 25;
   const [boardCols, setBoardCols] = useState<Record<string, BoardCol>>({});
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
+  // Exact per-pipeline totals from /leads/pipeline-counts (no 5000 limit).
+  const [pipelineCounts, setPipelineCounts] = useState<Record<string, number>>({});
   const boardColsRef = useRef(boardCols);
   boardColsRef.current = boardCols;
 
@@ -5316,7 +5318,15 @@ export default function LeadsPage() {
       setStageCounts(data.counts ?? {});
     } catch { /* badges fall back to loaded count */ }
   }, [selectedPipelineId]);
+  // Pipeline-level totals (powers the selector badge + dropdown counts).
+  const refreshPipelineCounts = useCallback(async () => {
+    try {
+      const data = await api.get<{ pipelines: Record<string, number> }>('/api/leads/pipeline-counts');
+      setPipelineCounts(data.pipelines ?? {});
+    } catch { /* fall back to store length */ }
+  }, []);
   useEffect(() => { if (boardActive) refreshStageCounts(); }, [boardActive, leads.length, refreshStageCounts]);
+  useEffect(() => { refreshPipelineCounts(); }, [refreshPipelineCounts]);
 
   // Board mutation helpers - keep the loaded columns + badge counts in sync with
   // create / move / delete / realtime without a full reload (which would reset
@@ -5594,6 +5604,11 @@ export default function LeadsPage() {
   const activeLead = activeDragId ? (apiLeads ?? leads).find((l) => l.id === activeDragId) : null;
 
   const pipelineLeads = selectedPipelineId ? leads.filter((l) => l.pipelineId === selectedPipelineId) : leads;
+  // Exact pipeline lead count from pipeline-counts (SQL COUNT, no 5000 limit).
+  // Falls back to store length when counts aren't loaded or filters narrow results.
+  const pipelineLeadCount = countsAreExact && selectedPipelineId && pipelineCounts[selectedPipelineId] !== undefined
+    ? pipelineCounts[selectedPipelineId]
+    : pipelineLeads.length;
 
   // Bulk actions
   const bulkMove = async (stage: string) => {
@@ -5793,7 +5808,7 @@ export default function LeadsPage() {
                   <Layers className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <span className="truncate max-w-[130px]">{selectedPipeline?.name ?? 'Select pipeline'}</span>
-                <span className="text-[12px] font-bold bg-primary/10 text-primary rounded-md px-1.5 py-0.5 min-w-[22px] text-center">{pipelineLeads.length}</span>
+                <span className="text-[12px] font-bold bg-primary/10 text-primary rounded-md px-1.5 py-0.5 min-w-[22px] text-center">{pipelineLeadCount}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-[#8b929c]" />
               </button>
 
@@ -5807,7 +5822,7 @@ export default function LeadsPage() {
                     </div>
                     <div className="max-h-60 overflow-y-auto py-1.5">
                       {filteredPipelines.map((p) => {
-                        const cnt = leads.filter((l) => l.pipelineId === p.id).length;
+                        const cnt = pipelineCounts[p.id] ?? leads.filter((l) => l.pipelineId === p.id).length;
                         return (
                           <button key={p.id} onClick={() => { setPipeline(p.id); setPipelineOpen(false); }}
                             className={cn('w-full text-left px-4 py-2.5 text-[15px] transition-colors flex items-center gap-2', p.id === selectedPipelineId ? 'bg-[#f1f3f5] text-primary font-semibold' : 'text-[#111318] hover:bg-[var(--app-bg)]')}>
