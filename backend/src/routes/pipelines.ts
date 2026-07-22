@@ -14,7 +14,7 @@ router.get('/', checkPermission('pipeline:view'), async (req: AuthRequest, res: 
     const isSuperAdmin = role === 'super_admin';
 
     const pipelines = await query(
-      'SELECT * FROM pipelines WHERE tenant_id=$1 ORDER BY created_at',
+      'SELECT * FROM pipelines WHERE tenant_id=$1 ORDER BY sort_order ASC, created_at ASC',
       [tenantId]
     );
     const stages = await query(
@@ -50,6 +50,33 @@ router.get('/', checkPermission('pipeline:view'), async (req: AuthRequest, res: 
 
     res.json(result);
   } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// PUT /api/pipelines/reorder — update sort_order for all pipelines
+router.put('/reorder', checkPermission('pipeline:manage'), async (req: AuthRequest, res: Response) => {
+  const { order } = req.body; // [{ id, sort_order }]
+  if (!Array.isArray(order) || order.length === 0) {
+    res.status(400).json({ error: 'order array required' });
+    return;
+  }
+  const tenantId = req.user!.tenantId;
+  const conn = await pool.connect();
+  try {
+    await conn.query('BEGIN');
+    for (const item of order) {
+      await conn.query(
+        'UPDATE pipelines SET sort_order=$1 WHERE id=$2 AND tenant_id=$3',
+        [item.sort_order, item.id, tenantId]
+      );
+    }
+    await conn.query('COMMIT');
+    res.json({ success: true });
+  } catch {
+    await conn.query('ROLLBACK').catch(() => {});
+    res.status(500).json({ error: 'Server error' });
+  } finally {
+    conn.release();
+  }
 });
 
 // POST /api/pipelines

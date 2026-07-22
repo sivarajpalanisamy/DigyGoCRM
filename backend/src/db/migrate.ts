@@ -133,6 +133,7 @@ const MIGRATIONS = [
   'migration_130_wf_exec_dedup_fix.sql',
   'migration_131_mobile_sim_count.sql',
   'migration_132_hidden_integrations.sql',
+  'migration_133_pipeline_sort_order.sql',
 ];
 
 // Split SQL file into individual statements and execute each one separately.

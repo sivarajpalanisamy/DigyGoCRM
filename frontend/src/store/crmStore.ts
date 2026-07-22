@@ -176,6 +176,7 @@ interface CrmState {
   updatePipeline: (id: string, updates: Partial<Pipeline>) => Promise<void>;
   deletePipeline: (id: string) => Promise<void>;
   clonePipeline: (id: string) => Promise<void>;
+  reorderPipelines: (orderedIds: string[]) => Promise<void>;
 
   refreshPipelines: () => Promise<void>;
   // API sync. Pass force=true to bypass the throttle (e.g. first load / manual refresh).
@@ -517,6 +518,19 @@ export const useCrmStore = create<CrmState>((set) => ({
     } catch {
       const newId = `pipeline-${Date.now()}`;
       set((s) => ({ pipelines: [...s.pipelines, { ...src, id: newId, name: `${src.name} (Copy)`, stages: src.stages.map((st) => ({ ...st, id: `${st.id}-c` })) }] }));
+    }
+  },
+
+  reorderPipelines: async (orderedIds) => {
+    const prev = useCrmStore.getState().pipelines;
+    const reordered = orderedIds.map((id) => prev.find((p) => p.id === id)!).filter(Boolean);
+    set({ pipelines: reordered });
+    try {
+      await api.put('/api/pipelines/reorder', {
+        order: orderedIds.map((id, i) => ({ id, sort_order: i })),
+      });
+    } catch {
+      set({ pipelines: prev });
     }
   },
 

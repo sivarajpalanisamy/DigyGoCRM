@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import {
   Plus, Trash2, GripVertical, Search, Pencil, Copy, X, Eye,
-  Layers, ChevronRight, MoreHorizontal,
+  Layers, MoreHorizontal, LayoutGrid, List,
 } from 'lucide-react';
 import { useCrmStore } from '@/store/crmStore';
 import { Pipeline, PipelineStage } from '@/data/mockData';
@@ -15,7 +15,7 @@ import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from '@dnd-kit/core';
 import {
-  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+  SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable, arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -147,7 +147,7 @@ function PipelineModal({ pipeline, onClose }: { pipeline?: Pipeline; onClose: ()
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="text-[14px] font-semibold text-[#6b7280]">Stages</label>
-              <span className="text-[12px] text-[#9ca3af]">{stages.length} stage{stages.length !== 1 ? 's' : ''} · drag to reorder</span>
+              <span className="text-[12px] text-[#9ca3af]">{stages.length} stage{stages.length !== 1 ? 's' : ''} - drag to reorder</span>
             </div>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={stages.map((s) => s.id)} strategy={verticalListSortingStrategy}>
@@ -199,7 +199,7 @@ function AllStagesModal({ pipeline, totalLeads, stageStats, onClose, onOpen }: {
           <div>
             <h3 className="font-headline font-bold text-[#111318] text-[17px]">{pipeline.name}</h3>
             <p className="text-[14px] text-[#6b7280] mt-0.5">
-              {totalLeads} total leads · {pipeline.stages.length} stages
+              {totalLeads} total leads - {pipeline.stages.length} stages
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-[#6b7280] transition-colors">
@@ -245,28 +245,64 @@ function AllStagesModal({ pipeline, totalLeads, stageStats, onClose, onOpen }: {
   );
 }
 
-// ─── Pipeline Card ─────────────────────────────────────────────────────────────
-function PipelineCard({ pipeline, onEdit, onClone, onDelete, onView, canManage, stageCounts, total }: {
+// ─── Context Menu (shared between Card and List row) ─────────────────────────
+function PipelineContextMenu({ onView, onEdit, onClone, onDelete, show, onToggle }: {
+  onView: () => void; onEdit: () => void; onClone: () => void; onDelete: () => void;
+  show: boolean; onToggle: () => void;
+}) {
+  return (
+    <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={onToggle}
+        className="w-7 h-7 rounded-lg flex items-center justify-center text-[#9ca3af] hover:bg-[#f1f3f5] hover:text-primary transition-colors"
+      >
+        <MoreHorizontal className="w-4 h-4" />
+      </button>
+      {show && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={onToggle} />
+          <div className="absolute right-0 top-8 z-50 w-44 bg-white rounded-xl border border-[var(--hairline)] shadow-xl overflow-hidden py-1">
+            <button onClick={() => { onToggle(); onView(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors text-left">
+              <Eye className="w-3.5 h-3.5 text-[#6b7280]" /> Open Pipeline
+            </button>
+            <button onClick={() => { onToggle(); onEdit(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors text-left">
+              <Pencil className="w-3.5 h-3.5 text-[#6b7280]" /> Edit
+            </button>
+            <button onClick={() => { onToggle(); onClone(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors text-left">
+              <Copy className="w-3.5 h-3.5 text-[#6b7280]" /> Clone
+            </button>
+            <div className="border-t border-[var(--hairline)] my-1" />
+            <button onClick={() => { onToggle(); onDelete(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-red-500 hover:bg-red-50 transition-colors text-left">
+              <Trash2 className="w-3.5 h-3.5" /> Delete
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Sortable Pipeline Card ─────────────────────────────────────────────────
+function SortablePipelineCard({ pipeline, onEdit, onClone, onDelete, onView, canManage, stageCounts, total }: {
   pipeline: Pipeline;
   onEdit: () => void;
   onClone: () => void;
   onDelete: () => void;
   onView: () => void;
   canManage: boolean;
-  stageCounts: Record<string, number>;  // stageId -> count (server-side, view-scoped)
-  total: number;                        // total leads in this pipeline
+  stageCounts: Record<string, number>;
+  total: number;
 }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pipeline.id });
   const [showAllStages, setShowAllStages] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
   const totalLeads = total;
-
   const stageStats = pipeline.stages.map((stage) => ({
     id: stage.id,
     name: stage.name,
     count: stageCounts[stage.id] ?? 0,
   }));
-
   const hasMore = stageStats.length > PREVIEW_LIMIT;
   const visible = stageStats.slice(0, PREVIEW_LIMIT);
   const hiddenCount = stageStats.length - PREVIEW_LIMIT;
@@ -274,54 +310,42 @@ function PipelineCard({ pipeline, onEdit, onClone, onDelete, onView, canManage, 
   return (
     <>
       <div
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, zIndex: isDragging ? 10 : undefined }}
         onClick={onView}
         className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer"
       >
         {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-[var(--hairline)] shrink-0">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="font-headline font-bold text-[#111318] text-[16px] leading-tight">{pipeline.name}</h3>
-              <p className="text-[14px] text-[#6b7280] mt-1 whitespace-nowrap">
-                {totalLeads} leads · {pipeline.stages.length} stages
-              </p>
+            <div className="flex items-start gap-2 min-w-0">
+              {canManage && (
+                <button
+                  {...attributes} {...listeners}
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-1 mt-0.5 rounded text-[#c3c8cf] hover:text-[#6b7280] cursor-grab active:cursor-grabbing transition-colors shrink-0"
+                >
+                  <GripVertical className="w-4 h-4" />
+                </button>
+              )}
+              <div className="min-w-0">
+                <h3 className="font-headline font-bold text-[#111318] text-[16px] leading-tight">{pipeline.name}</h3>
+                <p className="text-[14px] text-[#6b7280] mt-1 whitespace-nowrap">
+                  {totalLeads} leads - {pipeline.stages.length} stages
+                </p>
+              </div>
             </div>
 
-            {/* ⋯ menu - only visible when user can manage pipelines */}
             {canManage && (
-              <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => setShowMenu((v) => !v)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[#9ca3af] hover:bg-[#f1f3f5] hover:text-primary transition-colors"
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-                {showMenu && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-                    <div className="absolute right-0 top-8 z-50 w-44 bg-white rounded-xl border border-[var(--hairline)] shadow-xl overflow-hidden py-1">
-                      <button onClick={() => { setShowMenu(false); onView(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors text-left">
-                        <Eye className="w-3.5 h-3.5 text-[#6b7280]" /> Open Pipeline
-                      </button>
-                      <button onClick={() => { setShowMenu(false); onEdit(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors text-left">
-                        <Pencil className="w-3.5 h-3.5 text-[#6b7280]" /> Edit
-                      </button>
-                      <button onClick={() => { setShowMenu(false); onClone(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-[#111318] hover:bg-[#f1f3f5] transition-colors text-left">
-                        <Copy className="w-3.5 h-3.5 text-[#6b7280]" /> Clone
-                      </button>
-                      <div className="border-t border-[var(--hairline)] my-1" />
-                      <button onClick={() => { setShowMenu(false); onDelete(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[15px] text-red-500 hover:bg-red-50 transition-colors text-left">
-                        <Trash2 className="w-3.5 h-3.5" /> Delete
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+              <PipelineContextMenu
+                onView={onView} onEdit={onEdit} onClone={onClone} onDelete={onDelete}
+                show={showMenu} onToggle={() => setShowMenu((v) => !v)}
+              />
             )}
           </div>
         </div>
 
-        {/* Stage list - first 5 preview */}
+        {/* Stage list */}
         <div className="px-5 py-4 space-y-2.5 flex-1">
           {visible.map((stage) => (
             <div key={stage.id} className="flex items-center justify-between gap-3">
@@ -334,19 +358,17 @@ function PipelineCard({ pipeline, onEdit, onClone, onDelete, onView, canManage, 
               </span>
             </div>
           ))}
-
           {hasMore && (
             <p className="text-[12px] text-[#9ca3af] pt-0.5">
               +{hiddenCount} more stage{hiddenCount !== 1 ? 's' : ''}
             </p>
           )}
-
           {totalLeads === 0 && (
             <p className="text-[14px] text-[#9ca3af] py-1">No leads yet</p>
           )}
         </div>
 
-        {/* Footer - two permanent buttons */}
+        {/* Footer */}
         <div className="px-4 pb-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => setShowAllStages(true)}
@@ -376,12 +398,99 @@ function PipelineCard({ pipeline, onEdit, onClone, onDelete, onView, canManage, 
   );
 }
 
+// ─── Sortable Pipeline List Row ─────────────────────────────────────────────
+function SortablePipelineRow({ pipeline, onEdit, onClone, onDelete, onView, canManage, stageCounts, total }: {
+  pipeline: Pipeline;
+  onEdit: () => void;
+  onClone: () => void;
+  onDelete: () => void;
+  onView: () => void;
+  canManage: boolean;
+  stageCounts: Record<string, number>;
+  total: number;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pipeline.id });
+  const [showMenu, setShowMenu] = useState(false);
+
+  const stageStats = pipeline.stages.map((stage) => ({
+    id: stage.id,
+    name: stage.name,
+    count: stageCounts[stage.id] ?? 0,
+  }));
+
+  // Find top 3 stages by count for the mini breakdown
+  const topStages = [...stageStats].sort((a, b) => b.count - a.count).slice(0, 3);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, zIndex: isDragging ? 10 : undefined }}
+      onClick={onView}
+      className="bg-white rounded-xl border border-[var(--hairline)] card-shadow hover:shadow-md transition-all duration-200 cursor-pointer flex items-center gap-4 px-4 py-3.5 group"
+    >
+      {/* Drag handle */}
+      {canManage && (
+        <button
+          {...attributes} {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          className="p-1 rounded text-[#c3c8cf] hover:text-[#6b7280] cursor-grab active:cursor-grabbing transition-colors shrink-0"
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+      )}
+
+      {/* Pipeline name + meta */}
+      <div className="min-w-0 flex-1">
+        <h3 className="font-headline font-bold text-[#111318] text-[15px] leading-tight truncate">{pipeline.name}</h3>
+        <p className="text-[13px] text-[#9ca3af] mt-0.5">{pipeline.stages.length} stages</p>
+      </div>
+
+      {/* Total leads */}
+      <div className="shrink-0 text-center min-w-[70px]">
+        <p className={cn('text-[18px] font-bold tabular-nums', total > 0 ? 'text-[#111318]' : 'text-[#c3c8cf]')}>{total}</p>
+        <p className="text-[11px] text-[#9ca3af] uppercase tracking-wide font-medium">Leads</p>
+      </div>
+
+      {/* Stage breakdown - top 3 */}
+      <div className="hidden md:flex items-center gap-3 shrink-0 min-w-[240px]">
+        {topStages.map((s) => (
+          <div key={s.id} className="flex items-center gap-1.5">
+            <span className="text-[13px] text-[#6b7280] truncate max-w-[80px]">{s.name}</span>
+            <span className={cn('text-[13px] font-bold tabular-nums', s.count > 0 ? 'text-[#111318]' : 'text-[#c3c8cf]')}>{s.count}</span>
+          </div>
+        ))}
+        {stageStats.length > 3 && (
+          <span className="text-[11px] text-[#9ca3af]">+{stageStats.length - 3}</span>
+        )}
+      </div>
+
+      {/* Open button */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onView(); }}
+        className="shrink-0 px-3 py-1.5 rounded-lg text-[13px] font-bold text-primary bg-orange-50 hover:bg-orange-100 active:scale-[0.98] transition"
+      >
+        Open
+      </button>
+
+      {/* Actions menu */}
+      {canManage && (
+        <PipelineContextMenu
+          onView={onView} onEdit={onEdit} onClone={onClone} onDelete={onDelete}
+          show={showMenu} onToggle={() => setShowMenu((v) => !v)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── View preference ─────────────────────────────────────────────────────────
+const VIEW_STORAGE_KEY = 'overview_view_mode';
+type ViewMode = 'card' | 'list';
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function LeadManagementOverviewPage() {
   const navigate = useNavigate();
-  const { pipelines, deletePipeline, clonePipeline } = useCrmStore();
-  // Lead counts come from the server (view-scoped) so the page doesn't depend on
-  // every lead being loaded into the store.
+  const { pipelines, deletePipeline, clonePipeline, reorderPipelines } = useCrmStore();
   const [counts, setCounts] = useState<{ stages: Record<string, number>; pipelines: Record<string, number> }>({ stages: {}, pipelines: {} });
   useEffect(() => {
     api.get<{ stages: Record<string, number>; pipelines: Record<string, number> }>('/api/leads/pipeline-counts')
@@ -389,6 +498,7 @@ export default function LeadManagementOverviewPage() {
       .catch(() => {});
   }, []);
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem(VIEW_STORAGE_KEY) as ViewMode) || 'card');
   const [showCreate, setShowCreate] = useState(false);
   const [editPipeline, setEditPipeline] = useState<Pipeline | null>(null);
   const [deletePipelineTarget, setDeletePipelineTarget] = useState<Pipeline | null>(null);
@@ -400,10 +510,39 @@ export default function LeadManagementOverviewPage() {
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const toggleView = (mode: ViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_STORAGE_KEY, mode);
+  };
+
+  // Drag-and-drop reorder sensors
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = pipelines.findIndex((p) => p.id === active.id);
+    const newIdx = pipelines.findIndex((p) => p.id === over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+    const reordered = arrayMove(pipelines, oldIdx, newIdx);
+    reorderPipelines(reordered.map((p) => p.id));
+  };
+
+  const cardProps = (p: Pipeline) => ({
+    pipeline: p,
+    canManage,
+    stageCounts: counts.stages,
+    total: counts.pipelines[p.id] ?? 0,
+    onView: () => navigate(`/leads?pipeline=${p.id}`),
+    onEdit: () => setEditPipeline(p),
+    onClone: () => { clonePipeline(p.id); toast.success('Pipeline cloned'); },
+    onDelete: () => setDeletePipelineTarget(p),
+  });
+
   return (
     <div className="space-y-5 animate-fade-in">
 
-      {/* Toolbar - search + pipeline filter + new button */}
+      {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
 
         {/* Search */}
@@ -412,7 +551,7 @@ export default function LeadManagementOverviewPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search pipelines…"
+            placeholder="Search pipelines..."
             className="w-full pl-9 pr-4 py-2.5 text-[15px] bg-white border border-[var(--hairline)] rounded-xl outline-none focus:border-primary/40 placeholder:text-gray-400 transition-all"
             style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
           />
@@ -431,9 +570,32 @@ export default function LeadManagementOverviewPage() {
           ))}
         </select>
 
+        {/* View toggle */}
+        <div className="flex items-center bg-white border border-[var(--hairline)] rounded-xl overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+          <button
+            onClick={() => toggleView('card')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-2 text-[14px] font-semibold transition-colors',
+              viewMode === 'card' ? 'bg-primary/10 text-primary' : 'text-[#9ca3af] hover:text-[#6b7280]'
+            )}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" /> Cards
+          </button>
+          <div className="w-px h-5 bg-[var(--hairline)]" />
+          <button
+            onClick={() => toggleView('list')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-2 text-[14px] font-semibold transition-colors',
+              viewMode === 'list' ? 'bg-primary/10 text-primary' : 'text-[#9ca3af] hover:text-[#6b7280]'
+            )}
+          >
+            <List className="w-3.5 h-3.5" /> List
+          </button>
+        </div>
+
         <div className="flex-1" />
 
-        {/* New Pipeline - only for users with pipeline:manage */}
+        {/* New Pipeline */}
         {canManage && (
           <button
             onClick={() => setShowCreate(true)}
@@ -445,23 +607,28 @@ export default function LeadManagementOverviewPage() {
         )}
       </div>
 
-      {/* Pipeline cards grid */}
+      {/* Pipeline content */}
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5" style={{ gridAutoRows: '1fr' }}>
-          {filtered.map((p) => (
-            <PipelineCard
-              key={p.id}
-              pipeline={p}
-              canManage={canManage}
-              stageCounts={counts.stages}
-              total={counts.pipelines[p.id] ?? 0}
-              onView={() => navigate(`/leads?pipeline=${p.id}`)}
-              onEdit={() => setEditPipeline(p)}
-              onClone={() => { clonePipeline(p.id); toast.success('Pipeline cloned'); }}
-              onDelete={() => setDeletePipelineTarget(p)}
-            />
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={filtered.map((p) => p.id)}
+            strategy={viewMode === 'card' ? rectSortingStrategy : verticalListSortingStrategy}
+          >
+            {viewMode === 'card' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5" style={{ gridAutoRows: '1fr' }}>
+                {filtered.map((p) => (
+                  <SortablePipelineCard key={p.id} {...cardProps(p)} />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filtered.map((p) => (
+                  <SortablePipelineRow key={p.id} {...cardProps(p)} />
+                ))}
+              </div>
+            )}
+          </SortableContext>
+        </DndContext>
       ) : (
         <div className="bg-white rounded-2xl border border-[var(--hairline)] card-shadow py-20 flex flex-col items-center gap-3 text-center">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
