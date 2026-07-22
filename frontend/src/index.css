@@ -184,8 +184,13 @@
   }
 
   /* ── Page-enter motion (applied per route in AppLayout) ── */
+  /* NOTE: no `both`/`forwards` fill-mode. A retained `transform: translateY(0)`
+     would make this element a containing block for `position: fixed`, which
+     confined every in-page modal to the content area (and behind the mobile
+     bottom nav). The animation is active at t=0 (no delay), so the 0% keyframe
+     still applies on the first frame - dropping the fill-mode costs no flash. */
   .page-enter {
-    animation: page-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: page-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   }
   @keyframes page-enter {
     0% { opacity: 0; transform: translateY(8px); }

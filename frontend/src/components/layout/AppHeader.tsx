@@ -218,6 +218,12 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
     return false;
   });
   const subNav = activeSection ? sectionNavs[activeSection] : null;
+  // Mobile sub-nav: a flat list of leaf tabs (dropdown groups expanded inline)
+  // so the section tabs get their own full-width scrollable row instead of being
+  // clipped into the sliver between the logo and the right-hand cluster.
+  const flatNav: NavTab[] = subNav
+    ? subNav.flatMap((item) => (isDropdown(item) ? item.children : [item]))
+    : [];
 
   const isTabActive = (path: string) => {
     const [p, q] = path.split('?');
@@ -239,8 +245,9 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Mobile: logo mark */}
-        <div className="md:hidden flex items-center gap-2 shrink-0">
+        {/* Mobile: logo mark (mr-auto pushes the right cluster to the edge, since the
+            desktop tab row that normally does that is hidden on mobile) */}
+        <div className="md:hidden flex items-center gap-2 shrink-0 mr-auto">
           {branded && logoUrl ? (
             <img src={logoUrl} alt={tenantName ?? ''} className="h-7 max-w-[100px] object-contain" />
           ) : branded && tenantName ? (
@@ -300,7 +307,7 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
             pushed left by mr-auto rather than flex-1: with flex-1 its basis is 0, so it only
             ever rendered into the space the fixed-width right cluster left over, and the tabs
             silently clipped once impersonation added another control to the row. */}
-        <div className="mr-auto min-w-0 flex items-center overflow-x-auto scrollbar-hide">
+        <div className="mr-auto min-w-0 hidden md:flex items-center overflow-x-auto scrollbar-hide">
           {subNav ? (
             <nav className="flex items-center gap-1 rounded-full bg-[var(--surface-2)] p-1">
               {subNav.map((item) => {
@@ -675,6 +682,30 @@ export function AppHeader({ onMenuClick }: { onMenuClick: () => void }) {
           </div>
         </div>
       </div>
+
+      {/* Mobile section sub-nav - its own full-width, horizontally scrollable row
+          so the tabs are usable instead of clipped into the top bar. Desktop keeps
+          the inline pill nav in the header row above (hidden md:flex). */}
+      {flatNav.length > 0 && (
+        <div className="md:hidden px-3 pb-2">
+          <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-full bg-[var(--surface-2)] p-1">
+            {flatNav.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  'flex items-center rounded-full px-3.5 py-1.5 text-[13px] font-semibold whitespace-nowrap transition-all duration-150 select-none shrink-0',
+                  isTabActive(item.path)
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-[#6b7280] active:text-[#111318]'
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
 
       {/* ── Help / Raise a ticket modal ── */}
       {showHelp && (

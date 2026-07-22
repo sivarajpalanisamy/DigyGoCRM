@@ -134,7 +134,7 @@ function CreateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-      <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl overflow-hidden"
+      <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl overflow-y-auto max-h-[92dvh] pb-[env(safe-area-inset-bottom)]"
         style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[var(--hairline)]">
@@ -322,7 +322,7 @@ function CompleteModal({
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl overflow-hidden"
+      <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl overflow-y-auto max-h-[92dvh] pb-[env(safe-area-inset-bottom)]"
         style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
 
         {/* Header */}
