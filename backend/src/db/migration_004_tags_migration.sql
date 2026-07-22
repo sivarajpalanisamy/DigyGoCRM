@@ -17,6 +17,12 @@ BEGIN
     FOREACH tag_name IN ARRAY r.tags LOOP
       tag_name := TRIM(tag_name);
       CONTINUE WHEN tag_name = '';
+      -- Skip over-long values: tags.name is varchar(100). A handful of legacy leads
+      -- have whole notes accidentally saved as a "tag" (>100 chars). They can't fit
+      -- the column, and the app's own syncLeadTagsToJunction skips them the same way
+      -- (its INSERT is .catch()-swallowed). Without this guard the 22001 error aborts
+      -- the WHOLE DO block, so this backfill never committed and re-errored every deploy.
+      CONTINUE WHEN char_length(tag_name) > 100;
 
       -- Find existing tag for this tenant, or create it
       SELECT id INTO tag_id
