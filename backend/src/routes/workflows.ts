@@ -1517,64 +1517,134 @@ export async function executeNodes(
           let sentBody = '';
           if (tplId) {
             const tplRes = await query(
-              'SELECT meta_name, language, body, header, meta_components, file_path, file_type, file_name FROM templates WHERE id=$1::uuid AND tenant_id=$2',
+              'SELECT meta_name, language, body, header, variables, meta_components, file_path, file_type, file_name FROM templates WHERE id=$1::uuid AND tenant_id=$2',
               [tplId, tenantId]
             );
             const tpl = tplRes.rows[0];
             if (tpl?.meta_name) {
               // Build components from param mappings in node.config.params
               const paramMappings = (node.config.params ?? {}) as Record<string, Array<{ value: string }>>;
-              const tplComponents: Array<{ type: string; parameters: Array<{ type: string; [key: string]: any }> }> = [];
+              const tplComponents: Array<{ type: string; sub_type?: string; index?: number; parameters: Array<{ type: string; [key: string]: any }> }> = [];
 
               // Detect media header (DOCUMENT/IMAGE/VIDEO)
               const metaCompsRaw = typeof tpl.meta_components === 'string' ? (() => { try { return JSON.parse(tpl.meta_components); } catch { return null; } })() : tpl.meta_components;
               const metaHdr = Array.isArray(metaCompsRaw) ? metaCompsRaw.find((c: any) => c.type === 'HEADER') : null;
               const hdrFmt = metaHdr ? (metaHdr.format ?? '').toUpperCase() : '';
-              if (['DOCUMENT', 'IMAGE', 'VIDEO'].includes(hdrFmt) && tpl.file_path) {
-                const FormData = (await import('form-data')).default;
-                const fullPath = path.resolve(process.cwd(), tpl.file_path);
-                if (fs.existsSync(fullPath)) {
-                  const form = new FormData();
-                  form.append('file', fs.createReadStream(fullPath));
-                  form.append('messaging_product', 'whatsapp');
-                  form.append('type', tpl.file_type || 'application/octet-stream');
-                  const mediaJson = await new Promise<any>((resolve, reject) => {
-                    const req2 = https.request({
-                      hostname: 'graph.facebook.com',
-                      path: `/v21.0/${phone_number_id}/media`,
-                      method: 'POST',
-                      headers: { Authorization: `Bearer ${waToken}`, ...form.getHeaders() },
-                    }, (res2) => {
-                      let data = '';
-                      res2.on('data', (chunk: string) => { data += chunk; });
-                      res2.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON')); } });
-                    });
-                    req2.on('error', reject);
-                    form.pipe(req2);
-                  });
-                  if (mediaJson.id) {
-                    const fmt = hdrFmt.toLowerCase();
-                    const param: any = { type: fmt };
-                    param[fmt] = { id: mediaJson.id };
-                    if (fmt === 'document' && tpl.file_name) {
-                      param[fmt].filename = tpl.file_name;
+              if (['DOCUMENT', 'IMAGE', 'VIDEO'].includes(hdrFmt)) {
+                let mediaId: string | null = null;
+                // Try uploading from stored file on disk
+                if (tpl.file_path) {
+                  const FormData = (await import('form-data')).default;
+                  const fullPath = path.resolve(process.cwd(), tpl.file_path);
+                  if (fs.existsSync(fullPath)) {
+                    try {
+                      const form = new FormData();
+                      form.append('file', fs.createReadStream(fullPath));
+                      form.append('messaging_product', 'whatsapp');
+                      form.append('type', tpl.file_type || 'application/octet-stream');
+                      const mediaJson = await new Promise<any>((resolve, reject) => {
+                        const req2 = https.request({
+                          hostname: 'graph.facebook.com',
+                          path: `/v21.0/${phone_number_id}/media`,
+                          method: 'POST',
+                          headers: { Authorization: `Bearer ${waToken}`, ...form.getHeaders() },
+                        }, (res2) => {
+                          let data = '';
+                          res2.on('data', (chunk: string) => { data += chunk; });
+                          res2.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON')); } });
+                        });
+                        req2.on('error', reject);
+                        form.pipe(req2);
+                      });
+                      if (mediaJson.id) mediaId = mediaJson.id;
+                    } catch (uploadErr: any) {
+                      console.error('[send_whatsapp] media upload failed:', uploadErr.message);
                     }
-                    tplComponents.push({ type: 'header', parameters: [param] });
                   }
+                }
+                // Fallback: use the example handle from meta_components (approved template)
+                if (!mediaId && metaHdr?.example?.header_handle?.length) {
+                  // Meta's example header_handle is a direct media URL - send as link
+                  const fmt = hdrFmt.toLowerCase();
+                  const param: any = { type: fmt };
+                  param[fmt] = { link: metaHdr.example.header_handle[0] };
+                  tplComponents.push({ type: 'header', parameters: [param] });
+                } else if (mediaId) {
+                  const fmt = hdrFmt.toLowerCase();
+                  const param: any = { type: fmt };
+                  param[fmt] = { id: mediaId };
+                  if (fmt === 'document' && tpl.file_name) {
+                    param[fmt].filename = tpl.file_name;
+                  }
+                  tplComponents.push({ type: 'header', parameters: [param] });
+                } else {
+                  throw new Error(`send_whatsapp: template "${tpl.meta_name}" requires a ${hdrFmt} header but no file is stored. Re-upload the file in the template settings.`);
                 }
               }
 
-              for (const [compType, params] of Object.entries(paramMappings)) {
-                if (!Array.isArray(params) || params.length === 0) continue;
-                // Skip header if we already added a media header
-                if (compType === 'header' && tplComponents.some(c => c.type === 'header')) continue;
-                tplComponents.push({
-                  type: compType,
-                  parameters: params.map((p) => ({
-                    type: 'text',
-                    text: interpolate((p.value ?? '') as string, lead, valueTokens),
-                  })),
-                });
+              // Resolve body/header text params from workflow config or template var_mapping
+              const hasExplicitBody = Array.isArray(paramMappings.body) && paramMappings.body.length > 0
+                && paramMappings.body.some((p) => (p.value ?? '').trim() !== '');
+
+              if (hasExplicitBody) {
+                // Use explicit param mappings from workflow config
+                for (const [compType, params] of Object.entries(paramMappings)) {
+                  if (!Array.isArray(params) || params.length === 0) continue;
+                  if (compType === 'header' && tplComponents.some(c => c.type === 'header')) continue;
+                  tplComponents.push({
+                    type: compType,
+                    parameters: params.map((p) => {
+                      const resolved = interpolate((p.value ?? '') as string, lead, valueTokens);
+                      return { type: 'text', text: resolved || lead.name || 'there' };
+                    }),
+                  });
+                }
+              } else {
+                // Fallback: resolve from template's saved var_mapping (same as inbox send)
+                const vars = typeof tpl.variables === 'string' ? (() => { try { return JSON.parse(tpl.variables); } catch { return null; } })() : tpl.variables;
+                const varMapping: Record<string, string> = vars?.var_mapping ?? {};
+                const metaBody = Array.isArray(metaCompsRaw) ? (metaCompsRaw.find((c: any) => c.type === 'BODY')?.text ?? null) : null;
+                const effectiveBody = (metaBody && !/\{%\w+%\}/.test(metaBody)) ? metaBody : (tpl.body ?? '');
+                const bodyNums = Array.from(effectiveBody.matchAll(/\{\{(\d+)\}\}/g)).map((m: any) => m[1]).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).sort();
+                if (bodyNums.length > 0) {
+                  const resolveKey = (key: string) => {
+                    const k = key?.toLowerCase?.() ?? '';
+                    if (k === 'full_name' || k === 'name') return lead.name || 'there';
+                    if (k === 'first_name') return (lead.name ?? '').split(/\s+/)[0] || 'there';
+                    if (k === 'last_name') { const parts = (lead.name ?? '').split(/\s+/); return parts.length > 1 ? parts[parts.length - 1] : ''; }
+                    if (k === 'email') return lead.email || '';
+                    if (k === 'phone') return lead.phone || '';
+                    return '';
+                  };
+                  tplComponents.push({
+                    type: 'body',
+                    parameters: bodyNums.map((n: string) => {
+                      const crmKey = varMapping[n] || 'full_name';
+                      const resolved = resolveKey(crmKey);
+                      return { type: 'text', text: resolved || lead.name || 'there' };
+                    }),
+                  });
+                }
+              }
+
+              // Button URL variables (dynamic URL suffix)
+              if (Array.isArray(metaCompsRaw)) {
+                const buttonsComp = metaCompsRaw.find((c: any) => c.type === 'BUTTONS');
+                if (buttonsComp?.buttons) {
+                  (buttonsComp.buttons as any[]).forEach((btn: any, idx: number) => {
+                    if (btn.type === 'URL' && btn.url && /\{\{\d+\}\}/.test(btn.url)) {
+                      // Check if workflow config has a button param
+                      const btnParams = paramMappings[`button_${idx}`] ?? paramMappings.button;
+                      const btnText = btnParams?.[0]?.value
+                        ? interpolate(btnParams[0].value as string, lead, valueTokens)
+                        : '';
+                      tplComponents.push({
+                        type: 'button', sub_type: 'url', index: idx,
+                        parameters: [{ type: 'text', text: btnText }],
+                      });
+                    }
+                  });
+                }
               }
 
               waResp = await sendWATemplate(phone_number_id, waToken, toPhone, tpl.meta_name, tpl.language ?? 'en', tplComponents);
