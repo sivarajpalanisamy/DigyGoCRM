@@ -2401,7 +2401,9 @@ export async function executeNodes(
         actTitle = message;
       } else if (node.actionType === 'send_whatsapp') {
         actType = 'wa_template_sent';
-        actTitle = message;
+        // Timeline is user-facing — strip the technical "(wamid: ...)" suffix.
+        // The full message (with wamid) stays in workflow_execution_logs for tracing.
+        actTitle = message.replace(/\s*\(wamid:[^)]*\)/g, '');
       }
       if (actType) {
         await query(
