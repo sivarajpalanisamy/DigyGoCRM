@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../theme.dart';
 import '../services/native.dart';
+import '../services/dialer_data.dart';
 
-/// Guides the user to turn ON their phone's built-in (OEM) automatic call
-/// recording - the only way (on Android 10+) to capture both sides of a call.
-/// Our app then harvests those files and uploads them to the CRM. This screen
-/// shows live status and brand-specific steps, plus buttons to jump straight to
-/// the phone's recording settings and to grant the file access we need to read
-/// the recordings.
+/// Call-recording setup. Two paths, most-reliable first:
+///  1. Hawcus records the call ITSELF when it is your default calling app (works on
+///     every device - your side always; both sides on speakerphone). This is the
+///     reliable path on MIUI/Redmi where the phone saves no harvestable recording.
+///  2. (Optional, better audio) your phone's own auto call recording captures both
+///     sides; Hawcus harvests those files - needs file access.
+/// Shows live status and brand-specific steps.
 class EnableRecordingScreen extends StatefulWidget {
   const EnableRecordingScreen({super.key});
 
@@ -21,6 +24,8 @@ class _EnableRecordingScreenState extends State<EnableRecordingScreen> with Widg
   bool _fileAccess = false;
   bool _folderExists = false;
   int _fileCount = 0;
+  bool _defaultDialer = false;
+  bool _micGranted = false;
   bool _loading = true;
 
   @override
@@ -46,19 +51,28 @@ class _EnableRecordingScreenState extends State<EnableRecordingScreen> with Widg
     final fa = await Native.instance.hasAllFilesAccess();
     final fe = fa ? await Native.instance.recordingFolderExists() : false;
     final fc = fa ? await Native.instance.recordingFileCount() : 0;
+    final dd = await Native.instance.isDefaultDialer();
+    final mic = await Permission.microphone.isGranted;
     if (!mounted) return;
     setState(() {
       _info = info;
       _fileAccess = fa;
       _folderExists = fe;
       _fileCount = fc;
+      _defaultDialer = dd;
+      _micGranted = mic;
       _loading = false;
     });
   }
 
-  // Heuristic: recording is "working" if we can read files and at least one
-  // recording exists (proof the built-in recorder is producing files).
-  bool get _recordingWorking => _fileAccess && _fileCount > 0;
+  // Hawcus can record the call itself (mic - your side always) when it is the default
+  // calling app and has microphone permission. This is the reliable path, independent
+  // of the phone's built-in recorder.
+  bool get _ownRecorderReady => _defaultDialer && _micGranted;
+  // OEM path adds both-sides audio when the phone's own recorder is producing files.
+  bool get _oemReady => _fileAccess && _fileCount > 0;
+  // Recording works if EITHER path is ready.
+  bool get _recordingWorking => _ownRecorderReady || _oemReady;
 
   @override
   Widget build(BuildContext context) {
@@ -81,20 +95,58 @@ class _EnableRecordingScreenState extends State<EnableRecordingScreen> with Widg
                 _statusCard(),
                 const SizedBox(height: 18),
 
-                const Text('Why this is needed',
+                const Text('How recording works',
                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Brand.ink)),
                 const SizedBox(height: 6),
                 const Text(
-                  'Android does not allow apps to record calls directly. Recording '
-                  'is done by your phone\'s own call recorder. Turn it on once, and '
-                  'Hawcus will automatically attach each recording to its call in the CRM.',
+                  'When Hawcus is your default calling app, it records every call itself '
+                  'and attaches it to the call in the CRM - even if your phone has no built-in '
+                  'recorder. On Android 10+ this captures your side of the call (turn on '
+                  'speakerphone to also capture the other person). This is the reliable path.',
                   style: TextStyle(color: Brand.muted, fontSize: 13, height: 1.45),
                 ),
                 const SizedBox(height: 22),
 
-                // Step 1 - enable built-in recording
-                _sectionHeader('1', 'Turn on automatic call recording'),
+                // Step 1 - default dialer + mic (the reliable, OEM-independent path)
+                _sectionHeader('1', 'Let Hawcus record your calls'),
+                const SizedBox(height: 8),
+                _inlineStatus(_defaultDialer, _defaultDialer ? 'Hawcus is your default calling app' : 'Hawcus is not your default calling app'),
+                const SizedBox(height: 6),
+                _inlineStatus(_micGranted, _micGranted ? 'Microphone permission granted' : 'Microphone permission needed'),
+                const SizedBox(height: 10),
+                if (!_defaultDialer)
+                  _primaryButton(
+                    icon: Icons.phone_in_talk,
+                    label: 'Set Hawcus as default calling app',
+                    onTap: () async {
+                      await DialerData.instance.requestDefaultDialer();
+                      await _refresh();
+                    },
+                  ),
+                if (!_micGranted) ...[
+                  const SizedBox(height: 8),
+                  _primaryButton(
+                    icon: Icons.mic,
+                    label: 'Grant microphone permission',
+                    onTap: () async {
+                      await Permission.microphone.request();
+                      await _refresh();
+                    },
+                  ),
+                ],
+                if (_ownRecorderReady)
+                  _inlineStatus(true, 'Ready - Hawcus will record your calls'),
+                const SizedBox(height: 24),
+
+                // Step 2 - OEM recorder (OPTIONAL: better audio - both sides)
+                _sectionHeader('2', 'Optional: capture both sides (HD)'),
                 const SizedBox(height: 4),
+                const Text(
+                  'If your phone has its own call recorder, turning it on also captures the '
+                  'other person clearly (not just your side). This step is optional.',
+                  style: TextStyle(color: Brand.muted, fontSize: 12.5, height: 1.4),
+                ),
+                const SizedBox(height: 8),
                 Text('Steps for your phone ($brandName):',
                     style: const TextStyle(color: Brand.muted, fontSize: 12, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 10),
@@ -105,18 +157,13 @@ class _EnableRecordingScreenState extends State<EnableRecordingScreen> with Widg
                   label: 'Open recording settings',
                   onTap: () => Native.instance.openCallRecordingSettings(),
                 ),
-                const SizedBox(height: 24),
-
-                // Step 2 - file access (so we can read the recordings)
-                _sectionHeader('2', 'Allow Hawcus to read recordings'),
-                const SizedBox(height: 8),
+                const SizedBox(height: 14),
                 if (_fileAccess)
-                  _inlineStatus(true, 'File access granted')
+                  _inlineStatus(true, 'File access granted (for reading those recordings)')
                 else ...[
                   const Text(
-                    'Hawcus needs file access to read the recordings your phone saves, '
-                    'so it can upload them to the CRM.',
-                    style: TextStyle(color: Brand.muted, fontSize: 13, height: 1.45),
+                    'To upload your phone\'s own recordings, Hawcus also needs file access.',
+                    style: TextStyle(color: Brand.muted, fontSize: 12.5, height: 1.4),
                   ),
                   const SizedBox(height: 10),
                   _primaryButton(
@@ -143,20 +190,15 @@ class _EnableRecordingScreenState extends State<EnableRecordingScreen> with Widg
 
   Widget _statusCard() {
     final ok = _recordingWorking;
-    final partial = _fileAccess && _folderExists && _fileCount == 0;
-    final color = ok ? const Color(0xFF16A34A) : partial ? const Color(0xFFD97706) : const Color(0xFFDC2626);
-    final bg = ok ? const Color(0x1416A34A) : partial ? const Color(0x14D97706) : const Color(0x14DC2626);
-    final icon = ok ? Icons.check_circle : partial ? Icons.info : Icons.error_outline;
-    final title = ok
-        ? 'Call recording is working'
-        : partial
-            ? 'Almost there'
-            : 'Call recording not set up';
+    final color = ok ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+    final bg = ok ? const Color(0x1416A34A) : const Color(0x14DC2626);
+    final icon = ok ? Icons.check_circle : Icons.error_outline;
+    final title = ok ? 'Call recording is working' : 'Call recording not set up';
     final msg = ok
-        ? 'Your phone is recording calls and Hawcus can read them ($_fileCount found). New calls will sync automatically.'
-        : partial
-            ? 'File access is granted but no recordings were found yet. Make sure automatic call recording is turned ON (Step 1), then make a test call.'
-            : 'Follow the steps below to start capturing call recordings.';
+        ? (_oemReady
+            ? 'Your phone records both sides and Hawcus uploads them ($_fileCount found). New calls sync automatically.'
+            : 'Hawcus will record your calls and upload them to the CRM. Turn on speakerphone to also capture the other person clearly.')
+        : 'Complete Step 1 so Hawcus can record your calls. Make a test call afterwards to confirm.';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(16)),

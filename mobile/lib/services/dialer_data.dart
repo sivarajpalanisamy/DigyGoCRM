@@ -21,27 +21,24 @@ class DialerData {
     return list;
   }
 
-  // Whether a single call-log entry is allowed to show/sync. BEST EFFORT: we hide a
-  // call ONLY when we can positively prove it is on the OTHER (unverified) SIM -
-  // i.e. its slot resolves to a real slot that is not a verified one. Everything else
-  // is allowed, because on many phones (notably MIUI/Redmi) Android does not map a
-  // call's PHONE_ACCOUNT_ID to a SIM slot, so we cannot tell which SIM it used - and
-  // hiding those would blank the whole app. So:
-  //  - single-SIM, or no verified slot known, or slot unresolved → allow;
-  //  - dual-SIM with a resolved slot → allow only if that slot is verified.
+  // Whether a single call-log entry is allowed to show/sync. STRICT: on a dual-SIM device
+  // with a verified SIM, a call is allowed ONLY when it resolves to a verified slot. A call
+  // we cannot attribute is HIDDEN - allowing unresolved calls was leaking the unverified
+  // (personal) SIM's calls. Resolution is multi-signal (native combines real-time capture +
+  // subscription_id/simid + PHONE_ACCOUNT_ID and hands it back via gate.resolvedSlots), so a
+  // genuine verified-SIM call still resolves even on OEMs (MIUI/Redmi) that break one signal.
+  //  - single-SIM, or no verified slot known → allow (nothing to gate);
+  //  - dual-SIM → allow only when the resolved slot is a verified one.
   // This is the one per-call rule every in-app surface shares (list, contacts count,
   // post-call popup, recording gate).
   static bool onVerifiedSimEntry(SimGate gate, CallLogEntry e) {
     if (!gate.multiSim) return true;
     if (gate.verifiedSlots.isEmpty) return true;
-    final slot = gate.slotFor(e.phoneAccountId);
-    if (slot == null) return true;              // SIM can't be resolved → can't prove it's the other SIM
-    return gate.verifiedSlots.contains(slot);   // resolved → allow only the verified SIM
+    final slot = gate.slotForCall(e.number, e.timestamp, e.phoneAccountId);
+    return slot != null && gate.verifiedSlots.contains(slot); // strict: unresolved → hide
   }
 
-  // Keep only entries we're allowed to show/sync (best effort - see onVerifiedSimEntry).
-  // A linked device never gets a blank list: only calls provably on the unverified SIM
-  // are dropped.
+  // Keep only entries proven to be on a verified SIM (strict - see onVerifiedSimEntry).
   static List<CallLogEntry> filterVerifiedSim(List<CallLogEntry> logs, SimGate gate, {required bool linked}) {
     if (!linked) return const [];
     if (!gate.multiSim) return logs;
@@ -77,17 +74,17 @@ class DialerData {
   }
 
   /// Whether a recording (identified by the customer [number] + approximate
-  /// [startedAtMs]) is allowed to upload. BEST EFFORT: block it only when its matched
-  /// call is provably on the OTHER (unverified) SIM. Single-SIM phones, phones where
-  /// the SIM can't be resolved, and no-match cases all pass (an unlinked device never).
+  /// [startedAtMs]) is allowed to upload. STRICT, mirroring the call gate: on a dual-SIM
+  /// device it uploads only when the matched call resolves to a verified SIM. Single-SIM
+  /// phones and the no-gating case pass; an unlinked device never uploads.
   Future<bool> recordingIsOnVerifiedSim({String? number, int? startedAtMs}) async {
     if (!await Api.instance.hasDeviceToken()) return false;
     final gate = await Native.instance.simGateInfo();
     if (!gate.multiSim) return true;              // single SIM → the only SIM is verified
-    if (gate.verifiedSlots.isEmpty) return true;  // can't attribute → allow (best effort)
+    if (gate.verifiedSlots.isEmpty) return true;  // no verified SIM configured → nothing to gate
     final n = (number ?? '').replaceAll(RegExp(r'[^0-9]'), '');
     final tail = n.length >= 9 ? n.substring(n.length - 9) : n;
-    if (tail.isEmpty) return true;
+    if (tail.isEmpty) return false;
     const windowMs = 6 * 60 * 1000;
     for (final e in await callLogs()) {
       final en = (e.number ?? '').replaceAll(RegExp(r'[^0-9]'), '');
@@ -97,7 +94,7 @@ class DialerData {
       if ((startedAtMs ?? 0) > 0 && (start - startedAtMs!).abs() > windowMs) continue;
       return onVerifiedSimEntry(gate, e);
     }
-    return true; // no matching call to prove it's the unverified SIM → allow
+    return false; // can't tie the recording to a verified-SIM call → don't upload
   }
 
   // ── Contacts ─────────────────────────────────────────────────────────────
@@ -147,27 +144,28 @@ class DialerData {
   // Posts recent call logs to the CRM (deduped server-side by clientCallId).
   // Best-effort and silent - never blocks or surfaces errors in the dialer UI.
   //
-  // SIM gate (best effort, mirrors the in-app rule): a call is DROPPED only when we can
-  // positively prove it is on the OTHER (unverified) SIM - i.e. its slot resolves to a
-  // real slot that is not verified. Calls whose SIM can't be resolved (common on MIUI/
-  // Redmi, where PHONE_ACCOUNT_ID doesn't map to a slot) are kept, and tagged with the
-  // sole verified slot when there is exactly one, so they attribute correctly server-side.
+  // SIM gate (STRICT, mirrors the in-app + native rule): on a dual-SIM device with a verified
+  // SIM, a call is synced ONLY when it resolves to a verified slot; a call we cannot attribute
+  // is DROPPED (not stamped as the verified SIM - that was leaking the personal SIM's calls).
+  // Resolution is multi-signal via native (real-time capture + subscription_id/simid +
+  // PHONE_ACCOUNT_ID), so genuine verified-SIM calls still resolve on MIUI/Redmi.
   Future<void> syncToCrm(List<CallLogEntry> logs) async {
     if (logs.isEmpty) return;
     // Only sync when this number is linked to the CRM (device token present).
     if (!await Api.instance.hasDeviceToken()) return;
     try {
       final gate = await Native.instance.simGateInfo();
+      final gated = gate.multiSim && gate.verifiedSlots.isNotEmpty;
       final batch = <Map<String, dynamic>>[];
       for (final e in logs.take(200)) {
-        final slot = gate.slotFor(e.phoneAccountId);
         int? tagSlot;
-        if (gate.multiSim && gate.verifiedSlots.isNotEmpty && slot != null && !gate.verifiedSlots.contains(slot)) {
-          continue; // provably on the unverified SIM → drop
+        if (gated) {
+          final slot = gate.slotForCall(e.number, e.timestamp, e.phoneAccountId);
+          if (slot == null || !gate.verifiedSlots.contains(slot)) {
+            continue; // strict: unresolved or unverified SIM → never sync
+          }
+          tagSlot = slot;
         }
-        // Otherwise keep it. Tag with the resolved slot, or fall back to the sole
-        // verified slot so an unresolved call still attributes to the verified number.
-        tagSlot = slot ?? (gate.verifiedSlots.length == 1 ? gate.verifiedSlots.first : null);
 
         final ts = e.timestamp ?? 0;
         final started = DateTime.fromMillisecondsSinceEpoch(ts).toUtc().toIso8601String();

@@ -75,6 +75,7 @@ class SimGate {
     required this.accountSlot,
     required this.verifiedSlots,
     required this.numberBySlot,
+    required this.resolvedSlots,
   });
 
   /// Device has (or ever had) ≥2 active SIMs - the case where attribution matters.
@@ -87,6 +88,11 @@ class SimGate {
   final Set<int> verifiedSlots;
   /// Verified slot → its phone number (for tagging).
   final Map<int, String> numberBySlot;
+  /// Native's full multi-signal resolution of recent calls: "<number>_<dateMs>" → slot.
+  /// Built with real-time capture + subscription_id/simid + PHONE_ACCOUNT_ID, so the Dart
+  /// display gate attributes calls exactly like the native sync gate (which the Dart call_log
+  /// package alone cannot - it only exposes PHONE_ACCOUNT_ID).
+  final Map<String, int> resolvedSlots;
 
   static const empty = SimGate._empty();
   const SimGate._empty()
@@ -94,7 +100,8 @@ class SimGate {
         simCount = 1,
         accountSlot = const <String, int>{},
         verifiedSlots = const <int>{},
-        numberBySlot = const <int, String>{};
+        numberBySlot = const <int, String>{},
+        resolvedSlots = const <String, int>{};
 
   factory SimGate.fromMap(Map m) {
     final acc = <String, int>{};
@@ -106,6 +113,10 @@ class SimGate {
       final slot = int.tryParse('$k');
       if (slot != null && v != null) nbs[slot] = '$v';
     });
+    final rs = <String, int>{};
+    (m['resolvedSlots'] as Map?)?.forEach((k, v) {
+      if (v is num) rs['$k'] = v.toInt();
+    });
     return SimGate(
       multiSim: m['multiSim'] == true,
       simCount: (m['simCount'] as num?)?.toInt() ?? 1,
@@ -114,11 +125,22 @@ class SimGate {
           .map((e) => (e as num).toInt())
           .toSet(),
       numberBySlot: nbs,
+      resolvedSlots: rs,
     );
   }
 
   /// Resolve a call's SIM slot from its PHONE_ACCOUNT_ID (null if unknown).
   int? slotFor(String? accountId) => accountId == null ? null : accountSlot[accountId];
+
+  /// Resolve a call's SIM slot using native's multi-signal map first (by number + time),
+  /// then PHONE_ACCOUNT_ID. Null when the SIM genuinely can't be determined.
+  int? slotForCall(String? number, int? timestampMs, String? accountId) {
+    if (number != null && timestampMs != null) {
+      final r = resolvedSlots['${number}_$timestampMs'];
+      if (r != null) return r;
+    }
+    return slotFor(accountId);
+  }
 }
 
 /// Result of the per-device call-recording self-test.

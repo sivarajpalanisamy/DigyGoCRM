@@ -1,10 +1,14 @@
 package co.hawcus.dialer
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Build
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.InCallService
+import androidx.core.app.ActivityCompat
 import io.flutter.plugin.common.EventChannel
 import java.io.File
 
@@ -23,14 +27,20 @@ object CallManager {
     private var recordingPath: String? = null
     private var recordingNumber: String? = null
     private var recordingStart: Long = 0L
+    private var recordingSlot: Int? = null   // SIM slot of the call being recorded (for the upload gate)
+    private var recCtx: Context? = null      // app context, so we can enqueue the upload even after the service detaches
 
     private val callback = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
             if (state == Call.STATE_ACTIVE) startRecording()
             if (state == Call.STATE_DISCONNECTED) stopRecording()
+            captureSimSlot(call)
             emitState()
         }
-        override fun onDetailsChanged(call: Call, details: Call.Details) = emitState()
+        override fun onDetailsChanged(call: Call, details: Call.Details) {
+            captureSimSlot(call)
+            emitState()
+        }
     }
 
     fun setEventSink(sink: EventChannel.EventSink?) {
@@ -45,7 +55,21 @@ object CallManager {
         currentCall = call
         direction = if (call.state == Call.STATE_RINGING) "incoming" else "outgoing"
         call.registerCallback(callback)
+        captureSimSlot(call)
         emitState()
+    }
+
+    // Record which SIM slot this live call used, resolved from its PhoneAccountHandle (which
+    // is authoritative even on MIUI/Redmi where the later call-log row carries no usable SIM
+    // id). CallSync consults this at sync time so the strict SIM gate can attribute the call.
+    private fun captureSimSlot(call: Call) {
+        try {
+            val ctx = inCallService ?: return
+            val handle = call.details?.accountHandle ?: return
+            val number = call.details?.handle?.schemeSpecificPart ?: return
+            val slot = CallSync.slotForAccountHandle(ctx, handle) ?: return
+            CallSync.recordCallSlot(ctx, number, slot)
+        } catch (e: Exception) { /* best-effort */ }
     }
 
     fun onCallRemoved(call: Call) {
@@ -87,10 +111,16 @@ object CallManager {
     }
 
     // Try VOICE_CALL → VOICE_COMMUNICATION → MIC (device-dependent; many block VOICE_CALL).
+    // MIC always works (Android 10+ blocks the call-audio sources on most devices), so as the
+    // default dialer we ALWAYS produce a recording file - the reliable path on MIUI/Redmi where
+    // the OEM recorder saves nothing harvestable.
     private fun startRecording() {
         if (recorder != null) return
         val ctx = inCallService ?: return
+        // No RECORD_AUDIO → we cannot record. Skip cleanly (the OEM harvest path may still work).
+        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return
         val number = currentCall?.details?.handle?.schemeSpecificPart ?: "unknown"
+        val slot = try { CallSync.slotForAccountHandle(ctx, currentCall?.details?.accountHandle) } catch (e: Exception) { null }
         val dir = File(ctx.filesDir, "recordings").apply { mkdirs() }
         val start = System.currentTimeMillis()
         val file = File(dir, "rec_${start}.m4a")
@@ -112,6 +142,8 @@ object CallManager {
                 recordingPath = file.absolutePath
                 recordingNumber = number
                 recordingStart = start
+                recordingSlot = slot
+                recCtx = ctx.applicationContext
                 return
             } catch (e: Exception) {
                 // try next source
@@ -125,17 +157,25 @@ object CallManager {
         try { r.stop() } catch (e: Exception) {}
         try { r.release() } catch (e: Exception) {}
         val path = recordingPath
-        if (path != null) {
-            eventSink?.success(
-                hashMapOf(
-                    "event" to "recording",
-                    "path" to path,
-                    "number" to recordingNumber,
-                    "startedAt" to recordingStart
-                )
-            )
-        }
         recordingPath = null
+        if (path == null) return
+        val f = File(path)
+        // Drop empty/failed captures (a 0-byte file means the recorder never got audio).
+        if (!f.exists() || f.length() <= 0L) { try { if (f.exists()) f.delete() } catch (e: Exception) {}; return }
+        // Reliable path: hand the file to the native uploader (the foreground service uploads
+        // it even if the app is killed right after the call - the Flutter listener may be dead).
+        recCtx?.let {
+            try { CallSync.enqueueOwnRecording(it, path, recordingNumber, recordingStart, recordingSlot) } catch (e: Exception) {}
+        }
+        // Fast path: if the app is alive, upload immediately via Flutter (idempotent server-side).
+        eventSink?.success(
+            hashMapOf(
+                "event" to "recording",
+                "path" to path,
+                "number" to recordingNumber,
+                "startedAt" to recordingStart
+            )
+        )
     }
 
     // ── Controls ─────────────────────────────────────────────────────────────

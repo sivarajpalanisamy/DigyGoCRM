@@ -4,12 +4,16 @@ import android.Manifest
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.database.Cursor
 import android.os.Build
 import android.os.Environment
 import android.provider.CallLog
+import android.telecom.PhoneAccountHandle
 import android.telephony.SubscriptionManager
+import android.telephony.TelephonyManager
 import androidx.core.app.ActivityCompat
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.io.OutputStream
 import java.net.HttpURLConnection
@@ -48,6 +52,20 @@ object CallSync {
     private const val SIM_TOTAL_KEY = "sim_total_seen"
     private const val RECENT_WINDOW_MS = 5 * 60 * 1000L     // only sync calls that just ended
     private const val REC_MATCH_WINDOW_MS = 6 * 60 * 1000L  // recording file ↔ call time tolerance
+    // Real-time SIM capture: the InCallService records each call's SIM slot AT CALL TIME
+    // (from its PhoneAccountHandle - authoritative, OEM-independent), keyed by number+time.
+    // The sync gate consults this first, so attribution works even on MIUI/Redmi where the
+    // call-log's PHONE_ACCOUNT_ID maps to no SIM. This is what lets us gate STRICTLY.
+    private const val RT_SLOTS_KEY = "rt_call_slots"
+    private const val RT_MATCH_WINDOW_MS = 5 * 60 * 1000L   // captured-slot ↔ call-log time tolerance
+    private const val RT_TTL_MS = 12L * 60 * 60 * 1000L     // forget captured slots after 12h
+    private const val RT_MAX = 40                           // ring-buffer size
+    // Own-recorder upload queue: the InCallService records the call to a file (mic-based, the
+    // reliable source on OEMs whose built-in recorder saves nothing), enqueues it here, and the
+    // foreground service uploads it - so a recording survives the app being killed after a call.
+    private const val OWN_REC_KEY = "pending_own_recordings"
+    private const val OWN_REC_TTL_MS = 3L * 24 * 60 * 60 * 1000L  // give up on a file after 3 days
+    private const val OWN_REC_MAX = 30
 
     // Known OEM call-recording folders (fast-path seeds). Auto-discovery finds the rest.
     private val recordingDirs = listOf(
@@ -76,6 +94,9 @@ object CallSync {
     private data class CallRow(
         val number: String, val type: Int, val duration: Int, val date: Long,
         val phoneAccountId: String? = null,
+        // Extra SIM signals some OEMs (notably MIUI/Xiaomi) put on the call-log row even
+        // when PHONE_ACCOUNT_ID is useless: an integer subscription id and/or a "simid".
+        val subId: Int? = null, val simId: Int? = null,
         val simSlot: Int? = null, val simNumber: String? = null,
     )
 
@@ -93,6 +114,7 @@ object CallSync {
         val token = prefs.getString("token", null) ?: return // not linked → do nothing
 
         synchronized(lock) {
+          try {
             val watermark = prefs.getLong(WATERMARK_KEY, 0L)
 
             // Poll until at least one fresh call-log row appears (some OEMs write the
@@ -139,7 +161,79 @@ object CallSync {
             for (call in toSync) {
                 try { uploadRecordingFor(ctx, prefs, base, token, call) } catch (e: Exception) { /* best-effort */ }
             }
+          } finally {
+            // Always flush queued own-recorder files, even when no new call appeared this run
+            // (a recording can finalise after its call-log row was already synced).
+            try { uploadPendingOwnRecordings(ctx, prefs, base, token) } catch (e: Exception) { /* best-effort */ }
+          }
         }
+    }
+
+    // ── Own-recorder upload queue ────────────────────────────────────────────────────────
+    // The InCallService recorder enqueues each finished file here; the foreground service (via
+    // run() above) uploads it, gated by the verified SIM. This decouples recording from upload
+    // so a recording is not lost when MIUI kills the app right after the call ends.
+    fun enqueueOwnRecording(ctx: Context, path: String?, number: String?, startedAtMs: Long, slot: Int?) {
+        if (path.isNullOrBlank()) return
+        try {
+            val prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val now = System.currentTimeMillis()
+            val arr = try { JSONArray(prefs.getString(OWN_REC_KEY, "[]")) } catch (e: Exception) { JSONArray() }
+            val kept = JSONArray()
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                if (now - o.optLong("t", 0) <= OWN_REC_TTL_MS) kept.put(o)
+            }
+            kept.put(JSONObject()
+                .put("p", path)
+                .put("n", number ?: "")
+                .put("st", startedAtMs)
+                .put("slot", slot ?: -1)
+                .put("t", now))
+            val bounded = if (kept.length() > OWN_REC_MAX) {
+                val b = JSONArray()
+                for (i in (kept.length() - OWN_REC_MAX) until kept.length()) b.put(kept.get(i))
+                b
+            } else kept
+            prefs.edit().putString(OWN_REC_KEY, bounded.toString()).apply()
+        } catch (e: Exception) { /* best-effort */ }
+    }
+
+    // Upload every queued own-recording whose call is on a verified SIM. One attempt per entry
+    // per run (the metadata row may not exist yet → a 404 keeps the entry for the next run).
+    private fun uploadPendingOwnRecordings(ctx: Context, prefs: SharedPreferences, base: String, token: String) {
+        val raw = prefs.getString(OWN_REC_KEY, null) ?: return
+        val arr = try { JSONArray(raw) } catch (e: Exception) { return }
+        if (arr.length() == 0) return
+        val verifiedSlots = readVerifiedSims(prefs).mapNotNull { if (it.slot >= 0) it.slot else null }.toSet()
+        val gated = isMultiSim(ctx, prefs) && verifiedSlots.isNotEmpty()
+        val now = System.currentTimeMillis()
+        val remaining = JSONArray()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            val path = o.optString("p", "")
+            val file = if (path.isNotEmpty()) File(path) else null
+            // Drop stale or vanished files.
+            if (file == null || !file.exists() || now - o.optLong("t", 0) > OWN_REC_TTL_MS) {
+                try { file?.delete() } catch (e: Exception) {}
+                continue
+            }
+            // SIM gate: never upload a recording for a call on the unverified SIM.
+            val slot = o.optInt("slot", -1)
+            if (gated && (slot < 0 || !verifiedSlots.contains(slot))) {
+                try { file.delete() } catch (e: Exception) {}
+                continue
+            }
+            val number = o.optString("n", "")
+            val startedAt = o.optLong("st", 0)
+            val code = try { uploadRecording(base, token, file, number, startedAt) } catch (e: Exception) { -1 }
+            when (code) {
+                in 200..299 -> { try { file.delete() } catch (e: Exception) {} }   // done
+                404 -> remaining.put(o)   // call row not synced yet → retry next run
+                else -> remaining.put(o)  // transient/network error → retry next run
+            }
+        }
+        prefs.edit().putString(OWN_REC_KEY, remaining.toString()).apply()
     }
 
     // All call-log rows strictly newer than afterMs that ended within the recency
@@ -149,23 +243,17 @@ object CallSync {
     private fun readCallsSince(ctx: Context, afterMs: Long): List<CallRow> {
         val out = ArrayList<CallRow>()
         try {
+            // null projection = all columns, so we can pick up OEM SIM columns (subscription_id,
+            // simid) by name where they exist without a projection that throws where they don't.
             val cursor = ctx.contentResolver.query(
-                CallLog.Calls.CONTENT_URI,
-                arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DURATION, CallLog.Calls.DATE,
-                        CallLog.Calls.PHONE_ACCOUNT_ID),
+                CallLog.Calls.CONTENT_URI, null,
                 "${CallLog.Calls.DATE} > ?", arrayOf(afterMs.toString()),
                 "${CallLog.Calls.DATE} ASC"
             ) ?: return out
             cursor.use {
                 val now = System.currentTimeMillis()
                 while (it.moveToNext() && out.size < 50) {
-                    val row = CallRow(
-                        number = it.getString(0) ?: "",
-                        type = it.getInt(1),
-                        duration = it.getInt(2),
-                        date = it.getLong(3),
-                        phoneAccountId = it.getString(4)
-                    )
+                    val row = rowFrom(it)
                     val endedAtMs = row.date + row.duration * 1000L
                     if (now - endedAtMs <= RECENT_WINDOW_MS) out.add(row)
                 }
@@ -179,38 +267,44 @@ object CallSync {
     private fun readLatestCall(ctx: Context): CallRow? {
         return try {
             val cursor = ctx.contentResolver.query(
-                CallLog.Calls.CONTENT_URI,
-                arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DURATION, CallLog.Calls.DATE,
-                        CallLog.Calls.PHONE_ACCOUNT_ID),
-                null, null,
+                CallLog.Calls.CONTENT_URI, null, null, null,
                 "${CallLog.Calls.DATE} DESC"
             ) ?: return null
-            cursor.use {
-                if (!it.moveToFirst()) return null
-                CallRow(
-                    number = it.getString(0) ?: "",
-                    type = it.getInt(1),
-                    duration = it.getInt(2),
-                    date = it.getLong(3),
-                    phoneAccountId = it.getString(4)
-                )
-            }
+            cursor.use { if (it.moveToFirst()) rowFrom(it) else null }
         } catch (e: Exception) {
             null
         }
     }
 
-    // True when a call is allowed to surface/sync (BEST EFFORT, mirrors [filterAndTag]
-    // and the Dart rule): we reject only when we can PROVE it is on the other, unverified
-    // SIM - its slot resolves to a real slot that is not verified. A slot that can't be
-    // resolved (common on MIUI/Redmi, where PHONE_ACCOUNT_ID doesn't map to a slot) is
-    // allowed, so real-time sync doesn't silently drop every call on those devices.
+    // Read a call-log row by COLUMN NAME (tolerant of columns that don't exist on a device).
+    private fun rowFrom(c: Cursor): CallRow {
+        fun idx(name: String): Int = try { c.getColumnIndex(name) } catch (e: Exception) { -1 }
+        fun str(name: String): String? { val i = idx(name); return if (i >= 0 && !c.isNull(i)) c.getString(i) else null }
+        fun lng(name: String): Long { val i = idx(name); return if (i >= 0 && !c.isNull(i)) c.getLong(i) else 0L }
+        fun intOpt(name: String): Int? { val i = idx(name); return if (i >= 0 && !c.isNull(i)) c.getInt(i) else null }
+        return CallRow(
+            number = str(CallLog.Calls.NUMBER) ?: "",
+            type = intOpt(CallLog.Calls.TYPE) ?: 0,
+            duration = intOpt(CallLog.Calls.DURATION) ?: 0,
+            date = lng(CallLog.Calls.DATE),
+            phoneAccountId = str(CallLog.Calls.PHONE_ACCOUNT_ID),
+            subId = intOpt("subscription_id"),
+            simId = intOpt("simid"),
+        )
+    }
+
+    // True when a call is allowed to surface/sync (STRICT, mirrors [filterAndTag] and the
+    // Dart rule): on a dual-SIM device with a verified SIM, a call is allowed ONLY when it
+    // resolves to a verified slot. A call we cannot attribute is NOT allowed - stamping it as
+    // the verified SIM was leaking the unverified (personal) SIM's calls into the CRM.
+    // Attribution is now multi-signal (real-time capture + subscription_id/simid + PHONE_
+    // ACCOUNT_ID), so genuine verified-SIM calls still resolve on OEMs that break one signal.
     private fun isOnVerifiedSim(ctx: Context, prefs: SharedPreferences, c: CallRow): Boolean {
         val verifiedSlots = readVerifiedSims(prefs)
             .mapNotNull { if (it.slot >= 0) it.slot else null }.toSet()
         if (isMultiSim(ctx, prefs) && verifiedSlots.isNotEmpty()) {
-            val slot = buildAccountSlotMap(ctx)[c.phoneAccountId]
-            return slot == null || verifiedSlots.contains(slot)
+            val slot = resolveSlot(ctx, prefs, buildAccountSlotMap(ctx), c)
+            return slot != null && verifiedSlots.contains(slot)
         }
         return true
     }
@@ -240,30 +334,122 @@ object CallSync {
     }
 
     // ── SIM gating ───────────────────────────────────────────────────────────────
-    // BEST EFFORT: drop a call ONLY when we can prove it is on the other, unverified SIM
-    // (its slot resolves to a real slot that is not verified). A call whose slot cannot be
-    // resolved - which is the norm on MIUI/Redmi and several other OEMs, where the call
-    // log's PHONE_ACCOUNT_ID maps to neither the subscriptionId nor the ICCID - is KEPT
-    // and tagged with the sole verified slot when there is exactly one, so it still
-    // attributes to the verified number server-side. This avoids silently dropping every
-    // call (and thus blanking the CRM) on those devices, while still hiding the unverified
-    // SIM wherever attribution actually works.
+    // STRICT: on a dual-SIM device with a verified SIM, keep a call ONLY when it resolves to
+    // a verified slot. A call whose SIM we cannot attribute is DROPPED (not stamped as the
+    // verified SIM) - the previous fail-open stamp was leaking the unverified (personal)
+    // SIM's calls into the CRM on OEMs that break PHONE_ACCOUNT_ID.
+    //
+    // To keep this from blanking the CRM on those OEMs, attribution is multi-signal: the
+    // InCallService captures each call's slot AT CALL TIME (authoritative), and the call-log
+    // row's subscription_id / simid are read on top of PHONE_ACCOUNT_ID. A genuine verified-
+    // SIM call resolves via at least one of these on essentially every device.
     private fun filterAndTag(ctx: Context, prefs: SharedPreferences, calls: List<CallRow>, verified: List<SimRef>): List<CallRow> {
         val verifiedSlots = verified.mapNotNull { if (it.slot >= 0) it.slot else null }.toSet()
         val numberBySlot = verified.filter { it.slot >= 0 && !it.number.isNullOrEmpty() }
             .associate { it.slot to it.number!! }
         val multiSim = isMultiSim(ctx, prefs)
         val accountSlot = if (multiSim) buildAccountSlotMap(ctx) else emptyMap()
+        val gated = multiSim && verifiedSlots.isNotEmpty()
 
         val out = ArrayList<CallRow>()
         for (c in calls) {
-            val slot = accountSlot[c.phoneAccountId]
-            // Provably on the unverified SIM → drop. Everything else is kept.
-            if (multiSim && verifiedSlots.isNotEmpty() && slot != null && !verifiedSlots.contains(slot)) continue
-            val tagSlot = slot ?: (if (verifiedSlots.size == 1) verifiedSlots.first() else null)
-            out.add(c.copy(simSlot = tagSlot, simNumber = tagSlot?.let { numberBySlot[it] }))
+            if (gated) {
+                val slot = resolveSlot(ctx, prefs, accountSlot, c)
+                // Keep ONLY calls proven to be on a verified SIM. Unresolved or unverified → drop.
+                if (slot == null || !verifiedSlots.contains(slot)) continue
+                out.add(c.copy(simSlot = slot, simNumber = numberBySlot[slot]))
+            } else {
+                out.add(c) // single-SIM, or no verified SIM configured → no gating
+            }
         }
         return out
+    }
+
+    // Resolve a call's SIM slot from every signal we have, most-authoritative first:
+    //  1) real-time capture from the InCallService (by number + time) - OEM-independent;
+    //  2) the call-log subscription_id column → SubscriptionManager slot;
+    //  3) PHONE_ACCOUNT_ID → subscriptionId/ICCID → slot (works on stock Android);
+    //  4) the Xiaomi "simid" column (as a subscriptionId, else a 1-based slot).
+    // Returns null when the SIM genuinely can't be determined (→ dropped under strict gating).
+    private fun resolveSlot(ctx: Context, prefs: SharedPreferences, accountSlot: Map<String, Int>, c: CallRow): Int? {
+        rtSlotFor(prefs, c.number, c.date)?.let { return it }
+        c.subId?.let { accountSlot[it.toString()]?.let { s -> return s } }
+        c.phoneAccountId?.let { accountSlot[it]?.let { s -> return s } }
+        c.simId?.let { sid ->
+            accountSlot[sid.toString()]?.let { return it }            // simid stored as subscriptionId
+            if (sid in 1..2 && accountSlot.containsValue(sid - 1)) return sid - 1  // simid as 1-based slot
+        }
+        return null
+    }
+
+    // ── Real-time SIM capture (called by CallManager from the InCallService) ─────────────
+    // Records the SIM slot resolved from a live call's PhoneAccountHandle, keyed by number +
+    // time, so the (later) call-log sync can attribute the row even when the OS wrote no
+    // usable SIM id onto it. This is the signal that makes strict gating safe on MIUI/Redmi.
+    fun recordCallSlot(ctx: Context, number: String?, slot: Int) {
+        if (number.isNullOrBlank() || slot < 0) return
+        try {
+            val prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val now = System.currentTimeMillis()
+            val arr = try { JSONArray(prefs.getString(RT_SLOTS_KEY, "[]")) } catch (e: Exception) { JSONArray() }
+            val kept = JSONArray()
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                if (now - o.optLong("t", 0) <= RT_TTL_MS) kept.put(o)
+            }
+            kept.put(JSONObject().put("n", normNum(number)).put("s", slot).put("t", now))
+            val bounded = if (kept.length() > RT_MAX) {
+                val b = JSONArray()
+                for (i in (kept.length() - RT_MAX) until kept.length()) b.put(kept.get(i))
+                b
+            } else kept
+            prefs.edit().putString(RT_SLOTS_KEY, bounded.toString()).apply()
+        } catch (e: Exception) { /* best-effort */ }
+    }
+
+    // Slot captured in real time for a call matching this number within the time window.
+    private fun rtSlotFor(prefs: SharedPreferences, number: String, dateMs: Long): Int? {
+        val raw = prefs.getString(RT_SLOTS_KEY, null) ?: return null
+        val target = normNum(number)
+        if (target.isEmpty()) return null
+        return try {
+            val arr = JSONArray(raw)
+            var best: Int? = null
+            var bestDelta = RT_MATCH_WINDOW_MS
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                if (o.optString("n") != target) continue
+                val delta = Math.abs(o.optLong("t") - dateMs)
+                if (delta <= bestDelta) { bestDelta = delta; best = o.optInt("s") }
+            }
+            best
+        } catch (e: Exception) { null }
+    }
+
+    // Resolve a live call's SIM slot from its PhoneAccountHandle (used by CallManager at call
+    // time). getSubscriptionId(handle) is authoritative on API 30+; older devices fall back to
+    // matching the handle id against the subscriptionId/ICCID map.
+    fun slotForAccountHandle(ctx: Context, handle: PhoneAccountHandle?): Int? {
+        if (handle == null) return null
+        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.READ_PHONE_STATE)
+            != PackageManager.PERMISSION_GRANTED) return null
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val tm = ctx.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                val subId = tm.getSubscriptionId(handle)   // API 30: handle → subscriptionId
+                if (subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                    val sm = ctx.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
+                    sm.activeSubscriptionInfoList?.firstOrNull { it.subscriptionId == subId }?.let { return it.simSlotIndex }
+                }
+            }
+        } catch (e: Exception) { /* fall through */ }
+        return try { buildAccountSlotMap(ctx)[handle.id] } catch (e: Exception) { null }
+    }
+
+    // Last-10 digits, the SIM-agnostic key used to match a live capture to a call-log row.
+    private fun normNum(number: String): String {
+        val d = number.filter { it.isDigit() }
+        return if (d.length >= 10) d.takeLast(10) else d
     }
 
     // True if the device has (or has ever had) ≥2 active SIMs. Persists the max count seen
@@ -293,8 +479,34 @@ object CallSync {
             "accountSlot" to accountSlot,                                   // {accountId(String) -> slot(Int)}
             "verifiedSlots" to verified.mapNotNull { if (it.slot >= 0) it.slot else null }, // [Int]
             "numberBySlot" to verified.filter { it.slot >= 0 && !it.number.isNullOrEmpty() }
-                .associate { it.slot.toString() to it.number!! }            // {slot(String) -> number(String)}
+                .associate { it.slot.toString() to it.number!! },           // {slot(String) -> number(String)}
+            // Native's full multi-signal resolution of recent calls, so the in-app (Dart)
+            // display gate resolves EXACTLY like the sync gate - Dart's call_log package can't
+            // see subscription_id/simid or the real-time capture store on its own.
+            "resolvedSlots" to if (multiSim) recentResolvedSlots(ctx, prefs, accountSlot) else emptyMap()
         )
+    }
+
+    // {"<number>_<dateMs>" -> slot} for the most recent calls that we could attribute. Keys
+    // mirror what the Dart side builds from its own call_log entries. Absent key → Dart falls
+    // back to PHONE_ACCOUNT_ID, then (strict) hides the call.
+    private fun recentResolvedSlots(ctx: Context, prefs: SharedPreferences, accountSlot: Map<String, Int>): Map<String, Int> {
+        val out = HashMap<String, Int>()
+        try {
+            val cursor = ctx.contentResolver.query(
+                CallLog.Calls.CONTENT_URI, null, null, null, "${CallLog.Calls.DATE} DESC"
+            ) ?: return out
+            cursor.use {
+                var n = 0
+                while (it.moveToNext() && n < 400) {
+                    n++
+                    val c = rowFrom(it)
+                    val slot = resolveSlot(ctx, prefs, accountSlot, c)
+                    if (slot != null) out["${c.number}_${c.date}"] = slot
+                }
+            }
+        } catch (e: Exception) { /* best-effort */ }
+        return out
     }
 
     private fun readVerifiedSims(prefs: SharedPreferences): List<SimRef> {
@@ -450,7 +662,7 @@ object CallSync {
         }
     }
 
-    private fun uploadRecording(base: String, token: String, file: File, phone: String, startedAtMs: Long) {
+    private fun uploadRecording(base: String, token: String, file: File, phone: String, startedAtMs: Long): Int {
         val boundary = "----digygo" + System.nanoTime()
         val nl = "\r\n"
         val conn = (URL(base.trimEnd('/') + "/api/mobile/calls/by-key/recording").openConnection() as HttpURLConnection)
@@ -476,7 +688,7 @@ object CallSync {
             os.write(nl.toByteArray())
             os.write(("--$boundary--$nl").toByteArray())
             os.flush(); os.close()
-            conn.responseCode
+            return conn.responseCode
         } finally {
             conn.disconnect()
         }
